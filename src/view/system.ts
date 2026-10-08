@@ -56,7 +56,7 @@ export const head = (tag: string, name: string, sub: string, about = ""): string
 export const note = (text: string): string => `<p class="dnote">${esc(text)}</p>`;
 
 /** The page each node sits on, through its parents up to a page's frame. */
-function pageOfNode(doc: Doc): (node: Id) => Id | undefined {
+export function pageOfNode(doc: Doc): (node: Id) => Id | undefined {
   const byFrame = new Map(Object.values(doc.pages).map((p) => [p.frame, p.id]));
   return (node) => {
     let at = doc.nodes[node];

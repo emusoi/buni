@@ -150,6 +150,26 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .item.sub { padding-left: 30px; }
 .item.sub .name { font-size: 13px; }
 
+.agent { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), width 0.6s cubic-bezier(0.25, 1, 0.5, 1), height 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s; }
+.agent .abox { position: absolute; inset: 0; outline: calc(2px * var(--inv)) solid var(--ink); outline-offset: calc(3px * var(--inv)); opacity: 0; transition: opacity 0.3s; }
+.agent.working .abox, .agent.done .abox { opacity: 1; }
+.agent.idle { opacity: 0.6; }
+.agent .apin { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 6px; padding-bottom: calc(6px * var(--inv)); transform: translateX(-8px) scale(var(--inv)); transform-origin: 0 100%; }
+.agent .apin svg { width: 30px; height: 30px; color: var(--ink); flex-shrink: 0; overflow: visible; }
+.agent .apin b { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 8px; border-radius: 99px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 600; }
+.agent .smile { display: none; }
+.agent.done .smile { display: inline; }
+.agent.done .open { display: none; }
+.agent .frame, .agent .eye { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .agent.working .frame { animation: agrow 2.6s ease-in-out infinite; }
+  .agent .eye { animation: ablink 4s ease-in-out infinite; }
+  .agent.done .apin svg { animation: abounce 0.9s ease-in-out 1; }
+}
+@keyframes agrow { 0%, 85%, 100% { transform: scale(1); } 32%, 55% { transform: scale(1.22); } }
+@keyframes ablink { 0%, 86%, 92%, 100% { transform: scaleY(1); } 89% { transform: scaleY(0.12); } }
+@keyframes abounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+
 .sheetview { display: flex; flex-direction: column; gap: 26px; padding: 28px 32px 48px; max-width: 1100px; }
 .vhead { display: flex; align-items: baseline; gap: 10px; }
 .vhead h1 { margin: 0; font-size: 20px; font-weight: 600; }
@@ -330,6 +350,7 @@ function place() {
   // Until someone moves the view, it keeps the whole design in sight as pages report their heights.
   if (!moved) fit();
   applyView();
+  drawAgents();
 }
 
 function drawArrows(at) {
@@ -359,6 +380,7 @@ function applyView() {
   $("#zoom .pct").textContent = Math.round(scale * 100) + "%";
   for (const n of boards.values()) n.label.style.transform = "scale(" + (1 / scale) + ")";
   for (const p of $("#arrows").querySelectorAll("path[marker-end]")) p.setAttribute("stroke-width", String(1.5 / scale));
+  drawAgents();
 }
 
 function bounds() {
@@ -458,6 +480,62 @@ function rail() {
   r.scrollTop = top;
 }
 
+
+// Agents at work: one face per agent, on the layer or the system thing it last changed. It works while edits keep
+// coming, smiles when they stop, and fades after a quiet minute. buni call and buni mcp share who did what (the
+// file's .activity), so the faces follow agents whichever way they edit.
+const FACE = '<svg viewBox="0 0 512 512" aria-hidden="true"><g class="frame"><rect x="132" y="132" width="248" height="248" fill="none" stroke="currentColor" stroke-width="24"/><rect x="102" y="102" width="60" height="60" fill="currentColor"/><rect x="350" y="102" width="60" height="60" fill="currentColor"/><rect x="102" y="350" width="60" height="60" fill="currentColor"/><rect x="350" y="350" width="60" height="60" fill="currentColor"/></g><g class="open"><rect class="eye" x="190" y="194" width="40" height="96" rx="20" fill="currentColor"/><rect class="eye" x="282" y="194" width="40" height="96" rx="20" fill="currentColor"/></g><path class="smile" d="M185 254A25 25 0 0 1 235 254M277 254A25 25 0 0 1 327 254" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/></svg>';
+const faces = new Map();
+const moodOf = (a) => { const age = Date.now() - Date.parse(a.at); return age < 6000 ? "working" : age < 10000 ? "done" : age < 90000 ? "idle" : ""; };
+function latestEdits() {
+  const out = new Map();
+  for (const a of snap.activity || []) out.set(a.author, a);
+  return out;
+}
+/** Where an edit sits in what is on screen now: the box to frame, in the coordinates of the layer it is drawn in. */
+function spotOf(a) {
+  const here = current();
+  if (here.view === "page") return null;
+  if (here.view !== "") {
+    const body = $("#sys .sysbody");
+    const t = a.ref && body.querySelector('[data-ref="' + CSS.escape(a.ref) + '"]');
+    if (!t) return null;
+    const world = t.closest(".world");
+    if (world) return { parent: world, x: t.offsetLeft, y: t.offsetTop, w: t.offsetWidth, h: t.offsetHeight, inv: 1 / ((pans[shownView] && pans[shownView].scale) || 1) };
+    const r = t.getBoundingClientRect(), b = body.getBoundingClientRect();
+    return { parent: body, x: r.left - b.left + body.scrollLeft, y: r.top - b.top + body.scrollTop, w: r.width, h: r.height, inv: 1 };
+  }
+  const b = a.page && snap.boards.find((x) => x.id === a.page), n = b && boards.get(b.id);
+  if (!b || !n) return null;
+  const at = layout()[b.id];
+  const doc = n.frame.contentDocument, t = a.node && doc && doc.querySelector(".b-" + CSS.escape(a.node));
+  const r = t ? t.getBoundingClientRect() : { left: 0, top: 0, width: b.width, height: heightOf(b) };
+  return { parent: $("#world"), x: at.x + r.left, y: at.y + r.top, w: r.width, h: r.height, inv: 1 / scale };
+}
+function drawAgents() {
+  if (!snap) return;
+  const latest = latestEdits();
+  for (const [author, f] of faces) if (!latest.has(author)) { f.remove(); faces.delete(author); }
+  for (const [author, a] of latest) {
+    const mood = moodOf(a), spot = mood && spotOf(a);
+    let f = faces.get(author);
+    if (!spot) { if (f) f.style.display = "none"; continue; }
+    if (!f) {
+      f = el("div", "agent");
+      f.innerHTML = '<div class="abox"></div><div class="apin">' + FACE + '<b></b></div>';
+      faces.set(author, f);
+    }
+    if (f.parentElement !== spot.parent) spot.parent.appendChild(f);
+    f.style.display = "";
+    f.className = "agent " + mood;
+    f.style.transform = "translate(" + spot.x + "px," + spot.y + "px)";
+    f.style.width = spot.w + "px";
+    f.style.height = spot.h + "px";
+    f.style.setProperty("--inv", String(spot.inv));
+    f.querySelector("b").textContent = mood === "working" ? author + " · " + a.label : author;
+  }
+}
+
 // A system view: its HTML from the server, swapped in only when it changed, so a canvas keeps where it was looked at.
 const pans = {};
 let shownView = "", shownHtml = "";
@@ -485,6 +563,7 @@ function showSystem(view, ref) {
     for (const g of links.querySelectorAll(".link")) g.classList.toggle("on", Boolean(part) && (g.dataset.a === part || g.dataset.b === part));
   }
   marks();
+  drawAgents();
 }
 /** Outlines what changed in the last ten seconds, wherever it is drawn. */
 function marks() {
@@ -499,7 +578,7 @@ function panner(view, pan) {
   const zoom = el("div", "syszoom");
   zoom.innerHTML = '<button data-z="out" aria-label="Zoom out">−</button><span class="pct"></span><button data-z="in" aria-label="Zoom in">+</button><button data-z="fit">Fit</button>';
   pan.parentElement.appendChild(zoom);
-  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; };
+  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; drawAgents(); };
   const fitView = () => {
     const c = pan.getBoundingClientRect(), w = Number(world.dataset.w) || 800, h = Number(world.dataset.h) || 600;
     if (c.width < 100) return;
@@ -558,9 +637,10 @@ $("#sys").addEventListener("click", (e) => {
 function liveLine() {
   const pill = $(".pill"), ago = $(".ago");
   const recent = [...snap.boards.filter((b) => recentRef(b.id)).map((b) => b.name), ...Object.keys(snap.system.names).filter(recentRef).map((r) => snap.system.names[r])];
-  pill.className = "pill" + (snap.error ? " bad" : recent.length ? " on" : "");
+  const doing = [...latestEdits().values()].filter((a) => moodOf(a) === "working").map((a) => a.author + " · " + a.label);
+  pill.className = "pill" + (snap.error ? " bad" : recent.length || doing.length ? " on" : "");
   pill.lastChild.textContent = snap.error ? "Can't read the file: " + snap.error.split("\n")[0].slice(0, 80)
-    : recent.length ? recent.slice(0, 3).join(", ") + (recent.length > 3 ? " and " + (recent.length - 3) + " more" : "") + " changed" : snap.boards.length || snap.system.views.length ? "Watching for changes" : "Waiting for an agent";
+    : doing.length ? doing.join(", ") : recent.length ? recent.slice(0, 3).join(", ") + (recent.length > 3 ? " and " + (recent.length - 3) + " more" : "") + " changed" : snap.boards.length || snap.system.views.length ? "Watching for changes" : "Waiting for an agent";
   const s = Math.round((Date.now() - lastUpdate) / 1000);
   ago.textContent = "updated " + (s < 5 ? "just now" : s < 60 ? s + "s ago" : Math.round(s / 60) + "m ago");
   for (const [id, n] of boards) {
@@ -673,6 +753,7 @@ let railMarks = "";
 setInterval(() => {
   if (!snap) return;
   liveLine();
+  drawAgents();
   const now = Object.keys(changedAt).filter(recentRef).join();
   if (now !== railMarks) { railMarks = now; rail(); marks(); }
 }, 1000);

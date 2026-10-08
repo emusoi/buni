@@ -25,9 +25,16 @@ export interface Edit {
   author: string;
   label: string;
   nodes: Id[];
+  /** System things it changed, as "collection:id" ("parts:api"). */
+  things?: string[];
   /** ISO 8601. */
   at: string;
 }
+
+export const isEdit = (v: unknown): v is Edit =>
+  typeof v === "object" && v !== null && "author" in v && typeof v.author === "string" && "label" in v && typeof v.label === "string"
+  && "nodes" in v && Array.isArray(v.nodes) && v.nodes.every((n: unknown) => typeof n === "string") && "at" in v && typeof v.at === "string"
+  && (!("things" in v) || (Array.isArray(v.things) && v.things.every((t: unknown) => typeof t === "string")));
 
 export interface CallResult {
   ok: boolean;
@@ -59,6 +66,11 @@ function describe(rejected: Rejected[]): string {
 
 function nodesOf(ops: readonly Op[]): Id[] {
   return ops.flatMap((op) => (op.kind === "put" && op.collection === "nodes" ? [op.value.id] : []));
+}
+
+const SYSTEM = new Set<string>(SYSTEM_COLLECTIONS);
+function thingsOf(ops: readonly Op[]): string[] {
+  return ops.flatMap((op) => (op.kind === "put" || op.kind === "delete") && SYSTEM.has(op.collection) ? [`${op.collection}:${op.kind === "put" ? op.value.id : op.id}`] : []);
 }
 
 /** A file this one imports, directly or through others: its path and system, read-only here. */
@@ -125,6 +137,33 @@ export class Workspace {
 
   private constructor(readonly path: string, base: Doc, private readonly store: Store) {
     this.session = { base, pending: [] };
+  }
+
+  /** Who edited what, for buni open; written beside the file once shareActivity is on. */
+  get activityPath(): string {
+    return `${this.path}.activity`;
+  }
+
+  private sharing = false;
+
+  /**
+   * Shares the latest edits with buni open through <file>.activity, after every edit. What is there already is kept,
+   * so one-shot buni call runs add to the same list as a long-running buni mcp.
+   */
+  async shareActivity(): Promise<void> {
+    this.sharing = true;
+    try {
+      const raw: unknown = JSON.parse(await this.store.read(this.activityPath));
+      if (Array.isArray(raw)) this.log = raw.filter(isEdit).slice(-50);
+    } catch {
+      // None yet, or unreadable: start a new list.
+    }
+  }
+
+  /** The last 50 edits; an editor shows a handful per agent, and buni open shows where each agent is. */
+  private async note(edit: Edit): Promise<void> {
+    this.log = [...this.log, edit].slice(-50);
+    if (this.sharing) await this.store.write(this.activityPath, JSON.stringify(this.log)).catch(() => undefined);
   }
 
   get pendingPath(): string {
@@ -301,8 +340,8 @@ export class Workspace {
       this.redos = [];
       const nodes = nodesOf(out.ops);
       if (nodes.length) this.touched.set(author, nodes);
-      // The last 50 edits; an editor shows a handful per agent
-      this.log = [...this.log, { author, label: out.label, nodes, at: new Date().toISOString() }].slice(-50);
+      const things = thingsOf(out.ops);
+      await this.note({ author, label: out.label, nodes, ...(things.length ? { things } : {}), at: new Date().toISOString() });
       this.changed();
       // On a terminal screen, what the edit did that a terminal can't draw, for whoever made it to fix.
       const grid = gridProblems(this.view(), nodes);
@@ -321,7 +360,7 @@ export class Workspace {
       if (!r.ok) return r;
       this.undos.push({ label, undo, redo: ops });
       this.redos = [];
-      this.log = [...this.log, { author, label, nodes: nodesOf(ops), at: new Date().toISOString() }].slice(-50);
+      await this.note({ author, label, nodes: nodesOf(ops), at: new Date().toISOString() });
       this.changed();
       return { ok: true, reply: `${label}: ${ops.length} change${ops.length === 1 ? "" : "s"}.` };
     });

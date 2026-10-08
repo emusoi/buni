@@ -2,15 +2,15 @@
 // renderer and sends the whole design again whenever the file changes, whoever wrote it (an agent through buni mcp,
 // buni call, an app). Nothing here edits the design: people change it by asking their agent.
 import { watch } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { CELL, pagesInOrder, walkFlow, type Doc } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
 import { fontFaces, renderPage } from "../tools/html.ts";
-import { Workspace } from "../tools/workspace.ts";
 import { viewerHtml } from "./client.ts";
-import { systemOf, type SystemSnapshot } from "./system.ts";
+import { pageOfNode, refOf, systemOf, type SystemSnapshot } from "./system.ts";
+import { isEdit, Workspace, type Edit } from "../tools/workspace.ts";
 
 /** One page as the viewer draws it: where it sits, how big it is, and the document a board shows. */
 export interface Board {
@@ -39,8 +39,34 @@ export interface Snapshot {
   links: { from: string; to: string }[];
   /** The system behind the pages, view by view. */
   system: SystemSnapshot;
+  /** The latest edits, newest last, with where each landed: a layer on a page, or a thing in the system. */
+  activity: Activity[];
   /** Why the file couldn't be read just now; the last good design is kept. */
   error?: string;
+}
+
+export interface Activity {
+  author: string;
+  label: string;
+  /** ISO 8601. */
+  at: string;
+  /** The page and its topmost layer the edit wrote. */
+  page?: string;
+  node?: string;
+  /** The system thing it changed, as the system views name it ("part:api"). */
+  ref?: string;
+}
+
+/** Where each edit landed, from the file's activity (buni call and buni mcp write it beside the file). */
+export function activityOf(doc: Doc, system: Doc, edits: readonly Edit[]): Activity[] {
+  const pageOf = pageOfNode(doc);
+  return edits.slice(-30).map((e) => {
+    const written = new Set(e.nodes);
+    const top = e.nodes.find((id) => doc.nodes[id] && !written.has(doc.nodes[id]?.parent ?? ""));
+    const page = top ? pageOf(top) : undefined;
+    const thing = e.things?.map((t) => refOf(system, t.slice(t.indexOf(":") + 1))).find((r) => r !== undefined);
+    return { author: e.author, label: e.label, at: e.at, ...(page && top ? { page, node: top } : {}), ...(thing ? { ref: thing } : {}) };
+  });
 }
 
 const px = (v: string | undefined) => {
@@ -52,7 +78,7 @@ const px = (v: string | undefined) => {
  * The design as the viewer shows it. Fonts and the design's own files come from this server by URL. The system is
  * read with the files it imports, as the tools check it.
  */
-export function snapshotOf(doc: Doc, file: string, system: Doc = doc): Snapshot {
+export function snapshotOf(doc: Doc, file: string, system: Doc = doc, edits: readonly Edit[] = []): Snapshot {
   const boards = pagesInOrder(doc).map((p): Board => {
     const { html, css } = renderPage(doc, p.id, { assetPrefix: "/files/" });
     const frame = doc.nodes[p.frame]?.style ?? {};
@@ -75,7 +101,17 @@ export function snapshotOf(doc: Doc, file: string, system: Doc = doc): Snapshot 
     seen.add(key);
     return [{ from: c.page, to: c.to }];
   });
-  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links, system: systemOf(system) };
+  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links, system: systemOf(system), activity: activityOf(doc, system, edits) };
+}
+
+/** The edits buni call and buni mcp shared beside the file; none when there are none. */
+async function editsOf(path: string): Promise<Edit[]> {
+  try {
+    const raw: unknown = JSON.parse(await readFile(path, "utf8"));
+    return Array.isArray(raw) ? raw.filter(isEdit) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** A file in the design's folder, or undefined for anything outside it. */
@@ -93,7 +129,7 @@ export async function serveViewer(file: string, port = 0): Promise<{ url: string
   const dir = dirname(path);
   const read = async () => {
     const ws = await Workspace.open(path);
-    return snapshotOf(ws.view(), path, ws.system());
+    return snapshotOf(ws.view(), path, ws.system(), await editsOf(ws.activityPath));
   };
   let last = await read();
   const listeners = new Set<(s: Snapshot) => void>();

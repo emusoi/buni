@@ -56,3 +56,26 @@ test("an edit from anywhere reaches the open viewer, with the page as it is now"
     stop();
   }
 }, 15_000);
+
+test("edits shared beside the file show where each agent works: a layer on a page, or a part of the system", async () => {
+  const file = await design();
+  const ws = await Workspace.open(file);
+  await ws.shareActivity();
+  const frame = ws.view().pages.pricing?.frame ?? "";
+  expect((await ws.call("claude", "write_html", { parent: frame, html: '<section layer-name="Plans"><p>Mild</p></section>' })).ok).toBe(true);
+  expect((await ws.call("codex", "set_part", { part: "catalog", kind: "service", name: "Catalog", purpose: "Plans and prices.", api: "graphql" })).ok).toBe(true);
+  // A one-shot buni call adds to what is there.
+  const again = await Workspace.open(file);
+  await again.shareActivity();
+  expect(again.edits().map((e) => e.author)).toEqual(["claude", "codex"]);
+  const { url, stop } = await serveViewer(file);
+  try {
+    const snap: Snapshot = await (await fetch(`${url}design`)).json();
+    const [claude, codex] = snap.activity;
+    expect(claude?.page).toBe("pricing");
+    expect(snap.boards.find((b) => b.id === "pricing")?.html).toContain(`b-${claude?.node}`);
+    expect(codex?.ref).toBe("part:catalog");
+  } finally {
+    stop();
+  }
+});
