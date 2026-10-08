@@ -25,6 +25,11 @@ const CSS = `
   --shadow-pop: 0 12px 32px -8px rgba(28,27,24,0.18), 0 2px 6px rgba(28,27,24,0.06);
 }
 * { box-sizing: border-box; }
+/* The viewer's panels scroll with thin, quiet bars, even where the system always shows them. */
+#rail, #drawer, #sys .sysbody, #page.on { scrollbar-width: thin; scrollbar-color: rgba(55,53,47,0.22) transparent; }
+#rail::-webkit-scrollbar, #drawer::-webkit-scrollbar, #sys .sysbody::-webkit-scrollbar, #page::-webkit-scrollbar { width: 8px; height: 8px; }
+#rail::-webkit-scrollbar-thumb, #drawer::-webkit-scrollbar-thumb, #sys .sysbody::-webkit-scrollbar-thumb, #page::-webkit-scrollbar-thumb { background: rgba(55,53,47,0.22); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+#rail::-webkit-scrollbar-track, #drawer::-webkit-scrollbar-track, #sys .sysbody::-webkit-scrollbar-track, #page::-webkit-scrollbar-track { background: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--canvas); color: var(--ink); font: 14px var(--font); }
 #app { display: flex; height: 100%; }
 #app.collapsed #rail { display: none; }

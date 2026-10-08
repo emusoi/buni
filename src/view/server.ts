@@ -93,7 +93,7 @@ export function snapshotOf(doc: Doc, file: string, system: Doc = doc, edits: rea
       ...(p.terminal ? { terminal: { cols: p.terminal.cols, ...(p.terminal.rows !== undefined ? { rows: p.terminal.rows } : {}) } } : {}),
       ...(p.x !== undefined && p.y !== undefined ? { x: p.x, y: p.y } : {}),
       ...(height !== undefined ? { height } : {}),
-      html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0}${fontFaces(doc, (f) => `/fonts/${encodeURIComponent(f)}`)}${css}</style></head><body>${html}</body></html>`,
+      html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;scrollbar-width:none}::-webkit-scrollbar{display:none}${fontFaces(doc, (f) => `/fonts/${encodeURIComponent(f)}`)}${css}</style></head><body>${html}</body></html>`,
     };
   });
   const flows = Object.values(doc.flows).sort((a, b) => (a.index < b.index ? -1 : 1)).map((f) => ({ id: f.id, name: f.name, pages: walkFlow(doc, f.start).pages }));

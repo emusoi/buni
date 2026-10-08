@@ -15,7 +15,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 /** A component, or a copied layer, as a document for a frame; the browser measures it to size its board. */
 function previewDoc(doc: Doc, id: Id, layer?: { page: Id; node: Id }): string {
   const { html, css } = layer ? renderLayer(doc, layer.page, layer.node) : renderComponent(doc, id);
-  return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0}body{display:inline-block;max-width:1280px}${fontFaces(doc, (f) => `/fonts/${encodeURIComponent(f)}`)}${css}</style></head><body>${html}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;scrollbar-width:none}::-webkit-scrollbar{display:none}body{display:inline-block;max-width:1280px}${fontFaces(doc, (f) => `/fonts/${encodeURIComponent(f)}`)}${css}</style></head><body>${html}</body></html>`;
 }
 const preview = (doc: Doc, id: Id, big = false) =>
   `<div class="cprev${big ? " big" : ""}"><iframe sandbox="allow-same-origin" tabindex="-1" srcdoc="${esc(previewDoc(doc, id))}"></iframe></div>`;
