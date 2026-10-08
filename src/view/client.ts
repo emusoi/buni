@@ -150,25 +150,28 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .item.sub { padding-left: 30px; }
 .item.sub .name { font-size: 13px; }
 
-.agent { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), width 0.6s cubic-bezier(0.25, 1, 0.5, 1), height 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s; }
-.agent .abox { position: absolute; inset: 0; outline: calc(2px * var(--inv)) solid var(--ink); outline-offset: calc(3px * var(--inv)); opacity: 0; transition: opacity 0.3s; }
-.agent.working .abox, .agent.done .abox { opacity: 1; }
+.agent { --c: #37352f; position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), width 0.5s cubic-bezier(0.25, 1, 0.5, 1), height 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s; }
+.agent .abox { position: absolute; inset: 0; border: calc(1.5px * var(--inv)) solid var(--c); }
+.agent .h { position: absolute; width: calc(6px * var(--inv)); height: calc(6px * var(--inv)); background: #fff; border: calc(1.5px * var(--inv)) solid var(--c); box-sizing: border-box; transform: translate(-50%, -50%); }
+.agent .h.tl { left: 0; top: 0; } .agent .h.tr { left: 100%; top: 0; } .agent .h.bl { left: 0; top: 100%; } .agent .h.br { left: 100%; top: 100%; }
+.agent:not(.working) .abox, .agent:not(.working) .h { display: none; }
 .agent.idle { opacity: 0.6; }
-.agent .apin { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 6px; padding-bottom: calc(6px * var(--inv)); transform: translateX(-8px) scale(var(--inv)); transform-origin: 0 100%; }
-.agent .apin svg { width: 30px; height: 30px; color: var(--ink); flex-shrink: 0; overflow: visible; }
-.agent .apin b { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 8px; border-radius: 99px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 600; }
+.agent .apin { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px 0 4px; margin-bottom: calc(3px * var(--inv)); border-radius: 4px 4px 4px 0; background: var(--c); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; transform: scale(var(--inv)); transform-origin: 0 100%; }
+.agent.below .apin { bottom: auto; top: 100%; margin: calc(3px * var(--inv)) 0 0; border-radius: 0 4px 4px 4px; transform-origin: 0 0; }
+.agent .apin svg { width: 16px; height: 16px; flex-shrink: 0; overflow: visible; }
+.agent .apin i { font-style: normal; font-weight: 500; opacity: 0.85; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .agent .smile { display: none; }
 .agent.done .smile { display: inline; }
 .agent.done .open { display: none; }
-.agent .frame, .agent .eye { transform-box: fill-box; transform-origin: center; }
+.agent .eye, .agent .apin svg { transform-box: fill-box; transform-origin: center; }
 @media (prefers-reduced-motion: no-preference) {
-  .agent.working .frame { animation: agrow 2.6s ease-in-out infinite; }
+  .agent.working .abox { animation: abreathe 2.6s ease-in-out infinite; }
   .agent .eye { animation: ablink 4s ease-in-out infinite; }
   .agent.done .apin svg { animation: abounce 0.9s ease-in-out 1; }
 }
-@keyframes agrow { 0%, 85%, 100% { transform: scale(1); } 32%, 55% { transform: scale(1.22); } }
+@keyframes abreathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes ablink { 0%, 86%, 92%, 100% { transform: scaleY(1); } 89% { transform: scaleY(0.12); } }
-@keyframes abounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+@keyframes abounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-3px); } }
 
 .sheetview { display: flex; flex-direction: column; gap: 26px; padding: 28px 32px 48px; max-width: 1100px; }
 .vhead { display: flex; align-items: baseline; gap: 10px; }
@@ -484,7 +487,11 @@ function rail() {
 // Agents at work: one face per agent, on the layer or the system thing it last changed. It works while edits keep
 // coming, smiles when they stop, and fades after a quiet minute. buni call and buni mcp share who did what (the
 // file's .activity), so the faces follow agents whichever way they edit.
-const FACE = '<svg viewBox="0 0 512 512" aria-hidden="true"><g class="frame"><rect x="132" y="132" width="248" height="248" fill="none" stroke="currentColor" stroke-width="24"/><rect x="102" y="102" width="60" height="60" fill="currentColor"/><rect x="350" y="102" width="60" height="60" fill="currentColor"/><rect x="102" y="350" width="60" height="60" fill="currentColor"/><rect x="350" y="350" width="60" height="60" fill="currentColor"/></g><g class="open"><rect class="eye" x="190" y="194" width="40" height="96" rx="20" fill="currentColor"/><rect class="eye" x="282" y="194" width="40" height="96" rx="20" fill="currentColor"/></g><path class="smile" d="M185 254A25 25 0 0 1 235 254M277 254A25 25 0 0 1 327 254" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/></svg>';
+const FACE = '<svg viewBox="0 0 512 512" aria-hidden="true"><rect x="120" y="120" width="272" height="272" fill="none" stroke="currentColor" stroke-width="40"/><rect x="78" y="78" width="84" height="84" fill="currentColor"/><rect x="350" y="78" width="84" height="84" fill="currentColor"/><rect x="78" y="350" width="84" height="84" fill="currentColor"/><rect x="350" y="350" width="84" height="84" fill="currentColor"/><g class="open"><rect class="eye" x="161" y="189" width="62" height="118" rx="31" fill="currentColor"/><rect class="eye" x="289" y="189" width="62" height="118" rx="31" fill="currentColor"/></g><path class="smile" d="M153 267A38 38 0 0 1 231 267M281 267A38 38 0 0 1 359 267" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round"/></svg>';
+/** One colour per agent, the same every time for the same name. */
+const AGENT_COLORS = ["#d9480f", "#3346d3", "#2b8a3e", "#9c36b5", "#0b7285", "#c2255c"];
+const KNOWN_AGENTS = { claude: "#d9480f", codex: "#3346d3", gemini: "#2b8a3e" };
+const colorOf = (name) => KNOWN_AGENTS[name.toLowerCase()] || AGENT_COLORS[[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % AGENT_COLORS.length];
 const faces = new Map();
 const moodOf = (a) => { const age = Date.now() - Date.parse(a.at); return age < 6000 ? "working" : age < 10000 ? "done" : age < 90000 ? "idle" : ""; };
 function latestEdits() {
@@ -501,16 +508,16 @@ function spotOf(a) {
     const t = a.ref && body.querySelector('[data-ref="' + CSS.escape(a.ref) + '"]');
     if (!t) return null;
     const world = t.closest(".world");
-    if (world) return { parent: world, x: t.offsetLeft, y: t.offsetTop, w: t.offsetWidth, h: t.offsetHeight, inv: 1 / ((pans[shownView] && pans[shownView].scale) || 1) };
+    if (world) return { parent: world, x: t.offsetLeft, y: t.offsetTop, top: t.offsetTop, w: t.offsetWidth, h: t.offsetHeight, inv: 1 / ((pans[shownView] && pans[shownView].scale) || 1) };
     const r = t.getBoundingClientRect(), b = body.getBoundingClientRect();
-    return { parent: body, x: r.left - b.left + body.scrollLeft, y: r.top - b.top + body.scrollTop, w: r.width, h: r.height, inv: 1 };
+    return { parent: body, x: r.left - b.left + body.scrollLeft, y: r.top - b.top + body.scrollTop, top: r.top - b.top + body.scrollTop, w: r.width, h: r.height, inv: 1 };
   }
   const b = a.page && snap.boards.find((x) => x.id === a.page), n = b && boards.get(b.id);
   if (!b || !n) return null;
   const at = layout()[b.id];
   const doc = n.frame.contentDocument, t = a.node && doc && doc.querySelector(".b-" + CSS.escape(a.node));
   const r = t ? t.getBoundingClientRect() : { left: 0, top: 0, width: b.width, height: heightOf(b) };
-  return { parent: $("#world"), x: at.x + r.left, y: at.y + r.top, w: r.width, h: r.height, inv: 1 / scale };
+  return { parent: $("#world"), x: at.x + r.left, y: at.y + r.top, top: r.top, w: r.width, h: r.height, inv: 1 / scale };
 }
 function drawAgents() {
   if (!snap) return;
@@ -522,17 +529,20 @@ function drawAgents() {
     if (!spot) { if (f) f.style.display = "none"; continue; }
     if (!f) {
       f = el("div", "agent");
-      f.innerHTML = '<div class="abox"></div><div class="apin">' + FACE + '<b></b></div>';
+      f.innerHTML = '<div class="abox"></div><span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span><div class="apin">' + FACE + '<b></b><i></i></div>';
+      f.style.setProperty("--c", colorOf(author));
       faces.set(author, f);
     }
     if (f.parentElement !== spot.parent) spot.parent.appendChild(f);
     f.style.display = "";
-    f.className = "agent " + mood;
+    // At the top of a page or a view there's no room above: the tag hangs below the frame.
+    f.className = "agent " + mood + (spot.top < 30 * spot.inv ? " below" : "");
     f.style.transform = "translate(" + spot.x + "px," + spot.y + "px)";
     f.style.width = spot.w + "px";
     f.style.height = spot.h + "px";
     f.style.setProperty("--inv", String(spot.inv));
-    f.querySelector("b").textContent = mood === "working" ? author + " · " + a.label : author;
+    f.querySelector("b").textContent = author;
+    f.querySelector("i").textContent = mood === "working" ? "· " + a.label : "";
   }
 }
 
