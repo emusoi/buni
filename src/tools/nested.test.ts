@@ -97,3 +97,23 @@ test("a copy whose nested part changes less than the first copy's still becomes 
   expect(html.html).toContain(">Item<");
   expect(html.css).toContain("color: initial");
 });
+
+test("a use can swap an icon inside a nested part, and the file still reads", async () => {
+  const { ws, use, first } = await design();
+  const tile = Object.values(ws.view().nodes).find((n) => n.name === "Tile")?.id ?? "";
+  // The tile isn't an svg: an icon there is refused, as on the part itself.
+  expect((await ws.call("t", "override", { instance: use, node: `${first}/${tile}`, markup: "<svg></svg>" })).ok).toBe(false);
+  const icon = await ws.call("t", "create_component", { name: "Navigation / Icon item", html: '<div><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg><span>Item</span></div>' });
+  const iconId = icon.reply.match(/Component (\S+) /)?.[1] ?? "";
+  const holder = icon.reply.match(/with root (\S+)\./)?.[1] ?? "";
+  // The component's root holds the <div>, which holds the icon.
+  const svg = Object.values(ws.view().nodes).find((n) => n.kind === "svg" && ws.view().nodes[n.parent ?? ""]?.parent === holder)?.id ?? "";
+  const frame = Object.values(ws.view().pages)[0]?.frame ?? "";
+  const box = (await ws.call("t", "write_html", { parent: frame, html: "<div></div>" })).reply.match(/Created \d+ nodes?: (\S+?)[,.]/)?.[1] ?? "";
+  const inner = (await ws.call("t", "place_component", { component: iconId, parent: box })).reply.match(/instance (\S+) of/)?.[1] ?? "";
+  const made = await ws.call("t", "make_component", { node: box, name: "Navigation / Bar" });
+  const bar = made.reply.match(/instance (\S+) is/)?.[1] ?? "";
+  const r = await ws.call("t", "override", { instance: bar, node: `${inner}/${svg}`, markup: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><rect width="20" height="20"/></svg>' });
+  expect(r.reply).toBe("Override set.");
+  expect((await Workspace.open(ws.path)).view().nodes[bar]).toBeDefined();
+});

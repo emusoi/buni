@@ -1134,7 +1134,9 @@ function checkRefs(doc: Doc, r: Reader): void {
         if (o.style) checkStyle(o.style, join(op, "style"));
         checkAt(o.at, op);
         // A use's own icon is held to what an svg layer is: static drawing, nothing that runs or loads.
-        const problem = o.markup === undefined ? undefined : nodes[target]?.kind !== "svg" ? "only an svg layer takes markup" : svgProblem(o.markup);
+        // The key may be a path through nested uses ("use/layer"): the layer it names must be an svg.
+        const layer = o.markup === undefined ? undefined : overrideTarget({ nodes, shared }, n.shared, target);
+        const problem = o.markup === undefined ? undefined : layer?.kind !== "svg" ? "only an svg layer takes markup" : svgProblem(o.markup);
         if (problem) r.fail(join(op, "markup"), problem);
       }
     }
