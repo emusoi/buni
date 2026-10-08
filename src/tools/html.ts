@@ -356,7 +356,7 @@ class Renderer {
         // A <div> is not allowed inside a paragraph, heading or link: the browser would end the text there and
         // push the icon out of its line. A <span> sits in the line; its class still gives it its display.
         const holder = TEXT_BLOCKS.has(this.doc.nodes[n.parent ?? ""]?.tag ?? "div") ? "span" : "div";
-        out = `${pad}<${holder} class="${cls}">${n.markup}</${holder}>\n`;
+        out = `${pad}<${holder} class="${cls}">${ov?.markup ?? n.markup}</${holder}>\n`;
         break;
       }
       case "instance": {

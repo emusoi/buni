@@ -87,6 +87,8 @@ export interface SvgNode extends NodeBase {
 export interface Override {
   text?: string;
   style?: Style;
+  /** For an svg layer: this use's own markup, e.g. another icon or size. */
+  markup?: string;
   /** Style at one of the page's other widths, as NodeBase.at: only this use, only at that width. */
   at?: Record<string, Style>;
 }

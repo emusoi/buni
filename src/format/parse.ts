@@ -391,9 +391,10 @@ class Reader {
     for (const [key, raw] of Object.entries(v)) {
       const p = join(path, key);
       if (!this.safeKey(key, p)) continue;
-      const o = this.obj(raw, p, ["text", "style", "at"]);
+      const o = this.obj(raw, p, ["text", "style", "at", "markup"]);
       const override: Override = {};
       if (o.text !== undefined) override.text = this.str(o.text, join(p, "text"));
+      if (o.markup !== undefined) override.markup = this.str(o.markup, join(p, "markup"));
       if (o.style !== undefined) override.style = this.style(o.style, join(p, "style"));
       if (o.at !== undefined) override.at = this.atStyles(o.at, join(p, "at"));
       out[key] = override;
@@ -1131,6 +1132,9 @@ function checkRefs(doc: Doc, r: Reader): void {
         const op = join(join(p, "overrides"), target);
         if (o.style) checkStyle(o.style, join(op, "style"));
         checkAt(o.at, op);
+        // A use's own icon is held to what an svg layer is: static drawing, nothing that runs or loads.
+        const problem = o.markup === undefined ? undefined : nodes[target]?.kind !== "svg" ? "only an svg layer takes markup" : svgProblem(o.markup);
+        if (problem) r.fail(join(op, "markup"), problem);
       }
     }
     if (n.parent !== undefined) {

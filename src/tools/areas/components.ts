@@ -1,11 +1,53 @@
 // Components: making and placing them, variants, overrides, and keeping the library tidy. One area of buni's design
 // tools (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
-import { setOf, variantProperties, type Connection, type Id, type InstanceNode, type SharedSection, type Style } from "../../format/doc.ts";
+import { setOf, variantProperties, type Connection, type Doc, type Id, type InstanceNode, type Node, type SharedSection, type Style } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { parseHtml } from "../html.ts";
-import { layersOf, libraryReport, shapeOf, usesOf } from "../library.ts";
+import { findRepeats, layersOf, libraryReport, shapeOf, usesOf } from "../library.ts";
 import { Ids, type Tool, ToolError, draftOps, forget, indexAt, node, page, pageOf, rootOf, styleValues, subtree, tool } from "../kit.ts";
+
+/** Makes the layer `nodeId` a component: it becomes the source and a use takes its place, as do its state copies. */
+function componentOps(doc: Doc, nodeId: Id, name: string | undefined, ids: Ids): { ops: Op[]; section: SharedSection; instance: InstanceNode; copies: number } {
+  const n = node(doc, nodeId);
+  const p = pageOf(doc, n.id);
+  if (n.id === p.frame || n.parent === undefined) throw new ToolError("a page's root frame cannot become a component; pick a layer inside it");
+  const tree = subtree(doc, n.id);
+  if (tree.some((x) => x.kind === "instance")) throw new ToolError("a component cannot contain other components yet; pick a layer without any");
+  const section: SharedSection = { id: ids.next(), name: name ?? n.name, root: n.id };
+  const { parent: _, ...source } = n;
+  const instance: InstanceNode = { id: ids.next(), kind: "instance", parent: n.parent, index: n.index, name: section.name, style: {}, shared: section.id, overrides: {} };
+  const ops: Op[] = [
+    { kind: "put", collection: "nodes", value: { ...source, index: "a0" } },
+    { kind: "put", collection: "shared", value: section },
+    { kind: "put", collection: "nodes", value: instance },
+  ];
+  // The layer's copies in its screen's states become uses too, keeping what they changed as overrides (their
+  // words, their styles) and their links, now on the component's layers for that state.
+  const copies = Object.values(doc.nodes).filter((x) => x.twin === n.id);
+  for (const copy of copies) {
+    if (copy.parent === undefined) continue;
+    const theirs = subtree(doc, copy.id);
+    const overrides: InstanceNode["overrides"] = {};
+    for (const t of theirs) {
+      const src = t.twin ? doc.nodes[t.twin] : undefined;
+      if (!src || !tree.some((x) => x.id === src.id)) continue;
+      const text = t.kind === "text" && src.kind === "text" && t.text !== src.text ? { text: t.text } : {};
+      const style = JSON.stringify(t.style) !== JSON.stringify(src.style) ? { style: t.style } : {};
+      if (Object.keys(text).length || Object.keys(style).length) overrides[src.id] = { ...text, ...style };
+    }
+    const use: InstanceNode = { id: ids.next(), kind: "instance", parent: copy.parent, index: copy.index, name: section.name, style: {}, shared: section.id, overrides, twin: instance.id };
+    ops.push(...theirs.map((t): Op => ({ kind: "delete", collection: "nodes", id: t.id })), { kind: "put", collection: "nodes", value: use });
+    const gone = new Set(theirs.map((t) => t.id));
+    for (const c of Object.values(doc.connections)) {
+      const to = gone.has(c.node) ? doc.nodes[c.node]?.twin : undefined;
+      if (to) ops.push({ kind: "put", collection: "connections", value: { ...c, node: to } });
+      else if (gone.has(c.node)) ops.push({ kind: "delete", collection: "connections", id: c.id });
+    }
+    for (const c of Object.values(doc.comments)) if (gone.has(c.node)) ops.push({ kind: "put", collection: "comments", value: { ...c, node: use.id } });
+  }
+  return { ops, section, instance, copies: copies.length };
+}
 
 export const componentsTools = {
   set_variant: tool({
@@ -152,46 +194,99 @@ export const componentsTools = {
       "Links on layers inside it keep working on this page; connect them on other pages that use it.",
     input: { node: z.string(), name: z.string().optional().describe("Defaults to the layer's name") },
     run: async (doc, a, ctx) => {
-      const n = node(doc, a.node);
-      const p = pageOf(doc, n.id);
-      if (n.id === p.frame || n.parent === undefined) throw new ToolError("a page's root frame cannot become a component; pick a layer inside it");
-      const tree = subtree(doc, n.id);
-      if (tree.some((x) => x.kind === "instance")) throw new ToolError("a component cannot contain other components yet; pick a layer without any");
-      const ids = new Ids(doc, ctx);
-      const section: SharedSection = { id: ids.next(), name: a.name ?? n.name, root: n.id };
-      const { parent: _, ...source } = n;
-      const instance: InstanceNode = { id: ids.next(), kind: "instance", parent: n.parent, index: n.index, name: section.name, style: {}, shared: section.id, overrides: {} };
-      const ops: Op[] = [
-        { kind: "put", collection: "nodes", value: { ...source, index: "a0" } },
-        { kind: "put", collection: "shared", value: section },
-        { kind: "put", collection: "nodes", value: instance },
-      ];
-      // The layer's copies in its screen's states become uses too, keeping what they changed as overrides (their
-      // words, their styles) and their links, now on the component's layers for that state.
-      const copies = Object.values(doc.nodes).filter((x) => x.twin === n.id);
-      for (const copy of copies) {
-        if (copy.parent === undefined) continue;
-        const theirs = subtree(doc, copy.id);
-        const overrides: InstanceNode["overrides"] = {};
-        for (const t of theirs) {
-          const src = t.twin ? doc.nodes[t.twin] : undefined;
-          if (!src || !tree.some((x) => x.id === src.id)) continue;
-          const text = t.kind === "text" && src.kind === "text" && t.text !== src.text ? { text: t.text } : {};
-          const style = JSON.stringify(t.style) !== JSON.stringify(src.style) ? { style: t.style } : {};
-          if (Object.keys(text).length || Object.keys(style).length) overrides[src.id] = { ...text, ...style };
-        }
-        const use: InstanceNode = { id: ids.next(), kind: "instance", parent: copy.parent, index: copy.index, name: section.name, style: {}, shared: section.id, overrides, twin: instance.id };
-        ops.push(...theirs.map((t): Op => ({ kind: "delete", collection: "nodes", id: t.id })), { kind: "put", collection: "nodes", value: use });
-        const gone = new Set(theirs.map((t) => t.id));
-        for (const c of Object.values(doc.connections)) {
-          const to = gone.has(c.node) ? doc.nodes[c.node]?.twin : undefined;
-          if (to) ops.push({ kind: "put", collection: "connections", value: { ...c, node: to } });
-          else if (gone.has(c.node)) ops.push({ kind: "delete", collection: "connections", id: c.id });
-        }
-        for (const c of Object.values(doc.comments)) if (gone.has(c.node)) ops.push({ kind: "put", collection: "comments", value: { ...c, node: use.id } });
-      }
-      const also = copies.length ? ` Its ${copies.length} cop${copies.length === 1 ? "y" : "ies"} in the screen's states became uses too.` : "";
+      const { ops, section, instance, copies } = componentOps(doc, a.node, a.name, new Ids(doc, ctx));
+      const also = copies ? ` Its ${copies} cop${copies === 1 ? "y" : "ies"} in the screen's states became uses too.` : "";
       return { label: `Make component ${section.name}`, ops, reply: `Component ${section.id} "${section.name}"; instance ${instance.id} is where the layer was.${also}` };
+    },
+  }),
+
+  find_repeats: tool({
+    description:
+      "Layers copied around the design that should be one component: the same tree of at least 8 layers in several places (a sidebar on every page, a card in every list). " +
+      "Lists each group with its layers, pages and node ids, and any existing component of the same shape. componentize makes a group one component.",
+    input: {},
+    run: async (doc) => {
+      const groups = findRepeats(doc);
+      const page = (id: Id) => doc.pages[id]?.name ?? id;
+      const lines = groups.map((g) => {
+        const first = doc.nodes[g.nodes[0] ?? ""];
+        const like = g.component ? `; same shape as the component "${doc.shared[g.component]?.name}" (${g.component}): componentize with "component": "${g.component}"` : "";
+        return `- ${first?.name ?? "layer"}: ${g.layers} layers × ${g.nodes.length} on ${g.pages.map(page).join(", ")}; nodes ${JSON.stringify(g.nodes)}${like}`;
+      });
+      return { label: "Find repeats", ops: [], reply: groups.length ? `${groups.length} group${groups.length === 1 ? "" : "s"} of copies:\n${lines.join("\n")}` : "Nothing is copied: every repeated part is already a component." };
+    },
+  }),
+
+  componentize: tool({
+    description:
+      "Make copies of the same layers one component (find_repeats lists them): the first copy becomes its source, or pass an existing component of the same shape; " +
+      "every other copy becomes a use of it, keeping where it differed (its words, styles and icons) as overrides, and its links. The copies must have the same layers in the same tree.",
+    input: {
+      nodes: z.array(z.string()).min(1).describe("The copies' outermost layers"),
+      name: z.string().optional().describe('"Group / Name"; defaults to the first copy\'s name'),
+      component: z.string().optional().describe("An existing component of the same shape for the copies to become uses of"),
+    },
+    run: async (doc, a, ctx) => {
+      const copies = [...new Set(a.nodes)].map((id) => node(doc, id));
+      const existing = a.component ? doc.shared[a.component] : undefined;
+      if (a.component && !existing) throw new ToolError(`component "${a.component}" does not exist`);
+      if (!existing && copies.length < 2) throw new ToolError("give at least two copies, or one with an existing component");
+      for (const c of copies) {
+        const p = pageOf(doc, c.id);
+        if (c.id === p.frame) throw new ToolError(`${c.name} is a page's root frame; pick the layers inside it`);
+        if (subtree(doc, c.id).some((x) => x.kind === "instance")) throw new ToolError(`${c.name} (${c.id}) contains a component already; componentize the layers around it instead`);
+      }
+      const all = new Set(copies.map((c) => c.id));
+      for (const c of copies) for (const x of subtree(doc, c.id)) if (x.id !== c.id && all.has(x.id)) throw new ToolError(`${x.id} is inside ${c.id}; the copies must be separate`);
+      const ids = new Ids(doc, ctx);
+      const ops: Op[] = [];
+      let source: Id;
+      let section: SharedSection;
+      let rest = copies;
+      if (existing) {
+        section = existing;
+        source = existing.root;
+      } else {
+        const [first, ...others] = copies;
+        if (!first) throw new ToolError("no copies given");
+        const made = componentOps(doc, first.id, a.name, ids);
+        ops.push(...made.ops);
+        section = made.section;
+        source = first.id;
+        rest = others;
+      }
+      const theirs = layersOf(doc, source);
+      const shape = shapeOf(doc, source);
+      // What a use can't change: everything but words, styles and names must match layer for layer.
+      const fixed = (n: Node) => JSON.stringify(Object.entries(n).filter(([k]) => !["id", "parent", "index", "name", "style", "text", "twin", "markup"].includes(k)).sort());
+      for (const c of rest) {
+        if (shapeOf(doc, c.id) !== shape) throw new ToolError(`${c.name} (${c.id}) doesn't have the same layers as ${section.name}; find_repeats lists copies that do`);
+        const mine = layersOf(doc, c.id);
+        const differs = mine.findIndex((m, i) => fixed(m) !== fixed(theirs[i] ?? m));
+        if (differs >= 0) throw new ToolError(`${mine[differs]?.name} in ${c.name} differs from ${section.name} in more than words, styles and icons (its image or link); edit it to match first`);
+      }
+      for (const c of rest) {
+        const mine = layersOf(doc, c.id);
+        const to = new Map(mine.map((m, i) => [m.id, theirs[i]?.id ?? ""]));
+        const overrides: InstanceNode["overrides"] = {};
+        mine.forEach((m, i) => {
+          const src = theirs[i];
+          if (!src) return;
+          const text = m.kind === "text" && src.kind === "text" && m.text !== src.text ? { text: m.text } : {};
+          const style = JSON.stringify(m.style) !== JSON.stringify(src.style) ? { style: m.style } : {};
+          const markup = m.kind === "svg" && src.kind === "svg" && m.markup !== src.markup ? { markup: m.markup } : {};
+          if (Object.keys(text).length || Object.keys(style).length || Object.keys(markup).length) overrides[src.id] = { ...text, ...style, ...markup };
+        });
+        const use: InstanceNode = { id: ids.next(), kind: "instance", parent: c.parent, index: c.index, name: section.name, style: {}, shared: section.id, overrides };
+        ops.push(...mine.map((m): Op => ({ kind: "delete", collection: "nodes", id: m.id })), { kind: "put", collection: "nodes", value: use });
+        for (const link of Object.values(doc.connections)) {
+          const moved = to.get(link.node);
+          if (moved) ops.push({ kind: "put", collection: "connections", value: { ...link, node: moved } });
+        }
+        for (const note of Object.values(doc.comments)) if (to.has(note.node)) ops.push({ kind: "put", collection: "comments", value: { ...note, node: use.id } });
+      }
+      const n = rest.length + (existing ? 0 : 1);
+      return { label: `Componentize ${section.name}`, ops, reply: `${n} cop${n === 1 ? "y is" : "ies are"} now uses of ${section.name} (${section.id}); a change to it changes every one.` };
     },
   }),
 
@@ -240,12 +335,13 @@ export const componentsTools = {
   }),
 
   override: tool({
-    description: "Change one instance without changing its component: new text or styles for a layer inside it. reset clears that layer's override.",
+    description: "Change one instance without changing its component: new text, styles or (for an svg layer) markup for a layer inside it. reset clears that layer's override.",
     input: {
       instance: z.string(),
       node: z.string().describe("Layer inside the component"),
       text: z.string().optional(),
       style: styleValues.optional(),
+      markup: z.string().optional().describe("For an svg layer: this use's own <svg>, e.g. another icon"),
       width: z.number().int().optional().describe("With style: only at this one of the page's widths (set_widths)"),
       reset: z.boolean().optional(),
     },
@@ -260,6 +356,7 @@ export const componentsTools = {
       const target = node(doc, a.node);
       if (!section || !subtree(doc, section.root).some((x) => x.id === target.id)) throw new ToolError(`"${a.node}" is not inside ${section?.name ?? "that component"}`);
       if (a.text !== undefined && target.kind !== "text") throw new ToolError(`"${target.name}" has no text to override`);
+      if (a.markup !== undefined && target.kind !== "svg") throw new ToolError(`"${target.name}" is not an svg layer`);
       const overrides = { ...inst.overrides };
       if (a.reset) delete overrides[target.id];
       else {
@@ -274,6 +371,7 @@ export const componentsTools = {
         }
         overrides[target.id] = {
           ...(a.text !== undefined ? { text: a.text } : prev.text !== undefined ? { text: prev.text } : {}),
+          ...(a.markup !== undefined ? { markup: a.markup } : prev.markup !== undefined ? { markup: prev.markup } : {}),
           ...(Object.keys(style).length ? { style } : {}),
           ...(Object.keys(at).length ? { at } : {}),
         };

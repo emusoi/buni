@@ -77,7 +77,7 @@ Rules that save retries:
 - layer-name="…" names a layer. Text elements need margin:0 if you want no browser margin.
 - New page: create_page {name, route}. Links: connect {node, to}. Flows: set_flow, set_journey.
 - Graphics (logo, icon, post, slide): create_page {name, width, height} with no route; draw one <svg> of shapes; change it with set_svg {node, markup}. Read buni skills logo first. buni icons FILE PAGE DIR exports an app icon set.
-- Reuse: make_component {node}, place_component {component, parent}, override {instance, node, text}.
+- Reuse: make_component {node}, place_component {component, parent}, override {instance, node, text}. Anything on two pages is a component; find_repeats lists copies, componentize {nodes, name} makes them one.
 - The system behind the pages: set_part (client, service, store, cache, queue, external), link_parts (with carries: the shapes on it),
   set_shape for data structures and enums, then contracts with set_table, set_endpoint (REST) or set_operation (GraphQL services), set_event;
   set_trace follows one user action through the parts. Where it runs: set_environment, set_cluster, place (Kubernetes, functions, managed services).
@@ -97,7 +97,7 @@ Workflow for a bigger design:
 2. Set tokens (colours, fonts) first so every section can use var(--…).
 3. Build one section per write_html call: nav, hero, a card row, footer. The person watches each land on the canvas.
 4. After a few sections, buni shot the page and look at it; fix spacing and hierarchy before moving on.
-5. Repeated parts (nav, footer, cards): make_component once, place_component elsewhere.
+5. Repeated parts (nav, footer, cards): make_component once, place_component elsewhere; before finishing, find_repeats and componentize what was copied.
 6. Link pages with connect, name the path with set_flow, and write set_journey for the experience.
 7. Tell the person what you changed and what to look at.`;
 

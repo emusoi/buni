@@ -35,7 +35,7 @@ are the normative definition; this page is the map.
 | `tokens` | Design tokens: CSS custom property name (`--` then letters, digits, `-` and `_`) → value. |
 | `pages` | Screens and boards: name, `route`, its root `frame`, optional `state` (Empty, Error…) and canvas position. |
 | `nodes` | The layer tree: frames, text, images, svg and component instances, each with a `parent`, `index` and CSS `style`. |
-| `shared` | Components: a reusable root, placed into pages as instances with overrides. |
+| `shared` | Components: a reusable root, placed into pages as instances with overrides (per layer: `text`, `style`, styles `at` other widths, and `markup` for an svg layer, held to the same rules as an svg layer's own). |
 | `connections` | Links from a node to a page: what a click does. |
 | `flows`, `journeys` | Named paths through the screens, and the experience they describe. |
 | `attachments` | Files beside the design (images, briefs), by path relative to the `.buni` file. |

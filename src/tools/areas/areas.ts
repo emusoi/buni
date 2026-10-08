@@ -18,7 +18,7 @@ export const AREA_IDS = ["read", "pages", "components", "system", "plan", "doc",
 
 const IN: Record<Exclude<Area, "pages">, readonly ToolName[]> = {
   read: ["read_tree", "get_node", "read_doc", "read_flows", "read_context", "read_attachment"],
-  components: ["set_variant", "add_variant", "swap_component", "detach_instance", "make_component", "create_component", "place_component", "override", "library_report", "merge_components", "rename_component", "delete_component", "move_component"],
+  components: ["set_variant", "add_variant", "swap_component", "detach_instance", "make_component", "find_repeats", "componentize", "create_component", "place_component", "override", "library_report", "merge_components", "rename_component", "delete_component", "move_component"],
   system: ["set_part", "link_parts", "set_table", "set_endpoint", "set_operation", "set_trace", "set_environment", "set_cluster", "place", "set_event", "set_shape", "import_file", "move_on_canvas", "arrange_canvas", "move_table", "arrange_tables", "move_part", "delete_system", "bind", "export_openapi", "export_sql"],
   plan: ["set_phase", "set_requirement", "serve", "set_question", "decide_question", "set_role", "set_access", "review", "discuss", "set_agent", "set_eval"],
   doc: ["write_section", "delete_section", "decide", "drop_decision"],

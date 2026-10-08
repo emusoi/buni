@@ -8,6 +8,7 @@ import { applyChange, diffOps, invert, propose, view, type ChangeSet, type Op, t
 import { exportSite } from "./html.ts";
 import { splitPart } from "./split.ts";
 import { gridProblems } from "./terminal.ts";
+import { copyHints, REPEAT_MIN } from "./library.ts";
 import { ToolError, tools, type ToolContext, type ToolName, type ToolOutput } from "./tools.ts";
 
 /** One edit, as undo sees it. */
@@ -348,7 +349,13 @@ export class Workspace {
       // On a terminal screen, what the edit did that a terminal can't draw, for whoever made it to fix.
       const grid = gridProblems(this.view(), nodes);
       const more = grid.length > 12 ? [`…and ${grid.length - 12} more`] : [];
-      return { ok: true, reply: grid.length ? `${out.reply}\nOn the terminal grid:\n${[...grid.slice(0, 12), ...more].map((g) => `- ${g}`).join("\n")}` : out.reply };
+      // Layers that copy a component or another page's layers: said now, while one change still fixes it.
+      const copies = nodes.length >= REPEAT_MIN ? copyHints(this.view(), nodes) : [];
+      const notes = [
+        ...(grid.length ? [`On the terminal grid:\n${[...grid.slice(0, 12), ...more].map((g) => `- ${g}`).join("\n")}`] : []),
+        ...(copies.length ? [`Copied, not reused:\n${copies.map((c) => `- ${c}`).join("\n")}`] : []),
+      ];
+      return { ok: true, reply: [out.reply, ...notes].join("\n") };
     });
   }
 
