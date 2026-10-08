@@ -37,3 +37,15 @@ test("the API lists every call by service, and Data draws tables, keys and shape
   expect(sys.details["table:quotes"]).toContain("email is personal.");
   expect(sys.details["shape:quote-request"]).toContain("Customer portal → Quote API");
 });
+
+test("a trace draws one lane per part and each step, and an event shows who publishes and handles it", async () => {
+  const sys = systemOf(await portal());
+  const traces = sys.views.find((v) => v.id === "traces");
+  expect(traces?.html).toContain("170 ms</b> until the person sees it · then 2 async");
+  expect(traces?.html.match(/class="lane"/g)?.length).toBe(5);
+  expect(sys.details["step:submit-quote:0"]).toContain("Idempotency-Key header");
+  const events = sys.views.find((v) => v.id === "events");
+  expect(events?.html).toContain('data-go="call:create-quote"');
+  expect(events?.html).toContain('data-go="part:mailer"');
+  expect(sys.where["step:submit-quote:3"]).toBe("traces");
+});

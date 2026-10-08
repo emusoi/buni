@@ -1,7 +1,7 @@
 // The system behind the pages, as buni open shows it: one view per area (Map, API, Data, …) and a detail for each
 // thing in it, drawn here as HTML so the browser only swaps it in. Every clickable thing carries data-ref="kind:id";
 // data-go="kind:id" jumps to another. Drawn after designs/viewer.buni.
-import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Part, type PartKind, type Shape, type Table } from "../format/doc.ts";
+import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Part, type PartKind, type QueueEvent, type Shape, type Table, type Trace } from "../format/doc.ts";
 import { accessText } from "../tools/context.ts";
 import { iconSvg } from "../tools/icons.ts";
 
@@ -395,6 +395,108 @@ function shapeDetail(doc: Doc, ix: Index, sh: Shape): string {
     + usedBy(doc, ix, sh.id);
 }
 
+
+// ── Traces ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const LANE = 150, STEP = 110, TOP = 70;
+/** Time the person waits: every step that isn't async. */
+const waitMs = (t: Trace) => t.steps.reduce((n, s) => n + (s.async ? 0 : s.ms ?? 0), 0);
+
+function traceDiagram(doc: Doc, t: Trace): string {
+  const lanes = [...new Set(t.steps.flatMap((s) => [s.from, s.to]))];
+  const x = (id: Id) => lanes.indexOf(id) * LANE + LANE / 2;
+  const w = 40 + lanes.length * LANE, h = TOP + 40 + t.steps.length * STEP;
+  const heads = lanes.map((id) => {
+    const p = doc.parts[id];
+    return `<div class="lane" data-ref="part:${esc(id)}" style="left:${x(id) - 64}px">${p ? kindChip(p.kind) : ""}<b>${esc(p?.name ?? id)}</b></div>`;
+  });
+  const lines = lanes.map((id) => `<line x1="${x(id)}" y1="${TOP}" x2="${x(id)}" y2="${h}" class="life"/>`);
+  const arrows: string[] = [], labels: string[] = [];
+  t.steps.forEach((s, i) => {
+    const y = TOP + 70 + i * STEP, x1 = x(s.from), x2 = x(s.to);
+    const self = x1 === x2;
+    const d = self ? `M${x1} ${y - 10} h40 v20 h-34` : `M${x1} ${y} L${x2 + (x2 > x1 ? -6 : 6)} ${y}`;
+    arrows.push(`<g class="step${s.async ? " async" : ""}"><path d="${d}"/><circle cx="${x1}" cy="${self ? y - 10 : y}" r="3.5"/></g>`);
+    const sub = [s.carries ? nameOf(doc, s.carries) : "", s.async ? "async" : s.ms !== undefined ? `${s.ms} ms` : ""].filter(Boolean).join(" · ");
+    labels.push(`<div class="slabel2" data-ref="step:${esc(t.id)}:${i}" style="left:${Math.min(x1, x2) + 12}px;top:${y - 46}px"><code><i>${i + 1}</i> ${esc(s.action)}</code><span>${esc(sub)}</span></div>`);
+    if (s.ifFails) labels.push(`<div class="fails" style="left:${Math.min(x1, x2) + 12}px;top:${y + 12}px">If it fails: ${esc(s.ifFails)}</div>`);
+  });
+  const svg = `<svg class="steps" width="${w}" height="${h}"><defs><marker id="m-step" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#37352f"/></marker></defs>${lines.join("")}${arrows.join("")}</svg>`;
+  const page = t.page ? doc.pages[t.page] : undefined;
+  const asyncCount = t.steps.filter((s) => s.async).length;
+  const top = `<div class="thead2" data-ref="trace:${esc(t.id)}"><h2>${esc(t.name)}</h2>${page ? `<span class="from" data-go="page:${esc(page.id)}">${icon("file-text", 12)}starts on ${esc(page.name)}</span>` : ""}<span class="grow"></span><span class="total"><b>${waitMs(t)} ms</b> until the person sees it${asyncCount ? ` · then ${asyncCount} async` : ""}</span></div>`;
+  return `<section class="trace">${top}<div class="seq" style="width:${w}px;height:${h}px">${svg}${heads.join("")}${labels.join("")}</div></section>`;
+}
+
+function tracesView(doc: Doc): string {
+  const traces = byIndex(doc.traces);
+  return `<div class="sheetview"><div class="vhead"><h1>Traces</h1><span>${plural(traces.length, "path")} a request takes through the system</span></div>${traces.map((t) => traceDiagram(doc, t)).join("")}</div>`;
+}
+
+function traceDetail(doc: Doc, ix: Index, t: Trace): string {
+  const page = t.page ? doc.pages[t.page] : undefined;
+  return head(`<span class="kind" style="color:var(--ink-2)">${icon("activity", 13)}trace</span>`, t.name, `${plural(t.steps.length, "step")} · ${waitMs(t)} ms waited`)
+    + section("Starts on", page ? goRow(`page:${page.id}`, esc(page.name), page.route ?? "") : "")
+    + section("Steps", t.steps.map((s, i) => goRow(`step:${t.id}:${i}`, `<code>${i + 1}. ${esc(s.action)}</code>`, `${esc(nameOf(doc, s.from))} → ${esc(nameOf(doc, s.to))}`)).join(""), t.steps.length)
+    + usedBy(doc, ix, t.id);
+}
+
+function stepDetail(doc: Doc, t: Trace, i: number): string {
+  const s = t.steps[i];
+  if (!s) return "";
+  const link = Object.values(doc.links).find((l) => (l.from === s.from && l.to === s.to) || (l.from === s.to && l.to === s.from));
+  const f = link?.failure;
+  const policy = f ? [
+    f.timeoutMs !== undefined ? `<div class="drow"><span class="l">Timeout</span><span class="r">${f.timeoutMs >= 1000 ? `${f.timeoutMs / 1000} s` : `${f.timeoutMs} ms`}</span></div>` : "",
+    f.retries !== undefined ? `<div class="drow"><span class="l">Retries</span><span class="r">${f.retries}</span></div>` : "",
+    f.idempotencyKey ? `<div class="drow"><span class="l">Idempotency</span><span class="r">${esc(f.idempotencyKey)}</span></div>` : "",
+  ].join("") : "";
+  const carried = s.carries ? doc.shapes[s.carries] : undefined;
+  return head(`<span class="dlabel">STEP ${i + 1} OF ${t.steps.length} · ${esc(t.name)}</span>`, s.action, `${nameOf(doc, s.from)} → ${nameOf(doc, s.to)}`)
+    + section("Carries", s.carries ? goRow(refOf(doc, s.carries), esc(nameOf(doc, s.carries)), esc(carried ? carried.fields.map((x) => x.name).join(" · ") : "")) : "")
+    + section("Timing", note(s.async ? "Async: nobody waits for it." : s.ms !== undefined ? `${s.ms} ms, and the person waits for it.` : "The person waits for it."))
+    + section("Link policy", policy)
+    + section("If it fails", s.ifFails ? note(s.ifFails) : "")
+    + section("Via", s.via ? goRow(refOf(doc, s.via), doc.endpoints[s.via] || doc.operations[s.via] ? callRef(doc, s.via) : `<code>${esc(nameOf(doc, s.via))}</code>`) : "")
+    + section("Between", goRow(`part:${s.from}`, esc(nameOf(doc, s.from)), "from") + goRow(`part:${s.to}`, esc(nameOf(doc, s.to)), "to"));
+}
+
+// ── Events ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const publishersOf = (doc: Doc, e: QueueEvent) => callsOf(doc).filter((c) => c.emits.includes(e.id));
+const handlersOf = (doc: Doc, e: QueueEvent) => Object.values(doc.links).filter((l) => l.kind === "subscribes" && l.to === e.queue).map((l) => l.from);
+
+function eventsView(doc: Doc): string {
+  const events = byIndex(doc.events);
+  const queues = [...new Set(events.map((e) => e.queue))];
+  const who = (ref: string, kind: PartKind | undefined, name: string, how: string) =>
+    `<div class="who" data-go="${esc(ref)}">${kind ? kindChip(kind) : ""}<b>${esc(name)}</b><code>${esc(how)}</code></div>`;
+  const arrow = `<div class="flowarrow"><i></i>${icon("chevron-right", 14)}</div>`;
+  const col = (title: string, body: string) => `<div class="ecol"><span class="elabel">${title}</span>${body || `<p class="dnote">Nobody yet</p>`}</div>`;
+  const groups = queues.map((qid) => {
+    const q = doc.parts[qid];
+    const rows = events.filter((e) => e.queue === qid).map((e) => {
+      const pubs = publishersOf(doc, e).map((c) => who(`call:${c.id}`, doc.parts[c.service]?.kind, nameOf(doc, c.service), `${verb(c)} ${callName(c)}`)).join("");
+      const subs = handlersOf(doc, e).map((p) => who(`part:${p}`, doc.parts[p]?.kind, nameOf(doc, p), doc.parts[p]?.purpose ?? "")).join("");
+      const card = `<div class="event" data-ref="event:${esc(e.id)}"><div>${icon("radio-tower", 14)}<code>${esc(e.name)}</code></div>${e.payload.map((f) => `<span>${esc(f.name)} ${esc(f.type)}</span>`).join("")}</div>`;
+      return `<div class="erow">${col("PUBLISHED BY", pubs)}${arrow}${col("EVENT", card)}${arrow}${col("HANDLED BY", subs)}</div>`;
+    });
+    return `<section class="group"><div class="ghead">${q ? kindChip(q.kind) : ""}<b>${esc(q?.name ?? qid)}</b><code>${esc([q?.tech, q?.purpose].filter(Boolean).join(" · "))}</code></div>${rows.join("")}</section>`;
+  });
+  return `<div class="sheetview"><div class="vhead"><h1>Events</h1><span>${plural(events.length, "event")} on ${plural(queues.length, "queue")}</span></div>${groups.join("")}</div>`;
+}
+
+function eventDetail(doc: Doc, ix: Index, e: QueueEvent): string {
+  const pubs = publishersOf(doc, e).map((c) => goRow(`call:${c.id}`, callRef(doc, c.id), esc(nameOf(doc, c.service))));
+  const subs = handlersOf(doc, e).map((p) => goRow(`part:${p}`, esc(nameOf(doc, p)), "subscribes"));
+  return head(`<span class="kind" style="color:${KIND.queue.color}">${icon("radio-tower", 13)}event · ${esc(nameOf(doc, e.queue))}</span>`, e.name, plural(e.payload.length, "field"))
+    + section("Payload", fieldRows(e.payload), e.payload.length)
+    + section("Published by", pubs.join("") || note("Nothing publishes it yet."), pubs.length)
+    + section("Handled by", subs.join("") || note("Nothing handles it yet."), subs.length)
+    + section("On queue", goRow(`part:${e.queue}`, esc(nameOf(doc, e.queue))))
+    + usedBy(doc, ix, e.id);
+}
+
 /** Every view with something in it, and every thing's detail. */
 export function systemOf(doc: Doc): SystemSnapshot {
   const ix = indexOf(doc);
@@ -422,6 +524,19 @@ export function systemOf(doc: Doc): SystemSnapshot {
     views.push({ id: "data", name: "Data", group: "system", icon: icon("database"), count: tables.length + shapes.length, canvas: true, html: dataView(doc) });
     for (const t of tables) put("data", `table:${t.id}`, t.name, tableDetail(doc, ix, t));
     for (const sh of shapes) put("data", `shape:${sh.id}`, sh.name, shapeDetail(doc, ix, sh));
+  }
+  const events = byIndex(doc.events);
+  if (events.length) {
+    views.push({ id: "events", name: "Events", group: "system", icon: icon("radio-tower"), count: events.length, canvas: false, html: eventsView(doc) });
+    for (const e of events) put("events", `event:${e.id}`, e.name, eventDetail(doc, ix, e));
+  }
+  const traces = byIndex(doc.traces);
+  if (traces.length) {
+    views.push({ id: "traces", name: "Traces", group: "system", icon: icon("activity"), count: traces.length, canvas: false, html: tracesView(doc) });
+    for (const t of traces) {
+      put("traces", `trace:${t.id}`, t.name, traceDetail(doc, ix, t));
+      t.steps.forEach((s, i) => put("traces", `step:${t.id}:${i}`, `${t.name}, step ${i + 1}`, stepDetail(doc, t, i)));
+    }
   }
   return { views, details, where, names };
 }

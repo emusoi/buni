@@ -190,6 +190,41 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .shead { display: flex; justify-content: space-between; }
 .shead b { font-size: 13px; }
 .shape code { font: 11px var(--mono); color: var(--ink-2); }
+
+.trace { display: flex; flex-direction: column; gap: 14px; }
+.thead2 { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 4px 6px; margin: -4px -6px; border-radius: var(--r-sm); }
+.thead2 h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.thead2 .from { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--page); box-shadow: var(--shadow-card); font-size: 12px; cursor: pointer; }
+.thead2 .grow { flex: 1; }
+.thead2 .total { font-size: 13px; color: var(--ink-2); }
+.thead2 .total b { color: var(--ink); }
+.seq { position: relative; flex-shrink: 0; }
+.steps { position: absolute; left: 0; top: 0; overflow: visible; }
+.steps .life { stroke: #cfcecb; stroke-width: 1.25; stroke-dasharray: 3 4; }
+.steps .step path { fill: none; stroke: var(--ink); stroke-width: 1.5; marker-end: url(#m-step); }
+.steps .step.async path { stroke-dasharray: 5 4; }
+.steps .step circle { fill: var(--ink); }
+.lane { position: absolute; top: 0; width: 128px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; text-align: center; }
+.lane b { font-size: 13px; }
+.slabel2 { position: absolute; display: flex; flex-direction: column; padding: 2px 6px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.slabel2 code { font: 600 12px var(--mono); }
+.slabel2 code i { font-style: normal; color: var(--ink-3); }
+.slabel2 span { font-size: 11px; color: var(--ink-2); }
+.slabel2.sel { background: var(--page); }
+.fails { position: absolute; width: 240px; padding: 6px 10px; border-radius: 8px; background: #fdeeee; color: #b42318; font-size: 12px; line-height: 16px; }
+.dlabel { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-3); }
+.erow { display: flex; align-items: center; gap: 4px; }
+.ecol { display: flex; flex-direction: column; gap: 6px; }
+.elabel { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-3); }
+.flowarrow { display: flex; align-items: center; flex: 1; min-width: 40px; margin-top: 18px; color: #a3a29e; }
+.flowarrow i { flex: 1; border-top: 1.5px dashed #a3a29e; }
+.who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 190px; padding: 10px 12px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.who b { font-size: 13px; }
+.who code { font: 11px var(--mono); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.event { display: flex; flex-direction: column; gap: 4px; width: 240px; padding: 10px 12px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.event div { display: flex; align-items: center; gap: 6px; color: #7c3aed; }
+.event code { font: 600 13px var(--mono); color: var(--ink); }
+.event span { font: 11px var(--mono); color: var(--ink-2); }
 `;
 
 const SCRIPT = String.raw`
