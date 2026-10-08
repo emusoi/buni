@@ -3,7 +3,7 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
-## Unreleased
+## 0.3.1 — 2026-10-08
 
 - **Components are how a design repeats itself.** `find_repeats` lists layers copied around the design (a sidebar
   on every page), and `componentize` makes each group one component, keeping every copy's words, styles and icons as
