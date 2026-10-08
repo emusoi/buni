@@ -1,6 +1,6 @@
 // What a backend engineer takes from a design into their own tools: an OpenAPI document for the REST endpoints, the
 // tables as Postgres DDL, and example values for any shape, which also answer the mock API.
-import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Table } from "../format/doc.ts";
+import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Operation, type Table } from "../format/doc.ts";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
@@ -167,4 +167,27 @@ export function matchEndpoint(doc: Doc, method: string, path: string): Endpoint 
     const want = e.path.split("/").filter(Boolean);
     return want.length === parts.length && want.every((w, i) => /^\{[^}]+\}$/.test(w) || w === parts[i]);
   });
+}
+
+/** What the mock answers: an example of the return type, with any field the call sent echoed back. */
+export function mockOperation(doc: Doc, o: Operation, input: Record<string, unknown>): Json {
+  return echoInto(example(doc, o.returns, o.name), input);
+}
+
+/**
+ * A GraphQL request answered by the mock: the operation is the first field the query asks for, its answer the
+ * operation's return type, echoing the variables. One field per request; subscriptions aren't served.
+ */
+export function mockGraphql(doc: Doc, body: unknown): { data?: Record<string, unknown>; errors?: { message: string }[] } {
+  const b: Record<string, unknown> = typeof body === "object" && body !== null ? { ...body } : {};
+  const query = typeof b.query === "string" ? b.query.replace(/#[^\n]*/g, "") : "";
+  const m = query.match(/^\s*(query|mutation|subscription)?\s*\w*\s*(\([^)]*\))?\s*\{\s*(\w+)/);
+  if (!m) return { errors: [{ message: "No query to answer" }] };
+  const kind = m[1] ?? "query";
+  const name = m[3] ?? "";
+  if (kind === "subscription") return { errors: [{ message: "The mock doesn't stream subscriptions" }] };
+  const o = Object.values(doc.operations).find((x) => x.kind === kind && x.name === name);
+  if (!o) return { errors: [{ message: `No ${kind} ${name} in this design` }] };
+  const vars: Record<string, unknown> = typeof b.variables === "object" && b.variables !== null ? { ...b.variables } : {};
+  return { data: { [name]: mockOperation(doc, o, vars) } };
 }
