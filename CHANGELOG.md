@@ -3,6 +3,13 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- **`buni open` shows the whole system**, not only the pages: the map of parts and links, the API, the data (tables,
+  keys and shapes), events, traces as sequence diagrams, where each part runs, and the plan (requirements, questions
+  and decisions, the design doc). Clicking anything opens its detail, which links to everything it touches, and the
+  address says what is shown (`#/api/call:create-quote`), so an agent can point the person at it.
+
 ## 0.2.0 — 2026-10-08
 
 - **`buni open`** shows a design in your browser, view only and live: its pages on a canvas with the flows between

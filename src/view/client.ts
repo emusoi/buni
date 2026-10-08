@@ -225,6 +225,53 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .event div { display: flex; align-items: center; gap: 6px; color: #7c3aed; }
 .event code { font: 600 13px var(--mono); color: var(--ink); }
 .event span { font: 11px var(--mono); color: var(--ink-2); }
+
+.warn { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: #fdf3e7; color: #92400e; font-size: 12px; }
+.warn svg { color: #b45309; flex-shrink: 0; }
+.clusters { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; }
+.cluster { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1.5px dashed rgba(55,53,47,0.2); border-radius: 12px; }
+.chead { display: flex; align-items: baseline; gap: 8px; }
+.chead b { font-size: 13px; }
+.chead code { font: 11px var(--mono); color: var(--ink-3); }
+.cards { display: flex; flex-wrap: wrap; gap: 10px; max-width: 640px; }
+.placed { display: flex; flex-direction: column; gap: 3px; width: 200px; padding: 10px 12px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.placed .ptop { display: flex; justify-content: space-between; gap: 6px; }
+.placed .tech { font-size: 11px; color: var(--ink-3); }
+.placed b { font-size: 13px; }
+.placed code { font: 11px var(--mono); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ghead .goal { font-size: 13px; color: var(--ink-2); }
+.req { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.rtitle { flex: 1; font-size: 14px; }
+.rwarn { font-size: 11px; color: #b45309; white-space: nowrap; }
+.pri { padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.pri.must { background: #fdeeee; color: #b42318; } .pri.should { background: #fdf3e7; color: #b45309; } .pri.could { background: var(--chip); color: var(--ink-2); }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; background: var(--chip); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.chip:hover { background: #e3e3df; }
+.question { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.question.decided { opacity: 0.75; }
+.question p { margin: 0; font-size: 15px; font-weight: 600; }
+.qtop, .qfoot { display: flex; align-items: center; gap: 10px; }
+.qtop .grow { flex: 1; }
+.qby, .qfoot > span { font-size: 12px; color: var(--ink-3); }
+.qfoot { justify-content: space-between; }
+.qkind { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.qkind.q { color: #7c3aed; } .qkind.a { color: #b45309; }
+.opts { display: flex; gap: 10px; }
+.opt { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; box-shadow: 0 0 0 1px var(--divider); }
+.opt.chosen { box-shadow: 0 0 0 2px var(--live); }
+.opt b { font-size: 13px; }
+.pro { font-size: 12px; color: var(--live); } .con { font-size: 12px; color: #b42318; }
+.vhead.sub { margin-top: 10px; }
+.vhead h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.decision { display: flex; flex-direction: column; gap: 2px; padding: 2px 0 2px 12px; border-left: 2px solid var(--divider); }
+.decision span { font-size: 14px; }
+.decision small { font-size: 12px; color: var(--ink-3); }
+.docview { display: flex; justify-content: center; padding: 40px 32px 64px; }
+.docview article { display: flex; flex-direction: column; gap: 22px; width: 640px; max-width: 100%; }
+.docview h1 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+.docview .dmeta { margin-top: -14px; font-size: 13px; color: var(--ink-2); }
+.docview h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+.docview p { margin: 0 0 10px; font-size: 15px; line-height: 25px; }
 `;
 
 const SCRIPT = String.raw`
@@ -359,10 +406,11 @@ function current() {
   const [, view, ...rest] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
   return { view: view || "", ref: rest.join("/") };
 }
+const refPath = (ref) => encodeURIComponent(ref).replace(/%3A/g, ":");
 function go(ref) {
   if (ref.startsWith("page:")) { location.hash = "#/page/" + encodeURIComponent(ref.slice(5)); return; }
   const view = snap.system.where[ref];
-  if (view) location.hash = "#/" + view + "/" + encodeURIComponent(ref);
+  if (view) location.hash = "#/" + view + "/" + refPath(ref);
 }
 const recentRef = (ref) => Date.now() - (changedAt[ref] || 0) < 10000;
 
@@ -504,7 +552,7 @@ $("#sys").addEventListener("click", (e) => {
   if (goTo) { go(goTo.dataset.go); return; }
   if (e.target.closest(".dclose")) { location.hash = "#/" + current().view; return; }
   const thing = e.target.closest(".sysbody [data-ref]");
-  if (thing) location.hash = "#/" + current().view + "/" + encodeURIComponent(thing.dataset.ref);
+  if (thing) location.hash = "#/" + current().view + "/" + refPath(thing.dataset.ref);
 });
 
 function liveLine() {

@@ -49,3 +49,20 @@ test("a trace draws one lane per part and each step, and an event shows who publ
   expect(events?.html).toContain('data-go="part:mailer"');
   expect(sys.where["step:submit-quote:3"]).toBe("traces");
 });
+
+test("places show each environment's clusters and what isn't placed; the plan shows requirements, questions and the doc", async () => {
+  const doc = await portal();
+  doc.sections.s1 = { id: "s1", heading: "Who it is for", body: "Buyers.\n\nOn phones.", index: "a0" };
+  doc.decisions.d1 = { id: "d1", text: "Cache prices for 5 minutes", by: "Jones", at: "2026-10-02T09:00:00Z" };
+  const sys = systemOf(doc);
+  const places = sys.views.find((v) => v.id === "places");
+  expect(places?.html).toContain("prod-use1");
+  expect(places?.html).toContain("aren't placed yet");
+  expect(sys.details["placement:quote-api-prod"]).toContain("70% CPU");
+  expect(sys.views.find((v) => v.id === "requirements")?.html).toContain('data-go="call:create-quote"');
+  const questions = sys.views.find((v) => v.id === "questions");
+  expect(questions?.count).toBe(2);
+  expect(questions?.html).toContain("Cache prices for 5 minutes");
+  expect(sys.views.find((v) => v.id === "doc")?.html).toContain("<p>On phones.</p>");
+  expect(sys.views.map((v) => v.id)).toEqual(["map", "api", "data", "events", "traces", "places", "requirements", "questions", "doc"]);
+});

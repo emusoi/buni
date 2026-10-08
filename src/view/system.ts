@@ -1,8 +1,9 @@
 // The system behind the pages, as buni open shows it: one view per area (Map, API, Data, …) and a detail for each
 // thing in it, drawn here as HTML so the browser only swaps it in. Every clickable thing carries data-ref="kind:id";
 // data-go="kind:id" jumps to another. Drawn after designs/viewer.buni.
-import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Part, type PartKind, type QueueEvent, type Shape, type Table, type Trace } from "../format/doc.ts";
-import { accessText } from "../tools/context.ts";
+import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Part, type PartKind, type Placement, type Priority, type Question, type QueueEvent, type Requirement, type Shape, type Table, type Trace } from "../format/doc.ts";
+import { accessText, decisionsInOrder, sectionsInOrder } from "../tools/context.ts";
+import { environmentsInOrder, runtimeLabel, topologyNotes } from "../tools/topology.ts";
 import { iconSvg } from "../tools/icons.ts";
 
 export type ViewId = "map" | "api" | "data" | "events" | "traces" | "places" | "requirements" | "questions" | "doc";
@@ -497,6 +498,120 @@ function eventDetail(doc: Doc, ix: Index, e: QueueEvent): string {
     + usedBy(doc, ix, e.id);
 }
 
+
+// ── Places ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const pods = (pl: Placement) => (pl.scale ? (pl.scale.min === pl.scale.max ? `${pl.scale.min} pods` : `${pl.scale.min}–${pl.scale.max} pods`) : pl.replicas !== undefined ? plural(pl.replicas, "replica") : "");
+
+function placesView(doc: Doc): string {
+  const card = (pl: Placement) => {
+    const p = doc.parts[pl.part];
+    const lines = [
+      [pl.namespace ? `ns ${pl.namespace}` : "", pods(pl)].filter(Boolean).join(" · "),
+      pl.service ?? "",
+      pl.ingress ? `${pl.ingress.host}${pl.ingress.path === "/" ? "" : pl.ingress.path}` : "",
+      pl.schedule ? `runs ${pl.schedule}` : "",
+    ].filter(Boolean);
+    return `<div class="placed" data-ref="placement:${esc(pl.id)}"><div class="ptop">${p ? kindChip(p.kind) : ""}<span class="tech">${esc(runtimeLabel(pl.runtime))}</span></div><b>${esc(p?.name ?? pl.part)}</b>${lines.map((l) => `<code>${esc(l)}</code>`).join("")}</div>`;
+  };
+  const box = (title: string, sub: string, items: Placement[]) =>
+    `<div class="cluster"><div class="chead"><b>${esc(title)}</b><code>${esc(sub)}</code></div><div class="cards">${items.map(card).join("")}</div></div>`;
+  const envs = environmentsInOrder(doc).map((env) => {
+    const here = Object.values(doc.placements).filter((pl) => pl.environment === env.id).sort((a, b) => nameOf(doc, a.part).localeCompare(nameOf(doc, b.part)));
+    const clusters = Object.values(doc.clusters).filter((c) => c.environment === env.id).map((c) => box(c.name, [c.kind, c.version, c.region].filter(Boolean).join(" · "), here.filter((pl) => pl.cluster === c.id)));
+    const loose = here.filter((pl) => !pl.cluster || !doc.clusters[pl.cluster]);
+    const managed = loose.length ? box("Outside a cluster", [...new Set(loose.flatMap((pl) => pl.regions))].join(", "), loose) : "";
+    return `<section class="group"><div class="ghead">${icon("cloud", 15)}<b>${esc(env.name)}</b><code>${esc(`${env.provider} · ${env.regions.join(", ")}`)}</code></div><div class="clusters">${clusters.join("")}${managed}</div></section>`;
+  });
+  const notes = topologyNotes(doc).map((n) => `<div class="warn">${icon("triangle-alert", 14)}${esc(n)}</div>`).join("");
+  return `<div class="sheetview"><div class="vhead"><h1>Places</h1><span>where each part runs · ${plural(Object.keys(doc.environments).length, "environment")}</span></div>${notes}${envs.join("")}</div>`;
+}
+
+function placementDetail(doc: Doc, pl: Placement): string {
+  const p = doc.parts[pl.part];
+  const env = doc.environments[pl.environment]?.name ?? pl.environment;
+  const cluster = pl.cluster ? doc.clusters[pl.cluster]?.name ?? pl.cluster : undefined;
+  const row = (l: string, r: string) => `<div class="drow"><span class="l">${esc(l)}</span><span class="r">${esc(r)}</span></div>`;
+  const scale = [
+    pl.scale ? row("Pods", pl.scale.min === pl.scale.max ? String(pl.scale.min) : `${pl.scale.min} to ${pl.scale.max}`) : "",
+    pl.scale?.cpuTarget ? row("Scales at", `${pl.scale.cpuTarget}% CPU`) : "",
+    pl.resources ? row("Each pod", [pl.resources.cpu && `${pl.resources.cpu} CPU`, pl.resources.memory].filter(Boolean).join(" · ")) : "",
+    pl.replicas !== undefined ? row("Standby replicas", String(pl.replicas)) : "",
+    pl.schedule ? row("Runs", pl.schedule) : "",
+  ].join("");
+  const list = (xs: readonly string[] | undefined) => (xs ?? []).map((x) => `<div class="field"><code>${esc(x)}</code></div>`).join("");
+  return head(p ? kindChip(p.kind) : "", `${p?.name ?? pl.part} in ${env}`, [runtimeLabel(pl.runtime), cluster, pl.namespace && `ns ${pl.namespace}`].filter(Boolean).join(" · "))
+    + section("Regions", note(pl.regions.join(", ")))
+    + section("Scale", scale)
+    + section("Runs on", pl.service ? note(pl.service) : "")
+    + section("Ingress", pl.ingress ? `<div class="field"><code>${esc(pl.ingress.host + pl.ingress.path)}</code></div>` : "")
+    + section("Config", list(pl.config), pl.config?.length)
+    + section("Secrets", list(pl.secrets), pl.secrets?.length)
+    + section("Note", pl.note ? note(pl.note) : "")
+    + section("The part", goRow(`part:${pl.part}`, esc(p?.name ?? pl.part), "on the map"));
+}
+
+// ── Plan ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const priority = (p: Priority) => `<span class="pri ${p}">${p}</span>`;
+const chipFor = (doc: Doc, id: Id) => {
+  const ref = refOf(doc, id);
+  const kind = ref?.split(":")[0];
+  const ic = kind === "page" ? "file-text" : kind === "call" ? "braces" : kind === "trace" ? "activity" : kind === "part" ? "box" : kind === "table" ? "table-2" : "circle";
+  return `<span class="chip"${ref ? ` data-go="${esc(ref)}"` : ""}>${icon(ic, 11)}${esc(nameOf(doc, id))}</span>`;
+};
+
+function requirementsView(doc: Doc): string {
+  const reqs = byIndex(doc.requirements);
+  const row = (r: Requirement) => `<div class="req" data-ref="req:${esc(r.id)}">${priority(r.priority)}<span class="rtitle">${esc(r.title)}</span>${r.servedBy.length ? "" : `<span class="rwarn">nothing serves it yet</span>`}<div class="tags">${r.servedBy.map((id) => chipFor(doc, id)).join("")}</div></div>`;
+  const phases = byIndex(doc.phases);
+  const groups = [
+    ...phases.map((ph) => ({ name: ph.name, goal: ph.goal, rows: reqs.filter((r) => r.phase === ph.id) })),
+    { name: "No phase", goal: undefined, rows: reqs.filter((r) => !r.phase || !doc.phases[r.phase]) },
+  ].filter((g) => g.rows.length);
+  const by = (p: Priority) => reqs.filter((r) => r.priority === p).length;
+  const summary = (["must", "should", "could"] as const).filter((p) => by(p)).map((p) => `${by(p)} ${p}`).join(", ");
+  return `<div class="sheetview"><div class="vhead"><h1>Requirements</h1><span>${reqs.length} · ${summary}</span></div>${groups.map((g) => `<section class="group"><div class="ghead"><b>${esc(g.name)}</b>${g.goal ? `<span class="goal">${esc(g.goal)}</span>` : ""}</div>${g.rows.map(row).join("")}</section>`).join("")}</div>`;
+}
+
+function requirementDetail(doc: Doc, r: Requirement): string {
+  const phase = r.phase ? doc.phases[r.phase] : undefined;
+  return head(priority(r.priority), r.title, [phase?.name, r.id].filter(Boolean).join(" · "), r.detail ?? "")
+    + section("Served by", r.servedBy.map((id) => goRow(refOf(doc, id), esc(nameOf(doc, id)), refOf(doc, id)?.split(":")[0] ?? "")).join("") || note("Nothing serves it yet."), r.servedBy.length)
+    + section("Phase", phase ? note(`${phase.name}${phase.goal ? `: ${phase.goal}` : ""}`) : "");
+}
+
+const day = (at: string) => {
+  const d = new Date(at);
+  return Number.isNaN(d.getTime()) ? at : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+};
+
+function questionsView(doc: Doc): string {
+  const qs = byIndex(doc.questions).sort((a, b) => Number(a.status === "decided") - Number(b.status === "decided"));
+  const card = (q: Question) => {
+    const kind = q.kind === "question" ? `<span class="qkind q">QUESTION</span>` : `<span class="qkind a">ASSUMPTION</span>`;
+    const opts = q.options.map((o) => `<div class="opt${q.chosen === o.name ? " chosen" : ""}"><b>${esc(o.name)}</b>${o.pros ? `<span class="pro">+ ${esc(o.pros)}</span>` : ""}${o.cons ? `<span class="con">− ${esc(o.cons)}</span>` : ""}</div>`).join("");
+    const about = q.about.map((id) => chipFor(doc, id)).join("");
+    return `<div class="question${q.status === "decided" ? " decided" : ""}" data-ref="question:${esc(q.id)}"><div class="qtop">${kind}<span class="grow"></span><span class="qby">${esc(q.by)}, ${esc(day(q.at))}</span></div><p>${esc(q.text)}</p>${opts ? `<div class="opts">${opts}</div>` : ""}<div class="qfoot"><span>${q.status === "decided" ? `Decided${q.chosen ? `: ${esc(q.chosen)}` : ""}` : "Open"}</span><div class="tags">${about}</div></div></div>`;
+  };
+  const decisions = decisionsInOrder(doc).reverse().map((d) => `<div class="decision"><span>${esc(d.text)}</span><small>${esc(d.by)} · ${esc(day(d.at))}</small></div>`);
+  const open = qs.filter((q) => q.status === "open").length;
+  return `<div class="sheetview"><div class="vhead"><h1>Questions</h1><span>${open} open</span></div>${qs.map(card).join("")}${decisions.length ? `<div class="vhead sub"><h2>Decisions</h2><span>${decisions.length}</span></div>${decisions.join("")}` : ""}</div>`;
+}
+
+function questionDetail(doc: Doc, q: Question): string {
+  return head(`<span class="qkind ${q.kind === "question" ? "q" : "a"}">${q.kind.toUpperCase()}</span>`, q.text, `${q.status} · ${q.by}, ${day(q.at)}`)
+    + section("Options", q.options.map((o) => `<div class="drow"><span class="l"><b>${esc(o.name)}</b>${q.chosen === o.name ? " · chosen" : ""}</span><span class="r">${esc([o.pros && `+ ${o.pros}`, o.cons && `− ${o.cons}`].filter(Boolean).join("  "))}</span></div>`).join(""), q.options.length)
+    + section("About", q.about.map((id) => goRow(refOf(doc, id), esc(nameOf(doc, id)), refOf(doc, id)?.split(":")[0] ?? "")).join(""), q.about.length);
+}
+
+function docView(doc: Doc): string {
+  const sections = sectionsInOrder(doc);
+  const paras = (body: string) => body.split(/\n\s*\n/).map((p) => `<p>${esc(p.trim())}</p>`).join("");
+  const by = [...new Set(decisionsInOrder(doc).map((d) => d.by))];
+  return `<div class="docview"><article><h1>Design doc</h1><div class="dmeta">${plural(sections.length, "section")}${by.length ? ` · decisions by ${esc(by.join(", "))}` : ""}</div>${sections.map((s) => `<section><h2>${esc(s.heading)}</h2>${paras(s.body)}</section>`).join("")}</article></div>`;
+}
+
 /** Every view with something in it, and every thing's detail. */
 export function systemOf(doc: Doc): SystemSnapshot {
   const ix = indexOf(doc);
@@ -538,5 +653,21 @@ export function systemOf(doc: Doc): SystemSnapshot {
       t.steps.forEach((s, i) => put("traces", `step:${t.id}:${i}`, `${t.name}, step ${i + 1}`, stepDetail(doc, t, i)));
     }
   }
+  const placements = Object.values(doc.placements);
+  if (Object.keys(doc.environments).length) {
+    views.push({ id: "places", name: "Places", group: "system", icon: icon("cloud"), count: Object.keys(doc.environments).length, canvas: false, html: placesView(doc) });
+    for (const pl of placements) put("places", `placement:${pl.id}`, `${nameOf(doc, pl.part)} in ${doc.environments[pl.environment]?.name ?? pl.environment}`, placementDetail(doc, pl));
+  }
+  const reqs = byIndex(doc.requirements);
+  if (reqs.length) {
+    views.push({ id: "requirements", name: "Requirements", group: "plan", icon: icon("list-checks"), count: reqs.length, canvas: false, html: requirementsView(doc) });
+    for (const r of reqs) put("requirements", `req:${r.id}`, r.title, requirementDetail(doc, r));
+  }
+  const questions = byIndex(doc.questions);
+  if (questions.length || Object.keys(doc.decisions).length) {
+    views.push({ id: "questions", name: "Questions", group: "plan", icon: icon("circle-help"), count: questions.filter((q) => q.status === "open").length, canvas: false, html: questionsView(doc) });
+    for (const q of questions) put("questions", `question:${q.id}`, q.text, questionDetail(doc, q));
+  }
+  if (Object.keys(doc.sections).length) views.push({ id: "doc", name: "Doc", group: "plan", icon: icon("book-open"), count: Object.keys(doc.sections).length, canvas: false, html: docView(doc) });
   return { views, details, where, names };
 }
