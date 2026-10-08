@@ -9,6 +9,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   on every page), and `componentize` makes each group one component, keeping every copy's words, styles and icons as
   overrides so nothing on the page changes. An edit that copies a part says so in its reply. Overrides can now carry
   an svg layer's markup, for another icon per use.
+- **Components can hold components.** A Sidebar can be built from Nav items: `place_component` into a component's
+  own layers, and a use overrides a layer inside a nested part by its path (`"item/label"`). A component holding
+  itself, however far down, is refused. Detach, componentize and the components view all understand nesting.
 
 ## 0.3.0 — 2026-10-08
 

@@ -3,7 +3,7 @@ import { findIcons, iconSvg } from "./icons.ts";
 import { paletteVars } from "./terminal.ts";
 import { FONT_FAMILIES } from "./fonts.gen.ts";
 import { UNSAFE_TAGS } from "../format/parse.ts";
-import { CELL, childrenOf, entersOn, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
+import { CELL, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
 
 // ---------------------------------------------------------------------------
 // HTML in: agent markup to node drafts
@@ -367,7 +367,18 @@ class Renderer {
       }
       case "instance": {
         const root = this.doc.nodes[this.doc.shared[n.shared]?.root ?? ""];
-        out = root ? this.node(root, depth, { instance: n.id, overrides: n.overrides }, `b-${n.id}`) : "";
+        // A use inside another component's use draws with its own overrides, under what the outer use sets for the
+        // layers inside it; its classes carry the outer use's id, so two outer uses never share a rule.
+        let own = n.overrides;
+        if (ctx) {
+          const outer = nestedOverrides(ctx.overrides, n.id);
+          own = { ...n.overrides };
+          for (const [k, o] of Object.entries(outer)) {
+            const merged = layered(own[k], o);
+            if (merged) own[k] = merged;
+          }
+        }
+        out = root ? this.node(root, depth, { instance: ctx ? `${ctx.instance}-${n.id}` : n.id, overrides: own }, `b-${n.id}`) : "";
         break;
       }
     }

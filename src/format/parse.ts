@@ -3,6 +3,7 @@ import {
   EASINGS,
   ENTRANCES,
   FORMAT_VERSION,
+  overrideTarget,
   MOTION_TRIGGERS,
   RESPONSES,
   emptyDoc,
@@ -1169,15 +1170,35 @@ function checkRefs(doc: Doc, r: Reader): void {
       r.fail(join(p, "shared"), `shared section "${n.shared}" does not exist`);
       continue;
     }
-    // No instances inside shared sections, so no nesting cycles; allow with a cycle check if needed
-    const own = rootOf.get(n.id);
-    if (own !== undefined && sharedRoots.has(own)) r.fail(p, "shared sections cannot contain instances");
+    // A key is a layer of the component, or a path through the component's nested uses to a layer inside one.
     for (const target of Object.keys(n.overrides)) {
-      if (rootOf.get(target) !== section.root) {
-        r.fail(join(join(p, "overrides"), target), `node "${target}" is not in shared section "${section.id}"`);
+      if (!overrideTarget({ nodes, shared }, section.id, target)) {
+        r.fail(join(join(p, "overrides"), target), `"${target}" is not a layer in shared section "${section.id}" or in a component it uses`);
       }
     }
   }
+
+  // Components may hold uses of other components, but never of themselves, however far down.
+  const holds = new Map<Id, Set<Id>>();
+  const sectionOfRoot = new Map(Object.values(shared).map((s) => [s.root, s.id]));
+  for (const n of Object.values(nodes)) {
+    if (n.kind !== "instance") continue;
+    const outer = sectionOfRoot.get(rootOf.get(n.id) ?? "");
+    if (outer) holds.set(outer, (holds.get(outer) ?? new Set()).add(n.shared));
+  }
+  const state = new Map<Id, "visiting" | "done">();
+  const visit = (id: Id, trail: Id[]): void => {
+    if (state.get(id) === "done") return;
+    if (state.get(id) === "visiting") {
+      const loop = [...trail.slice(trail.indexOf(id)), id].map((x) => shared[x]?.name ?? x).join(" → ");
+      r.fail(join("shared", id), `components can't hold themselves: ${loop}`);
+      return;
+    }
+    state.set(id, "visiting");
+    for (const inner of holds.get(id) ?? []) visit(inner, [...trail, id]);
+    state.set(id, "done");
+  };
+  for (const id of Object.keys(shared)) visit(id, []);
 
   // A link may sit on a layer inside a component when the page uses that component: every use links.
   const usedOn = new Map<Id, Set<Id>>();
@@ -1186,6 +1207,18 @@ function checkRefs(doc: Doc, r: Reader): void {
     const root = shared[n.shared]?.root;
     const pageRoot = rootOf.get(n.id);
     if (root && pageRoot) usedOn.set(root, (usedOn.get(root) ?? new Set()).add(pageRoot));
+  }
+  // A component used inside another is on every page that one is on.
+  for (let changed = true, rounds = 0; changed && rounds < 64; rounds++) {
+    changed = false;
+    for (const n of Object.values(nodes)) {
+      if (n.kind !== "instance") continue;
+      const root = shared[n.shared]?.root, outer = rootOf.get(n.id);
+      if (!root || outer === undefined || !sharedRoots.has(outer)) continue;
+      const pagesHere = usedOn.get(root) ?? new Set<Id>();
+      for (const pg of usedOn.get(outer) ?? []) if (!pagesHere.has(pg)) { pagesHere.add(pg); changed = true; }
+      usedOn.set(root, pagesHere);
+    }
   }
   for (const c of Object.values(doc.connections)) {
     const p = join("connections", c.id);

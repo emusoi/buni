@@ -16,7 +16,7 @@ export function layersOf(doc: Doc, root: Id): Node[] {
 /** Same kinds and tags in the same tree: overrides and links can move from one to the other. */
 export function shapeOf(doc: Doc, root: Id): string {
   return layersOf(doc, root)
-    .map((n) => `${n.kind}:${n.tag ?? ""}:${childrenOf(doc, n.id).length}`)
+    .map((n) => `${n.kind}:${n.kind === "instance" ? n.shared : n.tag ?? ""}:${childrenOf(doc, n.id).length}`)
     .join("|");
 }
 
@@ -127,7 +127,6 @@ export function findRepeats(doc: Doc, min = REPEAT_MIN): RepeatGroup[] {
   for (const id of on.keys()) {
     const n = doc.nodes[id];
     if (!n || frames.has(id) || n.twin !== undefined || count(id) < min) continue;
-    if (layersOf(doc, id).some((x) => x.kind === "instance")) continue;
     const shape = shapeOf(doc, id);
     byShape.set(shape, [...(byShape.get(shape) ?? []), id]);
   }

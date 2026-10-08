@@ -9,7 +9,7 @@ Reuse beats reinvention. Build a part once as a buni component (`make_component`
 ## Composing components
 - One component per role, with variants for its real differences (add_variant, set_variant): a Button with Primary, Secondary, Tertiary and Destructive, not five near-duplicate buttons. Name them "Group / Name" ("Buttons / Primary").
 - Variants describe kinds and states (Size, State: Default, Hover, Disabled, Loading), not a pile of independent switches; if two options can't be on together, they're one choice, not two.
-- Build bigger parts from smaller ones (a Plant row uses the Icon tile, the Name block and the Action buttons) so a fix in one place reaches everywhere.
+- Build bigger parts from smaller ones (a Plant row uses the Icon tile, the Name block and the Action buttons) so a fix in one place reaches everywhere: place_component into a component's own layers. A use changes a layer inside a nested part with override, naming it by the path of use ids to it ("item-use/label").
 - Anything on two pages is a component: the sidebar, the top bar, a card in a list. Never copy a part's HTML onto a second page; place_component it. An edit that copies one says so in its reply.
 - Before you finish, run find_repeats: it lists layers copied around the design. componentize each group into one component (or into an existing component of the same shape); it keeps each copy's words, styles and icons as overrides, so nothing on the page changes.
 - Run library_report now and then: merge near-duplicates (merge_components) and remove what nothing uses.

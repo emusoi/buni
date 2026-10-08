@@ -40,6 +40,19 @@ export function componentsOf(doc: Doc): { snapshot: SystemSnapshot; uses: Uses }
   if (!comps.length && !repeats.length) return { snapshot, uses };
   const pageName = (id: Id) => doc.pages[id]?.name ?? id;
   const order = pagesInOrder(doc).map((p) => p.id);
+  // Components used inside other components, by the component they sit in.
+  const roots = new Map(comps.map((c) => [c.root, c.id]));
+  const inside = new Map<Id, Set<Id>>();
+  for (const n of Object.values(doc.nodes)) {
+    if (n.kind !== "instance") continue;
+    let top: Id = n.id;
+    for (let i = 0, up = n.parent; up !== undefined && i < 256; i++) {
+      top = up;
+      up = doc.nodes[up]?.parent;
+    }
+    const outer = roots.get(top);
+    if (outer) inside.set(n.shared, (inside.get(n.shared) ?? new Set()).add(outer));
+  }
   const pagesOf = (id: Id) => [...new Set((uses[id] ?? []).map((u) => u.page))].sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
   // On a canvas like the pages: each component at its own size, in a row per group; the copies in a row of their own.
@@ -49,7 +62,8 @@ export function componentsOf(doc: Doc): { snapshot: SystemSnapshot; uses: Uses }
   for (const s of comps) groups.set(group(s) || "Components", [...(groups.get(group(s) || "Components") ?? []), s]);
   const rowsHtml = [...groups].map(([g, list]) => `<section class="crow" data-title="${esc(g)}">${list.map((s) => {
     const n = uses[s.id]?.length ?? 0;
-    const meta = n ? `${plural(pagesOf(s.id).length, "page")} · ${plural(n, "place")}` : "not used";
+    const holders = inside.get(s.id)?.size ?? 0;
+    const meta = [n ? `${plural(pagesOf(s.id).length, "page")} · ${plural(n, "place")}` : "", holders ? `in ${plural(holders, "component")}` : ""].filter(Boolean).join(" · ") || "not used";
     return board(`component:${s.id}`, s.variant ? `${short(s)} · ${Object.values(s.variant).join(", ")}` : short(s), meta, previewDoc(doc, s.id));
   }).join("")}</section>`);
   const pageOfCopy = pageOfNode(doc);
@@ -94,7 +108,8 @@ export function componentsOf(doc: Doc): { snapshot: SystemSnapshot; uses: Uses }
     snapshot.details[ref] = head(tag, short(s), `${plural(layersOf(doc, s.root).length, "layer")}${props.length ? ` · ${props.map(([k, vs]) => `${k}: ${vs.join(", ")}`).join("; ")}` : ""}`)
       + `<div class="dprev">${preview(doc, s.id, true)}</div>`
       + section("Variants", variants.join(""), variants.length || undefined)
-      + section("Used on", per.join("") || note("Nothing uses it yet."), per.length)
+      + section("Used on", per.join("") || note(inside.has(s.id) ? "No page uses it directly." : "Nothing uses it yet."), per.length)
+      + section("Inside", [...(inside.get(s.id) ?? [])].map((o) => goRow(`component:${o}`, esc(doc.shared[o]?.name ?? o), "component")).join(""), inside.get(s.id)?.size)
       + section("Changed per use", changes.join(""), changes.length || undefined)
       + ((uses[s.id] ?? []).length ? section("Show on the pages", goRow(`uses:${s.id}`, "Outline every place it is used")) : "");
     snapshot.where[ref] = "components";

@@ -93,7 +93,47 @@ export interface Override {
   at?: Record<string, Style>;
 }
 
-/** A use of a shared section; overrides are keyed by node ids in its source tree. */
+/**
+ * The layer an override key names in a component: a layer of its source, or one inside a component it uses, by the
+ * path of uses to it ("nav-item/label": the label in the nav item this component holds). Undefined when there is none.
+ */
+export function overrideTarget(doc: Pick<Doc, "nodes" | "shared">, sharedId: Id, key: string): Node | undefined {
+  const inTree = (id: Id, root: Id) => {
+    let n = doc.nodes[id];
+    for (let i = 0; n && i < 256; i++) {
+      if (n.id === root) return true;
+      n = n.parent !== undefined ? doc.nodes[n.parent] : undefined;
+    }
+    return false;
+  };
+  const parts = key.split("/");
+  let section = doc.shared[sharedId];
+  for (const [i, id] of parts.entries()) {
+    if (!section || !inTree(id, section.root)) return undefined;
+    const n = doc.nodes[id];
+    if (i === parts.length - 1) return n;
+    if (n?.kind !== "instance") return undefined;
+    section = doc.shared[n.shared];
+  }
+  return undefined;
+}
+
+/** An outer use's overrides for the layers inside one of its component's nested uses, keyed as that use's own. */
+export function nestedOverrides(overrides: Record<Id, Override>, use: Id): Record<Id, Override> {
+  const out: Record<Id, Override> = {};
+  for (const [k, o] of Object.entries(overrides)) if (k.startsWith(`${use}/`)) out[k.slice(use.length + 1)] = o;
+  return out;
+}
+
+/** One override over another: the later one's words, icon and styles win, property by property. */
+export function layered(under: Override | undefined, over: Override | undefined): Override | undefined {
+  if (!under) return over;
+  if (!over) return under;
+  const style = under.style || over.style ? { ...under.style, ...over.style } : undefined;
+  return { ...under, ...over, ...(style ? { style } : {}) };
+}
+
+/** A use of a shared section; overrides are keyed by node ids in its source tree, or by paths through nested uses. */
 export interface InstanceNode extends NodeBase {
   kind: "instance";
   shared: Id;

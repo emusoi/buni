@@ -1,7 +1,7 @@
 // Components: making and placing them, variants, overrides, and keeping the library tidy. One area of buni's design
 // tools (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
-import { setOf, variantProperties, type Connection, type Doc, type Id, type InstanceNode, type Node, type SharedSection, type Style } from "../../format/doc.ts";
+import { layered, nestedOverrides, overrideTarget, setOf, variantProperties, type Connection, type Doc, type Id, type InstanceNode, type Node, type Override, type SharedSection, type Style } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { parseHtml } from "../html.ts";
 import { findRepeats, layersOf, libraryReport, shapeOf, usesOf } from "../library.ts";
@@ -13,7 +13,6 @@ function componentOps(doc: Doc, nodeId: Id, name: string | undefined, ids: Ids):
   const p = pageOf(doc, n.id);
   if (n.id === p.frame || n.parent === undefined) throw new ToolError("a page's root frame cannot become a component; pick a layer inside it");
   const tree = subtree(doc, n.id);
-  if (tree.some((x) => x.kind === "instance")) throw new ToolError("a component cannot contain other components yet; pick a layer without any");
   const section: SharedSection = { id: ids.next(), name: name ?? n.name, root: n.id };
   const { parent: _, ...source } = n;
   const instance: InstanceNode = { id: ids.next(), kind: "instance", parent: n.parent, index: n.index, name: section.name, style: {}, shared: section.id, overrides: {} };
@@ -47,6 +46,22 @@ function componentOps(doc: Doc, nodeId: Id, name: string | undefined, ids: Ids):
     for (const c of Object.values(doc.comments)) if (gone.has(c.node)) ops.push({ kind: "put", collection: "comments", value: { ...c, node: use.id } });
   }
   return { ops, section, instance, copies: copies.length };
+}
+
+/**
+ * The override a use sets on a layer inside a nested part so that, over what the part's source sets (`under`), the
+ * layer shows what a copy had (`want`): its own words, icon and styles, and the component's for what it didn't change.
+ */
+function undo(doc: Doc, shared: Id, key: string, under: Override | undefined, want: Override | undefined): Override | undefined {
+  if (JSON.stringify(under ?? {}) === JSON.stringify(want ?? {})) return undefined;
+  const base = overrideTarget(doc, shared, key);
+  const out: Override = { ...want };
+  if (under?.text !== undefined && want?.text === undefined && base?.kind === "text") out.text = base.text;
+  if (under?.markup !== undefined && want?.markup === undefined && base?.kind === "svg") out.markup = base.markup;
+  const back: Style = {};
+  for (const prop of Object.keys(under?.style ?? {})) if (want?.style?.[prop] === undefined) back[prop] = base?.style[prop] ?? "initial";
+  if (Object.keys(back).length || want?.style) out.style = { ...back, ...want?.style };
+  return out;
 }
 
 export const componentsTools = {
@@ -167,6 +182,13 @@ export const componentsTools = {
         const isRoot = n.id === shared.root;
         const style: Style = { ...n.style, ...ov?.style, ...(isRoot ? inst.style : {}) };
         const base = { ...structuredClone(n), id, style, ...(isRoot ? { parent: inst.parent, index: inst.index, name: inst.name } : n.parent !== undefined ? { parent: fresh.get(n.parent) ?? n.parent } : {}) };
+        // A nested use keeps what the detached use set for the layers inside it, now as its own overrides.
+        if (base.kind === "instance") {
+          for (const [k, o] of Object.entries(nestedOverrides(inst.overrides, n.id))) {
+            const merged = layered(base.overrides[k], o);
+            if (merged) base.overrides[k] = merged;
+          }
+        }
         ops.push({ kind: "put", collection: "nodes", value: base.kind === "text" && ov?.text !== undefined ? { ...base, text: ov.text } : base });
       }
       // Comments on the use stay with the plain layers that replace it.
@@ -234,7 +256,6 @@ export const componentsTools = {
       for (const c of copies) {
         const p = pageOf(doc, c.id);
         if (c.id === p.frame) throw new ToolError(`${c.name} is a page's root frame; pick the layers inside it`);
-        if (subtree(doc, c.id).some((x) => x.kind === "instance")) throw new ToolError(`${c.name} (${c.id}) contains a component already; componentize the layers around it instead`);
       }
       const all = new Set(copies.map((c) => c.id));
       for (const c of copies) for (const x of subtree(doc, c.id)) if (x.id !== c.id && all.has(x.id)) throw new ToolError(`${x.id} is inside ${c.id}; the copies must be separate`);
@@ -258,7 +279,7 @@ export const componentsTools = {
       const theirs = layersOf(doc, source);
       const shape = shapeOf(doc, source);
       // What a use can't change: everything but words, styles and names must match layer for layer.
-      const fixed = (n: Node) => JSON.stringify(Object.entries(n).filter(([k]) => !["id", "parent", "index", "name", "style", "text", "twin", "markup"].includes(k)).sort());
+      const fixed = (n: Node) => JSON.stringify(Object.entries(n).filter(([k]) => !["id", "parent", "index", "name", "style", "text", "twin", "markup", "overrides"].includes(k)).sort());
       for (const c of rest) {
         if (shapeOf(doc, c.id) !== shape) throw new ToolError(`${c.name} (${c.id}) doesn't have the same layers as ${section.name}; find_repeats lists copies that do`);
         const mine = layersOf(doc, c.id);
@@ -276,6 +297,16 @@ export const componentsTools = {
           const style = JSON.stringify(m.style) !== JSON.stringify(src.style) ? { style: m.style } : {};
           const markup = m.kind === "svg" && src.kind === "svg" && m.markup !== src.markup ? { markup: m.markup } : {};
           if (Object.keys(text).length || Object.keys(style).length || Object.keys(markup).length) overrides[src.id] = { ...text, ...style, ...markup };
+        });
+        // Nested uses: what this copy's use sets differently becomes this use's override, by the path to it. What
+        // the source's nested use sets and this copy's doesn't goes back to the component's own value.
+        mine.forEach((m, i) => {
+          const src = theirs[i];
+          if (m.kind !== "instance" || src?.kind !== "instance") return;
+          for (const key of new Set([...Object.keys(src.overrides), ...Object.keys(m.overrides)])) {
+            const over = undo(doc, src.shared, key, src.overrides[key], m.overrides[key]);
+            if (over) overrides[`${src.id}/${key}`] = over;
+          }
         });
         const use: InstanceNode = { id: ids.next(), kind: "instance", parent: c.parent, index: c.index, name: section.name, style: {}, shared: section.id, overrides };
         ops.push(...mine.map((m): Op => ({ kind: "delete", collection: "nodes", id: m.id })), { kind: "put", collection: "nodes", value: use });
@@ -296,7 +327,6 @@ export const componentsTools = {
     run: async (doc, a, ctx) => {
       const { drafts, warnings } = parseHtml(a.html);
       if (drafts.length === 0) throw new ToolError("the HTML produced no nodes");
-      if (drafts.some((d) => d.kind === "instance")) throw new ToolError("a component cannot contain other components yet");
       const ids = new Ids(doc, ctx);
       const root = ids.next();
       const section: SharedSection = { id: ids.next(), name: a.name, root };
@@ -311,13 +341,16 @@ export const componentsTools = {
   }),
 
   place_component: tool({
-    description: "Place an instance of a component inside a frame on a page.",
+    description: "Place an instance of a component inside a frame on a page, or inside another component to build it from smaller ones (never inside itself).",
     input: { component: z.string(), parent: z.string().describe("Frame to insert into"), after: z.string().optional().describe('Sibling to insert after; "" puts it first; omit to append') },
     run: async (doc, a, ctx) => {
       const section = doc.shared[a.component];
       if (!section) throw new ToolError(`component "${a.component}" does not exist`);
       if (node(doc, a.parent).kind !== "frame") throw new ToolError(`"${a.parent}" is not a frame`);
-      const page = pageOf(doc, a.parent);
+      // Inside another component's layers there is no page yet: its links follow wherever that component is used.
+      const holder = Object.values(doc.shared).find((s) => s.root === rootOf(doc, a.parent));
+      if (holder?.id === section.id) throw new ToolError(`${section.name} can't hold itself`);
+      const page = holder ? undefined : pageOf(doc, a.parent);
       const ids = new Ids(doc, ctx);
       const instance: InstanceNode = {
         id: ids.next(), kind: "instance", parent: a.parent, index: indexAt(doc, a.parent, a.after),
@@ -326,10 +359,10 @@ export const componentsTools = {
       // The component's links (its nav items, its buttons) work on this page too, as they do on the pages it was already on.
       const inside = new Set(subtree(doc, section.root).map((n) => n.id));
       const key = (c: Connection) => `${c.node} ${c.to} ${c.trigger} ${c.condition ?? ""}`;
-      const here = new Set(Object.values(doc.connections).filter((c) => c.page === page.id).map(key));
+      const here = new Set(Object.values(doc.connections).filter((c) => c.page === page?.id).map(key));
       const links = new Map<string, Connection>();
-      for (const c of Object.values(doc.connections)) if (inside.has(c.node) && c.to !== page.id && !here.has(key(c))) links.set(key(c), c);
-      const ops: Op[] = [{ kind: "put", collection: "nodes", value: instance }, ...[...links.values()].map((c): Op => ({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: page.id } }))];
+      if (page) for (const c of Object.values(doc.connections)) if (inside.has(c.node) && c.to !== page.id && !here.has(key(c))) links.set(key(c), c);
+      const ops: Op[] = [{ kind: "put", collection: "nodes", value: instance }, ...(page ? [...links.values()].map((c): Op => ({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: page.id } })) : [])];
       return { label: `Place ${section.name}`, ops, reply: `Placed instance ${instance.id} of ${section.name}${links.size ? `, with its ${links.size} link${links.size === 1 ? "" : "s"}` : ""}.` };
     },
   }),
@@ -338,7 +371,7 @@ export const componentsTools = {
     description: "Change one instance without changing its component: new text, styles or (for an svg layer) markup for a layer inside it. reset clears that layer's override.",
     input: {
       instance: z.string(),
-      node: z.string().describe("Layer inside the component"),
+      node: z.string().describe('Layer inside the component, or the path to one in a component it uses: "use-id/layer-id"'),
       text: z.string().optional(),
       style: styleValues.optional(),
       markup: z.string().optional().describe("For an svg layer: this use's own <svg>, e.g. another icon"),
@@ -353,14 +386,16 @@ export const componentsTools = {
         if (!page?.widths?.includes(a.width)) throw new ToolError(`${page?.name ?? "That page"} doesn't have a ${a.width} px width; add it with set_widths`);
       }
       const section = doc.shared[inst.shared];
-      const target = node(doc, a.node);
-      if (!section || !subtree(doc, section.root).some((x) => x.id === target.id)) throw new ToolError(`"${a.node}" is not inside ${section?.name ?? "that component"}`);
+      // A layer of the component, or one inside a component it uses, by the path of uses to it ("item/label").
+      const target = section ? overrideTarget(doc, section.id, a.node) : undefined;
+      if (!section || !target) throw new ToolError(`"${a.node}" is not inside ${section?.name ?? "that component"}; a layer in a component it uses is named by the path to it, e.g. "use-id/layer-id"`);
       if (a.text !== undefined && target.kind !== "text") throw new ToolError(`"${target.name}" has no text to override`);
       if (a.markup !== undefined && target.kind !== "svg") throw new ToolError(`"${target.name}" is not an svg layer`);
       const overrides = { ...inst.overrides };
-      if (a.reset) delete overrides[target.id];
+      const key = a.node;
+      if (a.reset) delete overrides[key];
       else {
-        const prev = overrides[target.id] ?? {};
+        const prev = overrides[key] ?? {};
         const clean = (s: Style) => { for (const [k, v] of Object.entries(s)) if (v === "") delete s[k]; return s; };
         // With a width, the style goes to that width only; the rest of the override stays as it was.
         const style = a.width === undefined ? clean({ ...prev.style, ...a.style }) : prev.style ?? {};
@@ -369,7 +404,7 @@ export const componentsTools = {
           const w = clean({ ...at[String(a.width)], ...a.style });
           if (Object.keys(w).length) at[String(a.width)] = w; else delete at[String(a.width)];
         }
-        overrides[target.id] = {
+        overrides[key] = {
           ...(a.text !== undefined ? { text: a.text } : prev.text !== undefined ? { text: prev.text } : {}),
           ...(a.markup !== undefined ? { markup: a.markup } : prev.markup !== undefined ? { markup: prev.markup } : {}),
           ...(Object.keys(style).length ? { style } : {}),

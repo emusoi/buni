@@ -163,15 +163,15 @@ describe("reference checks", () => {
     });
     expect(errors).toContainEqual({
       path: "nodes.pricing-nav.overrides.pricing-title",
-      message: 'node "pricing-title" is not in shared section "nav"',
+      message: '"pricing-title" is not a layer in shared section "nav" or in a component it uses',
     });
   });
 
-  test("an instance inside a shared section", () => {
+  test("a component that holds itself", () => {
     const errors = errorsAfter((d) => {
       d.nodes.nested = { id: "nested", kind: "instance", parent: "nav-root", index: "a2", name: "Nested", style: {}, shared: "nav", overrides: {} };
     });
-    expect(errors).toContainEqual({ path: "nodes.nested", message: "shared sections cannot contain instances" });
+    expect(errors).toContainEqual({ path: "shared.nav", message: "components can't hold themselves: Public nav → Public nav" });
   });
 
   test("a connection from a node on another page", () => {
