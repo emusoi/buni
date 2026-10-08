@@ -150,6 +150,19 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .item.sub { padding-left: 30px; }
 .item.sub .name { font-size: 13px; }
 
+.cworld .crowtitle { position: absolute; margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; transform: scale(var(--inv, 1)); transform-origin: 0 100%; }
+.cboard { position: absolute; cursor: pointer; box-shadow: none !important; }
+.cboard .clabel { position: absolute; left: 0; bottom: 100%; display: flex; align-items: baseline; gap: 8px; max-width: calc(var(--bw, 1280) * 1px / var(--inv, 1)); overflow: hidden; padding-bottom: 6px; white-space: nowrap; transform: scale(var(--inv, 1)); transform-origin: 0 100%; }
+.cboard .clabel b, .cboard .clabel span { overflow: hidden; text-overflow: ellipsis; }
+.cboard .clabel b { flex-shrink: 1; min-width: 0; }
+.cboard .clabel b { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.cboard .clabel span { font-size: 11px; color: var(--ink-3); }
+.cboard .csheet { background: var(--page); box-shadow: var(--shadow-card); overflow: hidden; }
+.cboard .csheet iframe { display: block; border: 0; pointer-events: none; width: 1280px; height: 200px; }
+.cboard.copy .csheet { outline: calc(1.5px * var(--inv, 1)) dashed #b45309; outline-offset: calc(4px * var(--inv, 1)); }
+.cboard.sel .csheet { box-shadow: 0 0 0 calc(2px * var(--inv, 1)) var(--ink), var(--shadow-card); }
+.cboard.changed .csheet { box-shadow: 0 0 0 calc(2px * var(--inv, 1)) var(--live), var(--shadow-card); }
+
 .comps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .comp { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
 .cname { display: flex; flex-direction: column; gap: 2px; }
@@ -580,6 +593,51 @@ function drawAgents() {
 }
 
 
+
+/** The components canvas: each board sized to what it draws, in a row per group, then fitted like any canvas. */
+function layoutComponents(view, world) {
+  const boards = [...world.querySelectorAll(".cboard")];
+  const size = (b) => {
+    const doc = b.querySelector("iframe").contentDocument;
+    if (!doc || !doc.body || !doc.body.childElementCount) return null;
+    return { w: Math.min(1280, Math.max(40, doc.body.scrollWidth)), h: Math.min(1200, Math.max(20, doc.body.scrollHeight)) };
+  };
+  const place = () => {
+    const sizes = boards.map(size);
+    if (sizes.some((x) => !x)) return false;
+    for (const t of world.querySelectorAll(".crowtitle")) t.remove();
+    let y = 0, widest = 0;
+    for (const row of world.querySelectorAll(".crow")) {
+      const title = el("p", "crowtitle", row.dataset.title);
+      title.style.left = "0px"; title.style.top = y + "px";
+      world.appendChild(title);
+      y += 64;
+      let x = 0, tallest = 0;
+      for (const b of row.querySelectorAll(".cboard")) {
+        const z = sizes[boards.indexOf(b)];
+        if (x > 0 && x + z.w > 2600) { x = 0; y += tallest + 90; tallest = 0; }
+        b.style.left = x + "px"; b.style.top = y + "px";
+        const sheet = b.querySelector(".csheet"), frame = b.querySelector("iframe");
+        sheet.style.width = z.w + "px"; sheet.style.height = z.h + "px"; b.style.setProperty("--bw", String(z.w));
+        frame.style.width = z.w + "px"; frame.style.height = z.h + "px";
+        x += z.w + 96; tallest = Math.max(tallest, z.h); widest = Math.max(widest, x);
+      }
+      y += tallest + 110;
+    }
+    world.dataset.w = String(Math.max(400, widest)); world.dataset.h = String(Math.max(300, y));
+    const st = pans[view];
+    if (st && st.fit) st.fit();
+    drawAgents();
+    return true;
+  };
+  let left = boards.length;
+  for (const b of boards) {
+    const frame = b.querySelector("iframe");
+    frame.addEventListener("load", () => { if (--left <= 0) { place(); if (frame.contentDocument) frame.contentDocument.fonts.ready.then(place); } });
+  }
+  place();
+}
+
 /** Component previews: each drawn at its own size, then scaled down to fit its card. */
 function fitPreviews(root) {
   for (const frame of root.querySelectorAll(".cprev iframe")) {
@@ -629,6 +687,8 @@ function showSystem(view, ref) {
     body.innerHTML = v.html;
     if (v.canvas) panner(view, body.querySelector(".pan"));
     else body.scrollTop = 0;
+    const cworld = body.querySelector(".cworld");
+    if (cworld) layoutComponents(view, cworld);
     fitPreviews(body);
   }
   for (const e of body.querySelectorAll(".sel")) e.classList.remove("sel");
@@ -659,7 +719,7 @@ function panner(view, pan) {
   const zoom = el("div", "syszoom");
   zoom.innerHTML = '<button data-z="out" aria-label="Zoom out">−</button><span class="pct"></span><button data-z="in" aria-label="Zoom in">+</button><button data-z="fit">Fit</button>';
   pan.parentElement.appendChild(zoom);
-  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; drawAgents(); };
+  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; world.style.setProperty("--inv", String(1 / st.scale)); zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; drawAgents(); };
   const fitView = () => {
     const c = pan.getBoundingClientRect(), w = Number(world.dataset.w) || 800, h = Number(world.dataset.h) || 600;
     if (c.width < 100) return;

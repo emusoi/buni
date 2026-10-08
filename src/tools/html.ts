@@ -285,6 +285,12 @@ class Renderer {
     );
   }
 
+  /** One layer and everything in it on its own, with the styles it needs. */
+  layer(n: Node): { html: string; css: string } {
+    const html = this.node(n, 0);
+    return { html, css: this.css };
+  }
+
   /**
    * A layer's style at its page's other widths: below the page's own width it holds at that width and narrower
    * (max-width, widest first), above it at that width and wider (min-width, narrowest first), so the nearest wins.
@@ -465,6 +471,14 @@ export function motionCss(doc: Doc): string {
 /** One page as HTML plus the CSS it needs, e.g. for the Code tab. */
 export function renderPage(doc: Doc, pageId: Id, opts: RenderOptions = {}): { html: string; css: string } {
   const r = new Renderer(doc, pageId, opts).render();
+  return { html: r.html, css: tokensCss(doc) + sharedCss(doc) + r.css };
+}
+
+/** One layer of a page on its own, as it looks there: a copy the components view shows next to the components. */
+export function renderLayer(doc: Doc, pageId: Id, nodeId: Id): { html: string; css: string } {
+  const n = doc.nodes[nodeId];
+  if (!n) throw new Error(`layer "${nodeId}" does not exist`);
+  const r = new Renderer(doc, pageId, {}).layer(n);
   return { html: r.html, css: tokensCss(doc) + sharedCss(doc) + r.css };
 }
 
