@@ -597,14 +597,15 @@ function drawAgents() {
 /** The components canvas: each board sized to what it draws, in a row per group, then fitted like any canvas. */
 function layoutComponents(view, world) {
   const boards = [...world.querySelectorAll(".cboard")];
+  // Not drawn yet, or drawing nothing (an empty or hidden component): a small board, so the rest still lay out.
   const size = (b) => {
     const doc = b.querySelector("iframe").contentDocument;
-    if (!doc || !doc.body || !doc.body.childElementCount) return null;
+    if (!doc || !doc.body || !doc.body.childElementCount) return { w: 160, h: 48 };
     return { w: Math.min(1280, Math.max(40, doc.body.scrollWidth)), h: Math.min(1200, Math.max(20, doc.body.scrollHeight)) };
   };
   const place = () => {
+    if (!world.isConnected) return false;
     const sizes = boards.map(size);
-    if (sizes.some((x) => !x)) return false;
     for (const t of world.querySelectorAll(".crowtitle")) t.remove();
     let y = 0, widest = 0;
     for (const row of world.querySelectorAll(".crow")) {
@@ -630,10 +631,12 @@ function layoutComponents(view, world) {
     drawAgents();
     return true;
   };
-  let left = boards.length;
+  // Laid out now, then again as each board draws and its fonts arrive, at most once a frame.
+  let queued = false;
+  const soon = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; place(); }); };
   for (const b of boards) {
     const frame = b.querySelector("iframe");
-    frame.addEventListener("load", () => { if (--left <= 0) { place(); if (frame.contentDocument) frame.contentDocument.fonts.ready.then(place); } });
+    frame.addEventListener("load", () => { soon(); if (frame.contentDocument) frame.contentDocument.fonts.ready.then(soon); });
   }
   place();
 }
