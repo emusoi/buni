@@ -6,12 +6,12 @@ import { accessText, decisionsInOrder, sectionsInOrder } from "../tools/context.
 import { environmentsInOrder, runtimeLabel, topologyNotes } from "../tools/topology.ts";
 import { iconSvg } from "../tools/icons.ts";
 
-export type ViewId = "map" | "api" | "data" | "events" | "traces" | "places" | "requirements" | "questions" | "doc";
+export type ViewId = "components" | "map" | "api" | "data" | "events" | "traces" | "places" | "requirements" | "questions" | "doc";
 
 export interface SystemView {
   id: ViewId;
   name: string;
-  group: "system" | "plan";
+  group: "screens" | "system" | "plan";
   /** The rail's icon, as SVG. */
   icon: string;
   count: number;

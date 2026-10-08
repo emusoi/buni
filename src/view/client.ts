@@ -150,6 +150,28 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .item.sub { padding-left: 30px; }
 .item.sub .name { font-size: 13px; }
 
+.comps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.comp { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.cname { display: flex; flex-direction: column; gap: 2px; }
+.cname span { font-size: 11px; color: var(--ink-3); }
+.cname b { font-size: 14px; }
+.cname small { font-size: 12px; color: var(--ink-2); }
+.tags.left { justify-content: flex-start; }
+.cprev { position: relative; height: 120px; overflow: hidden; border-radius: 8px; background: var(--rail); box-shadow: inset 0 0 0 1px var(--divider); }
+.cprev.big { height: 170px; }
+.cprev iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; pointer-events: none; visibility: hidden; }
+.dprev { padding: 0 18px 14px; }
+.repeat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; }
+.repeat .rmain { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.repeat b { font-size: 13px; }
+.repeat small { font-size: 12px; color: var(--ink-2); }
+.repeat code { padding: 4px 10px; border-radius: 6px; background: var(--rail); font: 11px var(--mono); color: var(--ink-2); white-space: nowrap; }
+pre.ask { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--rail); font: 11px/17px var(--mono); white-space: pre-wrap; word-break: break-all; user-select: all; }
+.use-box { position: absolute; z-index: 4; pointer-events: none; border: calc(2px * var(--inv)) solid #9c36b5; background: rgba(156, 54, 181, 0.06); }
+.board .label { max-width: var(--lw, none); overflow: hidden; }
+.board .label b, .board .label span { overflow: hidden; text-overflow: ellipsis; }
+.board .label b { flex-shrink: 1; min-width: 0; }
+
 .agent { --c: #37352f; position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), width 0.5s cubic-bezier(0.25, 1, 0.5, 1), height 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s; }
 .agent .abox { position: absolute; inset: 0; border: calc(1.5px * var(--inv)) solid var(--c); }
 .agent .h { position: absolute; width: calc(6px * var(--inv)); height: calc(6px * var(--inv)); background: #fff; border: calc(1.5px * var(--inv)) solid var(--c); box-sizing: border-box; transform: translate(-50%, -50%); }
@@ -346,14 +368,16 @@ function place() {
     node.sheet.style.height = heightOf(b) + "px";
     node.frame.style.width = b.width + "px";
     node.frame.style.height = heightOf(b) + "px";
-    // Labels stay readable at any zoom.
+    // Labels stay readable at any zoom, and never wider than their board, so neighbours don't run into each other.
     node.label.style.transform = "scale(" + (1 / scale) + ")";
+    node.label.style.setProperty("--lw", b.width * scale + "px");
   }
   drawArrows(at);
   // Until someone moves the view, it keeps the whole design in sight as pages report their heights.
   if (!moved) fit();
   applyView();
   drawAgents();
+  if (outlined) outlineUses(outlined);
 }
 
 function drawArrows(at) {
@@ -381,7 +405,12 @@ function drawArrows(at) {
 function applyView() {
   $("#world").style.transform = "translate(" + panX + "px," + panY + "px) scale(" + scale + ")";
   $("#zoom .pct").textContent = Math.round(scale * 100) + "%";
-  for (const n of boards.values()) n.label.style.transform = "scale(" + (1 / scale) + ")";
+  for (const [id, n] of boards) {
+    n.label.style.transform = "scale(" + (1 / scale) + ")";
+    const b = snap && snap.boards.find((x) => x.id === id);
+    if (b) n.label.style.setProperty("--lw", b.width * scale + "px");
+  }
+  for (const box of document.querySelectorAll(".use-box")) box.style.setProperty("--inv", String(1 / scale));
   for (const p of $("#arrows").querySelectorAll("path[marker-end]")) p.setAttribute("stroke-width", String(1.5 / scale));
   drawAgents();
 }
@@ -433,6 +462,7 @@ function current() {
 }
 const refPath = (ref) => encodeURIComponent(ref).replace(/%3A/g, ":");
 function go(ref) {
+  if (ref.startsWith("uses:")) { location.hash = "#/uses/" + encodeURIComponent(ref.slice(5)); return; }
   if (ref.startsWith("page:")) { location.hash = "#/page/" + encodeURIComponent(ref.slice(5)); return; }
   const view = snap.system.where[ref];
   if (view) location.hash = "#/" + view + "/" + refPath(ref);
@@ -455,7 +485,7 @@ function rail() {
     e.onclick = opts.go;
     r.appendChild(e);
   };
-  const onScreens = here.view === "" || here.view === "page";
+  const onScreens = here.view === "" || here.view === "page" || here.view === "uses";
   const pages = snap.boards.filter((b) => !b.terminal), screens = snap.boards.filter((b) => b.terminal);
   const boardRows = (list) => { if (onScreens) for (const b of list) row("", b.state ? b.name + " · " + b.state : b.name, meta(b), { sub: true, on: here.ref === b.id, dot: recentRef(b.id), go: () => { location.hash = "#/"; focusBoard(b.id); } }); };
   r.appendChild(el("h2", "", "SCREENS"));
@@ -465,6 +495,9 @@ function rail() {
   if (snap.flows.length) {
     row(${JSON.stringify(ICON.flow)}, "Flows", String(snap.flows.length), { go: () => { location.hash = "#/"; focusBoard(snap.flows[0].pages[0]); } });
     if (onScreens) for (const f of snap.flows) row("", f.name, f.pages.length + " step" + (f.pages.length === 1 ? "" : "s"), { sub: true, go: () => focusBoard(f.pages[0]) });
+  }
+  for (const v of snap.system.views.filter((x) => x.group === "screens")) {
+    row(v.icon, v.name, String(v.count), { on: here.view === v.id, go: () => { location.hash = "#/" + v.id; } });
   }
   for (const [group, title] of [["system", "SYSTEM"], ["plan", "PLAN"]]) {
     const views = snap.system.views.filter((v) => v.group === group);
@@ -503,7 +536,7 @@ function latestEdits() {
 function spotOf(a) {
   const here = current();
   if (here.view === "page") return null;
-  if (here.view !== "") {
+  if (here.view !== "" && here.view !== "uses") {
     const body = $("#sys .sysbody");
     const t = a.ref && body.querySelector('[data-ref="' + CSS.escape(a.ref) + '"]');
     if (!t) return null;
@@ -546,6 +579,43 @@ function drawAgents() {
   }
 }
 
+
+/** Component previews: each drawn at its own size, then scaled down to fit its card. */
+function fitPreviews(root) {
+  for (const frame of root.querySelectorAll(".cprev iframe")) {
+    const fit = () => {
+      const doc = frame.contentDocument, box = frame.parentElement;
+      if (!doc || !doc.body || !box) return;
+      const w = Math.max(1, doc.body.scrollWidth), h = Math.max(1, doc.body.scrollHeight);
+      const k = Math.min(1, (box.clientWidth - 24) / w, (box.clientHeight - 24) / h);
+      frame.style.width = w + "px"; frame.style.height = h + "px";
+      frame.style.transform = "translate(" + (box.clientWidth - w * k) / 2 + "px," + (box.clientHeight - h * k) / 2 + "px) scale(" + k + ")";
+      frame.style.visibility = "visible";
+    };
+    frame.addEventListener("load", () => { fit(); if (frame.contentDocument) frame.contentDocument.fonts.ready.then(fit); });
+    if (frame.contentDocument && frame.contentDocument.readyState === "complete" && frame.contentDocument.body && frame.contentDocument.body.childElementCount) fit();
+  }
+}
+
+/** "Show on the pages": every use of one component outlined on the canvas. */
+let outlined = "";
+function outlineUses(id) {
+  for (const b of document.querySelectorAll(".use-box")) b.remove();
+  outlined = id;
+  if (!id) return;
+  const at = layout();
+  for (const u of (snap.uses && snap.uses[id]) || []) {
+    const b = snap.boards.find((x) => x.id === u.page), n = b && boards.get(b.id);
+    const doc = n && n.frame.contentDocument, t = doc && doc.querySelector(".b-" + CSS.escape(u.node));
+    if (!t) continue;
+    const r = t.getBoundingClientRect(), box = el("div", "use-box");
+    box.style.left = at[b.id].x + r.left + "px"; box.style.top = at[b.id].y + r.top + "px";
+    box.style.width = r.width + "px"; box.style.height = r.height + "px";
+    box.style.setProperty("--inv", String(1 / scale));
+    $("#world").appendChild(box);
+  }
+}
+
 // A system view: its HTML from the server, swapped in only when it changed, so a canvas keeps where it was looked at.
 const pans = {};
 let shownView = "", shownHtml = "";
@@ -559,11 +629,12 @@ function showSystem(view, ref) {
     body.innerHTML = v.html;
     if (v.canvas) panner(view, body.querySelector(".pan"));
     else body.scrollTop = 0;
+    fitPreviews(body);
   }
   for (const e of body.querySelectorAll(".sel")) e.classList.remove("sel");
   const detail = ref && snap.system.details[ref];
   drawer.classList.toggle("on", Boolean(detail));
-  drawer.innerHTML = detail || "";
+  if (drawer.dataset.ref !== ref || drawer.innerHTML !== (detail || "")) { drawer.innerHTML = detail || ""; drawer.dataset.ref = ref || ""; fitPreviews(drawer); }
   if (detail) for (const e of body.querySelectorAll('[data-ref="' + CSS.escape(ref) + '"]')) e.classList.add("sel");
   // On the map, the open part's links come forward with their names.
   const part = ref && ref.startsWith("part:") ? ref.slice(5) : "";
@@ -626,13 +697,14 @@ function route() {
   if (!snap) return;
   const here = current();
   if (here.view === "" && !snap.boards.length && snap.system.views.length) { location.replace("#/" + snap.system.views[0].id); return; }
-  const sys = here.view !== "" && here.view !== "page";
+  const sys = here.view !== "" && here.view !== "page" && here.view !== "uses";
   $("#sys").classList.toggle("on", sys);
   $("#canvas").style.visibility = sys ? "hidden" : "";
   $("#empty").classList.toggle("on", !sys && !snap.boards.length);
   if (sys) { closePage(); showSystem(here.view, here.ref); }
   else if (here.view === "page" && here.ref) openPage(here.ref);
   else closePage();
+  outlineUses(here.view === "uses" ? here.ref : "");
   rail();
 }
 addEventListener("hashchange", route);

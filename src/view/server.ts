@@ -9,6 +9,7 @@ import { CELL, pagesInOrder, walkFlow, type Doc } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
 import { fontFaces, renderPage } from "../tools/html.ts";
 import { viewerHtml } from "./client.ts";
+import { componentsOf, type Uses } from "./components.ts";
 import { pageOfNode, refOf, systemOf, type SystemSnapshot } from "./system.ts";
 import { isEdit, Workspace, type Edit } from "../tools/workspace.ts";
 
@@ -39,6 +40,8 @@ export interface Snapshot {
   links: { from: string; to: string }[];
   /** The system behind the pages, view by view. */
   system: SystemSnapshot;
+  /** Where each component is used, for outlining its uses on the canvas. */
+  uses: Uses;
   /** The latest edits, newest last, with where each landed: a layer on a page, or a thing in the system. */
   activity: Activity[];
   /** Why the file couldn't be read just now; the last good design is kept. */
@@ -101,7 +104,7 @@ export function snapshotOf(doc: Doc, file: string, system: Doc = doc, edits: rea
     seen.add(key);
     return [{ from: c.page, to: c.to }];
   });
-  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links, system: systemOf(system), activity: activityOf(doc, system, edits) };
+  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links, ...withComponents(doc, systemOf(system)), activity: activityOf(doc, system, edits) };
 }
 
 /** The edits buni call and buni mcp shared beside the file; none when there are none. */
@@ -112,6 +115,15 @@ async function editsOf(path: string): Promise<Edit[]> {
   } catch {
     return [];
   }
+}
+
+/** The system views with the components view in front: the design's library and what it copies. */
+function withComponents(doc: Doc, system: SystemSnapshot): { system: SystemSnapshot; uses: Uses } {
+  const { snapshot, uses } = componentsOf(doc);
+  return {
+    system: { views: [...snapshot.views, ...system.views], details: { ...system.details, ...snapshot.details }, where: { ...system.where, ...snapshot.where }, names: { ...system.names, ...snapshot.names } },
+    uses,
+  };
 }
 
 /** A file in the design's folder, or undefined for anything outside it. */

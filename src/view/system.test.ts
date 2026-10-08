@@ -66,3 +66,16 @@ test("places show each environment's clusters and what isn't placed; the plan sh
   expect(sys.views.find((v) => v.id === "doc")?.html).toContain("<p>On phones.</p>");
   expect(sys.views.map((v) => v.id)).toEqual(["map", "api", "data", "events", "traces", "places", "requirements", "questions", "doc"]);
 });
+
+test("the components view draws each component with where it is used, and lists what is copied but not a component", async () => {
+  const { componentsOf } = await import("./components.ts");
+  const doc = await portal();
+  const { snapshot, uses } = componentsOf(doc);
+  const view = snapshot.views.find((v) => v.id === "components");
+  expect(view?.group).toBe("screens");
+  expect(view?.html).toContain('data-ref="component:nav"');
+  expect(view?.html).toContain("srcdoc=");
+  expect(uses.nav?.map((u) => u.page).sort()).toEqual(["home", "pricing"]);
+  expect(snapshot.details["component:nav"]).toContain('data-go="page:home"');
+  expect(snapshot.details["component:nav"]).toContain('data-go="uses:nav"');
+});
