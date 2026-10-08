@@ -312,10 +312,10 @@ export interface Extension {
   run(cmd: string | undefined, file: string | undefined, args: readonly string[], flags: Flags): Promise<number | undefined>;
 }
 
-/** The commands that come with the design agent, which ships in the buni apps, and what to use here instead. */
+/** The commands that come with the design agent, and what to use here instead. */
 const AGENT_COMMANDS = new Set(["agent", "ask", "eval", "metrics"]);
 function needsAgent(cmd: string): number {
-  console.error(`buni ${cmd} comes with buni's design agent, in the buni app (and the buni command it carries). Here, any coding agent designs with buni: buni skill prints the guide to give it, buni mcp serves the tools.`);
+  console.error(`buni ${cmd} comes with buni's design agent, which is coming soon. Here, any coding agent designs with buni: buni skill prints the guide to give it, buni mcp serves the tools.`);
   return 2;
 }
 
