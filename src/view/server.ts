@@ -2,6 +2,7 @@
 // renderer and sends the whole design again whenever the file changes, whoever wrote it (an agent through buni mcp,
 // buni call, an app). Nothing here edits the design: people change it by asking their agent.
 import { watch } from "node:fs";
+import { stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { CELL, pagesInOrder, walkFlow, type Doc } from "../format/doc.ts";
@@ -96,12 +97,26 @@ export async function serveViewer(file: string, port = 0): Promise<{ url: string
     for (const fn of listeners) fn(last);
   };
   let timer: ReturnType<typeof setTimeout> | undefined;
-  // The folder, not the file: a save replaces the file, and a watch on the old one would go quiet.
-  const watcher = watch(dir, (_event, name) => {
-    if (name !== basename(path)) return;
+  const soon = () => {
     clearTimeout(timer);
     timer = setTimeout(() => void reload(), 80);
+  };
+  // The folder, not the file: a save writes a temporary file beside it and renames it over, and a watch on the old
+  // file would go quiet. How a rename is reported differs by system, so the temporary file's events count too.
+  const base = basename(path);
+  const watcher = watch(dir, (_event, name) => {
+    if (!name || name === base || name.startsWith(`${base}.`)) soon();
   });
+  // And in case the system says nothing at all: the file's modification time, once a second.
+  let seen = (await stat(path)).mtimeMs;
+  const poll = setInterval(() => {
+    void stat(path).then((s) => {
+      if (s.mtimeMs !== seen) {
+        seen = s.mtimeMs;
+        soon();
+      }
+    }, () => undefined);
+  }, 1000);
 
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -144,6 +159,7 @@ export async function serveViewer(file: string, port = 0): Promise<{ url: string
     url: `http://127.0.0.1:${server.port}/`,
     stop: () => {
       watcher.close();
+      clearInterval(poll);
       clearTimeout(timer);
       void server.stop(true);
     },
