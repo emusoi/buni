@@ -9,6 +9,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   keys and shapes), events, traces as sequence diagrams, where each part runs, and the plan (requirements, questions
   and decisions, the design doc). Clicking anything opens its detail, which links to everything it touches, and the
   address says what is shown (`#/api/call:create-quote`), so an agent can point the person at it.
+- **`buni icons` and `buni pdf` work with Chrome alone**, without the desktop app. Each icon size is drawn at its own
+  density, so small sizes stay sharp, on a see-through backdrop.
 
 ## 0.2.0 — 2026-10-08
 

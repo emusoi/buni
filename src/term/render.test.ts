@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { findBrowser } from "./chrome.ts";
+import { emptyDoc } from "../format/doc.ts";
+import { serializeDoc } from "../format/serialize.ts";
+import { Workspace } from "../tools/workspace.ts";
 import { renderHeadless } from "./render.ts";
 
 const portal = join(import.meta.dir, "../../examples/portal.buni");
@@ -64,4 +67,24 @@ test.skipIf(!findBrowser())("a terminal screen reads back as its characters, bor
 
   const notTerminal = await renderHeadless({ file: portal, page: "Home", out: txt, format: "txt" });
   expect(notTerminal).toEqual({ ok: false, text: "Home isn't a terminal screen; only those draw as text (set_screen makes one)." });
+}, 60_000);
+
+test.skipIf(!findBrowser())("an icon set draws each size sharp on a see-through backdrop, and the system prints as one PDF", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-icons-"));
+  const file = join(dir, "logo.buni");
+  await writeFile(file, serializeDoc(emptyDoc()));
+  const ws = await Workspace.open(file);
+  const made = await ws.call("test", "create_page", { name: "Logo", width: 64, height: 64 });
+  const frame = made.reply.match(/root frame (\S+)\./)?.[1] ?? "";
+  await ws.call("test", "write_html", { parent: frame, html: '<div style="width:64px;height:64px;border-radius:16px;background:#3346d3"></div>' });
+  const out = join(dir, "icons");
+  expect((await renderHeadless({ file, page: "Logo", out, format: "icons" })).ok).toBe(true);
+  const small = await readFile(join(out, "icon-16.png"));
+  expect([small.readUInt32BE(16), small.readUInt32BE(20)]).toEqual([16, 16]);
+  expect(small[25]).toBe(6); // colour type: RGBA, so the rounded corners stay clear
+  expect((await readFile(join(out, "AppIcon.icns"))).subarray(0, 4).toString()).toBe("icns");
+  expect((await renderHeadless({ file, page: "Nope", out, format: "icons" })).ok).toBe(false);
+  const pdf = join(dir, "system.pdf");
+  expect((await renderHeadless({ file: portal, out: pdf, format: "system" })).ok).toBe(true);
+  expect((await readFile(pdf)).subarray(0, 4).toString()).toBe("%PDF");
 }, 60_000);

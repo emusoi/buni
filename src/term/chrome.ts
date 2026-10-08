@@ -52,6 +52,25 @@ export function drawWithBrowser(browser: string, d: Drawing): Promise<Uint8Array
   return inBrowser(browser, d, (cdp, url) => draw(cdp, url, d));
 }
 
+/** The page as PNGs, one per pixel density, all from one browser: an icon set's sizes. */
+export function drawScales(browser: string, sheet: Sheet, scales: readonly number[]): Promise<Uint8Array[]> {
+  return inBrowser(browser, sheet, async (cdp, url) => {
+    const out: Uint8Array[] = [];
+    // Whatever the graphic doesn't cover stays see-through, as an icon's rounded corners must.
+    await cdp.call("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
+    for (const scale of scales) out.push(await draw(cdp, url, { ...sheet, format: "png", scale }));
+    return out;
+  });
+}
+
+/** A whole document printed to PDF, every page, each sized by the document's own @page rule. */
+export function printWithBrowser(browser: string, sheet: Sheet): Promise<Uint8Array> {
+  return inBrowser(browser, sheet, async (cdp, url) => {
+    await load(cdp, url, sheet.width, 1);
+    return bytesOf(await cdp.call("Page.printToPDF", { printBackground: true, preferCSSPageSize: true }));
+  });
+}
+
 /** What `expression` evaluates to on the loaded page, as a string (the page's script returns JSON). */
 export function evaluateWithBrowser(browser: string, sheet: Sheet, expression: string): Promise<string> {
   return inBrowser(browser, sheet, async (cdp, url) => {
@@ -125,6 +144,11 @@ async function draw(cdp: Cdp, url: string, d: Drawing): Promise<Uint8Array> {
   const out = d.format === "pdf"
     ? await cdp.call("Page.printToPDF", { printBackground: true, paperWidth: d.width / 96, paperHeight: height / 96, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0, pageRanges: "1" })
     : await cdp.call("Page.captureScreenshot", { format: "png" });
+  return bytesOf(out);
+}
+
+/** The file DevTools sends back, base64 in `data`. */
+function bytesOf(out: unknown): Uint8Array {
   const data = typeof out === "object" && out !== null && "data" in out && typeof out.data === "string" ? out.data : undefined;
   if (!data) throw new Error("the browser drew nothing");
   return Buffer.from(data, "base64");

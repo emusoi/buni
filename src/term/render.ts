@@ -1,18 +1,20 @@
-// Pages drawn to PNG or PDF with no editor open. The buni desktop app draws them when buni runs inside it or a host
-// names it; otherwise any Chrome, Chromium or Edge on this machine does (chrome.ts). The CLI's shot, icons and pdf use
+// Pages drawn to PNG or PDF, icon sets and the system PDF, with no editor open. The buni desktop app draws them when
+// buni runs inside it or a host names it; otherwise any Chrome, Chromium or Edge on this machine does (chrome.ts). The CLI's shot, icons and pdf use
 // this, and so does the terminal agent when it looks at its own work.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { pagesInOrder, type Doc, type Id, type Page } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
 import { fontFaces, renderPage } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
-import { drawWithBrowser, evaluateWithBrowser, findBrowser, type Sheet } from "./chrome.ts";
+import { systemReport } from "../tools/report.ts";
+import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, printWithBrowser, type Sheet } from "./chrome.ts";
+import { icnsFile, icoFile, ICON_SIZES } from "./iconset.ts";
 
 export interface Reply {
   ok: boolean;
@@ -36,10 +38,17 @@ const NEEDS = "Drawing pages needs Chrome, Chromium or Edge (or set BUNI_CHROME 
  * beside it (a server with Electron installed) names it as `app`.
  */
 export async function renderHeadless(job: RenderJob, app: AppRenderer | undefined = appRenderer()): Promise<Reply> {
-  if (job.format === "icons" || job.format === "system") return app ? renderInApp(app, job) : { ok: false, text: "App icon sets and the system PDF are made by the buni desktop app. A page draws to PNG or PDF with Chrome alone." };
   try {
     const ws = await Workspace.open(job.file);
     const doc = ws.view();
+    if (job.format === "system") {
+      if (app) return await renderInApp(app, job);
+      const browser = findBrowser();
+      if (!browser) return { ok: false, text: NEEDS };
+      const html = systemReport(ws.system(), { title: basename(job.file, ".buni"), date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }), owners: ws.owners() });
+      await writeFile(job.out, await printWithBrowser(browser, { html, dir: dirname(job.file), width: 1123 }));
+      return { ok: true, text: `Saved ${job.out}.` };
+    }
     const wanted = job.page ?? "";
     const page = doc.pages[wanted] ?? pagesInOrder(doc).find((p) => p.name.toLowerCase() === wanted.toLowerCase() || p.route === wanted);
     if (!page) return { ok: false, text: `No page "${wanted}" in ${job.file}; buni tree lists them.` };
@@ -55,12 +64,30 @@ export async function renderHeadless(job: RenderJob, app: AppRenderer | undefine
     if (app) return await renderInApp(app, { ...job, page: page.id });
     const browser = findBrowser();
     if (!browser) return { ok: false, text: NEEDS };
+    if (job.format === "icons") return await writeIconSet(browser, doc, page, dirname(job.file), job.out);
     const bytes = await drawWithBrowser(browser, { ...sheet(doc, page.id, dirname(job.file)), format: job.format, ...(job.scale ? { scale: job.scale } : {}) });
     await writeFile(job.out, bytes);
     return { ok: true, text: `Saved ${job.out}.` };
   } catch (e) {
     return { ok: false, text: `Could not render: ${e instanceof Error ? e.message : String(e)}` };
   }
+}
+
+/** An app icon set from a square graphic: each size drawn at its own pixel density, so small ones stay sharp. */
+async function writeIconSet(browser: string, doc: Doc, page: Page, dir: string, outDir: string): Promise<Reply> {
+  const style = doc.nodes[page.frame]?.style ?? {};
+  const width = Number.parseInt(style.width ?? "", 10);
+  if (!(width > 0) || style.height !== style.width) return { ok: false, text: `${page.name} isn't square; an app icon is a graphic with equal width and height.` };
+  const drawn = await drawScales(browser, sheet(doc, page.id, dir), ICON_SIZES.map((s) => s / width));
+  const pngs = new Map(ICON_SIZES.map((s, i) => [s, Buffer.from(drawn[i] ?? new Uint8Array())]));
+  await mkdir(outDir, { recursive: true });
+  const files: [string, Buffer][] = [
+    ...[...pngs].map(([s, png]): [string, Buffer] => [s === 180 ? "apple-touch-icon.png" : `icon-${s}.png`, png]),
+    ["favicon.ico", icoFile(pngs)],
+    ["AppIcon.icns", icnsFile(pngs)],
+  ];
+  await Promise.all(files.map(([name, data]) => writeFile(join(outDir, name), data)));
+  return { ok: true, text: `Wrote ${files.length} files to ${outDir}: ${files.map(([n]) => n).join(", ")}.` };
 }
 
 /** A page as one HTML document at its own width, ready for a browser. */

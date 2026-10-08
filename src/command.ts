@@ -41,9 +41,8 @@ usage: buni <command> [args] [--as <name>] [--json]
                                     that is one svg), with the Chrome, Chromium or Edge on this machine; a terminal
                                     screen also to .txt, its characters, or .ans, the same in colour for cat
   icons <file.buni> <page> <dir>    an app icon set from a square graphic: PNGs 16-1024, favicon.ico, AppIcon.icns
-                                    (made by the buni desktop app)
   export <file.buni> <out-dir>      write the site as static HTML + CSS
-  pdf <file.buni> <out.pdf>         the whole system design as one PDF to share (made by the buni desktop app)
+  pdf <file.buni> <out.pdf>         the whole system design as one PDF to share
   split <file.buni> part:<id> <new.buni>  move a part and what it owns into its own file; the two import each other
   mcp <file.buni>                   serve the tools over MCP (stdio)
   login [--server URL]              sign in with Wazo; your designs on buni.emusoi.app (or URL) then work with --remote

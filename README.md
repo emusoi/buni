@@ -85,17 +85,16 @@ signing in.
 
 ## The design agent
 
-buni's own design agent ships with the buni apps (the desktop app carries a `buni` with every command here plus
-`buni agent`, `buni ask` and evals). With this repository alone, any coding agent designs with buni: give it
-`buni skill`, or serve the tools with `buni mcp`.
+buni's own design agent is coming soon. Until then, any coding agent designs with buni: give it `buni skill`, or
+serve the tools with `buni mcp`.
 
 ## Drawing pages
 
 `buni shot` (and an agent's screenshots) draws a page with the Chrome, Chromium or Edge already on your
 machine; set `BUNI_CHROME` to use another one. A terminal screen also draws as text (`out.txt`, or `out.ans` in
 colour for `cat`): the characters a terminal shows, which a builder matches and keeps as a golden file. `buni icons`
-and `buni pdf` (the whole system design as one PDF) are made by the buni desktop app. Everything else runs from this
-repository alone.
+(an app icon set, each size drawn sharp, with a see-through backdrop) and `buni pdf` (the whole system design as one
+PDF) use the same browser.
 
 ## Environment
 
