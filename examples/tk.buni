@@ -1,0 +1,501 @@
+{
+  "agents": {},
+  "attachments": {},
+  "buni": 1,
+  "clusters": {},
+  "comments": {},
+  "connections": {},
+  "decisions": {},
+  "endpoints": {},
+  "environments": {},
+  "evals": {},
+  "events": {},
+  "flows": {},
+  "journeys": {},
+  "links": {},
+  "nodes": {
+    "84303012": {
+      "id": "84303012",
+      "index": "a2",
+      "kind": "text",
+      "name": "fri",
+      "parent": "4843eb4a",
+      "style": {
+        "color": "var(--term-yellow)",
+        "width": "90px"
+      },
+      "tag": "span",
+      "text": "fri"
+    },
+    "92317101": {
+      "id": "92317101",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Body",
+      "parent": "a7e9472d",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "gap": "9px",
+        "padding": "18px 9px 0 9px"
+      },
+      "tag": "div"
+    },
+    "02044add": {
+      "id": "02044add",
+      "index": "a0",
+      "kind": "text",
+      "name": "[ ]",
+      "parent": "cf2e0eb9",
+      "style": {
+        "width": "36px"
+      },
+      "tag": "span",
+      "text": "[ ]"
+    },
+    "04410c74": {
+      "id": "04410c74",
+      "index": "a0",
+      "kind": "text",
+      "name": "↑↓ move · enter open · a…",
+      "parent": "eee819a0",
+      "style": {},
+      "tag": "span",
+      "text": "↑↓ move · enter open · a add · x done · / search · tab lists · ? help · q quit"
+    },
+    "0536b419": {
+      "id": "0536b419",
+      "index": "a4",
+      "kind": "text",
+      "name": "  done        41",
+      "parent": "1a463dd3",
+      "style": {
+        "color": "var(--term-bright-black)",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "  done        41"
+    },
+    "0ddbbdea": {
+      "id": "0ddbbdea",
+      "index": "a2",
+      "kind": "text",
+      "name": "done",
+      "parent": "2b8d94c2",
+      "style": {
+        "width": "90px"
+      },
+      "tag": "span",
+      "text": "done"
+    },
+    "17bf71c0": {
+      "id": "17bf71c0",
+      "index": "a2",
+      "kind": "text",
+      "name": "  home         4",
+      "parent": "1a463dd3",
+      "style": {
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "  home         4"
+    },
+    "1a463dd3": {
+      "id": "1a463dd3",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Lists",
+      "parent": "92317101",
+      "style": {
+        "border": "1px solid var(--term-bright-black)",
+        "display": "flex",
+        "flexDirection": "column",
+        "padding": "0 9px",
+        "width": "216px"
+      },
+      "tag": "div"
+    },
+    "2b8d94c2": {
+      "id": "2b8d94c2",
+      "index": "a4",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d1de1f9d",
+      "style": {
+        "color": "var(--term-bright-black)",
+        "display": "flex"
+      },
+      "tag": "div"
+    },
+    "38bf6273": {
+      "id": "38bf6273",
+      "index": "a1",
+      "kind": "text",
+      "name": "Write the 0.2.0 changelo…",
+      "parent": "4843eb4a",
+      "style": {
+        "flex": "1"
+      },
+      "tag": "span",
+      "text": "Write the 0.2.0 changelog"
+    },
+    "423950ab": {
+      "id": "423950ab",
+      "index": "a0",
+      "kind": "text",
+      "name": "tk · work",
+      "parent": "c4e6bd45",
+      "style": {
+        "fontWeight": "bold"
+      },
+      "tag": "span",
+      "text": "tk · work"
+    },
+    "460a1e09": {
+      "id": "460a1e09",
+      "index": "a1",
+      "kind": "text",
+      "name": "Pin CI actions",
+      "parent": "2b8d94c2",
+      "style": {
+        "flex": "1"
+      },
+      "tag": "span",
+      "text": "Pin CI actions"
+    },
+    "4843eb4a": {
+      "id": "4843eb4a",
+      "index": "a3",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d1de1f9d",
+      "style": {
+        "display": "flex"
+      },
+      "tag": "div"
+    },
+    "4983c080": {
+      "id": "4983c080",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d1de1f9d",
+      "style": {
+        "display": "flex",
+        "justifyContent": "space-between"
+      },
+      "tag": "div"
+    },
+    "67d475d5": {
+      "id": "67d475d5",
+      "index": "a2",
+      "kind": "text",
+      "name": "today",
+      "parent": "cf2e0eb9",
+      "style": {
+        "color": "var(--term-red)",
+        "width": "90px"
+      },
+      "tag": "span",
+      "text": "today"
+    },
+    "716d88d1": {
+      "id": "716d88d1",
+      "index": "a0",
+      "kind": "text",
+      "name": "[ ]",
+      "parent": "4843eb4a",
+      "style": {
+        "width": "36px"
+      },
+      "tag": "span",
+      "text": "[ ]"
+    },
+    "721a0205": {
+      "id": "721a0205",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Tasks",
+      "style": {
+        "background": "var(--term-bg)",
+        "color": "var(--term-fg)",
+        "fontFamily": "ui-monospace, \"SF Mono\", Menlo, monospace",
+        "fontSize": "15px",
+        "height": "648px",
+        "lineHeight": "18px",
+        "overflow": "hidden",
+        "width": "1080px"
+      }
+    },
+    "878dfb54": {
+      "id": "878dfb54",
+      "index": "a1",
+      "kind": "text",
+      "name": "1/12",
+      "parent": "4983c080",
+      "style": {
+        "color": "var(--term-bright-black)"
+      },
+      "tag": "span",
+      "text": "1/12"
+    },
+    "88343b84": {
+      "id": "88343b84",
+      "index": "a3",
+      "kind": "text",
+      "name": "  reading      9",
+      "parent": "1a463dd3",
+      "style": {
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "  reading      9"
+    },
+    "90e9d9db": {
+      "id": "90e9d9db",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d1de1f9d",
+      "style": {
+        "background": "var(--term-fg)",
+        "color": "var(--term-bg)",
+        "display": "flex"
+      },
+      "tag": "div"
+    },
+    "9920fb4f": {
+      "id": "9920fb4f",
+      "index": "a0",
+      "kind": "text",
+      "name": "Lists",
+      "parent": "1a463dd3",
+      "style": {
+        "fontWeight": "bold",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Lists"
+    },
+    "9f0f363e": {
+      "id": "9f0f363e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Review Ana's migration P…",
+      "parent": "cf2e0eb9",
+      "style": {
+        "flex": "1"
+      },
+      "tag": "span",
+      "text": "Review Ana's migration PR"
+    },
+    "a7e9472d": {
+      "id": "a7e9472d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Screen",
+      "parent": "721a0205",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "height": "648px",
+        "width": "1080px"
+      },
+      "tag": "div"
+    },
+    "a9122656": {
+      "id": "a9122656",
+      "index": "a1",
+      "kind": "text",
+      "name": "› work        12",
+      "parent": "1a463dd3",
+      "style": {
+        "background": "var(--term-fg)",
+        "color": "var(--term-bg)",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "› work        12"
+    },
+    "b6cf18a8": {
+      "id": "b6cf18a8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Ship the export fix for …",
+      "parent": "90e9d9db",
+      "style": {
+        "flex": "1"
+      },
+      "tag": "span",
+      "text": "Ship the export fix for Ferro"
+    },
+    "c0934a48": {
+      "id": "c0934a48",
+      "index": "a0",
+      "kind": "text",
+      "name": "[ ]",
+      "parent": "90e9d9db",
+      "style": {
+        "width": "36px"
+      },
+      "tag": "span",
+      "text": "[ ]"
+    },
+    "c0dccde1": {
+      "id": "c0dccde1",
+      "index": "a0",
+      "kind": "text",
+      "name": "[x]",
+      "parent": "2b8d94c2",
+      "style": {
+        "width": "36px"
+      },
+      "tag": "span",
+      "text": "[x]"
+    },
+    "c4e6bd45": {
+      "id": "c4e6bd45",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Title bar",
+      "parent": "a7e9472d",
+      "style": {
+        "background": "var(--term-blue)",
+        "color": "var(--term-bright-white)",
+        "display": "flex",
+        "height": "18px",
+        "justifyContent": "space-between",
+        "padding": "0 9px"
+      },
+      "tag": "div"
+    },
+    "cf2e0eb9": {
+      "id": "cf2e0eb9",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d1de1f9d",
+      "style": {
+        "display": "flex"
+      },
+      "tag": "div"
+    },
+    "d0e79d4b": {
+      "id": "d0e79d4b",
+      "index": "a0",
+      "kind": "text",
+      "name": "work",
+      "parent": "4983c080",
+      "style": {
+        "fontWeight": "bold"
+      },
+      "tag": "span",
+      "text": "work"
+    },
+    "d1de1f9d": {
+      "id": "d1de1f9d",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Tasks",
+      "parent": "92317101",
+      "style": {
+        "border": "1px solid var(--term-bright-black)",
+        "display": "flex",
+        "flex": "1",
+        "flexDirection": "column",
+        "padding": "0 9px"
+      },
+      "tag": "div"
+    },
+    "d22c144e": {
+      "id": "d22c144e",
+      "index": "a1",
+      "kind": "text",
+      "name": "12 open · 3 due today",
+      "parent": "c4e6bd45",
+      "style": {},
+      "tag": "span",
+      "text": "12 open · 3 due today"
+    },
+    "eee819a0": {
+      "id": "eee819a0",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Help",
+      "parent": "a7e9472d",
+      "style": {
+        "color": "var(--term-bright-black)",
+        "display": "flex",
+        "height": "18px",
+        "padding": "0 9px"
+      },
+      "tag": "div"
+    },
+    "f4db917d": {
+      "id": "f4db917d",
+      "index": "a2",
+      "kind": "text",
+      "name": "today",
+      "parent": "90e9d9db",
+      "style": {
+        "color": "var(--term-red)",
+        "width": "90px"
+      },
+      "tag": "span",
+      "text": "today"
+    }
+  },
+  "operations": {},
+  "pages": {
+    "bee81065": {
+      "client": "tk",
+      "frame": "721a0205",
+      "id": "bee81065",
+      "index": "a0",
+      "name": "Tasks",
+      "route": "/",
+      "terminal": {
+        "colors": "16",
+        "cols": 120,
+        "rows": 36,
+        "surface": "app"
+      }
+    }
+  },
+  "parts": {
+    "tk": {
+      "id": "tk",
+      "index": "a0",
+      "kind": "client",
+      "name": "tk",
+      "purpose": "A terminal task list for developers: browse, add and finish tasks without leaving the shell.",
+      "terminal": {
+        "targets": [
+          {
+            "framework": "bubbletea",
+            "language": "go"
+          },
+          {
+            "framework": "ratatui",
+            "language": "rust"
+          }
+        ]
+      }
+    }
+  },
+  "phases": {},
+  "placements": {},
+  "positions": {},
+  "questions": {},
+  "requirements": {},
+  "reviews": {},
+  "roles": {},
+  "rules": {},
+  "sections": {},
+  "shapes": {},
+  "shared": {},
+  "tables": {},
+  "threads": {},
+  "tokens": {},
+  "traces": {}
+}

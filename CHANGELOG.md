@@ -1,0 +1,55 @@
+# Changelog
+
+What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
+the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
+
+## 0.2.0 — 2026-10-08
+
+- **`buni open`** shows a design in your browser, view only and live: its pages on a canvas with the flows between
+  them, one page at a time, and the pages an agent just changed marked as they change.
+- **The design agent moved to its own repository, buni-agent.** This one is buni's core: the format, the tools, skills,
+  MCP, drawing, `buni login` and the CLI, with nothing of the agent in it. buni-agent carries the core and adds
+  `buni agent`, `ask`, `eval` and `metrics`; it ships in the buni apps, and here those commands say what to use
+  instead. The CLI takes an `Extension` for a package that carries it.
+- **Sign in with Wazo** (`buni login`, `logout`, `whoami`) and work on the designs you keep on buni.emusoi.app
+  with `--remote`: `buni ls`, then `tree`, `context`, `call`, `export` and `mcp` on a design by name.
+  Edits show at once for everyone with the design open. `BUNI_TOKEN` signs in for CI.
+- **Security:** SVG markup in a design is checked as a browser parses it, against what drawings need. A crafted
+  file could previously put a `javascript:` link into an exported site (with an entity-encoded scheme or an
+  `<animate>` that rewrote a link), or load remote and `data:` SVG images.
+- **Drawing pages without the desktop app:** `buni shot` and screenshots over MCP draw with the Chrome,
+  Chromium or Edge already on your machine (or `BUNI_CHROME`), so the build, look and fix loop works from this
+  repository alone. Pages are found by id, name or route.
+- **More security fixes for files from anyone:** ids, style property names, width styles, token names and routes
+  are checked before they reach exported HTML, CSS or file paths; SVG may only use `url(#id)`; layer tags are an
+  allowlist; deep nesting is refused quickly.
+- Tools no longer reuse an id from another kind of record (which replaced it), and deleting, detaching or
+  rewriting layers cleans up the comments and overrides that pointed at them.
+- Design tools are organised one file per area (`src/tools/areas/`); their names and arguments are unchanged.
+- Dead code and needless exports are gone; `BUNI_WEB_URL` is replaced by `--remote`.
+- The MCP instructions, help and skills describe only what this repository does. User
+  skills may fold their description over several lines, and read the same with Windows line endings.
+- **Terminal screens as text:** `buni shot FILE PAGE out.txt` (or `.ans`, coloured) reads a terminal screen back
+  cell by cell, borders as box drawing; `read_screen` does the same for MCP clients, and a
+  terminal client's brief points builders at it. `examples/tk.buni` is a terminal task list to try it on.
+- Terminal screens draw like a terminal: a border takes whole cells, a box's width counts its border, and text keeps
+  its spaces. A 16-colour screen paints with the terminal's palette (`var(--term-red)`…), and its `.ans` uses the
+  terminal's numbered colours and reverse video, so it shows in the reader's own theme.
+- `brew install` pours a bottle, so it no longer needs up-to-date Command Line Tools on macOS.
+- Components placed on a terminal screen draw in cells there too, borders and widths like the screen's own layers.
+- **The terminal grid is checked:** an edit on a terminal screen says, in the tool's reply, what a terminal can't
+  draw: sizes off whole cells, a second font or size, pictures, shadows and gradients, borders that aren't box
+  drawing, and colours outside the palette on a 16-colour or colour-off screen.
+- **One writer per design:** `buni mcp` holds the design while it runs and publishes `<file>.live`, so `buni call`
+  and other MCP clients edit through it; when a buni here already has the design open, `buni mcp` passes its client
+  through to it. Its tools include `screenshot`, drawn with the browser on the machine.
+- `buni new FILE.buni` starts an empty design from the command line.
+- The package exports its modules by path (`buni/format/doc.ts`) and its examples, so a product can install the engine
+  instead of copying it. A host that ships the desktop app passes it to `renderHeadless`; the engine no longer guesses
+  its path.
+- The README lists every `BUNI_*` variable; font licenses are in `FONT-LICENSES.md`; CI actions are pinned.
+
+## 0.1.0 — 2026-10-07
+
+The first release of the open engine: the `.buni` format, the design tools, the design agent and its skills,
+the CLI and the MCP server, as one binary for macOS and Linux (`brew install emusoi/tap/buni`).

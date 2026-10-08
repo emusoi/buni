@@ -1,0 +1,182 @@
+{
+  "buni": 1,
+  "tokens": {
+    "--color-ink": "#10131A",
+    "--color-paper": "#FFFFFF",
+    "--color-accent": "#3346D3"
+  },
+  "attachments": {
+    "brief": { "id": "brief", "path": "assets/ferro-portal-brief.pdf", "mime": "application/pdf" },
+    "rack": { "id": "rack", "path": "assets/steel-rack.jpg", "mime": "image/jpeg" },
+    "usability": { "id": "usability", "path": "assets/usability-0917.md", "mime": "text/markdown" }
+  },
+  "shared": {
+    "nav": { "id": "nav", "name": "Public nav", "root": "nav-root" }
+  },
+  "pages": {
+    "home": { "id": "home", "name": "Home", "route": "/", "frame": "home-frame", "index": "a0", "client": "web" },
+    "pricing": { "id": "pricing", "name": "Pricing", "route": "/pricing", "frame": "pricing-frame", "index": "a1", "client": "web" }
+  },
+  "nodes": {
+    "nav-root": { "id": "nav-root", "kind": "frame", "index": "a0", "name": "Nav", "style": { "display": "flex", "justifyContent": "space-between", "padding": "22px 40px", "fontFamily": "Manrope" } },
+    "nav-logo": { "id": "nav-logo", "kind": "text", "parent": "nav-root", "index": "a0", "name": "Logo", "style": { "fontWeight": "800" }, "text": "Ferro" },
+    "nav-cta": { "id": "nav-cta", "kind": "text", "parent": "nav-root", "index": "a1", "name": "CTA", "style": { "color": "var(--color-accent)" }, "text": "Get a quote" },
+
+    "home-frame": { "id": "home-frame", "kind": "frame", "index": "a0", "name": "Home", "style": { "width": "1440px", "background": "var(--color-paper)", "fontFamily": "Manrope" } },
+    "home-nav": { "id": "home-nav", "kind": "instance", "parent": "home-frame", "index": "a0", "name": "Public nav", "style": {}, "shared": "nav", "overrides": {} },
+    "home-hero": { "id": "home-hero", "kind": "frame", "parent": "home-frame", "index": "a1", "name": "Hero", "tag": "section", "style": { "display": "flex", "flexDirection": "column", "gap": "18px" } },
+    "home-headline": { "id": "home-headline", "kind": "text", "parent": "home-hero", "index": "a0", "name": "Headline", "tag": "h1", "style": { "fontSize": "44px", "color": "var(--color-ink)" }, "text": "Steel that ships in a week." },
+    "home-cta": { "id": "home-cta", "kind": "text", "parent": "home-hero", "index": "a1", "name": "See pricing", "tag": "a", "style": {}, "text": "See pricing" },
+    "home-photo": { "id": "home-photo", "kind": "image", "parent": "home-hero", "index": "a2", "name": "Rack photo", "style": { "objectFit": "cover" }, "asset": "rack", "alt": "Steel brackets on a rack" },
+
+    "pricing-frame": { "id": "pricing-frame", "kind": "frame", "index": "a0", "name": "Pricing", "style": { "width": "1440px", "fontFamily": "Manrope" } },
+    "pricing-nav": { "id": "pricing-nav", "kind": "instance", "parent": "pricing-frame", "index": "a0", "name": "Public nav", "style": {}, "shared": "nav", "overrides": { "nav-cta": { "text": "Start a quote" } } },
+    "pricing-title": { "id": "pricing-title", "kind": "text", "parent": "pricing-frame", "index": "a1", "name": "Title", "style": { "fontSize": "34px" }, "text": "Pricing", "bind": { "endpoint": "list-plans", "field": "headline" } }
+  },
+  "connections": {
+    "home-to-pricing": { "id": "home-to-pricing", "page": "home", "node": "home-cta", "to": "pricing", "trigger": "click", "transition": "slide-left", "durationMs": 240, "endpoint": "list-plans" }
+  },
+  "flows": {
+    "get-a-quote": { "id": "get-a-quote", "name": "Get a quote", "start": "home", "index": "a0" }
+  },
+  "journeys": {
+    "get-a-quote-journey": {
+      "id": "get-a-quote-journey",
+      "flow": "get-a-quote",
+      "lanes": ["Does", "Thinks", "System", "Watch for"],
+      "steps": [
+        { "page": "home", "confidence": 4, "cells": { "Does": "Lands from a search ad.", "Thinks": "Can they actually do a week?" }, "evidence": [] },
+        { "page": "pricing", "confidence": 4, "cells": { "Does": "Compares plans.", "Watch for": "Plan names are jargon." }, "evidence": ["usability"] }
+      ]
+    }
+  },
+  "comments": {
+    "c1": { "id": "c1", "node": "home-headline", "state": "addressed", "posts": [
+      { "author": "Jones", "body": "Headline is fighting the nav. Try 44px.", "at": "2026-09-23T09:12:00Z" },
+      { "author": "pi", "body": "Set headline to 44px. Addressed, confirm to resolve.", "at": "2026-09-23T09:14:00Z" }
+    ] }
+  },
+  "parts": {
+    "web": { "id": "web", "kind": "client", "name": "Customer portal", "purpose": "Where buyers price steel and place quotes.", "tech": "Next.js", "index": "a0" },
+    "quote-api": { "id": "quote-api", "kind": "service", "name": "Quote API", "purpose": "Prices plans and records quotes.", "tech": "Bun + Hono", "index": "a1" },
+    "pg": { "id": "pg", "kind": "store", "name": "Main database", "purpose": "Customers, plans and quotes.", "tech": "Postgres 16", "index": "a2",
+      "ifDown": "Pricing shows the cached plans; quotes can't be sent and the form says so." },
+    "jobs": { "id": "jobs", "kind": "queue", "name": "Jobs", "purpose": "Work that happens after a request returns.", "tech": "SQS", "index": "a3" },
+    "edge-cache": { "id": "edge-cache", "kind": "cache", "name": "Plan cache", "purpose": "Keeps the price list warm; prices change weekly.", "tech": "Redis 7", "index": "a5" },
+    "catalog": { "id": "catalog", "kind": "service", "api": "graphql", "name": "Catalog", "purpose": "Plans and prices for buyers and admins.", "tech": "Yoga", "index": "a6" },
+    "mailer": { "id": "mailer", "kind": "service", "api": "none", "name": "Mailer", "purpose": "Sends quote confirmations.", "index": "a4" }
+  },
+  "links": {
+    "web-api": { "id": "web-api", "from": "web", "to": "quote-api", "kind": "calls", "carries": ["quote-request", "plan"],
+      "failure": { "timeoutMs": 3000, "retries": 2, "idempotencyKey": "Idempotency-Key header", "fallback": "Keep the form and show 'Couldn't send your quote, try again'" } },
+    "api-cache": { "id": "api-cache", "from": "quote-api", "to": "edge-cache", "kind": "writes", "carries": ["plan"] },
+    "api-pg": { "id": "api-pg", "from": "quote-api", "to": "pg", "kind": "writes" },
+    "api-jobs": { "id": "api-jobs", "from": "quote-api", "to": "jobs", "kind": "publishes", "carries": ["quote-request"] },
+    "web-catalog": { "id": "web-catalog", "from": "web", "to": "catalog", "kind": "calls", "carries": ["plan"] },
+    "catalog-pg": { "id": "catalog-pg", "from": "catalog", "to": "pg", "kind": "writes", "carries": ["plan"] },
+    "catalog-cache": { "id": "catalog-cache", "from": "catalog", "to": "edge-cache", "kind": "writes", "carries": ["plan"] },
+    "mailer-jobs": { "id": "mailer-jobs", "from": "mailer", "to": "jobs", "kind": "subscribes" }
+  },
+  "tables": {
+    "plans": { "id": "plans", "store": "pg", "name": "plans", "index": "a0", "columns": [
+      { "name": "id", "type": "uuid", "primary": true },
+      { "name": "name", "type": "text", "unique": true },
+      { "name": "price_per_kg", "type": "numeric(10,2)" }
+    ] },
+    "quotes": { "id": "quotes", "store": "pg", "name": "quotes", "index": "a1", "columns": [
+      { "name": "id", "type": "uuid", "primary": true },
+      { "name": "plan_id", "type": "uuid", "ref": { "table": "plans", "column": "id" } },
+      { "name": "email", "type": "text", "classification": "personal" },
+      { "name": "kg", "type": "integer" },
+      { "name": "created_at", "type": "timestamptz" }
+    ] }
+  },
+  "endpoints": {
+    "list-plans": { "id": "list-plans", "service": "quote-api", "method": "GET", "path": "/plans", "summary": "Plans with their prices, for the pricing page.", "index": "a0",
+      "request": [], "response": [{ "name": "headline", "type": "string" }, { "name": "plans", "type": "Plan[]" }], "reads": ["plans"], "writes": [], "emits": [],
+      "cache": { "part": "edge-cache", "ttlSeconds": 300, "key": "plans" }, "access": { "who": "public" } },
+    "create-quote": { "id": "create-quote", "service": "quote-api", "method": "POST", "path": "/quotes", "summary": "Records a quote and queues its confirmation email.", "index": "a1",
+      "request": [{ "name": "planId", "type": "string" }, { "name": "email", "type": "string" }, { "name": "kg", "type": "integer" }],
+      "response": [{ "name": "id", "type": "string" }, { "name": "total", "type": "number" }], "reads": ["plans"], "writes": ["quotes"], "emits": ["quote-created"], "invalidates": [],
+      "errors": [{ "code": "409", "when": "the plan was retired" }, { "code": "422", "when": "kg is out of range" }],
+      "access": { "who": "public", "rule": "rate limited per IP; the email is confirmed before a quote is priced" } }
+  },
+  "events": {
+    "quote-created": { "id": "quote-created", "queue": "jobs", "name": "quote.created", "index": "a0", "payload": [{ "name": "quoteId", "type": "string" }, { "name": "email", "type": "string" }] }
+  },
+  "shapes": {
+    "plan": { "id": "plan", "name": "Plan", "index": "a0", "fields": [{ "name": "id", "type": "string" }, { "name": "name", "type": "string" }, { "name": "pricePerKg", "type": "number" }] },
+    "quote-status": { "id": "quote-status", "name": "QuoteStatus", "index": "a2", "fields": [], "values": ["draft", "sent", "accepted", "declined"] },
+    "quote": { "id": "quote", "name": "Quote", "index": "a3", "fields": [{ "name": "id", "type": "id" }, { "name": "total", "type": "number" }, { "name": "status", "type": "QuoteStatus" }] },
+    "quote-request": { "id": "quote-request", "name": "QuoteRequest", "index": "a1", "note": "What a buyer submits from the pricing page.",
+      "fields": [{ "name": "planId", "type": "string" }, { "name": "email", "type": "string" }, { "name": "kg", "type": "integer" }] }
+  },
+  "operations": {
+    "plans-query": { "id": "plans-query", "service": "catalog", "kind": "query", "name": "plans", "summary": "All plans with prices, for Pricing.", "index": "a0",
+      "args": [{ "name": "currency", "type": "string", "optional": true }], "returns": "Plan[]", "reads": ["plans"], "writes": [], "emits": [],
+      "cache": { "part": "edge-cache", "ttlSeconds": 300, "key": "plans:{currency}" } },
+    "update-plan": { "id": "update-plan", "service": "catalog", "kind": "mutation", "name": "updatePlan", "summary": "Change a plan's price.", "index": "a1",
+      "args": [{ "name": "id", "type": "id" }, { "name": "pricePerKg", "type": "number" }], "returns": "Plan", "reads": [], "writes": ["plans"], "emits": [],
+      "invalidates": ["plans-query", "list-plans"], "errors": [{ "code": "NOT_FOUND", "when": "no plan has that id" }],
+      "access": { "who": "roles", "roles": ["admin"] } },
+    "plan-changed": { "id": "plan-changed", "service": "catalog", "kind": "subscription", "name": "planChanged", "summary": "Pushes price changes to open Pricing pages.", "index": "a2",
+      "args": [], "returns": "Plan", "reads": [], "writes": [], "emits": [] }
+  },
+  "traces": {
+    "submit-quote": { "id": "submit-quote", "name": "Submit a quote", "page": "pricing", "index": "a0", "steps": [
+      { "from": "web", "to": "quote-api", "action": "POST /quotes", "via": "create-quote", "carries": "quote-request", "ms": 150, "ifFails": "The form stays filled in and says the quote wasn't sent." },
+      { "from": "quote-api", "to": "pg", "action": "insert quotes", "carries": "quote", "ms": 20 },
+      { "from": "quote-api", "to": "jobs", "action": "publish quote.created", "via": "quote-created", "async": true },
+      { "from": "jobs", "to": "mailer", "action": "deliver", "via": "quote-created", "async": true }
+    ] }
+  },
+  "environments": {
+    "prod": { "id": "prod", "name": "prod", "provider": "aws", "regions": ["us-east-1", "eu-west-1"], "index": "a0" },
+    "staging": { "id": "staging", "name": "staging", "provider": "aws", "regions": ["us-east-1"], "index": "a1" }
+  },
+  "clusters": {
+    "prod-use1": { "id": "prod-use1", "environment": "prod", "name": "prod-use1", "kind": "kubernetes", "region": "us-east-1", "version": "EKS 1.30" },
+    "staging-use1": { "id": "staging-use1", "environment": "staging", "name": "staging-use1", "kind": "kubernetes", "region": "us-east-1", "version": "EKS 1.30" }
+  },
+  "placements": {
+    "web-prod": { "id": "web-prod", "part": "web", "environment": "prod", "runtime": "static", "regions": ["us-east-1"], "service": "CloudFront + S3", "ingress": { "host": "ferro.com", "path": "/" } },
+    "quote-api-prod": { "id": "quote-api-prod", "part": "quote-api", "environment": "prod", "runtime": "deployment", "regions": ["us-east-1"], "cluster": "prod-use1", "namespace": "quotes", "scale": { "min": 2, "max": 10, "cpuTarget": 70 }, "resources": { "cpu": "250m", "memory": "256Mi" },
+      "ingress": { "host": "api.ferro.com", "path": "/quotes" }, "config": ["PLAN_CACHE_TTL"], "secrets": ["DATABASE_URL", "QUEUE_URL"] },
+    "catalog-prod": { "id": "catalog-prod", "part": "catalog", "environment": "prod", "runtime": "deployment", "regions": ["us-east-1"], "cluster": "prod-use1", "namespace": "catalog", "scale": { "min": 2, "max": 6 }, "ingress": { "host": "api.ferro.com", "path": "/graphql" }, "secrets": ["DATABASE_URL", "REDIS_URL"] },
+    "mailer-prod": { "id": "mailer-prod", "part": "mailer", "environment": "prod", "runtime": "deployment", "regions": ["us-east-1"], "cluster": "prod-use1", "namespace": "quotes", "scale": { "min": 1, "max": 3 }, "secrets": ["QUEUE_URL", "RESEND_API_KEY"] },
+    "pg-prod": { "id": "pg-prod", "part": "pg", "environment": "prod", "runtime": "managed", "regions": ["us-east-1"], "service": "RDS Postgres 16", "replicas": 1 },
+    "cache-prod": { "id": "cache-prod", "part": "edge-cache", "environment": "prod", "runtime": "managed", "regions": ["us-east-1"], "service": "ElastiCache Redis 7" },
+    "jobs-prod": { "id": "jobs-prod", "part": "jobs", "environment": "prod", "runtime": "managed", "regions": ["us-east-1"], "service": "SQS" },
+    "quote-api-staging": { "id": "quote-api-staging", "part": "quote-api", "environment": "staging", "runtime": "deployment", "regions": ["us-east-1"], "cluster": "staging-use1", "namespace": "quotes", "scale": { "min": 1, "max": 2 } }
+  },
+  "phases": {
+    "v1": { "id": "v1", "name": "v1", "goal": "Buyers can price and send a quote.", "index": "a0" },
+    "later": { "id": "later", "name": "later", "index": "a1" }
+  },
+  "requirements": {
+    "req-price": { "id": "req-price", "title": "A buyer sees every plan's price without signing in", "priority": "must", "phase": "v1", "servedBy": ["list-plans", "pricing"], "index": "a0" },
+    "req-quote": { "id": "req-quote", "title": "A buyer sends a quote in under a minute", "priority": "must", "phase": "v1", "servedBy": ["create-quote", "submit-quote"], "index": "a1" },
+    "req-admin": { "id": "req-admin", "title": "An admin changes a price and it shows everywhere within 5 minutes", "priority": "should", "phase": "later", "servedBy": ["update-plan"], "index": "a2" }
+  },
+  "questions": {
+    "q-queue": { "id": "q-queue", "kind": "question", "text": "SQS or a Redis queue for Jobs?", "status": "open", "about": ["jobs"], "by": "Jones", "at": "2026-09-29T09:00:00Z", "index": "a0",
+      "options": [{ "name": "SQS", "pros": "Managed, no ops", "cons": "Harder to run locally" }, { "name": "Redis (BullMQ)", "pros": "Same Redis as the cache", "cons": "We run it" }] },
+    "a-volume": { "id": "a-volume", "kind": "assumption", "text": "Under 500 quotes a day in v1", "status": "open", "about": ["quote-api"], "by": "Jones", "at": "2026-09-29T09:00:00Z", "index": "a1", "options": [] }
+  },
+  "roles": {
+    "buyer": { "id": "buyer", "name": "buyer", "description": "Anyone pricing steel; no account.", "index": "a0" },
+    "admin": { "id": "admin", "name": "admin", "description": "Ferro staff who set prices.", "index": "a1" }
+  },
+  "reviews": {
+    "quote-api": { "id": "quote-api", "state": "approved", "by": "Jones", "at": "2026-09-29T10:00:00Z" },
+    "catalog": { "id": "catalog", "state": "proposed", "by": "pi", "at": "2026-09-29T10:05:00Z" }
+  },
+  "threads": {
+    "t-cache": { "id": "t-cache", "target": "edge-cache", "state": "open", "posts": [{ "author": "Jones", "body": "Do we need this before we have traffic?", "at": "2026-09-29T10:10:00Z" }] }
+  },
+  "rules": {
+    "tokens": { "id": "tokens", "kind": "tokens-only" },
+    "public-nav": { "id": "public-nav", "kind": "shared-required", "shared": ["nav"], "routePrefix": "/" },
+    "width": { "id": "width", "kind": "fixed-width", "width": 1440 }
+  }
+}
