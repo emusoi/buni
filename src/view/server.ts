@@ -10,6 +10,7 @@ import { embeddedFont } from "../tools/fontdata.ts";
 import { fontFaces, renderPage } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { viewerHtml } from "./client.ts";
+import { systemOf, type SystemSnapshot } from "./system.ts";
 
 /** One page as the viewer draws it: where it sits, how big it is, and the document a board shows. */
 export interface Board {
@@ -36,6 +37,8 @@ export interface Snapshot {
   flows: { id: string; name: string; pages: string[] }[];
   /** Which page leads to which, once each, for the arrows between boards. */
   links: { from: string; to: string }[];
+  /** The system behind the pages, view by view. */
+  system: SystemSnapshot;
   /** Why the file couldn't be read just now; the last good design is kept. */
   error?: string;
 }
@@ -45,8 +48,11 @@ const px = (v: string | undefined) => {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
-/** The design as the viewer shows it. Fonts and the design's own files come from this server by URL. */
-export function snapshotOf(doc: Doc, file: string): Snapshot {
+/**
+ * The design as the viewer shows it. Fonts and the design's own files come from this server by URL. The system is
+ * read with the files it imports, as the tools check it.
+ */
+export function snapshotOf(doc: Doc, file: string, system: Doc = doc): Snapshot {
   const boards = pagesInOrder(doc).map((p): Board => {
     const { html, css } = renderPage(doc, p.id, { assetPrefix: "/files/" });
     const frame = doc.nodes[p.frame]?.style ?? {};
@@ -69,7 +75,7 @@ export function snapshotOf(doc: Doc, file: string): Snapshot {
     seen.add(key);
     return [{ from: c.page, to: c.to }];
   });
-  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links };
+  return { name: basename(file), folder: dirname(file).replace(homedir(), "~"), boards, flows, links, system: systemOf(system) };
 }
 
 /** A file in the design's folder, or undefined for anything outside it. */
@@ -85,11 +91,15 @@ function inFolder(dir: string, path: string): string | undefined {
 export async function serveViewer(file: string, port = 0): Promise<{ url: string; stop: () => void }> {
   const path = resolve(file);
   const dir = dirname(path);
-  let last = snapshotOf((await Workspace.open(path)).view(), path);
+  const read = async () => {
+    const ws = await Workspace.open(path);
+    return snapshotOf(ws.view(), path, ws.system());
+  };
+  let last = await read();
   const listeners = new Set<(s: Snapshot) => void>();
   const reload = async () => {
     try {
-      last = snapshotOf((await Workspace.open(path)).view(), path);
+      last = await read();
     } catch (e) {
       // Read mid-write, or broken by hand: keep showing the last good design, and say why.
       last = { ...last, error: e instanceof Error ? e.message : String(e) };

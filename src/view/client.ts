@@ -1,4 +1,5 @@
-// The page buni open shows: the design's pages on a canvas, a rail to find them, and one page at a time when asked.
+// The page buni open shows: the design's pages on a canvas, the system behind them view by view, a rail to find
+// them, and one page or one thing at a time when asked.
 // Plain HTML, CSS and script, so the core needs no front-end build. Drawn after designs/viewer.buni.
 
 const WORDMARK =
@@ -90,6 +91,64 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 #page .title span { font-family: var(--mono); color: var(--ink-3); }
 #page .sheet { flex-shrink: 0; background: var(--page); box-shadow: var(--shadow-pop); overflow: hidden; }
 #page .bar .spacer { width: 96px; }
+#sys { position: absolute; inset: 48px 0 0 0; display: none; }
+#sys.on { display: flex; }
+#sys .sysbody { position: relative; flex: 1; min-width: 0; overflow: auto; }
+#sys .sysbody.canvas { overflow: hidden; }
+.pan { position: absolute; inset: 0; overflow: hidden; cursor: grab; background-image: radial-gradient(circle, rgba(55,53,47,0.14) 1px, transparent 1px); background-size: 20px 20px; }
+.pan.panning { cursor: grabbing; }
+.pan .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.syszoom { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-menu); background: var(--bar); box-shadow: var(--shadow-pop); z-index: 2; }
+.syszoom button { border: 0; background: none; padding: 6px 8px; border-radius: var(--r-sm); font: 12px var(--font); color: var(--ink-2); cursor: pointer; }
+.syszoom button:hover { background: var(--selected); }
+.syszoom .pct { font: 12px var(--mono); color: var(--ink-2); padding: 0 4px; min-width: 44px; text-align: center; }
+.legend { position: absolute; right: 16px; bottom: 16px; display: flex; gap: 14px; padding: 6px 12px; border-radius: var(--r-menu); background: var(--bar); box-shadow: var(--shadow-card); font-size: 12px; color: var(--ink-2); z-index: 2; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; border-top: 1.5px solid #a3a29e; }
+.legend i.dash { border-top-style: dashed; }
+.kind { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.kind svg { flex-shrink: 0; }
+.colhead { position: absolute; top: 0; margin: 0; white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-3); }
+.part { position: absolute; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; background: var(--page); box-shadow: var(--shadow-card); cursor: pointer; overflow: hidden; }
+.part .ptop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.part .tech { font: 11px var(--mono); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.part b { font-size: 14px; margin-top: 2px; }
+.part p { margin: 0; font-size: 12px; line-height: 16px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+[data-ref].sel { box-shadow: 0 0 0 2px var(--ink), var(--shadow-card) !important; }
+[data-ref].changed { box-shadow: 0 0 0 2px var(--live), var(--shadow-card); }
+.links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.links path { fill: none; stroke: #cfcecb; stroke-width: 1.25; marker-end: url(#m-off); }
+.links .async path { stroke-dasharray: 5 4; }
+.links text { display: none; font: 600 10px var(--font); fill: var(--ink); paint-order: stroke; stroke: var(--canvas); stroke-width: 4px; text-anchor: middle; }
+.links .on path { stroke: var(--ink); stroke-width: 1.75; marker-end: url(#m-on); }
+.links .on text { display: block; }
+.links.none path { stroke: #a3a29e; }
+#drawer { display: none; flex-direction: column; width: 340px; flex-shrink: 0; overflow-y: auto; background: var(--page); border-left: 1px solid var(--divider); }
+#drawer.on { display: flex; }
+.dhead { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 14px; }
+.dtop { display: flex; align-items: center; justify-content: space-between; }
+.dclose { display: flex; border: 0; background: none; padding: 2px; color: var(--ink-3); cursor: pointer; border-radius: var(--r-sm); }
+.dclose:hover { background: var(--selected); }
+.dhead h3 { margin: 4px 0 0; font-size: 17px; font-weight: 600; }
+.dhead .sub { margin: 0; font: 12px var(--mono); color: var(--ink-3); }
+.dhead .about { margin: 6px 0 0; font-size: 13px; line-height: 19px; color: var(--ink-2); }
+.dsec { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; border-top: 1px solid var(--divider); }
+.dsec h4 { margin: 0 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dsec h4 span { font-weight: 500; }
+.drow { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+.drow.go { cursor: pointer; }
+.drow.go:hover .l { text-decoration: underline; }
+.drow .l { flex: 1; min-width: 0; }
+.drow .r { font-size: 12px; color: var(--ink-2); text-align: right; }
+.drow svg { color: var(--ink-3); flex-shrink: 0; }
+.drow code, .dsec code { font: 12px var(--mono); }
+.dnote { margin: 0; font-size: 12px; line-height: 18px; color: var(--ink-2); }
+.dsec > .dnote:first-of-type:last-child { font-size: 13px; color: var(--ink); }
+.m-GET, .m-query { color: #448361; } .m-POST, .m-mutation { color: #3346d3; } .m-PUT, .m-PATCH { color: #b45309; } .m-DELETE { color: #b42318; } .m-subscription { color: #7c3aed; }
+.item.on { background: var(--selected); }
+.item.on .name { font-weight: 600; }
+.item.sub { padding-left: 30px; }
+.item.sub .name { font-size: 13px; }
 `;
 
 const SCRIPT = String.raw`
@@ -218,44 +277,166 @@ function focusBoard(id) {
   applyView();
 }
 
+// Where the person is: the pages' canvas ("#/"), one page ("#/page/ID"), or a system view, maybe with one thing
+// open in the drawer ("#/map/part:api"). The address can be shared, so an agent can point at a view.
+function current() {
+  const [, view, ...rest] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
+  return { view: view || "", ref: rest.join("/") };
+}
+function go(ref) {
+  if (ref.startsWith("page:")) { location.hash = "#/page/" + encodeURIComponent(ref.slice(5)); return; }
+  const view = snap.system.where[ref];
+  if (view) location.hash = "#/" + view + "/" + encodeURIComponent(ref);
+}
+const recentRef = (ref) => Date.now() - (changedAt[ref] || 0) < 10000;
+
 function rail() {
-  const r = $("#rail");
+  const r = $("#rail"), here = current();
+  const top = r.scrollTop;
   r.innerHTML = "";
   const mark = el("div", "mark");
   mark.innerHTML = ${JSON.stringify(WORDMARK)};
   r.appendChild(mark);
-  const recent = (id) => Date.now() - (changedAt[id] || 0) < 10000;
-  const section = (title, items, icon, empty) => {
-    if (!items.length && !empty) return;
-    r.appendChild(el("h2", "", title));
-    if (!items.length) { r.appendChild(el("p", "none", empty)); return; }
-    for (const it of items) {
-      const row = el("div", "item");
-      const i = el("span"); i.innerHTML = icon; row.appendChild(i);
-      row.appendChild(el("span", "name", it.name));
-      if (it.id && recent(it.id)) row.appendChild(el("span", "dot"));
-      row.appendChild(el("span", "meta", it.meta));
-      row.onclick = it.go;
-      r.appendChild(row);
-    }
+  const row = (icon, name, meta, opts) => {
+    const e = el("div", "item" + (opts.on ? " on" : "") + (opts.sub ? " sub" : ""));
+    if (icon) { const i = el("span"); i.innerHTML = icon; e.appendChild(i); }
+    e.appendChild(el("span", "name", name));
+    if (opts.dot) e.appendChild(el("span", "dot"));
+    e.appendChild(el("span", "meta", meta));
+    e.onclick = opts.go;
+    r.appendChild(e);
   };
+  const onScreens = here.view === "" || here.view === "page";
   const pages = snap.boards.filter((b) => !b.terminal), screens = snap.boards.filter((b) => b.terminal);
-  section("PAGES", pages.map((b) => ({ id: b.id, name: b.state ? b.name + " · " + b.state : b.name, meta: meta(b), go: () => focusBoard(b.id) })), ${JSON.stringify(ICON.page)}, screens.length ? undefined : "None yet");
-  section("TERMINAL", screens.map((b) => ({ id: b.id, name: b.name, meta: meta(b), go: () => focusBoard(b.id) })), ${JSON.stringify(ICON.terminal)});
-  section("FLOWS", snap.flows.map((f) => ({ name: f.name, meta: f.pages.length + " step" + (f.pages.length === 1 ? "" : "s"), go: () => focusBoard(f.pages[0]) })), ${JSON.stringify(ICON.flow)});
+  const boardRows = (list) => { if (onScreens) for (const b of list) row("", b.state ? b.name + " · " + b.state : b.name, meta(b), { sub: true, on: here.ref === b.id, dot: recentRef(b.id), go: () => { location.hash = "#/"; focusBoard(b.id); } }); };
+  r.appendChild(el("h2", "", "SCREENS"));
+  row(${JSON.stringify(ICON.page)}, "Pages", String(pages.length), { on: onScreens && !screens.length, dot: !onScreens && pages.some((b) => recentRef(b.id)), go: () => { location.hash = "#/"; } });
+  boardRows(pages);
+  if (screens.length) { row(${JSON.stringify(ICON.terminal)}, "Terminal", String(screens.length), { go: () => { location.hash = "#/"; focusBoard(screens[0].id); } }); boardRows(screens); }
+  if (snap.flows.length) {
+    row(${JSON.stringify(ICON.flow)}, "Flows", String(snap.flows.length), { go: () => { location.hash = "#/"; focusBoard(snap.flows[0].pages[0]); } });
+    if (onScreens) for (const f of snap.flows) row("", f.name, f.pages.length + " step" + (f.pages.length === 1 ? "" : "s"), { sub: true, go: () => focusBoard(f.pages[0]) });
+  }
+  for (const [group, title] of [["system", "SYSTEM"], ["plan", "PLAN"]]) {
+    const views = snap.system.views.filter((v) => v.group === group);
+    if (!views.length) continue;
+    r.appendChild(el("h2", "", title));
+    for (const v of views) {
+      const dot = Object.keys(changedAt).some((ref) => snap.system.where[ref] === v.id && recentRef(ref));
+      row(v.icon, v.name, String(v.count), { on: here.view === v.id, dot, go: () => { location.hash = "#/" + v.id; } });
+    }
+  }
   const note = el("div", "note");
   note.appendChild(el("b", "", "View only"));
-  note.appendChild(el("p", "", "Ask your agent to change the design. It edits this file, and the canvas follows."));
+  note.appendChild(el("p", "", "Ask your agent to change the design. It edits this file, and the views follow."));
   note.appendChild(el("code", "", "buni skill · buni mcp"));
   r.appendChild(note);
+  r.scrollTop = top;
 }
+
+// A system view: its HTML from the server, swapped in only when it changed, so a canvas keeps where it was looked at.
+const pans = {};
+let shownView = "", shownHtml = "";
+function showSystem(view, ref) {
+  const v = snap.system.views.find((x) => x.id === view);
+  const body = $("#sys .sysbody"), drawer = $("#drawer");
+  if (!v) { location.hash = "#/"; return; }
+  if (shownView !== view || shownHtml !== v.html) {
+    shownView = view; shownHtml = v.html;
+    body.className = "sysbody" + (v.canvas ? " canvas" : "");
+    body.innerHTML = v.html;
+    if (v.canvas) panner(view, body.querySelector(".pan"));
+    else body.scrollTop = 0;
+  }
+  for (const e of body.querySelectorAll(".sel")) e.classList.remove("sel");
+  const detail = ref && snap.system.details[ref];
+  drawer.classList.toggle("on", Boolean(detail));
+  drawer.innerHTML = detail || "";
+  if (detail) for (const e of body.querySelectorAll('[data-ref="' + CSS.escape(ref) + '"]')) e.classList.add("sel");
+  // On the map, the open part's links come forward with their names.
+  const part = ref && ref.startsWith("part:") ? ref.slice(5) : "";
+  const links = body.querySelector(".links");
+  if (links) {
+    links.classList.toggle("none", !part);
+    for (const g of links.querySelectorAll(".link")) g.classList.toggle("on", Boolean(part) && (g.dataset.a === part || g.dataset.b === part));
+  }
+  marks();
+}
+/** Outlines what changed in the last ten seconds, wherever it is drawn. */
+function marks() {
+  for (const e of document.querySelectorAll("#sys [data-ref]")) e.classList.toggle("changed", recentRef(e.dataset.ref) && !e.classList.contains("sel"));
+}
+
+/** Pans and zooms one system canvas; each view remembers its own, and fits until it is moved. */
+function panner(view, pan) {
+  if (!pan) return;
+  const world = pan.querySelector(".world");
+  const st = pans[view] || (pans[view] = { scale: 1, x: 40, y: 40, moved: false });
+  const zoom = el("div", "syszoom");
+  zoom.innerHTML = '<button data-z="out" aria-label="Zoom out">−</button><span class="pct"></span><button data-z="in" aria-label="Zoom in">+</button><button data-z="fit">Fit</button>';
+  pan.parentElement.appendChild(zoom);
+  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; };
+  const fitView = () => {
+    const c = pan.getBoundingClientRect(), w = Number(world.dataset.w) || 800, h = Number(world.dataset.h) || 600;
+    if (c.width < 100) return;
+    st.scale = Math.max(0.1, Math.min(1, (c.width - 80) / w, (c.height - 120) / h));
+    st.x = Math.max(40, (c.width - w * st.scale) / 2); st.y = Math.max(56, (c.height - 40 - h * st.scale) / 2);
+    apply();
+  };
+  const zoomAt = (f, cx, cy) => { st.moved = true; const next = Math.min(2, Math.max(0.1, st.scale * f)); st.x = cx - (cx - st.x) * (next / st.scale); st.y = cy - (cy - st.y) * (next / st.scale); st.scale = next; apply(); };
+  st.fit = () => { if (!st.moved) fitView(); };
+  pan.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const r = pan.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
+    else { st.moved = true; st.x -= e.deltaX; st.y -= e.deltaY; apply(); }
+  }, { passive: false });
+  pan.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("[data-ref]")) return;
+    let last = { x: e.clientX, y: e.clientY };
+    pan.classList.add("panning");
+    const move = (ev) => { st.moved = true; st.x += ev.clientX - last.x; st.y += ev.clientY - last.y; last = { x: ev.clientX, y: ev.clientY }; apply(); };
+    const up = () => { pan.classList.remove("panning"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+    addEventListener("pointermove", move); addEventListener("pointerup", up);
+  });
+  zoom.onclick = (e) => {
+    const z = e.target.closest("button") && e.target.closest("button").dataset.z, r = pan.getBoundingClientRect();
+    if (z === "in") zoomAt(1.25, r.width / 2, r.height / 2);
+    if (z === "out") zoomAt(1 / 1.25, r.width / 2, r.height / 2);
+    if (z === "fit") { st.moved = false; fitView(); }
+  };
+  if (st.moved) apply(); else requestAnimationFrame(fitView);
+}
+
+// One place decides what shows, from the address.
+function route() {
+  if (!snap) return;
+  const here = current();
+  if (here.view === "" && !snap.boards.length && snap.system.views.length) { location.replace("#/" + snap.system.views[0].id); return; }
+  const sys = here.view !== "" && here.view !== "page";
+  $("#sys").classList.toggle("on", sys);
+  $("#canvas").style.visibility = sys ? "hidden" : "";
+  $("#empty").classList.toggle("on", !sys && !snap.boards.length);
+  if (sys) { closePage(); showSystem(here.view, here.ref); }
+  else if (here.view === "page" && here.ref) openPage(here.ref);
+  else closePage();
+  rail();
+}
+addEventListener("hashchange", route);
+$("#sys").addEventListener("click", (e) => {
+  const goTo = e.target.closest("[data-go]");
+  if (goTo) { go(goTo.dataset.go); return; }
+  if (e.target.closest(".dclose")) { location.hash = "#/" + current().view; return; }
+  const thing = e.target.closest(".sysbody [data-ref]");
+  if (thing) location.hash = "#/" + current().view + "/" + encodeURIComponent(thing.dataset.ref);
+});
 
 function liveLine() {
   const pill = $(".pill"), ago = $(".ago");
-  const recent = snap.boards.filter((b) => Date.now() - (changedAt[b.id] || 0) < 10000);
+  const recent = [...snap.boards.filter((b) => recentRef(b.id)).map((b) => b.name), ...Object.keys(snap.system.names).filter(recentRef).map((r) => snap.system.names[r])];
   pill.className = "pill" + (snap.error ? " bad" : recent.length ? " on" : "");
   pill.lastChild.textContent = snap.error ? "Can't read the file: " + snap.error.split("\n")[0].slice(0, 80)
-    : recent.length ? recent.map((b) => b.name).join(", ") + " changed" : snap.boards.length ? "Watching for changes" : "Waiting for an agent";
+    : recent.length ? recent.slice(0, 3).join(", ") + (recent.length > 3 ? " and " + (recent.length - 3) + " more" : "") + " changed" : snap.boards.length || snap.system.views.length ? "Watching for changes" : "Waiting for an agent";
   const s = Math.round((Date.now() - lastUpdate) / 1000);
   ago.textContent = "updated " + (s < 5 ? "just now" : s < 60 ? s + "s ago" : Math.round(s / 60) + "m ago");
   for (const [id, n] of boards) {
@@ -266,11 +447,11 @@ function liveLine() {
 }
 
 function render(s) {
+  if (snap && !first) for (const [ref, html] of Object.entries(s.system.details)) if (snap.system.details[ref] !== html) changedAt[ref] = Date.now();
   snap = s;
   $("#file b").textContent = s.name;
   $("#file span").textContent = s.folder;
   document.title = s.name + " · buni";
-  $("#empty").classList.toggle("on", !s.boards.length);
   $("#zoom").style.display = s.boards.length ? "" : "none";
   const world = $("#world");
   for (const [id, n] of boards) if (!s.boards.some((b) => b.id === id)) { n.el.remove(); boards.delete(id); }
@@ -284,7 +465,7 @@ function render(s) {
       label.appendChild(el("b")); label.appendChild(el("span"));
       const badge = el("em", "", "changed"); label.appendChild(badge);
       sheet.appendChild(frame); e.appendChild(label); e.appendChild(sheet); world.appendChild(e);
-      e.onclick = () => openPage(b.id);
+      e.onclick = () => { location.hash = "#/page/" + encodeURIComponent(b.id); };
       n = { el: e, label, sheet, frame, badge, html: "" };
       boards.set(b.id, n);
     }
@@ -297,10 +478,9 @@ function render(s) {
     }
   }
   if (!first) lastUpdate = Date.now();
-  rail();
   place();
   liveLine();
-  if (open) openPage(open);
+  route();
   first = false;
 }
 
@@ -313,7 +493,7 @@ function openPage(id) {
   const bar = el("div", "bar"), back = el("button", "back");
   back.innerHTML = ${JSON.stringify(ICON.back)};
   back.appendChild(document.createTextNode("All pages"));
-  back.onclick = closePage;
+  back.onclick = () => { location.hash = "#/"; };
   const fitTo = Math.min(1, (view.getBoundingClientRect().width || innerWidth - 300) / b.width);
   const title = el("div", "title");
   title.appendChild(el("b", "", b.name));
@@ -345,7 +525,7 @@ function setRail(shown) {
 try { if (localStorage.getItem("buni.rail") === "hidden") $("#app").classList.add("collapsed"); } catch {}
 $("#toggle").onclick = () => setRail($("#app").classList.contains("collapsed"));
 addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closePage();
+  if (e.key === "Escape") { const h = current(); location.hash = h.ref && h.view !== "page" ? "#/" + h.view : "#/"; }
   if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) setRail($("#app").classList.contains("collapsed"));
 });
 
@@ -363,14 +543,14 @@ addEventListener("pointerup", () => { drag = null; canvas.classList.remove("pann
 $("#minus").onclick = () => { const r = canvas.getBoundingClientRect(); zoomAt(1 / 1.25, r.width / 2, r.height / 2); };
 $("#plus").onclick = () => { const r = canvas.getBoundingClientRect(); zoomAt(1.25, r.width / 2, r.height / 2); };
 $("#fit").onclick = () => { moved = false; fit(); };
-addEventListener("resize", () => { if (!moved) fit(); });
+addEventListener("resize", () => { if (!moved) fit(); const p = pans[shownView]; if (p && p.fit) p.fit(); });
 // The "changed" marks fade after ten seconds, in the rail too (redrawn only then, so it keeps its scroll).
 let railMarks = "";
 setInterval(() => {
   if (!snap) return;
   liveLine();
-  const marks = snap.boards.filter((b) => Date.now() - (changedAt[b.id] || 0) < 10000).map((b) => b.id).join();
-  if (marks !== railMarks) { railMarks = marks; rail(); }
+  const now = Object.keys(changedAt).filter(recentRef).join();
+  if (now !== railMarks) { railMarks = now; rail(); marks(); }
 }, 1000);
 
 fetch("/design").then((r) => r.json()).then(render);
@@ -402,6 +582,7 @@ export function viewerHtml(): string {
       <small>Try: “Design a landing page and a pricing page for a bike shop.”</small>
     </div></div>
     <div id="page"></div>
+    <div id="sys"><div class="sysbody"></div><aside id="drawer"></aside></div>
   </main>
 </div>
 <script>${SCRIPT}</script>
