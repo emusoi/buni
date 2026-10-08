@@ -222,8 +222,6 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
   }
   if (!isTool(name)) return { ok: false, text: `Unknown tool "${name}". Run "buni tools".` };
   const ws = await Workspace.open(file);
-  // buni open shows where each agent is working.
-  await ws.shareActivity();
   const r = await ws.call(as, name, args);
   return { ok: r.ok, text: r.reply };
 }
@@ -504,7 +502,6 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         return new Promise<number>(() => {});
       }
       const ws = await Workspace.open(file);
-      await ws.shareActivity();
       const host = { screenshot: (page: string) => screenshotPng(ws.path, page), screenAsText: (page: string) => screenAsText(ws.path, page) };
       // Otherwise this is the writer while it runs: buni call and other MCP clients find it through <file>.live.
       const served = await startMcpHttp(ws, 0, host);

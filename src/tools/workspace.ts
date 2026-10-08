@@ -147,8 +147,8 @@ export class Workspace {
   private sharing = false;
 
   /**
-   * Shares the latest edits with buni open through <file>.activity, after every edit. What is there already is kept,
-   * so one-shot buni call runs add to the same list as a long-running buni mcp.
+   * Shares the latest edits with buni open through <file>.activity, after every edit; on for every file on disk. What
+   * is there already is kept, so one-shot buni call runs add to the same list as a long-running buni mcp.
    */
   async shareActivity(): Promise<void> {
     this.sharing = true;
@@ -181,6 +181,8 @@ export class Workspace {
     ws.imported = imported;
     ws.session = { ...ws.session, context: systemOf(imported) };
     await ws.keepLegacyPending();
+    // Every writer of a file on disk tells buni open who is editing what: the CLI, MCP, an agent, an app.
+    if (store === diskStore) await ws.shareActivity();
     return ws;
   }
 

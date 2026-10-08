@@ -52,8 +52,8 @@ an agent's chats. Keep both out of git.
 `buni open design.buni` shows the design in your browser: its pages on a canvas, the flows between them, and one
 page at a time when you pick it; and the system behind them: the map of parts, the API, the data, events, traces,
 where each part runs, and the plan. Anything you click opens its detail, linked to everything it touches. It is view only and follows the file, so as an agent designs, the pages it changes
-appear and are marked, and each agent's face sits on what it is working on (`buni call` and `buni mcp` note who
-edited what in `design.buni.activity` beside the file; keep it out of git). To change the design, ask your agent. `buni shot` draws one page to a PNG or PDF instead.
+appear and are marked, and each agent's face sits on what it is working on (whatever edits it through buni, the command
+line, MCP or an app, notes who edited what in `design.buni.activity` beside the file; keep it out of git). To change the design, ask your agent. `buni shot` draws one page to a PNG or PDF instead.
 
 ## Use it from your coding agent
 

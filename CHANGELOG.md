@@ -10,8 +10,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   and decisions, the design doc). Clicking anything opens its detail, which links to everything it touches, and the
   address says what is shown (`#/api/call:create-quote`), so an agent can point the person at it.
 - **Agents show where they work in `buni open`**: each agent's face sits on the layer or system part it is changing,
-  busy while edits come, smiling when they stop. `buni call` and `buni mcp` note who edited what in
-  `<file>.activity` beside the design.
+  busy while edits come, smiling when they stop. Every writer of a design file on disk (the command
+  line, MCP, an agent, an app) notes who edited what in `<file>.activity` beside the design.
 - **`buni icons` and `buni pdf` work with Chrome alone**, without the desktop app. Each icon size is drawn at its own
   density, so small sizes stay sharp, on a see-through backdrop.
 
