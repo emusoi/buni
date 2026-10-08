@@ -22,3 +22,18 @@ test("the map draws every part and link, and each part's detail links to what it
 test("a design with no system shows no system views", () => {
   expect(systemOf(emptyDoc()).views).toEqual([]);
 });
+
+test("the API lists every call by service, and Data draws tables, keys and shapes", async () => {
+  const sys = systemOf(await portal());
+  const api = sys.views.find((v) => v.id === "api");
+  expect(api?.count).toBe(5);
+  expect(api?.html).toContain("emits quote.created");
+  const quote = sys.details["call:create-quote"] ?? "";
+  expect(quote).toContain("409</b> the plan was retired");
+  expect(quote).toContain('data-go="table:quotes"');
+  const data = sys.views.find((v) => v.id === "data");
+  expect(data?.html).toContain('data-ref="table:plans"');
+  expect(data?.html).toContain("→ plans");
+  expect(sys.details["table:quotes"]).toContain("email is personal.");
+  expect(sys.details["shape:quote-request"]).toContain("Customer portal → Quote API");
+});

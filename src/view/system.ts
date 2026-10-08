@@ -1,7 +1,8 @@
 // The system behind the pages, as buni open shows it: one view per area (Map, API, Data, …) and a detail for each
 // thing in it, drawn here as HTML so the browser only swaps it in. Every clickable thing carries data-ref="kind:id";
 // data-go="kind:id" jumps to another. Drawn after designs/viewer.buni.
-import type { Doc, Id, Link, Part, PartKind } from "../format/doc.ts";
+import { bodyFields, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Part, type PartKind, type Shape, type Table } from "../format/doc.ts";
+import { accessText } from "../tools/context.ts";
 import { iconSvg } from "../tools/icons.ts";
 
 export type ViewId = "map" | "api" | "data" | "events" | "traces" | "places" | "requirements" | "questions" | "doc";
@@ -222,6 +223,178 @@ function partDetail(doc: Doc, ix: Index, p: Part): string {
     + usedBy(doc, ix, p.id);
 }
 
+
+// ── API ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const tag = (text: string, tone = ""): string => `<span class="tag${tone ? ` ${tone}` : ""}">${esc(text)}</span>`;
+const minutes = (s: number) => (s >= 3600 ? `${Math.round(s / 3600)} h` : s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`);
+type Call = (Endpoint & { rest: true }) | (Operation & { rest: false });
+
+function callsOf(doc: Doc): Call[] {
+  return [...byIndex(doc.endpoints).map((e): Call => ({ ...e, rest: true })), ...byIndex(doc.operations).map((o): Call => ({ ...o, rest: false }))];
+}
+const verb = (c: Call) => (c.rest ? c.method : c.kind);
+const callName = (c: Call) => (c.rest ? c.path : c.name);
+
+function callTags(doc: Doc, c: Call): string {
+  return [
+    ...c.reads.map((t) => tag(`reads ${nameOf(doc, t)}`)),
+    ...c.writes.map((t) => tag(`writes ${nameOf(doc, t)}`)),
+    ...c.emits.map((e) => tag(`emits ${nameOf(doc, e)}`, "violet")),
+    ...(c.cache ? [tag(`cached ${minutes(c.cache.ttlSeconds)}`, "amber")] : []),
+    ...(c.invalidates?.length ? [tag(`clears ${plural(c.invalidates.length, "cache")}`, "amber")] : []),
+  ].join("");
+}
+
+function apiView(doc: Doc): string {
+  const calls = callsOf(doc);
+  const services = [...new Set(calls.map((c) => c.service))];
+  const groups = services.map((sid) => {
+    const p = doc.parts[sid];
+    const style = calls.find((c) => c.service === sid)?.rest ? "REST" : "GraphQL";
+    const host = Object.values(doc.placements).find((pl) => pl.part === sid && pl.ingress);
+    const rows = calls.filter((c) => c.service === sid).map((c) =>
+      `<div class="call" data-ref="call:${esc(c.id)}"><span class="verb m-${verb(c)}">${verb(c)}</span><div class="cmain"><code>${esc(callName(c))}</code><span>${esc(c.summary)}</span></div><div class="tags">${callTags(doc, c)}</div></div>`);
+    const sub = [style, host?.ingress ? `${host.ingress.host}${host.ingress.path}` : ""].filter(Boolean).join(" · ");
+    return `<section class="group"><div class="ghead">${p ? kindChip(p.kind) : ""}<b>${esc(p?.name ?? sid)}</b><code>${esc(sub)}</code></div>${rows.join("")}</section>`;
+  });
+  return `<div class="sheetview"><div class="vhead"><h1>API</h1><span>${plural(calls.length, "call")} on ${plural(services.length, "service")}</span></div>${groups.join("")}</div>`;
+}
+
+const fieldRows = (fields: readonly Field[]): string =>
+  fields.map((f) => `<div class="field"><code>${esc(f.name)}${f.optional ? "?" : ""}</code><span>${esc(f.type)}</span></div>`).join("");
+
+function callDetail(doc: Doc, ix: Index, c: Call): string {
+  const service = doc.parts[c.service];
+  const tagLine = `<span class="verb m-${verb(c)}">${verb(c)} · ${esc(service?.name ?? c.service)}</span>`;
+  const req = c.rest ? bodyFields(doc, c, "request") : c.args;
+  const res = c.rest ? bodyFields(doc, c, "response") : [];
+  const reqName = c.rest && c.requestShape ? ` · ${doc.shapes[c.requestShape]?.name ?? ""}` : "";
+  const resName = c.rest && c.responseShape ? ` · ${doc.shapes[c.responseShape]?.name ?? ""}` : "";
+  const touches = [
+    ...c.reads.map((t) => goRow(refOf(doc, t), `<code>${esc(nameOf(doc, t))}</code>`, "reads")),
+    ...c.writes.map((t) => goRow(refOf(doc, t), `<code>${esc(nameOf(doc, t))}</code>`, "writes")),
+    ...c.emits.map((e) => goRow(refOf(doc, e), `<code>${esc(nameOf(doc, e))}</code>`, "emits")),
+  ];
+  const cache = c.cache ? goRow(refOf(doc, c.cache.part), esc(nameOf(doc, c.cache.part)), `${minutes(c.cache.ttlSeconds)} · key ${esc(c.cache.key)}`) : "";
+  const clears = (c.invalidates ?? []).map((id) => goRow(refOf(doc, id), esc(nameOf(doc, id)), "cleared"));
+  return head(tagLine, callName(c), c.id, c.summary)
+    + section(c.rest ? `Request${reqName}` : "Arguments", fieldRows(req), req.length)
+    + (c.rest ? section(`Response${resName}`, fieldRows(res), res.length) : section("Returns", `<div class="field"><code>${esc(c.returns)}${c.nullable ? " or nothing" : ""}</code></div>`))
+    + section("Errors", (c.errors ?? []).map((e) => `<div class="drow"><span class="l"><b>${esc(e.code)}</b> ${esc(e.when)}</span></div>`).join(""), c.errors?.length)
+    + section("Who may call it", c.access ? note(accessText(doc, c.access)) : "")
+    + section("Touches", touches.join(""), touches.length)
+    + section("Cache", cache)
+    + section("Clears", clears.join(""), clears.length)
+    + section("Served by", goRow(`part:${c.service}`, esc(service?.name ?? c.service), service?.tech ?? ""))
+    + usedBy(doc, ix, c.id);
+}
+
+// ── Data ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const TABLE = { w: 260, head: 38, row: 29 };
+const tableHeight = (t: Table) => TABLE.head + t.columns.length * TABLE.row;
+
+/** Where each table sits: where it was put, else side by side in its store, one store under the other. */
+function dataLayout(doc: Doc, tables: Table[]): Map<Id, { x: number; y: number }> {
+  const at = new Map<Id, { x: number; y: number }>();
+  if (tables.every((t) => t.x !== undefined && t.y !== undefined)) {
+    for (const t of tables) at.set(t.id, { x: t.x ?? 0, y: t.y ?? 0 });
+    return at;
+  }
+  let y = 40;
+  for (const store of [...new Set(tables.map((t) => t.store))]) {
+    const mine = tables.filter((t) => t.store === store);
+    mine.forEach((t, i) => at.set(t.id, { x: 32 + i * (TABLE.w + 64), y: y + 32 }));
+    y += Math.max(...mine.map(tableHeight)) + 32 + 32 + 56;
+  }
+  return at;
+}
+
+function dataView(doc: Doc): string {
+  const tables = byIndex(doc.tables);
+  const at = dataLayout(doc, tables);
+  const stores = [...new Set(tables.map((t) => t.store))].map((sid) => {
+    const mine = tables.filter((t) => t.store === sid);
+    const x0 = Math.min(...mine.map((t) => at.get(t.id)?.x ?? 0)) - 24, y0 = Math.min(...mine.map((t) => at.get(t.id)?.y ?? 0)) - 24;
+    const x1 = Math.max(...mine.map((t) => (at.get(t.id)?.x ?? 0) + TABLE.w)) + 24, y1 = Math.max(...mine.map((t) => (at.get(t.id)?.y ?? 0) + tableHeight(t))) + 24;
+    const p = doc.parts[sid];
+    return `<div class="store" data-ref="part:${esc(sid)}" style="left:${x0}px;top:${y0}px;width:${x1 - x0}px;height:${y1 - y0}px"><div class="slabel">${p ? kindChip(p.kind) : ""}<b>${esc(p?.name ?? sid)}</b><code>${esc(p?.tech ?? "")}</code></div></div>`;
+  });
+  const cards = tables.map((t) => {
+    const a = at.get(t.id) ?? { x: 0, y: 0 };
+    const cols = t.columns.map((c) => {
+      const marks = [c.primary ? `<i class="pk">PK</i>` : "", c.unique ? "<i>UNIQUE</i>" : "", c.ref ? `<i class="fk">→ ${esc(doc.tables[c.ref.table]?.name ?? c.ref.table)}</i>` : "", c.classification ? `<i class="pk">${c.classification.toUpperCase()}</i>` : "", c.nullable ? "<i>NULL</i>" : ""].join("");
+      return `<div class="col"><code>${esc(c.name)}</code>${marks}<span>${esc(c.type)}</span></div>`;
+    });
+    return `<div class="table" data-ref="table:${esc(t.id)}" style="left:${a.x}px;top:${a.y}px;width:${TABLE.w}px">${`<div class="thead">${icon("table-2", 14)}<b>${esc(t.name)}</b></div>`}${cols.join("")}</div>`;
+  });
+  // Foreign keys, from the column to the table it points at.
+  const keys = tables.flatMap((t) => t.columns.flatMap((c, i) => {
+    const a = at.get(t.id), target = c.ref ? doc.tables[c.ref.table] : undefined, b = target ? at.get(target.id) : undefined;
+    if (!a || !b || !target || !c.ref) return [];
+    const j = Math.max(0, target.columns.findIndex((x) => x.name === c.ref?.column));
+    const y1 = a.y + TABLE.head + i * TABLE.row + TABLE.row / 2, y2 = b.y + TABLE.head + j * TABLE.row + TABLE.row / 2;
+    const left = b.x + TABLE.w <= a.x;
+    const x1 = left ? a.x : a.x + TABLE.w, x2 = left ? b.x + TABLE.w : b.x;
+    const bend = left ? -40 : 40;
+    return [`<path d="M${x1} ${y1} C${x1 + bend} ${y1} ${x2 - bend} ${y2} ${x2} ${y2}"/>`];
+  }));
+  const bottom = Math.max(40, ...tables.map((t) => (at.get(t.id)?.y ?? 0) + tableHeight(t))) + 70;
+  const shapes = byIndex(doc.shapes).map((sh, i) => {
+    const lines = sh.values?.length ? [sh.values.join(" · ")] : sh.fields.map((f) => `${f.name} ${f.type}`);
+    return `<div class="shape" data-ref="shape:${esc(sh.id)}" style="left:${8 + (i % 4) * 200}px;top:${bottom + 30 + Math.floor(i / 4) * 130}px"><div class="shead"><b>${esc(sh.name)}</b><i>${sh.values?.length ? "ENUM" : "SHAPE"}</i></div>${lines.slice(0, 5).map((l) => `<code>${esc(l)}</code>`).join("")}</div>`;
+  });
+  const shapesHead = shapes.length ? `<p class="colhead" style="left:8px;top:${bottom}px">SHAPES · WHAT THE API AND EVENTS CARRY</p>` : "";
+  const w = Math.max(820, ...tables.map((t) => (at.get(t.id)?.x ?? 0) + TABLE.w + 40));
+  const h = bottom + 30 + Math.ceil(shapes.length / 4) * 130;
+  const svg = `<svg class="keys" width="${w}" height="${h}"><defs><marker id="m-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3346d3"/></marker></defs>${keys.join("")}</svg>`;
+  return `<div class="pan"><div class="world" data-w="${w}" data-h="${h}">${stores.join("")}${svg}${cards.join("")}${shapesHead}${shapes.join("")}</div></div>`;
+}
+
+const callRef = (doc: Doc, id: Id) => {
+  const e = doc.endpoints[id], o = doc.operations[id];
+  return e ? `<b class="m-${e.method}">${e.method}</b> <code>${esc(e.path)}</code>` : o ? `<b class="m-${o.kind}">${o.kind}</b> <code>${esc(o.name)}</code>` : esc(id);
+};
+
+function tableDetail(doc: Doc, ix: Index, t: Table): string {
+  const store = doc.parts[t.store];
+  const calls = callsOf(doc);
+  const personal = t.columns.filter((c) => c.classification);
+  const out = t.columns.flatMap((c) => (c.ref ? [goRow(`table:${c.ref.table}`, `<code>${esc(c.name)} → ${esc(nameOf(doc, c.ref.table))}.${esc(c.ref.column)}</code>`)] : []));
+  const into = Object.values(doc.tables).flatMap((o) => o.columns.flatMap((c) => (c.ref?.table === t.id ? [goRow(`table:${o.id}`, `<code>${esc(o.name)}.${esc(c.name)} → ${esc(c.ref.column)}</code>`)] : [])));
+  const writers = calls.filter((c) => c.writes.includes(t.id)).map((c) => goRow(`call:${c.id}`, callRef(doc, c.id), esc(nameOf(doc, c.service))));
+  const readers = calls.filter((c) => c.reads.includes(t.id)).map((c) => goRow(`call:${c.id}`, callRef(doc, c.id), esc(nameOf(doc, c.service))));
+  const lives = Object.values(doc.placements).filter((pl) => pl.part === t.store).map((pl) => goRow(`placement:${pl.id}`, esc(doc.environments[pl.environment]?.name ?? pl.environment), esc([pl.service ?? pl.runtime, pl.regions.join(", ")].filter(Boolean).join(" · "))));
+  const tagLine = `<span class="kind" style="color:${KIND.store.color}">${icon("table-2", 13)}table · ${esc(store?.name ?? t.store)}</span>`;
+  return head(tagLine, t.name, plural(t.columns.length, "column"))
+    + section("Personal data", personal.map((c) => note(`${c.name} is ${c.classification}.`)).join(""), personal.length)
+    + section("Columns", t.columns.map((c) => `<div class="field"><code>${esc(c.name)}</code><span>${esc(c.type)}${c.primary ? " · key" : ""}${c.nullable ? " · may be empty" : ""}</span></div>`).join(""), t.columns.length)
+    + section("Points at", out.join(""), out.length)
+    + section("Pointed at by", into.join(""), into.length)
+    + section("Written by", writers.join("") || note("Nothing writes it yet."), writers.length)
+    + section("Read by", readers.join("") || note("Nothing reads it yet."), readers.length)
+    + section("Lives in", lives.join(""), lives.length)
+    + usedBy(doc, ix, t.id);
+}
+
+function shapeDetail(doc: Doc, ix: Index, sh: Shape): string {
+  const named = (fields: readonly Field[]) => fields.some((f) => f.type.replace(/\[\]$/, "") === sh.name);
+  const calls = callsOf(doc).filter((c) => (c.rest ? c.requestShape === sh.id || c.responseShape === sh.id || named(c.request) || named(c.response) : named(c.args) || c.returns.replace(/[[\]!]/g, "") === sh.name));
+  const events = byIndex(doc.events).filter((e) => named(e.payload));
+  const links = Object.values(doc.links).filter((l) => l.carries?.includes(sh.id));
+  const shapes = byIndex(doc.shapes).filter((o) => o.id !== sh.id && named(o.fields));
+  const kind = sh.values?.length ? "enum" : "shape";
+  return head(`<span class="kind" style="color:var(--ink-2)">${icon("shapes", 13)}${kind}</span>`, sh.name, sh.values?.length ? plural(sh.values.length, "value") : plural(sh.fields.length, "field"), sh.note ?? "")
+    + section("Values", (sh.values ?? []).map((v) => `<div class="field"><code>${esc(v)}</code></div>`).join(""), sh.values?.length)
+    + section("Fields", fieldRows(sh.fields), sh.fields.length)
+    + section("Carried by calls", calls.map((c) => goRow(`call:${c.id}`, callRef(doc, c.id))).join(""), calls.length)
+    + section("In events", events.map((e) => goRow(`event:${e.id}`, `<code>${esc(e.name)}</code>`)).join(""), events.length)
+    + section("Over links", links.map((l) => goRow(`part:${l.from}`, `${esc(nameOf(doc, l.from))} → ${esc(nameOf(doc, l.to))}`, l.kind)).join(""), links.length)
+    + section("Inside", shapes.map((o) => goRow(`shape:${o.id}`, esc(o.name))).join(""), shapes.length)
+    + usedBy(doc, ix, sh.id);
+}
+
 /** Every view with something in it, and every thing's detail. */
 export function systemOf(doc: Doc): SystemSnapshot {
   const ix = indexOf(doc);
@@ -238,6 +411,17 @@ export function systemOf(doc: Doc): SystemSnapshot {
   if (parts.length) {
     views.push({ id: "map", name: "Map", group: "system", icon: icon("network"), count: parts.length, canvas: true, html: mapView(doc) });
     for (const p of parts) put("map", `part:${p.id}`, p.name, partDetail(doc, ix, p));
+  }
+  const calls = callsOf(doc);
+  if (calls.length) {
+    views.push({ id: "api", name: "API", group: "system", icon: icon("braces"), count: calls.length, canvas: false, html: apiView(doc) });
+    for (const c of calls) put("api", `call:${c.id}`, `${verb(c)} ${callName(c)}`, callDetail(doc, ix, c));
+  }
+  const tables = byIndex(doc.tables), shapes = byIndex(doc.shapes);
+  if (tables.length || shapes.length) {
+    views.push({ id: "data", name: "Data", group: "system", icon: icon("database"), count: tables.length + shapes.length, canvas: true, html: dataView(doc) });
+    for (const t of tables) put("data", `table:${t.id}`, t.name, tableDetail(doc, ix, t));
+    for (const sh of shapes) put("data", `shape:${sh.id}`, sh.name, shapeDetail(doc, ix, sh));
   }
   return { views, details, where, names };
 }
