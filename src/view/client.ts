@@ -66,7 +66,7 @@ header .file { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .board .label b { font-size: 12px; color: var(--ink-2); font-weight: 600; }
 .board .label span { font: 12px var(--mono); color: var(--ink-3); }
 .board .label em { font-style: normal; padding: 2px 8px; border-radius: 99px; background: var(--live); color: #fff; font-size: 11px; font-weight: 600; }
-.board .sheet { background: var(--page); box-shadow: var(--shadow-card); overflow: hidden; }
+.board .sheet { position: relative; background: var(--page); box-shadow: var(--shadow-card); overflow: hidden; }
 .board.changed .sheet { box-shadow: 0 0 0 3px var(--live), var(--shadow-card); }
 iframe { display: block; border: 0; pointer-events: none; background: var(--page); }
 #zoom { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-menu); background: var(--bar); box-shadow: var(--shadow-pop); }
@@ -89,7 +89,7 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 #page .title { font-size: 12px; color: var(--ink-2); }
 #page .title b { color: var(--ink); margin-right: 8px; }
 #page .title span { font-family: var(--mono); color: var(--ink-3); }
-#page .sheet { flex-shrink: 0; background: var(--page); box-shadow: var(--shadow-pop); overflow: hidden; }
+#page .sheet { position: relative; flex-shrink: 0; background: var(--page); box-shadow: var(--shadow-pop); overflow: hidden; }
 #page .bar .spacer { width: 96px; }
 #sys { position: absolute; inset: 48px 0 0 0; display: none; }
 #sys.on { display: flex; }
@@ -157,7 +157,7 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 .cboard .clabel b { flex-shrink: 1; min-width: 0; }
 .cboard .clabel b { font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .cboard .clabel span { font-size: 11px; color: var(--ink-3); }
-.cboard .csheet { background: var(--page); box-shadow: var(--shadow-card); overflow: hidden; }
+.cboard .csheet { position: relative; background: var(--page); box-shadow: var(--shadow-card); overflow: hidden; }
 .cboard .csheet iframe { display: block; border: 0; pointer-events: none; width: 1280px; height: 200px; }
 .cboard.copy .csheet { outline: calc(1.5px * var(--inv, 1)) dashed #b45309; outline-offset: calc(4px * var(--inv, 1)); }
 .cboard.sel .csheet { box-shadow: 0 0 0 calc(2px * var(--inv, 1)) var(--ink), var(--shadow-card); }
@@ -343,6 +343,30 @@ const boards = new Map(), heights = {}, changedAt = {};
 const withBase = (html) => html.replace("<head>", '<head><base href="' + location.origin + '/">');
 const SANDBOX = "allow-same-origin";
 /** Keeps a board as tall as its page, as fonts and images arrive. */
+/**
+ * Draws new HTML in a hidden frame beside the old one and swaps it in once it has drawn (fonts too), so a change
+ * never shows a blank page. Rapid changes queue up; whichever draws last is the one left.
+ */
+function swapFrame(old, html, before, shown) {
+  const next = old.cloneNode(false);
+  next.removeAttribute("srcdoc");
+  next.style.position = "absolute"; next.style.left = "0"; next.style.top = "0"; next.style.visibility = "hidden";
+  if (before) before(next);
+  next.addEventListener("load", () => {
+    const go = () => {
+      if (!next.isConnected) return;
+      next.style.position = ""; next.style.left = ""; next.style.top = ""; next.style.visibility = "";
+      for (const f of [...next.parentElement.querySelectorAll(":scope > iframe")]) if (f !== next) f.remove();
+      if (shown) shown(next);
+    };
+    const doc = next.contentDocument;
+    if (doc && doc.fonts) doc.fonts.ready.then(go, go); else go();
+  }, { once: true });
+  next.srcdoc = html;
+  old.parentElement.appendChild(next);
+  return next;
+}
+
 function measure(id, frame) {
   frame.addEventListener("load", () => {
     const doc = frame.contentDocument;
@@ -594,12 +618,39 @@ function drawAgents() {
 
 
 
+
+/** Brings the components canvas up to date in place: changed boards redraw behind the old drawing, new ones join. */
+function patchComponents(view, world, html) {
+  const t = document.createElement("template");
+  t.innerHTML = html;
+  const fresh = t.content.querySelector(".cworld");
+  if (!fresh) return;
+  const relayout = () => layoutComponents(view, world);
+  const now = new Map([...world.querySelectorAll(".cboard")].map((b) => [b.dataset.ref, b]));
+  const wanted = new Set();
+  for (const row of fresh.querySelectorAll(".crow")) {
+    let mine = [...world.querySelectorAll(".crow")].find((r) => r.dataset.title === row.dataset.title);
+    if (!mine) { mine = el("section", "crow"); mine.dataset.title = row.dataset.title; world.appendChild(mine); }
+    for (const b of row.querySelectorAll(".cboard")) {
+      wanted.add(b.dataset.ref);
+      const old = now.get(b.dataset.ref);
+      if (!old) { mine.appendChild(b.cloneNode(true)); continue; }
+      old.querySelector(".clabel").innerHTML = b.querySelector(".clabel").innerHTML;
+      const doc = b.querySelector("iframe").getAttribute("srcdoc"), frame = old.querySelector(".csheet > iframe:last-child");
+      if (frame && frame.getAttribute("srcdoc") !== doc) swapFrame(frame, doc, null, relayout);
+    }
+  }
+  for (const [ref, b] of now) if (!wanted.has(ref)) b.remove();
+  for (const r of world.querySelectorAll(".crow")) if (!r.querySelector(".cboard")) r.remove();
+  relayout();
+}
+
 /** The components canvas: each board sized to what it draws, in a row per group, then fitted like any canvas. */
 function layoutComponents(view, world) {
   const boards = [...world.querySelectorAll(".cboard")];
   // Not drawn yet, or drawing nothing (an empty or hidden component): a small board, so the rest still lay out.
   const size = (b) => {
-    const doc = b.querySelector("iframe").contentDocument;
+    const doc = b.querySelector(".csheet > iframe").contentDocument;
     if (!doc || !doc.body || !doc.body.childElementCount) return { w: 160, h: 48 };
     return { w: Math.min(1280, Math.max(40, doc.body.scrollWidth)), h: Math.min(1200, Math.max(20, doc.body.scrollHeight)) };
   };
@@ -618,9 +669,9 @@ function layoutComponents(view, world) {
         const z = sizes[boards.indexOf(b)];
         if (x > 0 && x + z.w > 2600) { x = 0; y += tallest + 90; tallest = 0; }
         b.style.left = x + "px"; b.style.top = y + "px";
-        const sheet = b.querySelector(".csheet"), frame = b.querySelector("iframe");
+        const sheet = b.querySelector(".csheet");
         sheet.style.width = z.w + "px"; sheet.style.height = z.h + "px"; b.style.setProperty("--bw", String(z.w));
-        frame.style.width = z.w + "px"; frame.style.height = z.h + "px";
+        for (const frame of sheet.querySelectorAll("iframe")) { frame.style.width = z.w + "px"; frame.style.height = z.h + "px"; }
         x += z.w + 96; tallest = Math.max(tallest, z.h); widest = Math.max(widest, x);
       }
       y += tallest + 110;
@@ -684,7 +735,12 @@ function showSystem(view, ref) {
   const v = snap.system.views.find((x) => x.id === view);
   const body = $("#sys .sysbody"), drawer = $("#drawer");
   if (!v) { location.hash = "#/"; return; }
-  if (shownView !== view || shownHtml !== v.html) {
+  const cworldNow = body.querySelector(".cworld");
+  if (shownView === view && shownHtml !== v.html && cworldNow) {
+    // The components canvas changes board by board, so the rest stay where they are while an agent works.
+    shownHtml = v.html;
+    patchComponents(view, cworldNow, v.html);
+  } else if (shownView !== view || shownHtml !== v.html) {
     shownView = view; shownHtml = v.html;
     body.className = "sysbody" + (v.canvas ? " canvas" : "");
     body.innerHTML = v.html;
@@ -821,8 +877,10 @@ function render(s) {
     n.label.children[0].textContent = b.state ? b.name + " · " + b.state : b.name;
     n.label.children[1].textContent = meta(b);
     if (n.html !== b.html) {
+      const firstDraw = !n.html;
       n.html = b.html;
-      n.frame.srcdoc = withBase(b.html);
+      if (firstDraw) n.frame.srcdoc = withBase(b.html);
+      else n.frame = swapFrame(n.frame, withBase(b.html), (f) => measure(b.id, f), () => drawAgents());
       if (!first) changedAt[b.id] = Date.now();
     }
   }
@@ -837,7 +895,13 @@ function openPage(id) {
   const b = snap.boards.find((x) => x.id === id);
   const view = $("#page");
   if (!b) { closePage(); return; }
+  const was = open === id && view.querySelector(".sheet iframe");
   open = id;
+  if (was && view.classList.contains("on")) {
+    // Already showing this page: only its drawing changes, swapped in once drawn.
+    if (was.dataset.html !== b.html) { was.dataset.html = b.html; const f = swapFrame(was, withBase(b.html)); f.dataset.html = b.html; }
+    return;
+  }
   view.innerHTML = "";
   const bar = el("div", "bar"), back = el("button", "back");
   back.innerHTML = ${JSON.stringify(ICON.back)};
@@ -851,6 +915,7 @@ function openPage(id) {
   const sheet = el("div", "sheet"), frame = el("iframe");
   frame.setAttribute("sandbox", SANDBOX);
   frame.srcdoc = withBase(b.html);
+  frame.dataset.html = b.html;
   frame.style.width = b.width + "px";
   frame.style.height = heightOf(b) + "px";
   frame.style.transform = "scale(" + fitTo + ")";
