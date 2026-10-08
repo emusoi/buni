@@ -152,7 +152,7 @@ iframe { display: block; border: 0; pointer-events: none; background: var(--page
 
 .cworld .crowtitle { position: absolute; margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; transform: scale(var(--inv, 1)); transform-origin: 0 100%; }
 .cboard { position: absolute; cursor: pointer; box-shadow: none !important; }
-.cboard .clabel { position: absolute; left: 0; bottom: 100%; display: flex; align-items: baseline; gap: 8px; max-width: calc(var(--bw, 1280) * 1px / var(--inv, 1)); overflow: hidden; padding-bottom: 6px; white-space: nowrap; transform: scale(var(--inv, 1)); transform-origin: 0 100%; }
+.cboard .clabel { position: absolute; left: 0; bottom: 100%; display: flex; align-items: baseline; gap: 8px; max-width: var(--lw, 300px); overflow: hidden; padding-bottom: 6px; white-space: nowrap; transform: scale(var(--inv, 1)); transform-origin: 0 100%; }
 .cboard .clabel b, .cboard .clabel span { overflow: hidden; text-overflow: ellipsis; }
 .cboard .clabel b { flex-shrink: 1; min-width: 0; }
 .cboard .clabel b { font-size: 12px; font-weight: 600; color: var(--ink-2); }
@@ -654,34 +654,47 @@ function layoutComponents(view, world) {
     if (!doc || !doc.body || !doc.body.childElementCount) return { w: 160, h: 48 };
     return { w: Math.min(1280, Math.max(40, doc.body.scrollWidth)), h: Math.min(1200, Math.max(20, doc.body.scrollHeight)) };
   };
+  // Labels and row titles keep their size on screen at any zoom, so the room they take on the canvas is measured in
+  // screen pixels too: zoomed out, rows spread apart and small boards keep space for their names.
   const place = () => {
     if (!world.isConnected) return false;
     const sizes = boards.map(size);
-    for (const t of world.querySelectorAll(".crowtitle")) t.remove();
-    let y = 0, widest = 0;
-    for (const row of world.querySelectorAll(".crow")) {
-      const title = el("p", "crowtitle", row.dataset.title);
-      title.style.left = "0px"; title.style.top = y + "px";
-      world.appendChild(title);
-      y += 64;
-      let x = 0, tallest = 0;
-      for (const b of row.querySelectorAll(".cboard")) {
-        const z = sizes[boards.indexOf(b)];
-        if (x > 0 && x + z.w > 2600) { x = 0; y += tallest + 90; tallest = 0; }
-        b.style.left = x + "px"; b.style.top = y + "px";
-        const sheet = b.querySelector(".csheet");
-        sheet.style.width = z.w + "px"; sheet.style.height = z.h + "px"; b.style.setProperty("--bw", String(z.w));
-        for (const frame of sheet.querySelectorAll("iframe")) { frame.style.width = z.w + "px"; frame.style.height = z.h + "px"; }
-        x += z.w + 96; tallest = Math.max(tallest, z.h); widest = Math.max(widest, x);
-      }
-      y += tallest + 110;
-    }
-    world.dataset.w = String(Math.max(400, widest)); world.dataset.h = String(Math.max(300, y));
     const st = pans[view];
-    if (st && st.fit) st.fit();
+    for (let pass = 0; pass < 3; pass++) {
+      const k = (st && st.scale) || 1, inv = 1 / k;
+      const TITLE = 30 * inv, LABEL = 24 * inv, GAP = 36 * inv, ROW = 30 * inv, MIN = 150 * inv;
+      // Rows wrap at the screen's width, so a library reads down the page like the list it is.
+      const pan = world.parentElement, wrap = Math.max(600, ((pan && pan.clientWidth) || 1200) - 100) * inv;
+      for (const t of world.querySelectorAll(".crowtitle")) t.remove();
+      let y = 0, widest = 0;
+      for (const row of world.querySelectorAll(".crow")) {
+        const title = el("p", "crowtitle", row.dataset.title);
+        title.style.left = "0px"; title.style.top = y + TITLE - 6 * inv - 15 + "px";
+        world.appendChild(title);
+        y += TITLE;
+        let x = 0, tallest = 0;
+        for (const b of row.querySelectorAll(".cboard")) {
+          const z = sizes[boards.indexOf(b)], slot = Math.max(z.w, MIN);
+          if (x > 0 && x + slot > wrap) { x = 0; y += tallest + ROW; tallest = 0; }
+          b.style.left = x + "px"; b.style.top = y + LABEL + "px";
+          const sheet = b.querySelector(".csheet");
+          sheet.style.width = z.w + "px"; sheet.style.height = z.h + "px";
+          b.style.setProperty("--lw", slot * k - 10 + "px");
+          for (const frame of sheet.querySelectorAll("iframe")) { frame.style.width = z.w + "px"; frame.style.height = z.h + "px"; }
+          x += slot + GAP; tallest = Math.max(tallest, LABEL + z.h); widest = Math.max(widest, x);
+        }
+        y += tallest + ROW * 1.6;
+      }
+      world.dataset.w = String(Math.max(400, widest)); world.dataset.h = String(Math.max(300, y));
+      // Fitting changes the zoom, and the zoom changes the room labels need: settle in a pass or two.
+      if (!st || st.moved || !st.fit) break;
+      st.fit();
+      if (Math.abs(((st && st.scale) || 1) - k) / k < 0.04) break;
+    }
     drawAgents();
     return true;
   };
+  world.__relayout = place;
   // Laid out now, then again as each board draws and its fonts arrive, at most once a frame.
   let queued = false;
   const soon = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; place(); }); };
@@ -778,12 +791,17 @@ function panner(view, pan) {
   const zoom = el("div", "syszoom");
   zoom.innerHTML = '<button data-z="out" aria-label="Zoom out">−</button><span class="pct"></span><button data-z="in" aria-label="Zoom in">+</button><button data-z="fit">Fit</button>';
   pan.parentElement.appendChild(zoom);
-  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; world.style.setProperty("--inv", String(1 / st.scale)); zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; drawAgents(); };
+  let laidAt = st.scale, relay;
+  const apply = () => { world.style.transform = "translate(" + st.x + "px," + st.y + "px) scale(" + st.scale + ")"; world.style.setProperty("--inv", String(1 / st.scale));
+    // A canvas whose labels need room in screen pixels lays out again once the zoom settles somewhere new.
+    if (world.__relayout && Math.abs(st.scale - laidAt) / laidAt > 0.08) { clearTimeout(relay); relay = setTimeout(() => { laidAt = st.scale; world.__relayout(); }, 160); } zoom.querySelector(".pct").textContent = Math.round(st.scale * 100) + "%"; drawAgents(); };
   const fitView = () => {
     const c = pan.getBoundingClientRect(), w = Number(world.dataset.w) || 800, h = Number(world.dataset.h) || 600;
     if (c.width < 100) return;
-    st.scale = Math.max(0.1, Math.min(1, (c.width - 80) / w, (c.height - 120) / h));
-    st.x = Math.max(40, (c.width - w * st.scale) / 2); st.y = Math.max(56, (c.height - 40 - h * st.scale) / 2);
+    // A canvas that reads top to bottom (the components) fits its width and scrolls; the others fit whole.
+    const byWidth = world.dataset.fit === "width";
+    st.scale = Math.max(0.1, Math.min(1, (c.width - 80) / w, byWidth ? Infinity : (c.height - 120) / h));
+    st.x = Math.max(40, (c.width - w * st.scale) / 2); st.y = byWidth ? 48 : Math.max(56, (c.height - 40 - h * st.scale) / 2);
     apply();
   };
   const zoomAt = (f, cx, cy) => { st.moved = true; const next = Math.min(2, Math.max(0.1, st.scale * f)); st.x = cx - (cx - st.x) * (next / st.scale); st.y = cy - (cy - st.y) * (next / st.scale); st.scale = next; apply(); };

@@ -74,7 +74,7 @@ export function componentsOf(doc: Doc): { snapshot: SystemSnapshot; uses: Uses }
       return board(`repeat:${i}`, `${doc.nodes[first]?.name ?? "Layers"} · ${g.layers} layers`, `${plural(g.nodes.length, "copy", "copies")} · ${g.pages.map(pageName).join(", ")}`, previewDoc(doc, "", { page, node: first }), true);
     }).join("")}</section>`
     : "";
-  const html = `<div class="pan"><div class="world cworld" data-w="1200" data-h="800">${rowsHtml.join("")}${copiesHtml}</div></div>`;
+  const html = `<div class="pan"><div class="world cworld" data-fit="width" data-w="1200" data-h="800">${rowsHtml.join("")}${copiesHtml}</div></div>`;
   snapshot.views.push({ id: "components", name: "Components", group: "screens", icon: icon("component"), count: comps.length, canvas: true, html } satisfies SystemView);
 
   for (const s of comps) {
