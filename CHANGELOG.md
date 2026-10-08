@@ -3,6 +3,15 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## 0.3.2 — 2026-10-08
+
+- **`buni open` stops flashing while agents build.** A changed page or component draws in a hidden frame and swaps
+  in once drawn, and the components canvas updates board by board instead of rebuilding.
+- **The components canvas reads like a library**: it lays out even when a component draws nothing, keeps room for
+  names at any zoom, fits its width and scrolls down.
+- **No scroll bars inside drawn pages and components**, and thin ones on the viewer's own panels.
+- **Fix:** a design that swaps an icon inside a nested part (a path override with markup) failed the format check.
+
 ## 0.3.1 — 2026-10-08
 
 - **Components are how a design repeats itself.** `find_repeats` lists layers copied around the design (a sidebar
