@@ -3,6 +3,12 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## 0.3.3 — 2026-10-08
+
+- **`buni open` opens the full editor in the browser** when `buni-edit` is installed; `--view` keeps the read-only
+  viewer.
+- **Fix:** a `<canvas>` written through `write_html` is dropped with a warning instead of making the design unopenable.
+
 ## 0.3.2 — 2026-10-08
 
 - **`buni open` stops flashing while agents build.** A changed page or component draws in a hidden frame and swaps
