@@ -144,7 +144,7 @@ const MAX_DEPTH = 256;
 const UNSAFE_CSS = /[{}<]/;
 const CSS_MESSAGE = "CSS values cannot contain {, } or <";
 /** Elements a design may not hold: exported pages stay static markup that runs and embeds nothing. */
-export const UNSAFE_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "base"];
+export const UNSAFE_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "base", "canvas"];
 /** The elements a layer may be: layout, text and form controls. Exported pages stay static markup that loads nothing. */
 const TAGS = new Set([
   "a", "abbr", "address", "article", "aside", "b", "bdi", "bdo", "blockquote", "br", "button", "caption", "cite", "code",

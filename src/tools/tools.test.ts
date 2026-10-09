@@ -57,6 +57,12 @@ describe("html in", () => {
     expect(warnings).toEqual(['<p> attribute "onclick" was dropped']);
   });
 
+  test("a canvas is dropped with a reason, not written as a layer the file cannot hold", () => {
+    const { drafts, warnings } = parseHtml('<section layer-name="Pad"><canvas width="10" height="10"></canvas><p>Draw here.</p></section>');
+    expect(drafts[0]).toMatchObject({ kind: "frame", name: "Pad", children: [{ kind: "text", text: "Draw here." }] });
+    expect(warnings).toContain('<canvas> was dropped: designs hold static markup only');
+  });
+
   test("each edit is logged with its author and the layers it made, so an editor can show agents' work", async () => {
     const ws = await Workspace.open(file);
     await ws.call("claude-code", "write_html", { parent: "home-frame", html: '<section layer-name="Proof"><p>Trusted</p></section>' });
