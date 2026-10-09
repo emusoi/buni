@@ -57,10 +57,18 @@ describe("html in", () => {
     expect(warnings).toEqual(['<p> attribute "onclick" was dropped']);
   });
 
-  test("a canvas is dropped with a reason, not written as a layer the file cannot hold", () => {
-    const { drafts, warnings } = parseHtml('<section layer-name="Pad"><canvas width="10" height="10"></canvas><p>Draw here.</p></section>');
+  test("a canvas is dropped with a reason, and the saved design reopens", async () => {
+    const html = '<section layer-name="Pad"><canvas width="10" height="10"></canvas><p>Draw here.</p></section>';
+    const { drafts, warnings } = parseHtml(html);
     expect(drafts[0]).toMatchObject({ kind: "frame", name: "Pad", children: [{ kind: "text", text: "Draw here." }] });
     expect(warnings).toContain('<canvas> was dropped: designs hold static markup only');
+    const ws = await Workspace.open(file);
+    const result = await ws.call(pi, "write_html", { parent: "home-frame", html });
+    expect(result.ok).toBe(true);
+    expect(result.reply).toContain('<canvas> was dropped');
+    const reopened = await Workspace.open(file);
+    expect(Object.values(reopened.view().nodes).some((n) => n.kind === "text" && n.text === "Draw here.")).toBe(true);
+    expect(Object.values(reopened.view().nodes).some((n) => n.tag === "canvas")).toBe(false);
   });
 
   test("each edit is logged with its author and the layers it made, so an editor can show agents' work", async () => {
