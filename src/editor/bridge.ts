@@ -68,12 +68,15 @@ function watchFile() {
   let waiting: SnapshotUpdate[] | undefined = [];
   let opens = 0;
   let build: string | undefined;
-  const first = Promise.withResolvers<Snapshot | undefined>();
+  // A fulfilled promise retains its value; hand off the design separately and release it.
+  const first = Promise.withResolvers<void>();
+  let initial: Snapshot | undefined;
   events.onopen = () => {
     opens++;
     if (opens === 1) {
       fetchSnapshot().then((snap) => {
-        first.resolve(snap);
+        initial = snap;
+        first.resolve();
         // After the window has taken the snapshot, the changes made since it was read.
         setTimeout(() => {
           const queued = waiting ?? [];
@@ -95,7 +98,12 @@ function watchFile() {
     if (waiting) waiting.push(u);
     else listeners.forEach((fn) => fn(u));
   };
-  return { first: first.promise, listeners };
+  return { first: async () => {
+    await first.promise;
+    const snap = initial;
+    initial = undefined;
+    return snap;
+  }, listeners };
 }
 const watching = file ? watchFile() : undefined;
 let firstServed = false;
@@ -141,7 +149,7 @@ const api: BuniApi = {
   snapshot: () => {
     if (!watching || firstServed) return fetchSnapshot();
     firstServed = true;
-    return watching.first;
+    return watching.first();
   },
   onChange: (fn) => {
     if (!watching) return () => {};
