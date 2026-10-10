@@ -3,10 +3,12 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
-## Unreleased
+## 0.4.0 — 2026-10-09
 
 - `buni open` now runs the full shared browser editor, with direct editing, playback, undo and live agent updates.
   The hosted product uses this same editor; the separate read-only viewer is removed.
+- **The editor starts and draws faster**, and large design canvases show bounded bitmap previews instead of
+  drawing every layer at full size.
 
 ## 0.3.3 — 2026-10-08
 
