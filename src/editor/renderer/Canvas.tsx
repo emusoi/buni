@@ -52,7 +52,7 @@ function wrap({ html, css }: { html: string; css: string }, dir: string, extraCs
 }
 
 /** Small pictures in the overview, rather than hundreds of live browsing contexts. */
-async function thumbnail(html: string, width: number, height: number, resources: Map<string, Promise<string>>): Promise<string> {
+async function thumbnail(html: string, width: number, height: number, previewWidth: number, resources: Map<string, Promise<string>>): Promise<string> {
   // Parsing megabytes of CSS into an extra HTML document needlessly builds a second stylesheet.
   const bodyAt = html.indexOf("<body>");
   const base = html.match(/<base href="([^"]*)">/)?.[1] ?? location.href;
@@ -87,7 +87,9 @@ async function thumbnail(html: string, width: number, height: number, resources:
   }));
   css = `body{margin:0;width:${width}px;height:${height}px}${css.replace(":root", "body")}*,*::before,*::after{animation:none!important;transition:none!important}`;
   const body = new XMLSerializer().serializeToString(doc.body).replace(/^(<body[^>]*>)/, (start) => `${start}<style><![CDATA[${css.replaceAll("]]>", "]]]]><![CDATA[>")}]]></style>`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="${width}" height="${height}">${body}</foreignObject></svg>`;
+  // Decode at the stored thumbnail size; layout still uses the page's original coordinate system.
+  const size = previewSize(width, height, previewWidth);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><foreignObject width="${width}" height="${height}">${body}</foreignObject></svg>`;
 }
 
 /** The layer to select at a point: an enclosing component instance wins over the component's own layers. */
@@ -183,6 +185,11 @@ const OVERVIEW_PAD = 192;
 /** Discrete preview resolutions avoid rebuilding a bitmap for every small zoom step. */
 export function previewWidth(width: number, zoom: number, pixelRatio: number): number {
   return Math.min(200, Math.max(32, 2 ** Math.ceil(Math.log2(width * zoom * Math.min(pixelRatio, 2)))));
+}
+
+export function previewSize(width: number, height: number, requestedWidth: number): { width: number; height: number } {
+  const scale = Math.min(requestedWidth / width, 400 / height);
+  return { width: Math.ceil(width * scale), height: Math.ceil(height * scale) };
 }
 
 /**
@@ -306,13 +313,13 @@ const Artboard = memo(function Artboard(props: {
   const [editing, setEditing] = useState(false);
   const seen = props.near || props.active || props.retained || editing;
   const live = seen && (props.detail || props.active || props.retained || editing);
-  // Edits can invalidate hundreds of boards: generate their documents within a frame budget, live boards first.
+  // Keep HTML only for live boards; queued overview jobs hold no generated documents.
   const [html, setHtml] = useState("");
   useEffect(() => {
-    if (!seen) { setHtml(""); return; }
-    return buildSoon(() => setHtml(page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir)), live);
+    if (!live) { setHtml(""); return; }
+    return buildSoon(() => setHtml(page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir)), true);
     // Not `doc`: most boards keep their drawing when an edit happens elsewhere.
-  }, [seen, props.version, pageId, props.dir, page, live]);
+  }, [props.version, pageId, props.dir, page, live]);
   // Keep the document out of DOM attributes: inspection otherwise copies megabytes per board.
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -322,7 +329,7 @@ const Artboard = memo(function Artboard(props: {
     return () => URL.revokeObjectURL(next);
   }, [html, live]);
   useEffect(() => {
-    if (!html || live) return;
+    if (!seen || live) return;
     let cancelled = false;
     let href: string | undefined;
     let finish: (() => void) | undefined;
@@ -337,16 +344,17 @@ const Artboard = memo(function Artboard(props: {
     };
     const cancelBuild = previewSoon(async () => {
       try {
-        const svg = await thumbnail(html, width, height, props.resources);
+        const html = page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir);
+        const svg = await thumbnail(html, width, height, props.previewWidth, props.resources);
         if (cancelled) return;
         await new Promise<void>((resolve) => {
           finish = resolve;
           image.onload = () => {
             if (!cancelled) {
               const canvas = document.createElement("canvas");
-              const scale = Math.min(props.previewWidth / width, 400 / height);
-              canvas.width = Math.ceil(width * scale);
-              canvas.height = Math.ceil(height * scale);
+              const size = previewSize(width, height, props.previewWidth);
+              canvas.width = size.width;
+              canvas.height = size.height;
               canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
               props.onPicture(pageId, canvas);
             }
@@ -361,8 +369,8 @@ const Artboard = memo(function Artboard(props: {
       }
     });
     return () => { cancelled = true; cancelBuild(); release(); };
-  }, [html, live, width, height, props.resources, props.previewWidth]);
-  useEffect(() => () => props.onPicture(pageId, undefined), [live, html, width, height, props.previewWidth, props.onPicture, pageId]);
+  }, [seen, live, props.version, pageId, props.dir, page, width, height, props.resources, props.previewWidth]);
+  useEffect(() => () => props.onPicture(pageId, undefined), [seen, live, props.version, props.dir, page, width, height, props.previewWidth, props.onPicture, pageId]);
   const { marks } = props;
   const [loads, setLoads] = useState(0);
   useEffect(() => {
@@ -687,6 +695,7 @@ export function Canvas(props: Props) {
   const cameraIdle = useRef<ReturnType<typeof setTimeout>>(undefined);
   const updateView = (next: typeof view | ((v: typeof view) => typeof view)) => {
     camera.current = typeof next === "function" ? next(camera.current) : next;
+    zoom.current = camera.current.zoom;
     previewAfter = performance.now() + 180;
     clearTimeout(cameraIdle.current);
     cameraIdle.current = setTimeout(() => setView(camera.current), 180);
@@ -699,7 +708,6 @@ export function Canvas(props: Props) {
         const scale = next.zoom / drawn.zoom;
         overview.current.style.transform = `translate(${next.x - drawn.x * scale + OVERVIEW_PAD * (1 - scale)}px, ${next.y - drawn.y * scale + OVERVIEW_PAD * (1 - scale)}px) scale(${scale})`;
       }
-      if (next.zoom !== committed.current.zoom) { setView(next); return; }
       if (world.current) world.current.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.zoom})`;
       if (rowLabels.current) rowLabels.current.style.transform = `translate(${next.x - committed.current.x}px, ${next.y - committed.current.y}px)`;
     });
@@ -775,7 +783,7 @@ export function Canvas(props: Props) {
     [],
   );
   const zoom = useRef(view.zoom);
-  zoom.current = view.zoom;
+  zoom.current = camera.current.zoom;
   const commented = useMemo(() => Object.values(props.doc.comments).filter((c) => c.state !== "resolved").map((c) => c.node), [props.doc.comments]);
   const marks = marksCss(props.focus, props.selected, props.landing, props.also, commented);
   // One pass over the nodes for every component board, not one per board.

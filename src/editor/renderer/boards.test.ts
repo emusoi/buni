@@ -4,7 +4,7 @@ import type { Doc, Node } from "buni/format/doc.ts";
 import { parseDoc } from "buni/format/parse.ts";
 import { applyChange, type Op } from "buni/oplog/oplog.ts";
 import { pageWindow } from "./sidebar.ts";
-import { touchedBoards, previewWidth, boardAt, arrows } from "./Canvas.tsx";
+import { touchedBoards, previewWidth, previewSize, boardAt, arrows } from "./Canvas.tsx";
 
 const base = (() => {
   const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/portal.buni")), "utf8"));
@@ -42,6 +42,14 @@ test("overview previews match screen size without reallocating for small zoom ch
   // 1,000 desktop boards now need under 12 MB of bitmap pixels at this overview zoom.
   const width = previewWidth(1280, 0.02, 2);
   expect(1000 * width * Math.ceil(900 * width / 1280) * 4).toBeLessThan(12_000_000);
+});
+
+
+test("overview decode dimensions stay bounded for tall pages and large components", () => {
+  expect(previewSize(1440, 900, 64)).toEqual({ width: 64, height: 40 });
+  expect(previewSize(1440, 100_000, 200)).toEqual({ width: 6, height: 400 });
+  expect(previewSize(20_000, 300, 200)).toEqual({ width: 200, height: 3 });
+  expect(previewSize(390, 844, 32)).toEqual({ width: 32, height: 70 });
 });
 
 
