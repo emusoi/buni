@@ -159,6 +159,7 @@ const TAGS = new Set([
 /** Reads raw JSON into typed values, recording every problem instead of stopping at the first. */
 class Reader {
   readonly errors: FormatError[] = [];
+  private readonly strings = new Map<string, string>();
 
   fail(path: string, message: string): void {
     this.errors.push({ path, message });
@@ -259,9 +260,16 @@ class Reader {
       this.fail(path, "expected an object of strings");
       return {};
     }
-    const out: Record<string, string> = {};
-    for (const [k, val] of Object.entries(v)) if (this.safeKey(k, join(path, k))) out[k] = this.str(val, join(path, k));
-    return out;
+    for (const [k, val] of Object.entries(v)) {
+      const at = join(path, k);
+      if (!this.safeKey(k, at)) continue;
+      const text = this.str(val, at);
+      const saved = this.strings.get(text);
+      if (saved === undefined) this.strings.set(text, text);
+      v[k] = saved ?? text;
+    }
+    // Keep JSON's compact objects and share repeated CSS strings without sharing mutable style maps.
+    return v as Record<string, string>;
   }
 
   list<T>(v: unknown, path: string, item: (v: unknown, path: string) => T): T[] {

@@ -51,6 +51,23 @@ describe("round trip", () => {
     expect(r.ok && serializeDoc(r.doc)).toBe(once);
   });
 
+  test("equal parsed styles stay independently editable", () => {
+    const original = example();
+    const [first, second] = Object.values(original.nodes);
+    if (!first || !second) throw new Error("example needs two layers");
+    first.style = { color: "#123456", padding: "12px" };
+    second.style = { ...first.style };
+    const result = parseDoc(serializeDoc(original));
+    if (!result.ok) throw new Error("expected a valid design");
+    const a = result.doc.nodes[first.id]!;
+    const b = result.doc.nodes[second.id]!;
+    expect(a.style).toEqual(b.style);
+    expect(a.style).not.toBe(b.style);
+    a.style.color = "#654321";
+    expect(b.style.color).toBe("#123456");
+    expect(original.nodes[first.id]!.style.color).toBe("#123456");
+  });
+
   test("an empty document is valid", () => {
     expect(parseDoc(serializeDoc(emptyDoc())).ok).toBe(true);
   });
