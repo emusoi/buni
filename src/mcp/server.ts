@@ -9,6 +9,7 @@ const INSTRUCTIONS = `buni is a design tool. You edit one .buni document through
 Every edit is written to the file at once, so make each one leave the design in a good state (keep the file in git to go back).
 Design skills hold buni's design guidance: call list_skills, then read_skill the ones that fit before you design (principles for anything new, typography and color before tokens, layout before a page).
 Start with read_tree and read_doc (the design doc: who it's for, principles, direction, decisions); read_context gives the brief for one part, page, endpoint or table. Build UI with write_html (inline styles, CSS custom properties from tokens).
+Import existing HTML with import_html_page: give url, file (inside the design folder) or html, an optional selector, and page or parent. It resolves class styles and images into editable layers using Chrome on the host; scripts are excluded. Attach source_file and symbol to retain implementation context.
 The system behind the pages has its own tools: set_part and link_parts, set_endpoint, set_operation, set_table, set_shape, set_event; the plan has set_requirement, set_phase and set_question.
 Multi-screen work: link screens with connect, name the path with set_flow, and describe the experience step by step with set_journey. read_flows shows what exists.
 Icons: <buni-icon name="search" size="16" style="color:…"> in write_html draws a Lucide icon; find_icons searches names.

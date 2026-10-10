@@ -7,12 +7,17 @@ import type { Store } from "buni/tools/workspace.ts";
  * The store as one person sees it: only paths inside `root`. A design's imports, a split into a new file and its
  * attachments resolve relative paths, so the boundary is kept here rather than by each tool.
  */
-export function within(store: Store, root: string): Store {
+export function within(store: Store, root: string, localImports = store.localImports === true): Store {
   const inside = (path: string) => {
     if (!path.startsWith(`${root}/`) || path.split("/").some((p) => p === ".." || p === ".")) throw new Error(`${path} is outside your designs`);
     return path;
   };
-  return { read: async (p) => store.read(inside(p)), write: async (p, t) => store.write(inside(p), t), remove: async (p) => store.remove(inside(p)) };
+  return {
+    read: async (p) => store.read(inside(p)), write: async (p, t) => store.write(inside(p), t), remove: async (p) => store.remove(inside(p)),
+    localImports,
+    ...(store.readBytes ? { readBytes: async (p: string) => store.readBytes!(inside(p)) } : {}),
+    ...(store.writeBytes ? { writeBytes: async (p: string, bytes: Uint8Array) => store.writeBytes!(inside(p), bytes) } : {}),
+  };
 }
 
 /** What the web server needs of where designs live: the Postgres rows when hosted, a folder on disk when local. */
@@ -30,6 +35,7 @@ export interface EditorStore extends Store {
  * is never moved or removed from here.
  */
 export class DiskStore implements EditorStore {
+  readonly localImports = true;
   constructor(private readonly root: string, private readonly virtual = "/designs") {}
 
   /** The file on disk for a design path; nothing outside the root, however the path is spelled. */

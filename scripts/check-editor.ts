@@ -2,6 +2,7 @@
 import { cp, mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { findBrowser } from "../src/term/chrome.ts";
 import { parseDoc } from "../src/format/parse.ts";
 
 const binary = process.argv[2];
@@ -33,6 +34,17 @@ try {
   check(edit.value.ok, "editor rejected an edit");
   const parsed = parseDoc(await readFile(join(dir, "design/portal.buni"), "utf8"));
   check(parsed.ok && Object.values(parsed.doc.pages).some((p) => p.name === "Release check"), "editor did not save the edit");
+  if (findBrowser()) {
+    const imported = Bun.spawn([resolve(binary), "call", join(dir, "design/portal.buni"), "import_html_page", JSON.stringify({
+      html: '<style>#card{display:flex;gap:17px}</style><section id="card"><h1>Agent import</h1></section><footer>Outside</footer>',
+      selector: "#card", source_file: "src/Card.tsx", page: { name: "Imported release check", width: 390 },
+    })], { cwd: dir, stdout: "pipe", stderr: "pipe" });
+    const status = await imported.exited;
+    check(status === 0, `standalone agent import failed: ${await new Response(imported.stderr).text()}`);
+    const after = parseDoc(await readFile(join(dir, "design/portal.buni"), "utf8"));
+    check(after.ok && Object.values(after.doc.pages).some((p) => p.name === "Imported release check" && p.sources?.[0]?.file === "src/Card.tsx"), "standalone agent import did not save source context");
+    console.log("standalone agent HTML import passed");
+  }
   const example: { value: string } = await (await rpc("openExample")).json();
   const image = await fetch(`${url.origin}/files${example.value.slice(0, example.value.lastIndexOf("/"))}/assets/steel-rack.jpg`);
   check(image.ok && (await image.arrayBuffer()).byteLength > 1000, "binary is missing the bundled example image");

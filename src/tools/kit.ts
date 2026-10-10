@@ -25,6 +25,9 @@ export interface ToolContext {
   /** A candidate id; uniqueness is checked here, so it may be random. */
   randomId: () => Id;
   readAttachment: (path: string) => Promise<string>;
+  localImports?: boolean;
+  readImportFile: (path: string) => Promise<import("../editor/import-resource.ts").ImportResource>;
+  saveImportImage: (base64: string, mime: string) => Promise<string>;
   /** The system of the files this one imports, for tools that read the whole system. */
   imported?: Doc;
 }
@@ -258,8 +261,7 @@ export const styleValues = z.record(z.string(), z.string()).describe('CSS proper
 
 /**
  * The design tools: the only way buni's agent, MCP clients and the app change a document.
- * No tool touches the file system except read_attachment, which only reads
- * files the document itself lists as attachments.
+ * Attachment reads and HTML import assets go through the workspace storage boundary.
  */
 export const ACCESS = z.object({
   who: z.enum(["public", "signed-in", "roles"]),

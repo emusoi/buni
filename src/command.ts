@@ -68,6 +68,8 @@ New design:         buni new FILE.buni
 Start by reading:   buni tree FILE
 Build with HTML:    buni call FILE write_html '{"parent":"FRAME_ID","html":"<section style=\\"…\\">…</section>"}'
 Long HTML:          buni call FILE write_html - < part.json
+Import a page:      buni call FILE import_html_page '{"url":"http://localhost:3000","selector":"#hero","page":{"name":"Hero","width":1440}}'
+                    Also accepts html or a file inside the design folder; omit selector for the whole page.
 Check your work:    buni shot FILE PAGE out.png      (then look at out.png; also .pdf, .svg, --scale 2; needs a Chrome,
                     Chromium or Edge, or BUNI_CHROME pointing at one)
 

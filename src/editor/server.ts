@@ -75,7 +75,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   function load(path: string): Promise<Open> {
     let o = opened.get(path);
     if (!o) {
-      o = Workspace.open(path, within(store, dirname(dirname(path)))).then(async (ws) => {
+      o = Workspace.open(path, within(store, dirname(dirname(path)), loopback && store.localImports === true)).then(async (ws) => {
         const file: Open = { ws, listeners: new Set(), mcp: new Map(), mock: new MockStore() };
         if (disk) {
           // On disk, buni open shows who is editing, and the buni command and coding agents send their edits here

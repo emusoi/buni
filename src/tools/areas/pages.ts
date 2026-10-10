@@ -1,6 +1,9 @@
+import { captureHtmlPage, htmlPageInput } from "../import-page.ts";
+import type { ToolOutput } from "../kit.ts";
 import { sourceRefs } from "../../format/sources.ts";
 // Pages and layers: creating pages, writing HTML into them, styles, text, motion, tokens, comments and the canvas. One
 // area of buni's design tools (agent/areas.ts); tools.ts gathers them.
+import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
 import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type Post, type Thread, type Style } from "../../format/doc.ts";
@@ -136,6 +139,52 @@ export const pagesTools = {
       const created: Id[] = [];
       ops.push(...draftOps(ids, drafts, parent, madePage ? "a0" : indexAt(doc, parent, a.after), created, madePage ? null : nextIndex(doc, parent, a.after)));
       return { label: "Import HTML", ops, reply: `${madePage ? `Created page ${madePage}.\n` : ""}Created ${created.length} nodes: ${created.join(", ")}.\n${warnings.map((w) => `Warning: ${w}`).join("\n")}` };
+    },
+  }),
+
+  import_html_page: tool({
+    description: "Convert a static HTML page or selected section into editable Buni layers, with resolved CSS, images and source context. Give exactly one of html, url or file, and either a new page or a parent frame. selector picks one element; width resolves responsive styles. Needs Chrome/Chromium/Edge on the host. Scripts and cookies are excluded; for JavaScript-only or signed-in pages, supply their rendered HTML. The design import is one undoable edit.",
+    input: {
+      ...htmlPageInput, parent: z.string().optional(), after: z.string().optional(),
+      page: z.object({ name: z.string().min(1), width: z.number().int().min(240).max(3840).optional(), route: z.string().optional() }).optional(),
+    },
+    run: async (doc, a, ctx): Promise<ToolOutput> => {
+      if (Boolean(a.parent) === Boolean(a.page)) throw new ToolError("Choose a parent frame or a new page.");
+      if (a.parent && node(doc, a.parent).kind !== "frame") throw new ToolError("Import into a frame.");
+      if (a.parent && a.after !== undefined) indexAt(doc, a.parent, a.after);
+      const width = a.width ?? a.page?.width ?? 1440;
+      const result = await captureHtmlPage(a, width, ctx);
+      const ids = new Ids(doc, ctx);
+      const attachments = { ...doc.attachments };
+      const ops: Op[] = [];
+      const replacements = new Map<string, string>();
+      for (const image of result.images) {
+        const path = await ctx.saveImportImage(image.base64, image.mime);
+        let attachment = Object.values(attachments).find((item) => item.path === path);
+        if (!attachment) {
+          attachment = { id: ids.next(), path, mime: image.mime };
+          attachments[attachment.id] = attachment;
+          ops.push({ kind: "put", collection: "attachments", value: attachment });
+        }
+        replacements.set(image.id, attachment.id);
+      }
+      const tree = parseFragment(result.html);
+      const resolveImages = (parent: P.ParentNode) => {
+        for (const child of parent.childNodes) if ("tagName" in child) {
+          for (const attr of child.attrs) {
+            if (attr.name === "src" && replacements.has(attr.value.slice(6))) attr.value = `asset:${replacements.get(attr.value.slice(6))}`;
+            if (attr.name === "style") attr.value = attr.value.replace(/url\(asset:(buni-import-image-\d+-asset)\)/g,
+              (all, id: string) => replacements.has(id) ? `url(asset:${replacements.get(id)})` : all);
+          }
+          resolveImages(child);
+        }
+      };
+      resolveImages(tree);
+      const html = serialize(tree);
+      const imported = await pagesTools.import_html.run({ ...doc, attachments }, { html,
+        ...(a.page ? { page: { ...a.page, width } } : { parent: a.parent, after: a.after }) }, ctx);
+      return { ...imported, ops: [...ops, ...imported.ops], reply: [imported.reply, `Captured ${result.count} elements at ${width}px.`,
+        ...result.warnings.map((warning) => `Warning: ${warning}`)].join("\n") };
     },
   }),
 

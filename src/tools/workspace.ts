@@ -1,6 +1,8 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
+import { checkImage } from "./assets.ts";
 import { emptyDoc, SYSTEM_COLLECTIONS, withImports, type Doc, type Id } from "../format/doc.ts";
 import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
@@ -44,6 +46,9 @@ export interface CallResult {
 
 /** Where .buni files live: the disk here, the browser's storage on the web. */
 export interface Store {
+  readonly localImports?: boolean;
+  readBytes?(path: string): Promise<Uint8Array<ArrayBuffer>>;
+  writeBytes?(path: string, bytes: Uint8Array): Promise<void>;
   read(path: string): Promise<string>;
   /** Replaces the whole file at once, creating its folder. */
   write(path: string, text: string): Promise<void>;
@@ -51,6 +56,9 @@ export interface Store {
 }
 
 export const diskStore: Store = {
+  localImports: true,
+  readBytes: async (path) => new Uint8Array(await readFile(path)),
+  writeBytes: async (path, bytes) => { await mkdir(dirname(path), { recursive: true }); await writeFile(path, bytes); },
   read: (path) => readFile(path, "utf8"),
   async write(path, text) {
     await mkdir(dirname(path), { recursive: true });
@@ -325,6 +333,26 @@ export class Workspace {
       now: () => new Date().toISOString(),
       randomId: () => randomBytes(4).toString("hex"),
       readAttachment: (p) => this.readAttachment(p),
+      localImports: this.store.localImports === true,
+      readImportFile: async (path) => {
+        const target = resolve(dirname(this.path), path);
+        if (!target.startsWith(dirname(this.path) + sep)) throw new ToolError("Import files must be inside the design's folder.");
+        if (!this.store.readBytes) throw new ToolError("This host cannot read HTML import files; pass html or url instead.");
+        const bytes = await this.store.readBytes(target);
+        if (bytes.length > 8 * 1024 * 1024) throw new ToolError("Each imported resource must be under 8 MB.");
+        return { url: pathToFileURL(target).href, mime: Bun.file(target).type.split(";")[0]!, base64: Buffer.from(bytes).toString("base64") };
+      },
+      saveImportImage: async (base64, mime) => {
+        if (!this.store.writeBytes) throw new ToolError("This host cannot save imported images.");
+        try {
+          const image = checkImage("import", base64, mime);
+          if ("error" in image) throw new ToolError(image.error);
+          const hash = createHash("sha256").update(image.bytes).digest("hex");
+          const path = `assets/import-${hash}.${image.ext}`;
+          await this.store.writeBytes(join(dirname(this.path), path), image.bytes);
+          return path;
+        } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
+      },
       ...(this.session.context ? { imported: this.session.context } : {}),
     };
   }
