@@ -94,6 +94,7 @@ svg { flex-shrink: 0; }
   display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; padding: 4px 8px;
   border: 0; background: none; border-radius: 6px; text-align: left; color: var(--ink); font-size: 13px;
 }
+.page-list .row { height: 28px; }
 .row:hover { background: var(--hover); }
 .row.active { background: var(--surface); box-shadow: var(--shadow-1); font-weight: 600; }
 .row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
@@ -134,7 +135,7 @@ svg { flex-shrink: 0; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); min-height: 0; border-top: 1px solid var(--rule); }
 
 /* ---------- canvas ---------- */
-.canvas { position: relative; overflow: hidden; background: var(--canvas); user-select: none; -webkit-user-select: none; touch-action: none; }
+.canvas { position: relative; overflow: clip; background: var(--canvas); user-select: none; -webkit-user-select: none; touch-action: none; }
 .canvas.space, .canvas.space .hit, .canvas.space .artboard-label { cursor: grab; }
 .canvas.panning { cursor: grabbing; }
 .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
@@ -151,7 +152,8 @@ svg { flex-shrink: 0; }
 .frame.active { outline: 2px solid var(--accent); }
 /* A terminal screen sits in a window of its own, not on a white page. */
 .frame.terminal { background: #101010; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px rgb(var(--shade) / 0.18), 0 6px 20px rgb(var(--shade) / 0.18); }
-.frame iframe, .board-preview { display: block; border: 0; pointer-events: none; }
+.frame iframe { display: block; border: 0; pointer-events: none; }
+.canvas-overview { position: absolute; transform-origin: 0 0; pointer-events: none; will-change: transform; }
 .frame .hit { position: absolute; inset: 0; }
 .zoom { position: absolute; right: 16px; top: 12px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 6px; background: var(--surface); box-shadow: 0 1px 3px rgb(var(--shade) / 0.12); }
 .zoom button { border: 0; background: none; min-width: 28px; height: 26px; border-radius: var(--radius); color: var(--ink-2); }

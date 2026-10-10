@@ -26,7 +26,7 @@ import { OwnersContext } from "./SystemCanvas.tsx";
 import type { SystemSelection, SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
-import { groupPages } from "./sidebar.ts";
+import { PageList } from "./PageList.tsx";
 import { Start } from "./Start.tsx";
 
 declare global {
@@ -691,24 +691,11 @@ export function App({ snap }: { snap: Snapshot }) {
                 <input className="field rail-filter" type="search" placeholder={`Find among ${pages.length} pages`} value={pageFilter} onChange={(e) => setPageFilter(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") setPageFilter(""); }} aria-label="Find a page" />
               )}
               {pageFilter.trim() && pages.filter(matchesPage).length === 0 && <p className="rail-empty">No page matches “{pageFilter.trim()}”.</p>}
-              {groupPages(pageFilter.trim() ? pages.filter(matchesPage) : pages, doc.parts).map((item) =>
-                item.kind === "page" ? (
-                  <Fragment key={item.page.id}>{pageRow(item.page)}</Fragment>
-                ) : (
-                  <Fragment key={item.key}>
-                    <button type="button" className="row group-row" onClick={() => setFolded((f) => {
-                      const next = new Set(f);
-                      if (!next.delete(item.key)) next.add(item.key);
-                      return next;
-                    })}>
-                      {folded.has(item.key) ? <ChevronRight size={13} className="dim" /> : <ChevronDown size={13} className="dim" />}
-                      <span className="name">{item.name}</span>
-                      <span className="meta">{item.pages.length}</span>
-                    </button>
-                    {!folded.has(item.key) && item.pages.map((p) => <Fragment key={p.id}>{pageRow(p, true)}</Fragment>)}
-                  </Fragment>
-                ),
-              )}
+              <PageList pages={pageFilter.trim() ? pages.filter(matchesPage) : pages} parts={doc.parts} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
+                const next = new Set(f);
+                if (!next.delete(key)) next.add(key);
+                return next;
+              })} />
           <div className="section-label with-action">
             Flows <span className="n">{flows.length || ""}</span>
             {activePage && (

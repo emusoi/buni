@@ -144,9 +144,6 @@ export function nodeAt(frame: HTMLIFrameElement | null, x: number, y: number): I
   return cls?.startsWith("b-") ? cls.slice(2) : undefined;
 }
 
-/** Last measured height of each board, so a board keeps its size while it is a placeholder. */
-const HEIGHTS = new Map<Id, number>();
-
 /** Layers an agent just changed, in its colour: they land with an outline that settles, then fades. */
 export interface Landing {
   nodes: readonly Id[];
@@ -177,10 +174,16 @@ function cssVars(vars: Record<`--${string}`, number>): CSSProperties {
 
 /** Height of a board's name above its frame, at 100%. */
 const LABEL = 19;
-/** How far out the canvas zooms: far enough to show a file of a hundred pages whole. */
-const MIN_ZOOM = 0.02;
+/** Allow thousand-page files to fit without clipping their bottom rows. */
+const MIN_ZOOM = 0.005;
 /** Below this, page names would overlap the row above: only row titles are shown. */
 const FAR = 0.15;
+const OVERVIEW_PAD = 192;
+
+/** Discrete preview resolutions avoid rebuilding a bitmap for every small zoom step. */
+export function previewWidth(width: number, zoom: number, pixelRatio: number): number {
+  return Math.min(200, Math.max(32, 2 ** Math.ceil(Math.log2(width * zoom * Math.min(pixelRatio, 2)))));
+}
 
 /**
  * Boards that came into view, built a few per frame: zooming out or panning can bring dozens in
@@ -205,9 +208,11 @@ function buildSoon(show: () => void, urgent = false): () => void {
 // Decoding SVG documents also creates layout work in Chrome. Keep only one in flight.
 const previews: (() => Promise<void>)[] = [];
 let drawing = false;
+let previewAfter = 0;
 function previewSoon(draw: () => Promise<void>): () => void {
   previews.push(draw);
   const next = () => {
+    if (performance.now() < previewAfter) { requestAnimationFrame(next); return; }
     const job = previews.shift();
     if (!job) { drawing = false; return; }
     void job().finally(() => requestAnimationFrame(next));
@@ -253,7 +258,11 @@ const Artboard = memo(function Artboard(props: {
   active: boolean;
   retained: boolean;
   detail: boolean;
+  near: boolean;
   resources: Map<string, Promise<string>>;
+  heights: Map<Id, number>;
+  previewWidth: number;
+  onPicture: (id: Id, picture: HTMLCanvasElement | undefined) => void;
   onOpen: (id: Id) => void;
   marks: string;
   /** Changes when the board's drawing may have: its HTML is built again only then. */
@@ -278,36 +287,25 @@ const Artboard = memo(function Artboard(props: {
   const component = doc.shared[pageId];
   const box = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
-  const picture = useRef<HTMLCanvasElement>(null);
   const [height, setHeight] = useState(() => {
     const style = doc.nodes[page?.frame ?? component?.root ?? ""]?.style;
     const given = style?.height ?? style?.minHeight ?? "";
     // An auto-height board is measured when opened; its overview starts with the usual page height.
-    return HEIGHTS.get(pageId) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400);
+    return props.heights.get(pageId) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400);
   });
   const width = page ? props.viewWidth ?? widthOf(doc, pageId) : componentWidth(doc, pageId);
   // At another width the page reflows, so its height is measured again.
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       const h = frame.current?.contentDocument?.body?.scrollHeight;
-      if (h) { setHeight(h); HEIGHTS.set(pageId, h); }
+      if (h) { setHeight(h); props.heights.set(pageId, h); }
     });
     return () => cancelAnimationFrame(id);
   }, [width, pageId]);
   // Keep the active board mounted; distant boards release their documents but keep their measured size.
-  const [near, setNear] = useState(false);
   const [editing, setEditing] = useState(false);
-  const seen = near || props.active || props.retained || editing;
+  const seen = props.near || props.active || props.retained || editing;
   const live = seen && (props.detail || props.active || props.retained || editing);
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      setNear(entries.some((e) => e.isIntersecting));
-    }, { rootMargin: "600px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
   // Edits can invalidate hundreds of boards: generate their documents within a frame budget, live boards first.
   const [html, setHtml] = useState("");
   useEffect(() => {
@@ -344,8 +342,14 @@ const Artboard = memo(function Artboard(props: {
         await new Promise<void>((resolve) => {
           finish = resolve;
           image.onload = () => {
-            const canvas = picture.current;
-            if (!cancelled && canvas) canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+            if (!cancelled) {
+              const canvas = document.createElement("canvas");
+              const scale = Math.min(props.previewWidth / width, 400 / height);
+              canvas.width = Math.ceil(width * scale);
+              canvas.height = Math.ceil(height * scale);
+              canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+              props.onPicture(pageId, canvas);
+            }
             release();
           };
           image.onerror = () => { console.error("Could not draw the board preview"); release(); };
@@ -357,7 +361,8 @@ const Artboard = memo(function Artboard(props: {
       }
     });
     return () => { cancelled = true; cancelBuild(); release(); };
-  }, [html, live, width, height, props.resources]);
+  }, [html, live, width, height, props.resources, props.previewWidth]);
+  useEffect(() => () => props.onPicture(pageId, undefined), [live, html, width, height, props.previewWidth, props.onPicture, pageId]);
   const { marks } = props;
   const [loads, setLoads] = useState(0);
   useEffect(() => {
@@ -384,7 +389,7 @@ const Artboard = memo(function Artboard(props: {
     const h = frame.current?.contentDocument?.body?.scrollHeight;
     if (h) {
       setHeight(h);
-      HEIGHTS.set(pageId, h);
+      props.heights.set(pageId, h);
     }
     setLoads((n) => n + 1);
     props.onLoaded(pageId, h || 900);
@@ -517,7 +522,7 @@ const Artboard = memo(function Artboard(props: {
   const grab = useRef<{ x: number; y: number; moved: boolean } | undefined>(undefined);
   const delta = (e: ReactPointerEvent) => ({ x: (e.clientX - (grab.current?.x ?? 0)) / props.zoom.current, y: (e.clientY - (grab.current?.y ?? 0)) / props.zoom.current });
 
-  if (!page && !component) return null;
+  if ((!page && !component) || !live) return null;
   const { uses } = props;
   return (
     <div className="artboard" style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
@@ -552,13 +557,9 @@ const Artboard = memo(function Artboard(props: {
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
       </button>
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
-        {live && url ? (
+        {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
-        ) : !live && html ? (
-          <canvas ref={picture} className="board-preview" width={Math.ceil(width * Math.min(200 / width, 400 / height))} height={Math.ceil(height * Math.min(200 / width, 400 / height))} style={{ width, height }} aria-hidden="true" />
-        ) : (
-          <div className="board-placeholder" />
-        )}
+        ) : <div className="board-placeholder" />}
         <div className="hit" onPointerDown={hit} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
         {drop && <div className="drop-line" style={{ left: drop.line.x, top: drop.line.y, width: drop.line.w, height: drop.line.h }} />}
         {box2 && !drop && !editing && (
@@ -622,51 +623,105 @@ type LinkMode = "page" | "all" | "off";
 const NEXT_MODE: Record<LinkMode, LinkMode> = { page: "all", all: "off", off: "page" };
 
 /** Links drawn from the triggering node to the left edge of the page it opens, in world coordinates. */
-function arrows(doc: Doc, at: ReadonlyMap<Id, Point>, boards: ReadonlyMap<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>): Arrow[] {
+export function arrows(doc: Doc, boxes: ReadonlyMap<Id, BoardRect>, boards: ReadonlyMap<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>): Arrow[] {
   const out: Arrow[] = [];
   for (const c of Object.values(doc.connections)) {
-    const from = boards.get(c.page);
-    const to = boards.get(c.to);
-    const fromAt = at.get(c.page);
-    const toAt = at.get(c.to);
-    const el = from?.iframe?.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`);
-    if (!from || !to || !fromAt || !toAt || (from.iframe && !el)) continue;
-    if (c.page === c.to) continue;
+    const from = boxes.get(c.page), to = boxes.get(c.to);
+    if (!from || !to || c.page === c.to) continue;
+    const iframe = boards.get(c.page)?.iframe;
+    const el = iframe?.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`);
     const r = el?.getBoundingClientRect();
-    // Frames sit below their label inside an absolutely placed artboard.
-    const fx = fromAt.x + from.frame.offsetLeft;
-    const fy = fromAt.y + from.frame.offsetTop;
-    const ty = toAt.y + to.frame.offsetTop;
+    const fx = from.x, fy = from.y, ty = to.y;
     out.push({
       // A key link reads as its key; anything else as the layer that triggers it.
       // A condition is what tells a branch from the usual path out of the same element, so it is the label.
       id: c.id, from: c.page, to: c.to, label: c.condition ? `if ${c.condition.charAt(0).toLowerCase()}${c.condition.slice(1)}` : c.trigger === "key" ? `${c.key ?? ""}` : doc.nodes[c.node]?.name ?? "",
-      x: fx + (r ? r.left + r.width / 2 : from.frame.offsetWidth / 2), y: fy + (r?.top ?? 0), sy: fy, sb: fy + from.frame.offsetHeight, tx: toAt.x + to.frame.offsetLeft, ty, top: Math.min(fy, ty) - 24,
+      x: fx + (r ? r.left + r.width / 2 : from.width / 2), y: fy + (r?.top ?? 0), sy: fy, sb: fy + from.height, tx: to.x, ty, top: Math.min(fy, ty) - 24,
     });
   }
   return out;
+}
+
+export interface BoardRect extends Point { width: number; height: number }
+
+/** Hit testing works even when overview boards have no DOM of their own. Last drawn wins. */
+export function boardAt(boxes: ReadonlyMap<Id, BoardRect>, point: Point): Id | undefined {
+  let found: Id | undefined;
+  for (const [id, box] of boxes) if (point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height) found = id;
+  return found;
 }
 
 /** Every page on one big canvas, where it was placed; drag a page by its name, wheel pans, pinch or ⌘-wheel zooms. */
 export function Canvas(props: Props) {
   // Opens with room on the left for the rows' titles.
   const [view, setView] = useState({ x: 240, y: 140, zoom: 0.4 });
+  const overview = useRef<HTMLCanvasElement>(null);
+  const pictures = useRef(new Map<Id, HTMLCanvasElement>());
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const overviewView = useRef<{ x: number; y: number; zoom: number } | undefined>(undefined);
+  const dirtyPictures = useRef(new Set<Id>());
+  const fullPaint = useRef(false);
+  const paint = useRef((_all: boolean) => {});
+  const painting = useRef(0);
+  const repaint = useMemo(() => (all = false) => {
+    fullPaint.current ||= all;
+    painting.current ||= requestAnimationFrame(function next() {
+      if (performance.now() < previewAfter) { painting.current = requestAnimationFrame(next); return; }
+      painting.current = 0;
+      const full = fullPaint.current; fullPaint.current = false;
+      paint.current(full);
+    });
+  }, []);
+  const onPicture = useMemo(() => (id: Id, picture: HTMLCanvasElement | undefined) => {
+    if (picture) pictures.current.set(id, picture); else pictures.current.delete(id);
+    dirtyPictures.current.add(id);
+    repaint();
+  }, [repaint]);
+  useEffect(() => () => cancelAnimationFrame(painting.current), []);
+  const world = useRef<HTMLDivElement>(null);
+  const rowLabels = useRef<HTMLDivElement>(null);
   const camera = useRef(view);
+  const committed = useRef(view);
+  committed.current = view;
   const cameraFrame = useRef(0);
+  const cameraIdle = useRef<ReturnType<typeof setTimeout>>(undefined);
   const updateView = (next: typeof view | ((v: typeof view) => typeof view)) => {
     camera.current = typeof next === "function" ? next(camera.current) : next;
+    previewAfter = performance.now() + 180;
+    clearTimeout(cameraIdle.current);
+    cameraIdle.current = setTimeout(() => setView(camera.current), 180);
     cameraFrame.current ||= requestAnimationFrame(() => {
       cameraFrame.current = 0;
-      setView(camera.current);
+      const next = camera.current;
+      // Move the last composited overview during gestures; redraw only when the camera settles.
+      const drawn = overviewView.current;
+      if (overview.current && drawn) {
+        const scale = next.zoom / drawn.zoom;
+        overview.current.style.transform = `translate(${next.x - drawn.x * scale + OVERVIEW_PAD * (1 - scale)}px, ${next.y - drawn.y * scale + OVERVIEW_PAD * (1 - scale)}px) scale(${scale})`;
+      }
+      if (next.zoom !== committed.current.zoom) { setView(next); return; }
+      if (world.current) world.current.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.zoom})`;
+      if (rowLabels.current) rowLabels.current.style.transform = `translate(${next.x - committed.current.x}px, ${next.y - committed.current.y}px)`;
     });
   };
-  useEffect(() => () => cancelAnimationFrame(cameraFrame.current), []);
+  useLayoutEffect(() => { if (rowLabels.current) rowLabels.current.style.transform = ""; }, [view]);
+  useEffect(() => () => { cancelAnimationFrame(cameraFrame.current); clearTimeout(cameraIdle.current); }, []);
   const [dragging, setDragging] = useState<{ page: Id; delta: Point }>();
   const [panning, setPanning] = useState(false);
   const [loads, setLoads] = useState(0);
   const [links, setLinks] = useState<Arrow[]>([]);
   const [linkMode, setLinkMode] = useState<LinkMode>("page");
-  const drag = useRef<{ x: number; y: number } | undefined>(undefined);
+  const routed = useMemo(() => {
+    const slots = new Map<Id, number>(), lanes = { up: 0, down: 0 };
+    return links.filter((a) => linkMode !== "off" && (linkMode === "all" || a.from === props.activePage)).map((a) => {
+      const lane = goesDown(a, view.zoom) ? lanes.down++ : lanes.up++;
+      const slot = slots.get(a.to) ?? 0;
+      slots.set(a.to, slot + 1);
+      const kind = a.from === props.activePage ? "out" : a.to === props.activePage ? "in" : "other";
+      return { a, kind, ...route(a, lane, slot, view.zoom), endX: a.tx + (40 + slot * 24) / view.zoom };
+    });
+  }, [links, linkMode, props.activePage, view.zoom]);
+  const drag = useRef<{ x: number; y: number; start: Point; moved: boolean; pick: boolean } | undefined>(undefined);
   const endPan = () => {
     drag.current = undefined;
     setPanning(false);
@@ -694,7 +749,6 @@ export function Canvas(props: Props) {
       window.removeEventListener("keyup", up);
     };
   }, []);
-  const world = useRef<HTMLDivElement>(null);
   const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>());
   const pages = useMemo(() => pagesInOrder(props.doc), [props.doc.pages]);
   const resources = useMemo(() => new Map<string, Promise<string>>(), [props.dir]);
@@ -783,7 +837,19 @@ export function Canvas(props: Props) {
     if (p) m.set(dragging.page, { x: p.x + dragging.delta.x, y: p.y + dragging.delta.y });
     return m;
   }, [saved, dragging]);
-  useLayoutEffect(() => setLinks(arrows(props.doc, at, boards.current)), [props.doc, loads, at]);
+  const boxes = useMemo(() => new Map([...pages, ...Object.values(props.doc.shared)].map((board) => {
+    const page = props.doc.pages[board.id];
+    const style = props.doc.nodes[page?.frame ?? props.doc.shared[board.id]?.root ?? ""]?.style;
+    const given = style?.height ?? style?.minHeight ?? "";
+    const p = at.get(board.id) ?? ORIGIN;
+    return [board.id, {
+      x: p.x, y: p.y + LABEL + 10,
+      width: page ? props.viewAt?.[board.id] ?? widthOf(props.doc, board.id) : componentWidth(props.doc, board.id),
+      height: heights.current.get(board.id) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400),
+    }];
+  })), [pages, props.doc, props.viewAt, at, loads]);
+  const nearby = useMemo(() => new Set([...boxes].filter(([, b]) => b.x * view.zoom + view.x < canvasSize.width + 600 && (b.x + b.width) * view.zoom + view.x > -600 && b.y * view.zoom + view.y < canvasSize.height + 600 && (b.y + b.height) * view.zoom + view.y > -600).map(([id]) => id)), [boxes, view, canvasSize]);
+  useLayoutEffect(() => setLinks(arrows(props.doc, boxes, boards.current)), [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
   const sets = useMemo(() => {
     const groups = new Map<string, Id[]>();
@@ -794,7 +860,7 @@ export function Canvas(props: Props) {
     return [...groups].filter(([, ids]) => ids.length > 1).flatMap(([name, ids]) => {
       const boxes = ids.flatMap((id) => {
         const p = at.get(id);
-        return p ? [{ x: p.x, y: p.y, w: componentWidth(props.doc, id), h: heights.current.get(id) ?? HEIGHTS.get(id) ?? 400 }] : [];
+        return p ? [{ x: p.x, y: p.y, w: componentWidth(props.doc, id), h: heights.current.get(id) ?? 400 }] : [];
       });
       if (!boxes.length) return [];
       const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
@@ -822,6 +888,78 @@ export function Canvas(props: Props) {
 
   // Bring the active page into view when it is opened from elsewhere and sits off screen.
   const box = useRef<HTMLDivElement>(null);
+  // Build the overview once, patch arriving tiles, then move one surface during a gesture.
+  paint.current = (all) => {
+    const canvas = overview.current;
+    const { width, height } = canvasSize;
+    if (!canvas || !width || !height) return;
+    const v = camera.current, old = overviewView.current;
+    all ||= !old || old.x !== v.x || old.y !== v.y || old.zoom !== v.zoom;
+    // Overview detail is deliberately one pixel per CSS pixel; opening a board is full resolution.
+    const wpx = Math.ceil(width + OVERVIEW_PAD * 2), hpx = Math.ceil(height + OVERVIEW_PAD * 2);
+    if (canvas.width !== wpx) { canvas.width = wpx; all = true; }
+    if (canvas.height !== hpx) { canvas.height = hpx; all = true; }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(1, 0, 0, 1, OVERVIEW_PAD, OVERVIEW_PAD);
+    const rects = [...boxes].map(([id, b]) => ({ id, x: b.x * v.zoom + v.x, y: b.y * v.zoom + v.y, width: b.width * v.zoom, height: b.height * v.zoom }));
+    const dirty = rects.filter((b) => dirtyPictures.current.has(b.id));
+    // Clip partial updates, then redraw in board order so overlapping boards stay correct.
+    ctx.save();
+    if (!all) {
+      ctx.beginPath();
+      for (const b of dirty) ctx.rect(Math.floor(b.x), Math.floor(b.y), Math.ceil(b.width) + 1, Math.ceil(b.height) + 1);
+      ctx.clip();
+    }
+    ctx.clearRect(-OVERVIEW_PAD, -OVERVIEW_PAD, wpx, hpx);
+    ctx.fillStyle = "#fff";
+    for (const b of rects) {
+      if (b.x + b.width < -OVERVIEW_PAD || b.y + b.height < -OVERVIEW_PAD || b.x > width + OVERVIEW_PAD || b.y > height + OVERVIEW_PAD || boards.current.has(b.id)) continue;
+      if (!all && !dirty.some((d) => b.x < d.x + d.width + 1 && b.x + b.width > d.x - 1 && b.y < d.y + d.height + 1 && b.y + b.height > d.y - 1)) continue;
+      ctx.fillRect(b.x, b.y, b.width, b.height);
+      const picture = pictures.current.get(b.id);
+      if (picture) ctx.drawImage(picture, b.x, b.y, b.width, b.height);
+    }
+    // Overview connections share the cached surface. The selected page keeps its precise SVG overlay.
+    const style = getComputedStyle(canvas);
+    ctx.translate(v.x, v.y);
+    ctx.scale(v.zoom, v.zoom);
+    ctx.lineWidth = 1.5 / v.zoom;
+    const colour = style.getPropertyValue("--label"), surface = style.getPropertyValue("--surface");
+    for (const link of routed) {
+      if (link.kind === "out") continue;
+      ctx.strokeStyle = colour;
+      ctx.globalAlpha = link.kind === "other" ? 0.55 : 1;
+      ctx.setLineDash(link.kind === "in" ? [6 / v.zoom, 5 / v.zoom] : []);
+      ctx.stroke(new Path2D(link.d));
+      ctx.setLineDash([]);
+      const tip = link.a.ty - 6, unit = 1 / v.zoom;
+      ctx.fillStyle = colour;
+      ctx.beginPath();
+      ctx.moveTo(link.endX, tip);
+      ctx.lineTo(link.endX - 3.75 * unit, tip - 7.5 * unit);
+      ctx.lineTo(link.endX + 3.75 * unit, tip - 7.5 * unit);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = surface;
+      ctx.beginPath();
+      ctx.arc(link.a.x, link.a.y, 4 * unit, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+    dirtyPictures.current.clear();
+    overviewView.current = { ...v };
+    canvas.style.transform = "";
+  };
+  useLayoutEffect(() => repaint(true), [view, boxes, canvasSize, repaint, props.activePage, routed]);
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setCanvasSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+    });
+    if (box.current) observer.observe(box.current);
+    return () => observer.disconnect();
+  }, [repaint]);
   useEffect(() => {
     const p = props.activePage ? saved.get(props.activePage) : undefined;
     const r = box.current?.getBoundingClientRect();
@@ -829,7 +967,8 @@ export function Canvas(props: Props) {
     updateView((v) => {
       const left = p.x * v.zoom + v.x;
       const top = p.y * v.zoom + v.y;
-      const visible = left > -40 && left < r.width / 2 && top > -400 * v.zoom && top < r.height / 2;
+      const bounds = props.activePage ? boxes.get(props.activePage) : undefined;
+      const visible = left + (bounds?.width ?? 0) * v.zoom > 0 && left < r.width && top + (bounds?.height ?? 0) * v.zoom > 0 && top < r.height;
       return visible ? v : { ...v, x: 48 - p.x * v.zoom, y: 140 - p.y * v.zoom };
     });
   }, [props.activePage]);
@@ -881,13 +1020,9 @@ export function Canvas(props: Props) {
     if (!r) return;
     let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
     for (const id of ids) {
-      const p = at.get(id);
-      if (!p) continue;
-      const w = props.doc.pages[id] ? widthOf(props.doc, id) : componentWidth(props.doc, id);
-      // Measured once loaded; until then the frame's own height, if it has one.
-      const set = Number.parseInt(props.doc.nodes[props.doc.pages[id]?.frame ?? props.doc.shared[id]?.root ?? ""]?.style.height ?? "", 10);
-      const h = heights.current.get(id) ?? HEIGHTS.get(id) ?? (Number.isFinite(set) ? set : 900);
-      [x0, y0, x1, y1] = [Math.min(x0, p.x), Math.min(y0, p.y), Math.max(x1, p.x + w), Math.max(y1, p.y + LABEL + 10 + h)];
+      const b = boxes.get(id);
+      if (!b) continue;
+      [x0, y0, x1, y1] = [Math.min(x0, b.x), Math.min(y0, b.y - LABEL - 10), Math.max(x1, b.x + b.width), Math.max(y1, b.y + b.height)];
     }
     if (x0 === Infinity) return;
     // Room for the toolbar above, the insert bar below, and row titles in the margin on the left.
@@ -937,23 +1072,40 @@ export function Canvas(props: Props) {
         e.preventDefault();
         e.stopPropagation();
         e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { x: e.clientX - camera.current.x, y: e.clientY - camera.current.y };
+        drag.current = { x: e.clientX - camera.current.x, y: e.clientY - camera.current.y, start: { x: e.clientX, y: e.clientY }, moved: false, pick: onBackground && e.button === 0 && !space.current };
         setPanning(true);
         if (onBackground) props.onSelectNode(undefined);
       }}
       onPointerMove={(e) => {
         const d = drag.current;
         if (!d) return;
+        if (!d.moved && Math.hypot(e.clientX - d.start.x, e.clientY - d.start.y) < 4) return;
+        d.moved = true;
         // Read the start now: by the time a queued update runs, the drag may have ended.
         const x = e.clientX - d.x;
         const y = e.clientY - d.y;
         updateView((v) => ({ ...v, x, y }));
       }}
-      onPointerUp={endPan}
+      onPointerUp={(e) => {
+        const d = drag.current;
+        if (d?.pick && !d.moved && camera.current.zoom < FAR) {
+          const r = e.currentTarget.getBoundingClientRect(), v = camera.current;
+          const id = boardAt(boxes, { x: (e.clientX - r.left - v.x) / v.zoom, y: (e.clientY - r.top - v.y) / v.zoom });
+          if (id) props.onSelectPage(id);
+        }
+        endPan();
+      }}
+      onDoubleClick={(e) => {
+        if (e.target !== e.currentTarget && e.target !== world.current) return;
+        const r = e.currentTarget.getBoundingClientRect(), v = camera.current;
+        const id = boardAt(boxes, { x: (e.clientX - r.left - v.x) / v.zoom, y: (e.clientY - r.top - v.y) / v.zoom });
+        if (id) onOpen(id);
+      }}
       onPointerCancel={endPan}
       onLostPointerCapture={endPan}
     >
       {pages.length === 0 && <div className="empty">No pages yet. Add one from the bar below, or ask your coding agent.</div>}
+      {view.zoom < FAR && <canvas ref={overview} className="canvas-overview" style={{ left: -OVERVIEW_PAD, top: -OVERVIEW_PAD, width: `calc(100% + ${OVERVIEW_PAD * 2}px)`, height: `calc(100% + ${OVERVIEW_PAD * 2}px)` }} aria-hidden="true" />}
       <div ref={world} className="world" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, ...cssVars({ "--zoom": view.zoom, "--inv": 1 / view.zoom }) }}>
         {sets.map((s) => (
           <div key={s.name} className="component-set" style={{ left: s.x - 24, top: s.y - 56, width: s.w + 48, height: s.h + 80 }}>
@@ -970,7 +1122,11 @@ export function Canvas(props: Props) {
             active={p.id === props.activePage}
             retained={retained.has(p.id)}
             detail={view.zoom >= FAR}
+            near={nearby.has(p.id)}
             resources={resources}
+            heights={heights.current}
+            onPicture={onPicture}
+            previewWidth={previewWidth(props.doc.pages[p.id] ? props.viewAt?.[p.id] ?? widthOf(props.doc, p.id) : componentWidth(props.doc, p.id), view.zoom, window.devicePixelRatio)}
             onOpen={onOpen}
             marks={marks}
             uses={uses.get(p.id) ?? 0}
@@ -998,36 +1154,18 @@ export function Canvas(props: Props) {
               </marker>
             ))}
           </defs>
-          {linkMode !== "off" &&
-            (() => {
-              const shown = links.filter((a) => linkMode === "all" || a.from === props.activePage);
-              // Each link gets its own lane; links into the same page land side by side.
-              const slots = new Map<Id, number>();
-              // Links up and links down each number their own lanes.
-              const lanes = { up: 0, down: 0 };
-              return shown.map((a) => {
-                const lane = goesDown(a, view.zoom) ? lanes.down++ : lanes.up++;
-                const slot = slots.get(a.to) ?? 0;
-                slots.set(a.to, slot + 1);
-                const kind = a.from === props.activePage ? "out" : a.to === props.activePage ? "in" : "other";
-                const { d, lx, ly } = route(a, lane, slot, view.zoom);
-                // Constant on-screen weight at any zoom.
-                const w = 1 / view.zoom;
-                return (
-                  <g key={a.id} className={`link ${kind}`}>
-                    <path d={d} strokeWidth={(kind === "out" ? 2 : 1.5) * w} markerEnd={`url(#arrow-${kind})`} />
-                    <circle cx={a.x} cy={a.y} r={4 * w} strokeWidth={1.5 * w} />
-                    {view.zoom >= FAR && kind === "out" && a.label && (
-                      <text x={lx} y={ly} fontSize={11 * w} strokeWidth={4 * w} textAnchor={route(a, lane, slot, view.zoom).lx >= a.x ? "start" : "end"}>{a.label}</text>
-                    )}
-                  </g>
-                );
-              });
-            })()}
+          {routed.filter((link) => view.zoom >= FAR || link.kind === "out").map(({ a, kind, d, lx, ly }) => {
+            const w = 1 / view.zoom;
+            return <g key={a.id} className={`link ${kind}`}>
+              <path d={d} strokeWidth={(kind === "out" ? 2 : 1.5) * w} markerEnd={`url(#arrow-${kind})`} />
+              <circle cx={a.x} cy={a.y} r={4 * w} strokeWidth={1.5 * w} />
+              {view.zoom >= FAR && kind === "out" && a.label && <text x={lx} y={ly} fontSize={11 * w} strokeWidth={4 * w} textAnchor={lx >= a.x ? "start" : "end"}>{a.label}</text>}
+            </g>;
+          })}
         </svg>
       </div>
       {/* Drawn over the world at screen size, so a row's name reads the same at any zoom. */}
-      <div className="row-titles" aria-hidden="true">
+      <div ref={rowLabels} className="row-titles" aria-hidden="true">
         {titles
           // Rows too close together at this zoom: the upper one keeps its title.
           .filter((t) => {

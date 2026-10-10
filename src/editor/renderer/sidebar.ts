@@ -43,3 +43,9 @@ export function groupPages(pages: readonly Page[], parts: Doc["parts"] = {}): Pa
   }
   return out;
 }
+
+/** Visible fixed-height page rows with six extra rows for scrolling and keyboard focus. */
+export function pageWindow(count: number, top: number, height: number): { start: number; end: number } {
+  const start = Math.max(0, Math.min(count - 1, Math.floor(top / 28) - 6));
+  return { start, end: Math.min(count, Math.max(start + 1, Math.ceil((top + height) / 28) + 6)) };
+}
