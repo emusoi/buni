@@ -51,6 +51,45 @@ function wrap({ html, css }: { html: string; css: string }, dir: string, extraCs
   return `<!doctype html><html><head><meta charset="utf-8"><base href="${base}"><style>html,body{margin:0;overflow:hidden}${css}${extraCss}</style></head><body>${html}</body></html>`;
 }
 
+/** Small pictures in the overview, rather than hundreds of live browsing contexts. */
+async function thumbnail(html: string, width: number, height: number, resources: Map<string, Promise<string>>): Promise<string> {
+  // Parsing megabytes of CSS into an extra HTML document needlessly builds a second stylesheet.
+  const bodyAt = html.indexOf("<body>");
+  const base = html.match(/<base href="([^"]*)">/)?.[1] ?? location.href;
+  const doc = new DOMParser().parseFromString(html.slice(bodyAt), "text/html");
+  const embed = (url: string) => {
+    let loading = resources.get(url);
+    if (!loading) {
+      loading = fetch(url).then(async (response) => {
+        if (!response.ok) throw new Error(`Preview asset: ${response.status} ${url}`);
+        const blob = await response.blob();
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Preview asset was not text"));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      });
+      resources.set(url, loading);
+    }
+    return loading;
+  };
+  let css = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n");
+  const urls = [...css.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/g)];
+  await Promise.all(urls.map(async ([given, quoted, single, plain]) => {
+    const url = (quoted ?? single ?? plain ?? "").trim();
+    if (!url || /^(data:|#)/.test(url)) return;
+    css = css.replaceAll(given, `url("${await embed(new URL(url, base).href)}")`);
+  }));
+  await Promise.all([...doc.images].map(async (img) => {
+    const src = img.getAttribute("src");
+    if (src && !src.startsWith("data:")) img.src = await embed(new URL(src, base).href);
+  }));
+  css = `body{margin:0;width:${width}px;height:${height}px}${css.replace(":root", "body")}*,*::before,*::after{animation:none!important;transition:none!important}`;
+  const body = new XMLSerializer().serializeToString(doc.body).replace(/^(<body[^>]*>)/, (start) => `${start}<style><![CDATA[${css.replaceAll("]]>", "]]]]><![CDATA[>")}]]></style>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="${width}" height="${height}">${body}</foreignObject></svg>`;
+}
+
 /** The layer to select at a point: an enclosing component instance wins over the component's own layers. */
 function pickNode(doc: Doc, frame: HTMLIFrameElement | null, x: number, y: number): Id | undefined {
   let el = frame?.contentDocument?.elementFromPoint(x, y)?.closest("[class^='b-']") ?? null;
@@ -149,15 +188,34 @@ const FAR = 0.15;
  */
 const waiting: (() => void)[] = [];
 let building = 0;
-function buildSoon(show: () => void): () => void {
-  waiting.push(show);
+function buildSoon(show: () => void, urgent = false): () => void {
+  if (urgent) waiting.unshift(show);
+  else waiting.push(show);
   building ||= requestAnimationFrame(function next() {
-    for (const f of waiting.splice(0, 4)) f();
+    const until = performance.now() + 4;
+    do { waiting.shift()?.(); } while (waiting.length && performance.now() < until);
     building = waiting.length > 0 ? requestAnimationFrame(next) : 0;
   });
   return () => {
     const i = waiting.indexOf(show);
     if (i >= 0) waiting.splice(i, 1);
+  };
+}
+
+// Decoding SVG documents also creates layout work in Chrome. Keep only one in flight.
+const previews: (() => Promise<void>)[] = [];
+let drawing = false;
+function previewSoon(draw: () => Promise<void>): () => void {
+  previews.push(draw);
+  const next = () => {
+    const job = previews.shift();
+    if (!job) { drawing = false; return; }
+    void job().finally(() => requestAnimationFrame(next));
+  };
+  if (!drawing) { drawing = true; requestAnimationFrame(next); }
+  return () => {
+    const i = previews.indexOf(draw);
+    if (i >= 0) previews.splice(i, 1);
   };
 }
 
@@ -194,6 +252,9 @@ const Artboard = memo(function Artboard(props: {
   at: Point;
   active: boolean;
   retained: boolean;
+  detail: boolean;
+  resources: Map<string, Promise<string>>;
+  onOpen: (id: Id) => void;
   marks: string;
   /** Changes when the board's drawing may have: its HTML is built again only then. */
   version: string;
@@ -217,7 +278,13 @@ const Artboard = memo(function Artboard(props: {
   const component = doc.shared[pageId];
   const box = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(() => HEIGHTS.get(pageId) ?? 900);
+  const picture = useRef<HTMLCanvasElement>(null);
+  const [height, setHeight] = useState(() => {
+    const style = doc.nodes[page?.frame ?? component?.root ?? ""]?.style;
+    const given = style?.height ?? style?.minHeight ?? "";
+    // An auto-height board is measured when opened; its overview starts with the usual page height.
+    return HEIGHTS.get(pageId) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400);
+  });
   const width = page ? props.viewWidth ?? widthOf(doc, pageId) : componentWidth(doc, pageId);
   // At another width the page reflows, so its height is measured again.
   useEffect(() => {
@@ -231,28 +298,66 @@ const Artboard = memo(function Artboard(props: {
   const [near, setNear] = useState(false);
   const [editing, setEditing] = useState(false);
   const seen = near || props.active || props.retained || editing;
+  const live = seen && (props.detail || props.active || props.retained || editing);
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    let cancel: (() => void) | undefined;
     const io = new IntersectionObserver((entries) => {
-      cancel?.();
-      cancel = undefined;
-      if (entries.some((e) => e.isIntersecting)) cancel = buildSoon(() => setNear(true));
-      else setNear(false);
+      setNear(entries.some((e) => e.isIntersecting));
     }, { rootMargin: "600px" });
     io.observe(el);
-    return () => {
-      io.disconnect();
-      cancel?.();
-    };
+    return () => io.disconnect();
   }, []);
-  // Content only: selection and agent outlines are painted into the loaded document, so they never reload it.
-  const html = useMemo(
-    () => (!seen ? "" : page ? srcdoc(doc, pageId, props.dir) : wrap(renderComponent(doc, pageId), props.dir, "")),
-    // Not `doc`: a new version of it comes with every edit anywhere, and most boards look the same after one.
-    [seen, props.version, pageId, props.dir, page],
-  );
+  // Edits can invalidate hundreds of boards: generate their documents within a frame budget, live boards first.
+  const [html, setHtml] = useState("");
+  useEffect(() => {
+    if (!seen) { setHtml(""); return; }
+    return buildSoon(() => setHtml(page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir)), live);
+    // Not `doc`: most boards keep their drawing when an edit happens elsewhere.
+  }, [seen, props.version, pageId, props.dir, page, live]);
+  // Keep the document out of DOM attributes: inspection otherwise copies megabytes per board.
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (!html || !live) { setUrl(undefined); return; }
+    const next = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [html, live]);
+  useEffect(() => {
+    if (!html || live) return;
+    let cancelled = false;
+    let href: string | undefined;
+    let finish: (() => void) | undefined;
+    const image = new Image();
+    const release = () => {
+      image.onload = image.onerror = null;
+      image.src = "";
+      if (href) URL.revokeObjectURL(href);
+      const done = finish;
+      finish = undefined;
+      done?.();
+    };
+    const cancelBuild = previewSoon(async () => {
+      try {
+        const svg = await thumbnail(html, width, height, props.resources);
+        if (cancelled) return;
+        await new Promise<void>((resolve) => {
+          finish = resolve;
+          image.onload = () => {
+            const canvas = picture.current;
+            if (!cancelled && canvas) canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+            release();
+          };
+          image.onerror = () => { console.error("Could not draw the board preview"); release(); };
+          href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+          image.src = href;
+        });
+      } catch (error) {
+        if (!cancelled) console.error(error instanceof Error ? error.message : String(error));
+      }
+    });
+    return () => { cancelled = true; cancelBuild(); release(); };
+  }, [html, live, width, height, props.resources]);
   const { marks } = props;
   const [loads, setLoads] = useState(0);
   useEffect(() => {
@@ -271,7 +376,7 @@ const Artboard = memo(function Artboard(props: {
   useEffect(() => {
     register(pageId, box.current, frame.current);
     return () => register(pageId, null, null);
-  }, [register, pageId, seen]);
+  }, [register, pageId, seen, live, url]);
 
   // The iframe runs no scripts; same-origin lets the canvas measure and hit-test it.
   const measure = () => {
@@ -367,6 +472,7 @@ const Artboard = memo(function Artboard(props: {
   // Double-clicking a text layer edits it in place, in its own font and box: Enter keeps it, Shift+Enter breaks the
   // line, Escape puts it back. Layers inside a component instance are changed in the component, not here.
   const editText = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!props.detail) { props.onOpen(pageId); return; }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / props.zoom.current;
     const y = (e.clientY - rect.top) / props.zoom.current;
@@ -446,8 +552,10 @@ const Artboard = memo(function Artboard(props: {
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
       </button>
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
-        {seen ? (
-          <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" srcDoc={html} width={width} height={height} onLoad={measure} />
+        {live && url ? (
+          <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
+        ) : !live && html ? (
+          <canvas ref={picture} className="board-preview" width={Math.ceil(width * Math.min(200 / width, 400 / height))} height={Math.ceil(height * Math.min(200 / width, 400 / height))} style={{ width, height }} aria-hidden="true" />
         ) : (
           <div className="board-placeholder" />
         )}
@@ -514,17 +622,17 @@ type LinkMode = "page" | "all" | "off";
 const NEXT_MODE: Record<LinkMode, LinkMode> = { page: "all", all: "off", off: "page" };
 
 /** Links drawn from the triggering node to the left edge of the page it opens, in world coordinates. */
-function arrows(doc: Doc, at: ReadonlyMap<Id, Point>, boards: ReadonlyMap<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement }>): Arrow[] {
+function arrows(doc: Doc, at: ReadonlyMap<Id, Point>, boards: ReadonlyMap<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>): Arrow[] {
   const out: Arrow[] = [];
   for (const c of Object.values(doc.connections)) {
     const from = boards.get(c.page);
     const to = boards.get(c.to);
     const fromAt = at.get(c.page);
     const toAt = at.get(c.to);
-    const el = from?.iframe.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`);
-    if (!from || !to || !fromAt || !toAt || !el) continue;
+    const el = from?.iframe?.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`);
+    if (!from || !to || !fromAt || !toAt || (from.iframe && !el)) continue;
     if (c.page === c.to) continue;
-    const r = el.getBoundingClientRect();
+    const r = el?.getBoundingClientRect();
     // Frames sit below their label inside an absolutely placed artboard.
     const fx = fromAt.x + from.frame.offsetLeft;
     const fy = fromAt.y + from.frame.offsetTop;
@@ -533,7 +641,7 @@ function arrows(doc: Doc, at: ReadonlyMap<Id, Point>, boards: ReadonlyMap<Id, { 
       // A key link reads as its key; anything else as the layer that triggers it.
       // A condition is what tells a branch from the usual path out of the same element, so it is the label.
       id: c.id, from: c.page, to: c.to, label: c.condition ? `if ${c.condition.charAt(0).toLowerCase()}${c.condition.slice(1)}` : c.trigger === "key" ? `${c.key ?? ""}` : doc.nodes[c.node]?.name ?? "",
-      x: fx + r.left + r.width / 2, y: fy + r.top, sy: fy, sb: fy + from.frame.offsetHeight, tx: toAt.x + to.frame.offsetLeft, ty, top: Math.min(fy, ty) - 24,
+      x: fx + (r ? r.left + r.width / 2 : from.frame.offsetWidth / 2), y: fy + (r?.top ?? 0), sy: fy, sb: fy + from.frame.offsetHeight, tx: toAt.x + to.frame.offsetLeft, ty, top: Math.min(fy, ty) - 24,
     });
   }
   return out;
@@ -543,6 +651,16 @@ function arrows(doc: Doc, at: ReadonlyMap<Id, Point>, boards: ReadonlyMap<Id, { 
 export function Canvas(props: Props) {
   // Opens with room on the left for the rows' titles.
   const [view, setView] = useState({ x: 240, y: 140, zoom: 0.4 });
+  const camera = useRef(view);
+  const cameraFrame = useRef(0);
+  const updateView = (next: typeof view | ((v: typeof view) => typeof view)) => {
+    camera.current = typeof next === "function" ? next(camera.current) : next;
+    cameraFrame.current ||= requestAnimationFrame(() => {
+      cameraFrame.current = 0;
+      setView(camera.current);
+    });
+  };
+  useEffect(() => () => cancelAnimationFrame(cameraFrame.current), []);
   const [dragging, setDragging] = useState<{ page: Id; delta: Point }>();
   const [panning, setPanning] = useState(false);
   const [loads, setLoads] = useState(0);
@@ -577,12 +695,13 @@ export function Canvas(props: Props) {
     };
   }, []);
   const world = useRef<HTMLDivElement>(null);
-  const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement }>());
-  const pages = pagesInOrder(props.doc);
+  const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>());
+  const pages = useMemo(() => pagesInOrder(props.doc), [props.doc.pages]);
+  const resources = useMemo(() => new Map<string, Promise<string>>(), [props.dir]);
 
   const register = useMemo(
     () => (pageId: Id, frame: HTMLDivElement | null, iframe: HTMLIFrameElement | null) => {
-      if (frame && iframe) boards.current.set(pageId, { frame, iframe });
+      if (frame) boards.current.set(pageId, { frame, iframe: iframe ?? undefined });
       else boards.current.delete(pageId);
     },
     [],
@@ -610,7 +729,7 @@ export function Canvas(props: Props) {
     const n = new Map<Id, number>();
     for (const x of Object.values(props.doc.nodes)) if (x.kind === "instance") n.set(x.shared, (n.get(x.shared) ?? 0) + 1);
     return n;
-  }, [props.doc]);
+  }, [props.doc.nodes]);
   // Laid out again as boards report their heights, so rows keep clear of the tall pages and components above them.
   const saved = useMemo(() => placement(props.doc, heights.current), [props.doc, loads]);
   // An agent's jump chip needs its target document even when the board is offscreen.
@@ -645,7 +764,7 @@ export function Canvas(props: Props) {
       const target = spot.nodes[0];
       if (!target) continue;
       for (const [board, { frame, iframe }] of boards.current) {
-        const doc = iframe.contentDocument;
+        const doc = iframe?.contentDocument;
         const el = doc?.querySelector(`[data-buni-draft="${CSS.escape(spot.agent)}"]`) ?? doc?.querySelector(`.b-${CSS.escape(target)}`);
         const at = saved.get(board);
         if (!el || !at) continue;
@@ -698,7 +817,7 @@ export function Canvas(props: Props) {
   const goTo = (t: { x: number; y: number; board: Id }) => {
     const r = box.current?.getBoundingClientRect();
     if (!r) return;
-    setView((v) => ({ ...v, x: r.width / 2 - t.x * v.zoom, y: r.height / 3 - t.y * v.zoom }));
+    updateView((v) => ({ ...v, x: r.width / 2 - t.x * v.zoom, y: r.height / 3 - t.y * v.zoom }));
   };
 
   // Bring the active page into view when it is opened from elsewhere and sits off screen.
@@ -707,7 +826,7 @@ export function Canvas(props: Props) {
     const p = props.activePage ? saved.get(props.activePage) : undefined;
     const r = box.current?.getBoundingClientRect();
     if (!p || !r) return;
-    setView((v) => {
+    updateView((v) => {
       const left = p.x * v.zoom + v.x;
       const top = p.y * v.zoom + v.y;
       const visible = left > -40 && left < r.width / 2 && top > -400 * v.zoom && top < r.height / 2;
@@ -747,12 +866,12 @@ export function Canvas(props: Props) {
       const rect = e.currentTarget.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
-      setView((v) => {
+      updateView((v) => {
         const zoom = Math.min(4, Math.max(MIN_ZOOM, v.zoom * Math.exp(-e.deltaY * 0.01)));
         return { zoom, x: px - ((px - v.x) * zoom) / v.zoom, y: py - ((py - v.y) * zoom) / v.zoom };
       });
     } else {
-      setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+      updateView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
     }
   };
 
@@ -775,12 +894,13 @@ export function Canvas(props: Props) {
     const [left, right, top, bottom] = [titles.length ? 240 : 48, 48, 104, 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
-    setView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
+    updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
   };
   const fitAll = () => fitTo([...pages.map((p) => p.id), ...Object.keys(props.doc.shared)]);
   const fitPage = () => props.activePage && fitTo([props.activePage]);
-  const fit = useRef({ all: fitAll, page: fitPage });
-  fit.current = { all: fitAll, page: fitPage };
+  const fit = useRef({ all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) });
+  fit.current = { all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) };
+  const onOpen = useMemo(() => (id: Id) => { props.onSelectPage(id); fit.current.board(id); }, [props.onSelectPage]);
   // Asked to show a page (a search result, an agent's edit): frame it, whatever the zoom was.
   useEffect(() => {
     if (props.reveal) requestAnimationFrame(() => fitTo([props.reveal?.page ?? ""]));
@@ -801,7 +921,7 @@ export function Canvas(props: Props) {
 
   const zoomBy = (f: number) => {
     zoomingNow();
-    setView((v) => ({ ...v, zoom: Math.min(4, Math.max(MIN_ZOOM, v.zoom * f)) }));
+    updateView((v) => ({ ...v, zoom: Math.min(4, Math.max(MIN_ZOOM, v.zoom * f)) }));
   };
 
   return (
@@ -817,7 +937,7 @@ export function Canvas(props: Props) {
         e.preventDefault();
         e.stopPropagation();
         e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { x: e.clientX - view.x, y: e.clientY - view.y };
+        drag.current = { x: e.clientX - camera.current.x, y: e.clientY - camera.current.y };
         setPanning(true);
         if (onBackground) props.onSelectNode(undefined);
       }}
@@ -827,7 +947,7 @@ export function Canvas(props: Props) {
         // Read the start now: by the time a queued update runs, the drag may have ended.
         const x = e.clientX - d.x;
         const y = e.clientY - d.y;
-        setView((v) => ({ ...v, x, y }));
+        updateView((v) => ({ ...v, x, y }));
       }}
       onPointerUp={endPan}
       onPointerCancel={endPan}
@@ -849,6 +969,9 @@ export function Canvas(props: Props) {
             at={at.get(p.id) ?? ORIGIN}
             active={p.id === props.activePage}
             retained={retained.has(p.id)}
+            detail={view.zoom >= FAR}
+            resources={resources}
+            onOpen={onOpen}
             marks={marks}
             uses={uses.get(p.id) ?? 0}
             viewWidth={props.viewAt?.[p.id]}
@@ -894,7 +1017,7 @@ export function Canvas(props: Props) {
                   <g key={a.id} className={`link ${kind}`}>
                     <path d={d} strokeWidth={(kind === "out" ? 2 : 1.5) * w} markerEnd={`url(#arrow-${kind})`} />
                     <circle cx={a.x} cy={a.y} r={4 * w} strokeWidth={1.5 * w} />
-                    {kind === "out" && a.label && (
+                    {view.zoom >= FAR && kind === "out" && a.label && (
                       <text x={lx} y={ly} fontSize={11 * w} strokeWidth={4 * w} textAnchor={route(a, lane, slot, view.zoom).lx >= a.x ? "start" : "end"}>{a.label}</text>
                     )}
                   </g>

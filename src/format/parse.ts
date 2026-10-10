@@ -1033,6 +1033,18 @@ function join(path: string, key: string): string {
   return path === "" ? key : `${path}.${key}`;
 }
 
+// Unchanged drawings keep the same object through edits; the cache does not retain old documents.
+const drawings = new WeakMap<Pick<Override, "markup">, { markup: string; problem: string | undefined }>();
+function drawingProblem(source: Pick<Override, "markup">): string | undefined {
+  const markup = source.markup;
+  if (markup === undefined) return undefined;
+  const known = drawings.get(source);
+  if (known?.markup === markup) return known.problem;
+  const problem = svgProblem(markup);
+  drawings.set(source, { markup, problem });
+  return problem;
+}
+
 /** Cross-references that the JSON shape alone can't express. Assumes the shape is valid. */
 function checkRefs(doc: Doc, r: Reader): void {
   const { nodes, pages, shared, attachments } = doc;
@@ -1136,7 +1148,7 @@ function checkRefs(doc: Doc, r: Reader): void {
         // A use's own icon is held to what an svg layer is: static drawing, nothing that runs or loads.
         // The key may be a path through nested uses ("use/layer"): the layer it names must be an svg.
         const layer = o.markup === undefined ? undefined : overrideTarget({ nodes, shared }, n.shared, target);
-        const problem = o.markup === undefined ? undefined : layer?.kind !== "svg" ? "only an svg layer takes markup" : svgProblem(o.markup);
+        const problem = o.markup === undefined ? undefined : layer?.kind !== "svg" ? "only an svg layer takes markup" : drawingProblem(o);
         if (problem) r.fail(join(op, "markup"), problem);
       }
     }
@@ -1163,7 +1175,7 @@ function checkRefs(doc: Doc, r: Reader): void {
     const p = join("nodes", n.id);
     if (n.kind === "image" && !attachments[n.asset]) r.fail(join(p, "asset"), `attachment "${n.asset}" does not exist`);
     if (n.kind === "svg") {
-      const problem = svgProblem(n.markup);
+      const problem = drawingProblem(n);
       if (problem) r.fail(join(p, "markup"), problem);
     }
     if (n.kind !== "instance") continue;

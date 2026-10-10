@@ -151,7 +151,7 @@ svg { flex-shrink: 0; }
 .frame.active { outline: 2px solid var(--accent); }
 /* A terminal screen sits in a window of its own, not on a white page. */
 .frame.terminal { background: #101010; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px rgb(var(--shade) / 0.18), 0 6px 20px rgb(var(--shade) / 0.18); }
-.frame iframe { display: block; border: 0; pointer-events: none; }
+.frame iframe, .board-preview { display: block; border: 0; pointer-events: none; }
 .frame .hit { position: absolute; inset: 0; }
 .zoom { position: absolute; right: 16px; top: 12px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 6px; background: var(--surface); box-shadow: 0 1px 3px rgb(var(--shade) / 0.12); }
 .zoom button { border: 0; background: none; min-width: 28px; height: 26px; border-radius: var(--radius); color: var(--ink-2); }

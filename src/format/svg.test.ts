@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
 import { svgProblem } from "./svg.ts";
+import { emptyDoc, type Node } from "./doc.ts";
+import { validateDoc } from "./parse.ts";
 
 test("drawings pass: icons, gradients, filters, text and animation", () => {
   for (const ok of [
@@ -30,4 +32,29 @@ test("nothing that runs, embeds HTML or loads from elsewhere gets in, however it
     "<div><svg></svg></div>",
     "<svg></svg><svg></svg>",
   ]) expect(svgProblem(bad), bad).toBeDefined();
+});
+
+test("document validation rechecks changed drawings and rejects unsafe overrides", () => {
+  const doc = emptyDoc();
+  doc.nodes.root = { id: "root", kind: "frame", name: "Root", index: "a0", style: {} };
+  doc.pages.page = { id: "page", name: "Page", frame: "root", index: "a0" };
+  const icon: Extract<Node, { kind: "svg" }> = { id: "icon", kind: "svg", name: "Icon", parent: "root", index: "a0", style: {}, markup: "<svg></svg>" };
+  doc.nodes.icon = icon;
+  expect(validateDoc(doc)).toEqual([]);
+  icon.markup = '<svg onload="alert(1)"></svg>';
+  expect(validateDoc(doc)).toContainEqual({ path: "nodes.icon.markup", message: expect.stringContaining("event handlers") });
+  icon.markup = "<svg></svg>";
+  expect(validateDoc(doc)).toEqual([]);
+  doc.nodes.component = { id: "component", kind: "frame", name: "Component", index: "a0", style: {} };
+  icon.parent = "component";
+  doc.shared.shared = { id: "shared", name: "Shared", root: "component" };
+  const override = { markup: "<svg></svg>" };
+  doc.nodes.use = { id: "use", kind: "instance", name: "Use", parent: "root", index: "a0", shared: "shared", style: {}, overrides: { icon: override } };
+  expect(validateDoc(doc)).toEqual([]);
+  override.markup = "<svg><script>alert(1)</script></svg>";
+  expect(validateDoc(doc)).toContainEqual({ path: "nodes.use.overrides.icon.markup", message: expect.stringContaining("script") });
+  override.markup = "<svg></svg>";
+  expect(validateDoc(doc)).toEqual([]);
+  doc.nodes.icon = { id: "icon", kind: "text", name: "Changed kind", parent: "component", index: "a0", style: {}, text: "Changed kind" };
+  expect(validateDoc(doc)).toContainEqual({ path: "nodes.use.overrides.icon.markup", message: "only an svg layer takes markup" });
 });
