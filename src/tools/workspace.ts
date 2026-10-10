@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { emptyDoc, SYSTEM_COLLECTIONS, withImports, type Doc, type Id } from "../format/doc.ts";
-import { parseDoc } from "../format/parse.ts";
+import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { applyChange, diffOps, invert, propose, view, type ChangeSet, type Op, type Rejected, type Session } from "../oplog/oplog.ts";
 import { exportSite } from "./html.ts";
@@ -176,11 +176,12 @@ export class Workspace {
     const text = await store.read(abs);
     const shape = parseDoc(text, { refs: false });
     const imported = shape.ok ? await loadImports(store, abs, shape.doc) : [];
-    const r = parseDoc(text, { context: systemOf(imported) });
-    if (!r.ok) throw new Error(`${path} is not a valid .buni file:\n${r.errors.map((e) => `${e.path}: ${e.message}`).join("\n")}`);
-    const ws = new Workspace(abs, r.doc, store);
+    const context = systemOf(imported);
+    const errors = shape.ok ? validateDoc(shape.doc, context) : shape.errors;
+    if (!shape.ok || errors.length) throw new Error(`${path} is not a valid .buni file:\n${errors.map((e) => `${e.path}: ${e.message}`).join("\n")}`);
+    const ws = new Workspace(abs, shape.doc, store);
     ws.imported = imported;
-    ws.session = { ...ws.session, context: systemOf(imported) };
+    ws.session = { ...ws.session, context };
     await ws.keepLegacyPending();
     // Every writer of a file on disk tells buni open who is editing what: the CLI, MCP, an agent, an app.
     if (store === diskStore) await ws.shareActivity();

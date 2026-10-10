@@ -267,6 +267,7 @@ interface InstanceCtx {
 
 class Renderer {
   private css = "";
+  readonly components = new Set<Id>();
   private readonly links: Map<Id, Id>;
 
   /** The page's own width, and whether it has other widths (then its root fills the window). */
@@ -366,6 +367,7 @@ class Renderer {
         break;
       }
       case "instance": {
+        this.components.add(n.shared);
         const root = this.doc.nodes[this.doc.shared[n.shared]?.root ?? ""];
         // A use inside another component's use draws with its own overrides, under what the outer use sets for the
         // layers inside it; its classes carry the outer use's id, so two outer uses never share a rule.
@@ -406,14 +408,15 @@ function tokensCss(doc: Doc): string {
   return BASE_CSS + cssRule(":root", Object.fromEntries(Object.entries(doc.tokens).sort(([a], [b]) => (a < b ? -1 : 1))));
 }
 
-/** Styles of every shared section's source tree; the same on every page. */
-function sharedCss(doc: Doc): string {
+/** Source-tree styles for the selected components, or all of them for the exported stylesheet. */
+function sharedCss(doc: Doc, components?: ReadonlySet<Id>): string {
   let css = "";
   const walk = (n: Node) => {
     css += cssRule(`.b-${n.id}`, n.style);
     for (const c of childrenOf(doc, n.id)) walk(c);
   };
   for (const s of Object.values(doc.shared)) {
+    if (components && !components.has(s.id)) continue;
     const root = doc.nodes[s.root];
     if (root) walk(root);
   }
@@ -481,23 +484,28 @@ export function motionCss(doc: Doc): string {
 
 /** One page as HTML plus the CSS it needs, e.g. for the Code tab. */
 export function renderPage(doc: Doc, pageId: Id, opts: RenderOptions = {}): { html: string; css: string } {
-  const r = new Renderer(doc, pageId, opts).render();
-  return { html: r.html, css: tokensCss(doc) + sharedCss(doc) + r.css };
+  const renderer = new Renderer(doc, pageId, opts);
+  const r = renderer.render();
+  return { html: r.html, css: tokensCss(doc) + sharedCss(doc, renderer.components) + r.css };
 }
 
 /** One layer of a page on its own, as it looks there: a copy the components view shows next to the components. */
 export function renderLayer(doc: Doc, pageId: Id, nodeId: Id): { html: string; css: string } {
   const n = doc.nodes[nodeId];
   if (!n) throw new Error(`layer "${nodeId}" does not exist`);
-  const r = new Renderer(doc, pageId, {}).layer(n);
-  return { html: r.html, css: tokensCss(doc) + sharedCss(doc) + r.css };
+  const renderer = new Renderer(doc, pageId, {});
+  const r = renderer.layer(n);
+  return { html: r.html, css: tokensCss(doc) + sharedCss(doc, renderer.components) + r.css };
 }
 
 /** One component's source tree on its own, as drawn on its canvas board. */
 export function renderComponent(doc: Doc, sharedId: Id): { html: string; css: string } {
   const root = doc.nodes[doc.shared[sharedId]?.root ?? ""];
   if (!root) throw new Error(`component "${sharedId}" does not exist`);
-  return { html: new Renderer(doc, "", {}).node(root, 0), css: tokensCss(doc) + sharedCss(doc) };
+  const renderer = new Renderer(doc, "", {});
+  const html = renderer.node(root, 0);
+  renderer.components.add(sharedId);
+  return { html, css: tokensCss(doc) + sharedCss(doc, renderer.components) };
 }
 
 /**

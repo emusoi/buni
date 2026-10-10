@@ -1,16 +1,23 @@
 // The design's tokens, editable by hand: colours with a picker, fonts, and the rest (radius, spacing). Every layer
 // that uses var(--name) follows a change, so each token says how many layers use it.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { Doc } from "buni/format/doc.ts";
 
 const COLOR = /^(#[0-9a-f]{3,8}|rgba?\(|hsla?\(|oklch\()/i;
 const isFont = (name: string, value: string) => /font/i.test(name) || /,\s*(sans-serif|serif|monospace|system-ui)/.test(value);
 
-/** How many layers use a token, through var(--name) in their styles. */
-function uses(doc: Doc, name: string): number {
-  const ref = `var(${name})`;
-  return Object.values(doc.nodes).filter((n) => Object.values(n.style).some((v) => v.includes(ref))).length;
+/** Counts each token once per layer, even when several style properties use it. */
+export function tokenUses(nodes: Doc["nodes"]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const node of Object.values(nodes)) {
+    const names = new Set<string>();
+    for (const value of Object.values(node.style)) {
+      for (const ref of value.match(/var\((--[A-Za-z0-9_-]+)\)/g) ?? []) names.add(ref.slice(4, -1));
+    }
+    for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
 }
 
 /** "#0f766e" for a picker; undefined when the value is not a plain hex colour. */
@@ -22,6 +29,7 @@ function hex(value: string): string | undefined {
 }
 
 export function Tokens({ doc, onError }: { doc: Doc; onError: (m: string | undefined) => void }) {
+  const uses = useMemo(() => tokenUses(doc.nodes), [doc.nodes]);
   const [adding, setAdding] = useState<{ name: string; value: string }>();
   const set = async (name: string, value: string) => {
     const r = await window.buni.edit("tokens", { set: { [name]: value } });
@@ -63,11 +71,11 @@ export function Tokens({ doc, onError }: { doc: Doc; onError: (m: string | undef
                   {hex(value) && <input type="color" value={hex(value)} aria-label={`${name} colour`} onChange={(e) => void set(name, e.target.value)} />}
                 </label>
               )}
-              <span className="token-name mono" title={`${uses(doc, name)} layers use it`}>{name}<span className="count">{uses(doc, name) || ""}</span></span>
+              <span className="token-name mono" title={`${(uses.get(name) ?? 0)} layers use it`}>{name}<span className="count">{(uses.get(name) ?? 0) || ""}</span></span>
               <input key={value} className="field mono" defaultValue={value} aria-label={`${name} value`}
                 onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v && v !== value) void set(name, v); }}
                 onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.currentTarget.value = value; e.currentTarget.blur(); } }} />
-              <button type="button" className="icon-btn small" aria-label={`Remove ${name}`} title={uses(doc, name) ? `${uses(doc, name)} layers use it; they lose this value` : "Remove"} onClick={() => void set(name, "")}><X size={12} /></button>
+              <button type="button" className="icon-btn small" aria-label={`Remove ${name}`} title={(uses.get(name) ?? 0) ? `${(uses.get(name) ?? 0)} layers use it; they lose this value` : "Remove"} onClick={() => void set(name, "")}><X size={12} /></button>
             </div>
           ))}
         </div>

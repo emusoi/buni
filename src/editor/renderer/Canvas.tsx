@@ -193,6 +193,7 @@ const Artboard = memo(function Artboard(props: {
   pageId: Id;
   at: Point;
   active: boolean;
+  retained: boolean;
   marks: string;
   /** Changes when the board's drawing may have: its HTML is built again only then. */
   version: string;
@@ -226,21 +227,26 @@ const Artboard = memo(function Artboard(props: {
     });
     return () => cancelAnimationFrame(id);
   }, [width, pageId]);
-  // Boards far from the viewport stay placeholders until first seen; once built they stay built.
-  const [seen, setSeen] = useState(false);
+  // Keep the active board mounted; distant boards release their documents but keep their measured size.
+  const [near, setNear] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const seen = near || props.active || props.retained || editing;
   useEffect(() => {
     const el = box.current;
-    if (seen || !el) return;
+    if (!el) return;
     let cancel: (() => void) | undefined;
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) cancel ??= buildSoon(() => setSeen(true));
+      cancel?.();
+      cancel = undefined;
+      if (entries.some((e) => e.isIntersecting)) cancel = buildSoon(() => setNear(true));
+      else setNear(false);
     }, { rootMargin: "600px" });
     io.observe(el);
     return () => {
       io.disconnect();
       cancel?.();
     };
-  }, [seen]);
+  }, []);
   // Content only: selection and agent outlines are painted into the loaded document, so they never reload it.
   const html = useMemo(
     () => (!seen ? "" : page ? srcdoc(doc, pageId, props.dir) : wrap(renderComponent(doc, pageId), props.dir, "")),
@@ -360,7 +366,6 @@ const Artboard = memo(function Artboard(props: {
 
   // Double-clicking a text layer edits it in place, in its own font and box: Enter keeps it, Shift+Enter breaks the
   // line, Escape puts it back. Layers inside a component instance are changed in the component, not here.
-  const [editing, setEditing] = useState(false);
   const editText = (e: ReactMouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / props.zoom.current;
@@ -608,6 +613,21 @@ export function Canvas(props: Props) {
   }, [props.doc]);
   // Laid out again as boards report their heights, so rows keep clear of the tall pages and components above them.
   const saved = useMemo(() => placement(props.doc, heights.current), [props.doc, loads]);
+  // An agent's jump chip needs its target document even when the board is offscreen.
+  const retained = useMemo(() => {
+    const roots = new Map<Id, Id>([
+      ...Object.values(props.doc.pages).map(p => [p.frame, p.id] as const),
+      ...Object.values(props.doc.shared).map(s => [s.root, s.id] as const),
+    ]);
+    const ids = new Set<Id>();
+    for (const spot of props.focus) {
+      let node = props.doc.nodes[spot.nodes[0] ?? ""];
+      while (node?.parent !== undefined) node = props.doc.nodes[node.parent];
+      const board = node && roots.get(node.id);
+      if (board) ids.add(board);
+    }
+    return ids;
+  }, [props.focus, props.doc.pages, props.doc.shared, props.doc.nodes]);
   // Each board's version: bumped for the boards an edit touched, or for all of them when it can't tell.
   const drawn = useRef({ doc: props.doc, all: 0, board: new Map<Id, number>() });
   const d = drawn.current;
@@ -828,6 +848,7 @@ export function Canvas(props: Props) {
             pageId={p.id}
             at={at.get(p.id) ?? ORIGIN}
             active={p.id === props.activePage}
+            retained={retained.has(p.id)}
             marks={marks}
             uses={uses.get(p.id) ?? 0}
             viewWidth={props.viewAt?.[p.id]}

@@ -17,7 +17,7 @@ export interface Built {
 
 export const compress = (body: Uint8Array<ArrayBuffer>, type: string): Asset => ({
   body, type,
-  br: new Uint8Array(brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } })),
+  br: new Uint8Array(brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 6 } })),
   gzip: Bun.gzipSync(body, { level: 9 }),
 });
 
