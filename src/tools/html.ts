@@ -1,3 +1,4 @@
+import { sourceRefs, type SourceOwner } from "../format/sources.ts";
 import { parseFragment, serializeOuter, type DefaultTreeAdapterTypes as P } from "parse5";
 import { findIcons, iconSvg } from "./icons.ts";
 import { paletteVars } from "./terminal.ts";
@@ -10,12 +11,12 @@ import { CELL, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, typ
 // ---------------------------------------------------------------------------
 
 /** A node before it has an id, parent and index in a document. */
-export type Draft =
+export type Draft = SourceOwner & (
   | { kind: "frame"; name: string; tag?: string; style: Style; children: Draft[] }
   | { kind: "text"; name: string; tag?: string; style: Style; text: string; filled?: true }
   | { kind: "image"; name: string; style: Style; asset: Id; alt: string }
   | { kind: "svg"; name: string; style: Style; markup: string }
-  | { kind: "instance"; name: string; style: Style; shared: Id };
+  | { kind: "instance"; name: string; style: Style; shared: Id });
 
 export interface ParsedHtml {
   drafts: Draft[];
@@ -23,7 +24,7 @@ export interface ParsedHtml {
   warnings: string[];
 }
 
-const KNOWN_ATTRS = new Set(["style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
+const KNOWN_ATTRS = new Set(["data-buni-sources", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
 
 /** Form fields whose text is their placeholder: kept as text layers with this tag, drawn as real fields. */
 const FIELD_TAGS = new Set(["input", "textarea"]);
@@ -114,7 +115,7 @@ function inlineRun(doc: Doc, n: Node, kids: readonly Node[]): boolean {
   return kids.every((k) => (k.kind === "text" || k.kind === "frame") && INLINE.has(k.tag ?? (k.kind === "text" ? "p" : "div")));
 }
 
-function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | undefined {
+function bareDraft(el: P.Element, warnings: string[], keep: boolean): Draft | undefined {
   // Kept, these would make the file one buni refuses to open, and every headless screenshot of it fail.
   if (UNSAFE_TAGS.includes(el.tagName)) {
     warnings.push(el.tagName === "style"
@@ -139,7 +140,10 @@ function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | unde
     return { kind: "image", name: layer ?? "Image", style, asset: src.slice("asset:".length), alt: attr(el, "alt") ?? "" };
   }
   // Its name and style belong to the layer, not the markup, so they aren't kept twice.
-  if (tag === "svg") return { kind: "svg", name: layer ?? "Icon", style, markup: serializeOuter(el).replace(/^(<svg\b[^>]*?)\s(?:layer-name|style)="[^"]*"/, "$1").replace(/^(<svg\b[^>]*?)\s(?:layer-name|style)="[^"]*"/, "$1") };
+  if (tag === "svg") {
+    const markup = serializeOuter({ ...el, attrs: el.attrs.filter((a) => !["style", "layer-name", "data-buni-sources"].includes(a.name)) });
+    return { kind: "svg", name: layer ?? "Icon", style, markup };
+  }
   if (tag === "buni-icon") {
     const name = attr(el, "name") ?? "";
     const size = Number(attr(el, "size") ?? 16);
@@ -173,6 +177,18 @@ function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | unde
   // In a line of text, a space between two inline pieces ("<b>a</b> <i>b</i>") is a word space and stays.
   const spaces = flowsText(tag, style) && kids.every((k) => !isElement(k) || INLINE.has(k.tagName));
   return { kind: "frame", name: layer ?? tag, tag, style, children: childDrafts(kids, warnings, keep, spaces) };
+}
+
+function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | undefined {
+  const draft = bareDraft(el, warnings, keep);
+  const raw = attr(el, "data-buni-sources");
+  if (!draft || raw === undefined) return draft;
+  try {
+    const parsed = sourceRefs.safeParse(JSON.parse(raw));
+    if (!parsed.success) throw new Error(parsed.error.issues.map((e) => e.message).join("; "));
+    if (parsed.data.length) draft.sources = parsed.data;
+  } catch (error) { warnings.push(`Source context was dropped: ${error instanceof Error ? error.message : String(error)}`); }
+  return draft;
 }
 
 function childDrafts(nodes: P.ChildNode[], warnings: string[], keep: boolean, keepSpaces = false): Draft[] {
@@ -643,7 +659,7 @@ export function layerHtml(doc: Doc, id: Id, depth = 0): string {
   const pad = "  ".repeat(depth);
   const style = Object.entries(n.style).map(([k, v]) => `${kebab(k)}: ${v}`).join("; ");
   const attrs = (defaultName: string, extra = "") =>
-    `${n.name !== defaultName ? ` layer-name="${escapeAttr(n.name)}"` : ""}${extra}${style ? ` style="${escapeAttr(style)}"` : ""}`;
+    `${n.name !== defaultName ? ` layer-name="${escapeAttr(n.name)}"` : ""}${extra}${n.sources?.length ? ` data-buni-sources="${escapeAttr(JSON.stringify(n.sources))}"` : ""}${style ? ` style="${escapeAttr(style)}"` : ""}`;
   switch (n.kind) {
     case "frame": {
       const tag = n.tag ?? "div";

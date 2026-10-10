@@ -1,3 +1,4 @@
+import { SOURCE_COLLECTIONS, sourceLabel, sourceTarget, type SourceOwner } from "../format/sources.ts";
 // A brief an agent can build from: the design doc, then the slice of the system that matters for
 // one part, page, endpoint or operation, table or trace, with its neighbours. Without a focus, the whole system.
 import { designNotes } from "./notes.ts";
@@ -168,6 +169,10 @@ function processSections(doc: Doc, ids: Iterable<Id>): [string, string[]][] {
   const set = new Set(ids);
   const threads = Object.values(doc.threads).filter((t) => set.has(t.target) && t.state !== "resolved");
   return [
+    ["Source files", [...set].flatMap((id) => {
+      const target = sourceTarget(doc, id);
+      return target?.entity.sources?.map((source) => `- ${target.collection}/${id}: ${sourceLabel(source)}`) ?? [];
+    })],
     ["Why", byIndex(Object.values(doc.requirements)).filter((q) => q.servedBy.some((id) => set.has(id))).map((q) => requirementLine(doc, q))],
     ["Open questions", byIndex(Object.values(doc.questions)).filter((q) => q.status === "open" && q.about.some((id) => set.has(id))).map((q) => questionLine(doc, q))],
     ["Discussion", threads.map((t) => threadLine(doc, t))],
@@ -418,6 +423,11 @@ export function contextText(doc: Doc, focus?: Focus): { ok: true; text: string }
   const s = focus ? slice(doc, focus) : whole(doc);
   if (typeof s === "string") return { ok: false, error: s };
   const intent = docText(doc);
+  const sources = focus ? [] : SOURCE_COLLECTIONS.flatMap((collection) => {
+    const entities: (SourceOwner & { id: string })[] = Object.values(doc[collection]);
+    return entities.flatMap((entity) => (entity.sources ?? []).map((source) => `- ${collection}/${entity.id}: ${sourceLabel(source)}`));
+  });
+  if (sources.length) s.sections.push(["Source files", sources]);
   const body = s.sections.filter(([, lines]) => lines.length).map(([h, lines]) => `## ${h}\n${lines.join("\n")}`);
   return { ok: true, text: [`# Context: ${s.title}`, ...(intent ? [`## Intent\n${intent.replace(/^## /gm, "### ")}`] : []), ...body].join("\n\n") };
 }

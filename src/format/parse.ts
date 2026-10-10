@@ -1,3 +1,4 @@
+import { sourceRefs, SOURCE_COLLECTIONS } from "./sources.ts";
 import { svgProblem } from "./svg.ts";
 import {
   EASINGS,
@@ -288,7 +289,15 @@ class Reader {
         this.fail(p, `id "${key.slice(0, 40)}" must be letters, digits, - and _ (up to 128)`);
         continue;
       }
-      const value = item(raw, p);
+      const sources = isRecord(raw) && path !== "positions" && path !== "reviews" ? raw.sources : undefined;
+      let input = raw;
+      if (sources !== undefined && isRecord(raw)) { const { sources: _, ...rest } = raw; input = rest; }
+      let value = item(input, p);
+      if (sources !== undefined) {
+        const parsed = sourceRefs.safeParse(sources);
+        if (!parsed.success) this.fail(join(p, "sources"), parsed.error.issues.map((e) => e.message).join("; "));
+        else if (parsed.data.length) value = { ...value, sources: parsed.data };
+      }
       if (value.id !== key) this.fail(join(p, "id"), `id "${value.id}" does not match its key "${key}"`);
       out[key] = value;
     }
@@ -1048,6 +1057,11 @@ function drawingProblem(source: Pick<Override, "markup">): string | undefined {
 /** Cross-references that the JSON shape alone can't express. Assumes the shape is valid. */
 function checkRefs(doc: Doc, r: Reader): void {
   const { nodes, pages, shared, attachments } = doc;
+  for (const collection of SOURCE_COLLECTIONS) for (const entity of Object.values(doc[collection])) {
+    if (!entity.sources) continue;
+    const checked = sourceRefs.safeParse(entity.sources);
+    if (!checked.success) r.fail(`${collection}.${entity.id}.sources`, checked.error.issues.map((e) => e.message).join("; "));
+  }
 
   for (const [name, value] of Object.entries(doc.tokens)) {
     if (!/^--[A-Za-z0-9_-]+$/.test(name)) r.fail(join("tokens", name), 'token names are "--" then letters, digits, - and _');

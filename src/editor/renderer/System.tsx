@@ -1,3 +1,4 @@
+import { Sources } from "./Sources.tsx";
 import { Fragment, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Background, Controls, Handle, MarkerType, MiniMap, Panel, Position, ReactFlow, useNodesState, type Connection, type Edge, type Node as FlowNode, type NodeProps } from "@xyflow/react";
 import { AlertTriangle, CircleHelp, ListChecks, Stamp, Boxes, ChevronDown, ChevronRight, Cloud, Braces, CircleCheck, Copy, Database,  FileText, Globe, Inbox, KeyRound, Link2, Monitor, Network, Plus, Route, Server, Shapes as ShapesIcon, Table2, Zap, type LucideIcon } from "lucide-react";
@@ -826,6 +827,7 @@ export function SystemInspector({ doc, view, selection, onSelect, onOpenPage, on
       {/* Reviewing, the review state and the discussion are the job: they come before the form. */}
       {body && discussable && view === "review" && <ProcessPanel key={discussable} doc={doc} id={discussable} onSelect={onSelect} onToast={onToast} reviewing />}
       {body ?? <p className="hint">That was removed.</p>}
+      {body && selection.kind !== "new" && <Sources key={`sources:${selection.id}`} doc={doc} id={selection.id} />}
       {body && discussable && view !== "review" && <ProcessPanel key={discussable} doc={doc} id={discussable} onSelect={onSelect} onToast={onToast} />}
     </div>
   );

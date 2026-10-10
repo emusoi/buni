@@ -15,7 +15,7 @@ export const planTools = {
       const old = a.phase === undefined ? undefined : doc.phases[a.phase];
       if (a.phase !== undefined && !old) throw new ToolError(`phase "${a.phase}" does not exist`);
       const last = Object.values(doc.phases).map((p) => p.index).sort().at(-1) ?? null;
-      const value: Phase = { id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, ...(a.goal ? { goal: a.goal } : {}) };
+      const value: Phase = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, ...(a.goal ? { goal: a.goal } : {}) };
       return { label: `${old ? "Change" : "Add"} phase ${a.name}`, ops: [{ kind: "put", collection: "phases", value }], reply: `Phase ${value.id} saved.` };
     },
   }),
@@ -37,7 +37,7 @@ export const planTools = {
       if (a.requirement !== undefined && !old) throw new ToolError(`requirement "${a.requirement}" does not exist`);
       const last = Object.values(doc.requirements).map((q) => q.index).sort().at(-1) ?? null;
       const value: Requirement = {
-        id: old?.id ?? new Ids(doc, ctx).slug(`req ${a.title.split(/\s+/).slice(0, 4).join(" ")}`), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(`req ${a.title.split(/\s+/).slice(0, 4).join(" ")}`), index: old?.index ?? generateKeyBetween(last, null),
         title: a.title, priority: a.priority, servedBy: a.servedBy ?? old?.servedBy ?? [],
         ...(a.detail ? { detail: a.detail } : {}), ...(a.phase ? { phase: a.phase } : {}),
       };
@@ -84,7 +84,7 @@ export const planTools = {
       if (model !== undefined && !/^[\w.-]+\/.+$/.test(model)) throw new ToolError(`"${model}" is not provider/model`);
       const last = Object.values(doc.agents).map((x) => x.index).sort().at(-1) ?? null;
       const value: AgentDef = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
         name: a.name, instructions: a.instructions, ...(model ? { model } : {}), tools: [...new Set(tools)], never: a.never ?? old?.never ?? [],
       };
       return { label: `${old ? "Change" : "Design"} agent ${a.name}`, ops: [{ kind: "put", collection: "agents", value }], reply: `Agent ${value.id} saved with ${value.tools.length} tool${value.tools.length === 1 ? "" : "s"}.` };
@@ -108,7 +108,7 @@ export const planTools = {
       if (a.agent !== "buni" && !doc.agents[a.agent]) throw new ToolError(`no agent "${a.agent}"; use "buni" or one of ${Object.keys(doc.agents).join(", ") || "(none designed yet)"}`);
       const last = Object.values(doc.evals).map((x) => x.index).sort().at(-1) ?? null;
       const value: EvalCase = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.ask.split(/\s+/).slice(0, 5).join(" ")), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.ask.split(/\s+/).slice(0, 5).join(" ")), index: old?.index ?? generateKeyBetween(last, null),
         agent: a.agent, ask: a.ask, must: a.must, ...(a.given ?? old?.given ? { given: a.given ?? old?.given } : {}),
       };
       return { label: `${old ? "Change" : "Add"} eval case`, ops: [{ kind: "put", collection: "evals", value }], reply: `Eval ${value.id} saved with ${value.must.length} check${value.must.length === 1 ? "" : "s"}.` };
@@ -130,7 +130,7 @@ export const planTools = {
       if (a.question !== undefined && !old) throw new ToolError(`question "${a.question}" does not exist`);
       const last = Object.values(doc.questions).map((q) => q.index).sort().at(-1) ?? null;
       const value: Question = {
-        id: old?.id ?? new Ids(doc, ctx).slug(`q ${a.text.split(/\s+/).slice(0, 4).join(" ")}`), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(`q ${a.text.split(/\s+/).slice(0, 4).join(" ")}`), index: old?.index ?? generateKeyBetween(last, null),
         kind: a.kind, text: a.text, options: a.options, about: a.about,
         status: old?.status ?? "open", ...(old?.chosen ? { chosen: old.chosen } : {}), by: old?.by ?? ctx.author, at: old?.at ?? ctx.now(),
       };
@@ -163,7 +163,7 @@ export const planTools = {
       const old = a.role === undefined ? undefined : doc.roles[a.role];
       if (a.role !== undefined && !old) throw new ToolError(`role "${a.role}" does not exist`);
       const last = Object.values(doc.roles).map((r) => r.index).sort().at(-1) ?? null;
-      const value: Role = { id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, description: a.description };
+      const value: Role = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, description: a.description };
       return { label: `${old ? "Change" : "Add"} role ${a.name}`, ops: [{ kind: "put", collection: "roles", value }], reply: `Role ${value.id} saved.` };
     },
   }),

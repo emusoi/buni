@@ -1,3 +1,5 @@
+import { sourceRefs, sourceTarget } from "../../format/sources.ts";
+import type { Op } from "../../oplog/oplog.ts";
 // The design doc: sections, and the decisions taken. One area of buni's design tools (agent/areas.ts); tools.ts gathers
 // them.
 import { generateKeyBetween } from "fractional-indexing";
@@ -7,6 +9,19 @@ import { sectionsInOrder } from "../context.ts";
 import { Ids, type Tool, ToolError, body, tool } from "../kit.ts";
 
 export const docTools = {
+  set_sources: tool({
+    description: "Link any page, layer, component, system part, contract, plan item, agent or evaluation to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
+    input: { ids: z.array(z.string()).min(1), sources: sourceRefs },
+    run: async (doc, a) => {
+      const ops: Op[] = a.ids.map((id) => {
+        const target = sourceTarget(doc, id);
+        if (!target) throw new ToolError(`No design item "${id}"`);
+        const { sources: _sources, ...rest } = target.entity;
+        return { kind: "put", collection: target.collection, value: { ...rest, ...(a.sources.length ? { sources: a.sources } : {}) } } as Op;
+      });
+      return { label: "Link source files", ops, reply: `Updated source context for ${a.ids.length} item(s).` };
+    },
+  }),
   write_section: tool({
     description: "Add a section to the design doc, or rewrite one (pass section). Keep it short: a heading and a few plain sentences.",
     input: {
@@ -18,7 +33,7 @@ export const docTools = {
       const old = a.section === undefined ? undefined : doc.sections[a.section];
       if (a.section !== undefined && !old) throw new ToolError(`section "${a.section}" does not exist`);
       const last = sectionsInOrder(doc).at(-1)?.index ?? null;
-      const value: Section = { id: old?.id ?? new Ids(doc, ctx).next(), heading: a.heading, body: a.body, index: old?.index ?? generateKeyBetween(last, null) };
+      const value: Section = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).next(), heading: a.heading, body: a.body, index: old?.index ?? generateKeyBetween(last, null) };
       return { label: `${old ? "Rewrite" : "Add"} doc section ${a.heading}`, ops: [{ kind: "put", collection: "sections", value }], reply: `Section ${value.id} saved.` };
     },
   }),

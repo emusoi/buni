@@ -1,3 +1,4 @@
+import { Sources } from "./Sources.tsx";
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
 import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
@@ -566,6 +567,7 @@ export function Inspector({ doc, node, also = [], root, preview, page, onJump, o
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} /> : <p className="hint">Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas.</p>}
         {notice && <div className="notice">{notice}</div>}
+        {page ? <Sources key={page} doc={doc} id={page} /> : (() => { const component = Object.values(doc.shared).find((c) => c.root === root); return component ? <Sources key={component.id} doc={doc} id={component.id} /> : null; })()}
         <Tokens doc={doc} onError={setNotice} />
         {preview && <SmallSizes doc={doc} page={preview.page} dir={preview.dir} />}
       </div>
@@ -658,6 +660,7 @@ export function Inspector({ doc, node, also = [], root, preview, page, onJump, o
       })()}
       {also.length > 0 && <div className="notice">{also.length + 1} layers selected: style changes apply to all of them. Shift-click one to leave it out.</div>}
       {notice && <div className="notice">{notice}</div>}
+      <Sources key={node.id} doc={doc} id={source?.root === node.id ? source.id : node.id} inherited={node.kind === "instance" ? doc.shared[node.shared] : undefined} />
       {source && <ComponentVariants doc={doc} component={source.id} onOpen={onOpenComponent} onError={setNotice} />}
       {source && (
         <div className="notice component-note">

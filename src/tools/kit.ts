@@ -231,7 +231,7 @@ export function draftOps(ids: Ids, drafts: Draft[], parent: Id, firstIndex: stri
     const index: string = fits ? was : prev === null ? firstIndex : generateKeyBetween(prev, hi);
     prev = index;
     created.push(id);
-    const base = { id, parent, index, name: d.name, style: d.style };
+    const base = { id, parent, index, name: d.name, style: d.style, ...(d.sources?.length ? { sources: d.sources } : {}) };
     switch (d.kind) {
       case "frame":
         ops.push({ kind: "put", collection: "nodes", value: { ...base, kind: "frame", ...(d.tag ? { tag: d.tag } : {}) } });

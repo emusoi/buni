@@ -1,3 +1,4 @@
+import { sourceRefs } from "../../format/sources.ts";
 // Pages and layers: creating pages, writing HTML into them, styles, text, motion, tokens, comments and the canvas. One
 // area of buni's design tools (agent/areas.ts); tools.ts gathers them.
 import { generateKeyBetween } from "fractional-indexing";
@@ -17,6 +18,7 @@ export const pagesTools = {
       "Leave out the route for a graphic (a logo, an icon, a post): it is a board of its own, not part of the site, and site export skips it.",
     input: {
       name: z.string(),
+      sources: sourceRefs.optional(),
       route: z.string().optional(),
       state: z.string().min(1).optional().describe('A state of the screen at this route: "Empty", "Error", "Label pending"'),
       width: z.number().int().positive().default(1440),
@@ -39,7 +41,7 @@ export const pagesTools = {
           {
             kind: "put", collection: "pages",
             value: {
-              id: pageId, name: a.name, ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state !== undefined ? { state: a.state } : {}), frame: frameId, index: generateKeyBetween(last, null),
+              id: pageId, name: a.name, ...(a.sources?.length ? { sources: a.sources } : {}), ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state !== undefined ? { state: a.state } : {}), frame: frameId, index: generateKeyBetween(last, null),
               ...(a.client !== undefined ? { client: a.client } : {}), ...(a.terminal ? { terminal: a.terminal } : {}),
             },
           },
@@ -96,12 +98,14 @@ export const pagesTools = {
     input: {
       parent: z.string().describe("Frame to insert into"),
       html: z.string(),
+      sources: sourceRefs.optional().describe("Source links for the top-level layers being added"),
       after: z.string().optional().describe('Sibling to insert after; "" puts it first; omit to append'),
     },
     run: async (doc, a, ctx) => {
       if (node(doc, a.parent).kind !== "frame") throw new ToolError(`"${a.parent}" is not a frame`);
       const { drafts, warnings } = parseHtml(a.html, { keepSpaces: onTerminal(doc, a.parent) });
       if (drafts.length === 0) throw new ToolError("the HTML produced no nodes");
+      if (a.sources?.length) for (const draft of drafts) draft.sources = a.sources;
       const created: Id[] = [];
       const ops = draftOps(new Ids(doc, ctx), drafts, a.parent, indexAt(doc, a.parent, a.after), created, nextIndex(doc, a.parent, a.after));
       const reply = [`Created ${created.length} nodes: ${created.join(", ")}.`, ...warnings.map((w) => `Warning: ${w}`)].join("\n");
@@ -163,6 +167,7 @@ export const pagesTools = {
         if (op.kind !== "put" || op.collection !== "nodes") continue;
         const was = doc.nodes[op.value.id];
         if (!was) continue;
+        if (was.sources && !op.value.sources) op.value = { ...op.value, sources: was.sources };
         if (was.bind && !op.value.bind) op.value = { ...op.value, bind: was.bind };
         if (was.hidden) op.value = { ...op.value, hidden: true };
         if (was.locked) op.value = { ...op.value, locked: true };

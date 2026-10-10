@@ -122,3 +122,13 @@ paths is held to a strict shape:
 
 Additive changes (a new optional field, a new collection) keep version `1`. A change that would make an existing
 file invalid raises the version and comes with a migration. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Implementation sources
+
+Design records can carry an optional `sources` array. It is context for people and agents, not a command to modify code. Use repository-relative paths whenever possible; any file type is supported.
+
+```json
+"sources": [{ "file": "src/components/Header.tsx", "symbol": "Header", "repository": "web", "line": 20, "endLine": 64, "url": "http://localhost:3000/home", "selector": "header" }]
+```
+
+Each reference needs a `file` or an HTTP(S) `url`. Other fields are optional; positive line numbers refer to a file. `endLine` requires `line` and cannot precede it. Pages, layers, components, system records, plan records and agents use the same shape. `set_sources {ids, sources}` replaces the links; an empty array removes them. Manual editor controls use the same undoable operation. `create_page`, `create_component` and `write_html` also accept `sources` during creation. HTML may attach per-element references with a JSON `data-buni-sources` attribute. `read_tree`, `get_node` and `read_context` expose the stored context. Source links do not imply automatic synchronization with the implementation.

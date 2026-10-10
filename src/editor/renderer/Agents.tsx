@@ -1,3 +1,4 @@
+import { Sources } from "./Sources.tsx";
 // The Agents mode: agents designed in the file, by hand. Design says who an agent is, its model, its tools and what
 // it never does; Cases says what a person asks it and what it must do. Both are saved in the design (set_agent,
 // set_eval) and undo like any edit; running them is the coding agent's or buni agent's job, not the app's.
@@ -50,6 +51,7 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
         {ENGINE_TOOLS.map(([t, label]) => box(t, label, ""))}
       </div>
       <label className="ag-def-field"><span className="ag-label">Never <em>one per line</em></span><textarea rows={3} value={never} onChange={(e) => setNever(e.target.value)} placeholder="Refund more than was paid" /></label>
+      {def && <Sources key={def.id} doc={doc} id={def.id} />}
       <div className="ag-def-actions">
         <button type="button" className="btn primary" disabled={!name.trim() || !instructions.trim()} onClick={save}>{def ? "Save" : "Create agent"}</button>
         {def && <button type="button" className="btn" title="Removes it from the design; undo brings it back" onClick={() => void window.buni.edit("delete_system", { what: "agent", id: def.id }).then((r) => setSaid(r.reply))}><Trash2 size={12} /> Delete</button>}
@@ -60,7 +62,7 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
 }
 
 /** One case, written by hand: what the person asks and each thing the agent must do. Saved with set_eval. */
-function CaseForm({ me, c, onDone }: { me: string; c: EvalCase | undefined; onDone: () => void }) {
+function CaseForm({ doc, me, c, onDone }: { doc: Doc; me: string; c: EvalCase | undefined; onDone: () => void }) {
   const [text, setText] = useState(c?.ask ?? "");
   const [must, setMust] = useState((c?.must ?? []).join("\n"));
   const [given, setGiven] = useState(c?.given ? JSON.stringify(c.given, null, 2) : "");
@@ -80,6 +82,7 @@ function CaseForm({ me, c, onDone }: { me: string; c: EvalCase | undefined; onDo
       <label className="ag-def-field"><span className="ag-label">The person asks</span><textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Add status filters above the returns table" /></label>
       <label className="ag-def-field"><span className="ag-label">It must <em>one per line, each checkable after the run</em></span><textarea rows={3} value={must} onChange={(e) => setMust(e.target.value)} placeholder={"Uses the Chips component\nAsks before deleting anything"} /></label>
       <label className="ag-def-field"><span className="ag-label">Given <em>optional: what the API answers in this case, by tool name, instead of the mock</em></span><textarea className="mono" rows={3} value={given} onChange={(e) => setGiven(e.target.value)} placeholder={'{ "api_get_plants": { "items": [{ "name": "Monstera", "isDue": true }] } }'} /></label>
+      {c && <Sources key={c.id} doc={doc} id={c.id} />}
       <div className="ag-def-actions">
         <button type="button" className="btn primary" disabled={!text.trim() || !musts.length} onClick={save}>{c ? "Save case" : "Add case"}</button>
         {c && <button type="button" className="btn" onClick={() => void window.buni.edit("delete_system", { what: "eval", id: c.id }).then(onDone)}><Trash2 size={12} /> Delete</button>}
@@ -102,14 +105,14 @@ function Cases({ doc, me }: { doc: Doc; me: string }) {
         <span className="ag-grow" />
         <button type="button" className="btn" onClick={() => setEditing("new")}><Plus size={12} /> Add a case</button>
       </div>
-      {editing === "new" && <CaseForm me={me} c={undefined} onDone={done} />}
+      {editing === "new" && <CaseForm doc={doc} me={me} c={undefined} onDone={done} />}
       {cases.length > 0 ? (
         <table className="ag-cases">
           <thead><tr><th>The person asks</th><th>It must</th></tr></thead>
           <tbody>
             {cases.map((c) => (
               editing === c.id ? (
-                <tr key={c.id}><td colSpan={2}><CaseForm me={me} c={c} onDone={done} /></td></tr>
+                <tr key={c.id}><td colSpan={2}><CaseForm doc={doc} me={me} c={c} onDone={done} /></td></tr>
               ) : (
                 <tr key={c.id} onClick={() => setEditing(c.id)} title="Edit this case">
                   <td>{c.ask}</td>

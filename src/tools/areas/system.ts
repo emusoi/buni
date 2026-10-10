@@ -107,7 +107,7 @@ export const systemTools = {
       if (a.table !== undefined && !old) throw new ToolError(`table "${a.table}" does not exist`);
       const last = Object.values(doc.tables).map((t) => t.index).sort().at(-1) ?? null;
       const value: Table = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
         store: a.store, name: a.name, columns: a.columns,
         ...(old?.x !== undefined && old.y !== undefined && old.store === a.store ? { x: old.x, y: old.y } : {}),
       };
@@ -148,7 +148,7 @@ export const systemTools = {
       const invalidates = a.invalidates ?? old?.invalidates;
       const errors = a.errors ?? old?.errors;
       const value: Endpoint = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.id ?? `${a.method} ${a.path}`), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.id ?? `${a.method} ${a.path}`), index: old?.index ?? generateKeyBetween(last, null),
         service: a.service, method: a.method, path: a.path, summary: a.summary,
         request: req.fields, response: res.fields, ...(req.shape ? { requestShape: req.shape } : {}), ...(res.shape ? { responseShape: res.shape } : {}),
         reads: a.reads ?? old?.reads ?? [], writes: a.writes ?? old?.writes ?? [], emits: a.emits ?? old?.emits ?? [],
@@ -190,7 +190,7 @@ export const systemTools = {
       const invalidates = a.invalidates ?? old?.invalidates;
       const errors = a.errors ?? old?.errors;
       const value: Operation = {
-        id: old?.id ?? new Ids(doc, ctx).slug(`${a.name.replace(/([a-z0-9])([A-Z])/g, "$1-$2")}-${a.kind}`), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(`${a.name.replace(/([a-z0-9])([A-Z])/g, "$1-$2")}-${a.kind}`), index: old?.index ?? generateKeyBetween(last, null),
         service: a.service, kind: a.kind, name: a.name, summary: a.summary, args: a.args ?? old?.args ?? [], returns: a.returns,
         // Changing an operation, what isn't given stays, as with endpoints.
         reads: a.reads ?? old?.reads ?? [], writes: a.writes ?? old?.writes ?? [], emits: a.emits ?? old?.emits ?? [],
@@ -227,7 +227,7 @@ export const systemTools = {
       if (a.trace !== undefined && !old) throw new ToolError(`trace "${a.trace}" does not exist`);
       const last = Object.values(doc.traces).map((t) => t.index).sort().at(-1) ?? null;
       const value: Trace = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
         name: a.name, ...(a.page ? { page: a.page } : {}),
         steps: a.steps.map((st) => ({
           from: st.from, to: st.to, action: st.action,
@@ -251,7 +251,7 @@ export const systemTools = {
       const old = a.environment === undefined ? undefined : doc.environments[a.environment];
       if (a.environment !== undefined && !old) throw new ToolError(`environment "${a.environment}" does not exist`);
       const last = Object.values(doc.environments).map((e) => e.index).sort().at(-1) ?? null;
-      const value: Environment = { id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, provider: a.provider, regions: a.regions };
+      const value: Environment = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null), name: a.name, provider: a.provider, regions: a.regions };
       return { label: `${old ? "Change" : "Add"} environment ${a.name}`, ops: [{ kind: "put", collection: "environments", value }], reply: `Environment ${value.id} saved.` };
     },
   }),
@@ -269,7 +269,7 @@ export const systemTools = {
     run: async (doc, a, ctx) => {
       const old = a.cluster === undefined ? undefined : doc.clusters[a.cluster];
       if (a.cluster !== undefined && !old) throw new ToolError(`cluster "${a.cluster}" does not exist`);
-      const value: Cluster = { id: old?.id ?? new Ids(doc, ctx).slug(a.name), environment: a.environment, name: a.name, kind: a.kind, region: a.region, ...(a.version ? { version: a.version } : {}) };
+      const value: Cluster = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), environment: a.environment, name: a.name, kind: a.kind, region: a.region, ...(a.version ? { version: a.version } : {}) };
       return { label: `${old ? "Change" : "Add"} cluster ${a.name}`, ops: [{ kind: "put", collection: "clusters", value }], reply: `Cluster ${value.id} saved.` };
     },
   }),
@@ -300,7 +300,7 @@ export const systemTools = {
       const old = placementOf(doc, a.part, a.environment);
       const { part, environment, runtime, regions, ...rest } = a;
       const extra = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0) && v !== ""));
-      const value: Placement = { id: old?.id ?? new Ids(doc, ctx).slug(`${part}-${doc.environments[environment]?.name ?? environment}`), part, environment, runtime, regions, ...extra };
+      const value: Placement = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(`${part}-${doc.environments[environment]?.name ?? environment}`), part, environment, runtime, regions, ...extra };
       return { label: `Place ${doc.parts[part]?.name ?? part} in ${doc.environments[environment]?.name ?? environment}`, ops: [{ kind: "put", collection: "placements", value }], reply: `Placement ${value.id} saved.` };
     },
   }),
@@ -318,7 +318,7 @@ export const systemTools = {
       if (a.event !== undefined && !old) throw new ToolError(`event "${a.event}" does not exist`);
       const last = Object.values(doc.events).map((e) => e.index).sort().at(-1) ?? null;
       const value: QueueEvent = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name), index: old?.index ?? generateKeyBetween(last, null),
         queue: a.queue, name: a.name, payload: a.payload,
       };
       return { label: `${old ? "Change" : "Add"} event ${a.name}`, ops: [{ kind: "put", collection: "events", value }], reply: `Event ${value.id} saved.` };
@@ -341,7 +341,7 @@ export const systemTools = {
       if (a.shape !== undefined && !old) throw new ToolError(`shape "${a.shape}" does not exist`);
       const last = Object.values(doc.shapes).map((s) => s.index).sort().at(-1) ?? null;
       const value: Shape = {
-        id: old?.id ?? new Ids(doc, ctx).slug(a.name.replace(/([a-z0-9])([A-Z])/g, "$1-$2")), index: old?.index ?? generateKeyBetween(last, null),
+        ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.name.replace(/([a-z0-9])([A-Z])/g, "$1-$2")), index: old?.index ?? generateKeyBetween(last, null),
         name: a.name, fields: a.fields, ...(a.values?.length ? { values: a.values } : {}), ...(a.note ? { note: a.note } : {}),
       };
       const ops: Op[] = [{ kind: "put", collection: "shapes", value }];

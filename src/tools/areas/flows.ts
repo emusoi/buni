@@ -34,7 +34,7 @@ export const flowsTools = {
         // One link per node, trigger and condition (for keys, per key): a condition makes an alternative path, not a replacement.
         const existing = Object.values(doc.connections).find((c) => c.node === a.node && c.page === from.id && c.trigger === a.trigger && (a.trigger !== "key" || c.key === a.key) && (c.condition ?? "") === (a.condition ?? ""));
         const value: Connection = {
-          id: existing?.id ?? ids.next(),
+          ...(existing?.sources ? { sources: existing.sources } : {}), id: existing?.id ?? ids.next(),
           page: from.id, node: a.node, to: to.id, trigger: a.trigger, transition: a.transition, durationMs: a.durationMs,
           ...(a.trigger === "key" && a.key ? { key: a.key } : {}),
           ...(a.condition ? { condition: a.condition } : {}),
@@ -86,7 +86,7 @@ export const flowsTools = {
       const start = a.start ?? old?.start;
       if (name === undefined || start === undefined) throw new ToolError("a new flow needs a name and a start page");
       const last = Object.values(doc.flows).map((f) => f.index).sort().at(-1) ?? null;
-      const value = { id: old?.id ?? new Ids(doc, ctx).next(), name, start, index: old?.index ?? generateKeyBetween(last, null) };
+      const value = { ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).next(), name, start, index: old?.index ?? generateKeyBetween(last, null) };
       const { pages } = walkFlow(doc, start);
       return {
         label: `${old ? "Change" : "Create"} flow ${name}`,
@@ -115,7 +115,7 @@ export const flowsTools = {
       if (!flow) throw new ToolError(`flow "${a.flow}" does not exist`);
       const existing = Object.values(doc.journeys).find((j) => j.flow === flow.id);
       const value: Journey = {
-        id: existing?.id ?? new Ids(doc, ctx).next(),
+        ...(existing?.sources ? { sources: existing.sources } : {}), id: existing?.id ?? new Ids(doc, ctx).next(),
         flow: flow.id,
         lanes: a.lanes,
         steps: a.steps.map((s) => ({

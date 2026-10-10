@@ -1,3 +1,4 @@
+import { sourceLabel } from "../../format/sources.ts";
 // Reading a design: its layers, a node, the doc, flows, a build brief and attachments. One area of buni's design tools
 // (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
@@ -16,11 +17,13 @@ export const readTools = {
       else {
         for (const p of pagesInOrder(doc)) {
           lines.push(`page ${p.id} "${p.name}" ${pageLabel(doc, p)}`);
+          for (const source of p.sources ?? []) lines.push(`  source: ${sourceLabel(source)}`);
           const frame = doc.nodes[p.frame];
           if (frame) outline(doc, frame, 1, lines);
         }
         for (const s of Object.values(doc.shared)) {
           lines.push(`shared ${s.id} "${s.name}"`);
+          for (const source of s.sources ?? []) lines.push(`  source: ${sourceLabel(source)}`);
           const root = doc.nodes[s.root];
           if (root) outline(doc, root, 1, lines);
         }
@@ -35,7 +38,7 @@ export const readTools = {
     run: async (doc, a) => {
       const c = doc.shared[a.id];
       const n = node(doc, c ? c.root : a.id);
-      const of = c ? { component: { id: c.id, name: c.name, ...(c.variant ? { variant: c.variant } : {}) } } : {};
+      const of = c ? { component: { id: c.id, name: c.name, ...(c.sources ? { sources: c.sources } : {}), ...(c.variant ? { variant: c.variant } : {}) } } : {};
       const reply = JSON.stringify({ ...of, ...n, children: childrenOf(doc, n.id).map((x) => x.id) }, null, 2);
       return { label: "Get node", ops: [], reply };
     },

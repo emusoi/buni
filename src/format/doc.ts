@@ -1,3 +1,4 @@
+import { sourceLabel, type SourceOwner } from "./sources.ts";
 // A .buni file. Every collection is keyed by id so concurrent edits merge as
 // separate JSON lines in git; order, where it matters, lives in `index`.
 
@@ -6,7 +7,7 @@ export type Id = string;
 /** CSS property (camelCase or custom property) to value. */
 export type Style = Record<string, string>;
 
-interface NodeBase {
+interface NodeBase extends SourceOwner {
   id: Id;
   /** Absent on roots: a page frame or a shared section root. */
   parent?: Id;
@@ -143,7 +144,7 @@ export interface InstanceNode extends NodeBase {
 export type Node = FrameNode | TextNode | ImageNode | SvgNode | InstanceNode;
 export type NodeKind = Node["kind"];
 
-export interface Page {
+export interface Page extends SourceOwner {
   id: Id;
   name: string;
   /**
@@ -223,7 +224,7 @@ export interface TerminalScreen {
   colors: TerminalColors;
 }
 
-export interface SharedSection {
+export interface SharedSection extends SourceOwner {
   id: Id;
   name: string;
   /** Root node of the section's source tree. */
@@ -264,7 +265,7 @@ export function pickVariant(set: readonly SharedSection[], want: Record<string, 
 export type Trigger = "click" | "hover" | "submit" | "key";
 export type Transition = "none" | "fade" | "slide-left" | "slide-right";
 
-export interface Connection {
+export interface Connection extends SourceOwner {
   id: Id;
   /** Page the trigger node lives on. */
   page: Id;
@@ -282,7 +283,7 @@ export interface Connection {
   nav?: true;
 }
 
-export interface Flow {
+export interface Flow extends SourceOwner {
   id: Id;
   name: string;
   start: Id;
@@ -300,7 +301,7 @@ export interface JourneyStep {
   evidence: Id[];
 }
 
-export interface Journey {
+export interface Journey extends SourceOwner {
   id: Id;
   flow: Id;
   lanes: string[];
@@ -308,7 +309,7 @@ export interface Journey {
 }
 
 /** One part of the design doc: who it is for, principles, voice… Ordered by index. */
-export interface Section {
+export interface Section extends SourceOwner {
   id: Id;
   heading: string;
   /** Plain text; blank lines separate paragraphs. */
@@ -317,7 +318,7 @@ export interface Section {
 }
 
 /** A settled design decision, e.g. "8px spacing grid". */
-export interface Decision {
+export interface Decision extends SourceOwner {
   id: Id;
   text: string;
   /** Who made it: a person or an agent's name. */
@@ -335,19 +336,19 @@ export interface Post {
   at: string;
 }
 
-export interface Comment {
+export interface Comment extends SourceOwner {
   id: Id;
   node: Id;
   state: CommentState;
   posts: Post[];
 }
 
-export type Rule =
+export type Rule = SourceOwner & (
   | { id: Id; kind: "tokens-only" }
   | { id: Id; kind: "shared-required"; shared: Id[]; routePrefix: string }
-  | { id: Id; kind: "fixed-width"; width: number };
+  | { id: Id; kind: "fixed-width"; width: number });
 
-export interface Attachment {
+export interface Attachment extends SourceOwner {
   id: Id;
   /** Path relative to the .buni file. */
   path: string;
@@ -363,7 +364,7 @@ export type PartKind = "client" | "service" | "store" | "cache" | "queue" | "ext
 export type ApiStyle = "rest" | "graphql" | "none";
 
 /** One deployable or rented piece of the system: a web app, an API, a database, a cache, a queue, Stripe. */
-export interface Part {
+export interface Part extends SourceOwner {
   id: Id;
   kind: PartKind;
   name: string;
@@ -386,7 +387,7 @@ export interface Part {
 /** calls: a service or external; reads/writes: a store or cache; publishes/subscribes: a queue. */
 export type LinkKind = "calls" | "reads" | "writes" | "publishes" | "subscribes";
 
-export interface Link {
+export interface Link extends SourceOwner {
   id: Id;
   from: Id;
   to: Id;
@@ -429,7 +430,7 @@ export interface Column {
 export type DataClass = "personal" | "secret";
 
 /** A table in a store part. Column order is the array's. */
-export interface Table {
+export interface Table extends SourceOwner {
   id: Id;
   store: Id;
   name: string;
@@ -454,7 +455,7 @@ export interface Field {
 }
 
 /** A data structure that moves between parts: a request body, a response, a message; or an enum. */
-export interface Shape {
+export interface Shape extends SourceOwner {
   id: Id;
   /** PascalCase, unique: "Quote", "Money". */
   name: string;
@@ -483,7 +484,7 @@ export interface ErrorCase {
 }
 
 /** An operation a service part exposes, and the data it touches. */
-export interface Endpoint {
+export interface Endpoint extends SourceOwner {
   id: Id;
   service: Id;
   method: Method;
@@ -517,6 +518,8 @@ export function outline(doc: Doc, n: Node, depth: number, lines: string[]): void
     : "";
   const moves = n.motion?.length ? ` moves: ${n.motion.map((m) => `${m.trigger} ${m.effect} ${m.durationMs}ms`).join(", ")}` : "";
   lines.push(`${"  ".repeat(depth)}${n.kind}${n.tag ? `<${n.tag}>` : ""} ${n.id} "${n.name}"${detail}${moves}`);
+  const sources = n.sources ?? (n.kind === "instance" ? doc.shared[n.shared]?.sources : undefined);
+  for (const source of sources ?? []) lines.push(`${"  ".repeat(depth + 1)}source: ${sourceLabel(source)}`);
   for (const c of childrenOf(doc, n.id)) outline(doc, c, depth + 1, lines);
 }
 
@@ -544,7 +547,7 @@ export interface Access {
 export type OperationKind = "query" | "mutation" | "subscription";
 
 /** A GraphQL field on Query, Mutation or Subscription of a GraphQL service. */
-export interface Operation {
+export interface Operation extends SourceOwner {
   id: Id;
   service: Id;
   kind: OperationKind;
@@ -585,7 +588,7 @@ export interface TraceStep {
 }
 
 /** One user action followed through every part it touches, in order. */
-export interface Trace {
+export interface Trace extends SourceOwner {
   id: Id;
   name: string;
   /** The page it starts on. */
@@ -597,7 +600,7 @@ export interface Trace {
 // Deployment topology: where each part runs, per environment, in the terms platforms use.
 
 /** A copy of the system: production, staging, a preview. */
-export interface Environment {
+export interface Environment extends SourceOwner {
   id: Id;
   /** "prod", "staging". */
   name: string;
@@ -611,7 +614,7 @@ export interface Environment {
 export type ClusterKind = "kubernetes" | "ecs" | "nomad" | "vms";
 
 /** Somewhere workloads are scheduled: a Kubernetes cluster, an ECS cluster, a fleet of VMs. */
-export interface Cluster {
+export interface Cluster extends SourceOwner {
   id: Id;
   environment: Id;
   name: string;
@@ -643,7 +646,7 @@ export interface Resources {
 }
 
 /** Where one part runs in one environment. */
-export interface Placement {
+export interface Placement extends SourceOwner {
   id: Id;
   part: Id;
   environment: Id;
@@ -684,7 +687,7 @@ export type CanvasView = (typeof CANVAS_VIEWS)[number];
 // and how far along review is.
 
 /** When something ships: "v1", "later". Ordered by index. */
-export interface Phase {
+export interface Phase extends SourceOwner {
   id: Id;
   name: string;
   goal?: string;
@@ -694,7 +697,7 @@ export interface Phase {
 export type Priority = "must" | "should" | "could";
 
 /** Something the design has to achieve, and the pieces that achieve it. */
-export interface Requirement {
+export interface Requirement extends SourceOwner {
   id: Id;
   title: string;
   detail?: string;
@@ -712,7 +715,7 @@ export interface QuestionOption {
 }
 
 /** Something not decided yet (a question with options) or taken as given (an assumption). */
-export interface Question {
+export interface Question extends SourceOwner {
   id: Id;
   kind: "question" | "assumption";
   text: string;
@@ -731,7 +734,7 @@ export interface Question {
  * One eval case for an agent: what the person asks, and what it must do. Each "must" is checked after a run, on a
  * copy of the file, from the design afterwards and the run's steps.
  */
-export interface EvalCase {
+export interface EvalCase extends SourceOwner {
   id: Id;
   /** "buni" for buni's own agent, else the id of an agent designed in this file. */
   agent: string;
@@ -746,7 +749,7 @@ export interface EvalCase {
  * An agent designed in this file: who it is and its job, the model it runs on, exactly which tools it may call, and
  * what it must never do. buni runs it in the app, the browser and the terminal, like its own agent.
  */
-export interface AgentDef {
+export interface AgentDef extends SourceOwner {
   id: Id;
   name: string;
   /** Its instructions: who it is, its job, how it works. Sent first with every request. */
@@ -776,7 +779,7 @@ export function operationToolName(o: Pick<Operation, "kind" | "name">): string {
 }
 
 /** Someone who uses the system, for access rules: "reviewer", "admin", "recipient". */
-export interface Role {
+export interface Role extends SourceOwner {
   id: Id;
   name: string;
   description: string;
@@ -913,7 +916,7 @@ export function reviewOf(doc: Doc, id: Id): (Review & { changed: boolean; change
 }
 
 /** A discussion on a piece of the system (page comments stay on page nodes). */
-export interface Thread {
+export interface Thread extends SourceOwner {
   id: Id;
   target: Id;
   state: CommentState;
@@ -921,7 +924,7 @@ export interface Thread {
 }
 
 /** A message on a queue part. */
-export interface QueueEvent {
+export interface QueueEvent extends SourceOwner {
   id: Id;
   queue: Id;
   /** Dotted, past tense: "quote.created". */

@@ -1,3 +1,4 @@
+import { sourceRefs } from "../../format/sources.ts";
 // Components: making and placing them, variants, overrides, and keeping the library tidy. One area of buni's design
 // tools (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
@@ -13,7 +14,7 @@ function componentOps(doc: Doc, nodeId: Id, name: string | undefined, ids: Ids):
   const p = pageOf(doc, n.id);
   if (n.id === p.frame || n.parent === undefined) throw new ToolError("a page's root frame cannot become a component; pick a layer inside it");
   const tree = subtree(doc, n.id);
-  const section: SharedSection = { id: ids.next(), name: name ?? n.name, root: n.id };
+  const section: SharedSection = { id: ids.next(), name: name ?? n.name, root: n.id, ...(n.sources ? { sources: n.sources } : {}) };
   const { parent: _, ...source } = n;
   const instance: InstanceNode = { id: ids.next(), kind: "instance", parent: n.parent, index: n.index, name: section.name, style: {}, shared: section.id, overrides: {} };
   const ops: Op[] = [
@@ -323,13 +324,13 @@ export const componentsTools = {
 
   create_component: tool({
     description: "Make a new component from HTML (same rules as write_html). It starts unused; place it with place_component.",
-    input: { name: z.string().min(1), html: z.string() },
+    input: { name: z.string().min(1), html: z.string(), sources: sourceRefs.optional() },
     run: async (doc, a, ctx) => {
       const { drafts, warnings } = parseHtml(a.html);
       if (drafts.length === 0) throw new ToolError("the HTML produced no nodes");
       const ids = new Ids(doc, ctx);
       const root = ids.next();
-      const section: SharedSection = { id: ids.next(), name: a.name, root };
+      const section: SharedSection = { id: ids.next(), name: a.name, root, ...(a.sources?.length ? { sources: a.sources } : {}) };
       const created: Id[] = [];
       const ops: Op[] = [
         { kind: "put", collection: "nodes", value: { id: root, kind: "frame", index: "a0", name: a.name, style: {} } },
