@@ -44,6 +44,10 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     const result = new Map<string, string>();
     // Zero margin matters too: Buni keeps real heading/paragraph tags with their browser defaults.
     result.set("margin", root ? "0px" : cs.margin);
+    // Native controls have browser defaults that the design's CSS reset does not clear.
+    if (["button", "input", "textarea", "select"].includes(el.localName)) {
+      for (const prop of ["padding", "border", "border-radius", "background-color"]) result.set(prop, cs.getPropertyValue(prop));
+    }
     for (const prop of PROPERTIES) {
       let value = cs.getPropertyValue(prop);
       if (!value || value === DEFAULTS[prop]) continue;

@@ -75,7 +75,7 @@ export function printWithBrowser(browser: string, sheet: Sheet): Promise<Uint8Ar
 export function evaluateWithBrowser(browser: string, sheet: Sheet, expression: string): Promise<string> {
   return inBrowser(browser, sheet, async (cdp, url) => {
     await load(cdp, url, sheet.width, 1);
-    const r = await cdp.call("Runtime.evaluate", { expression, returnByValue: true });
+    const r = await cdp.call("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
     const value = typeof r === "object" && r !== null && "result" in r && typeof r.result === "object" && r.result !== null && "value" in r.result ? r.result.value : undefined;
     if (typeof value !== "string") throw new Error("the page read back nothing");
     return value;
