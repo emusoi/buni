@@ -3,6 +3,11 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- `buni open` now runs the full shared browser editor, with direct editing, playback, undo and live agent updates.
+  The hosted product uses this same editor; the separate read-only viewer is removed.
+
 ## 0.3.3 — 2026-10-08
 
 - **`buni open` opens the full editor in the browser** when `buni-edit` is installed; `--view` keeps the read-only

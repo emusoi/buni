@@ -31,9 +31,8 @@ usage: buni <command> [args] [--as <name>] [--json]
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
-  open <file.buni>                  see it in your browser, live as agents design it: in the editor when one is
-                                    installed (buni-edit), else view only
-      [--view] [--port N] [--no-open]   the viewer even with an editor; its port; print the address instead
+  open <file.buni>                  edit it in your browser, live as agents design it
+      [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id] [--target fw]   brief to build from: doc + system slice (part:, page:, flow:, endpoint:, table:);
                                     --target picks one build of a terminal client, e.g. ratatui
@@ -433,23 +432,31 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
 
   switch (cmd) {
     case "open": {
-      // An editor installed beside buni (a buni-edit command) opens the design to edit; otherwise, or with --view,
-      // the view-only viewer shows it.
-      const editor = args.includes("--view") ? null : Bun.which("buni-edit");
-      if (editor) {
-        const child = Bun.spawn([editor, resolve(file), ...(args.includes("--no-open") ? ["--no-open"] : [])], { stdio: ["inherit", "inherit", "inherit"] });
-        return await child.exited;
-      }
-      const { serveViewer } = await import("./view/server.ts");
       const { openUrl } = await import("./term/open.ts");
+      const live = await liveApp(file);
+      if (live) {
+        const at = new URL(live);
+        const design = at.searchParams.get("file");
+        if (design) {
+          const url = `${at.origin}/?file=${encodeURIComponent(design)}`;
+          console.log(`Already open: ${url}`);
+          if (!args.includes("--no-open")) openUrl(url);
+          return 0;
+        }
+        console.error("An MCP server is already editing this design. Stop it, open the editor, then reconnect the agent through the editor.");
+        return 1;
+      }
+      const { serveEditor } = await import("./editor/server.ts");
       const at = args.indexOf("--port");
       const port = at >= 0 ? Number(args[at + 1]) : 0;
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
-        console.error("usage: buni open <file.buni> [--view] [--port N] [--no-open]");
+        console.error("usage: buni open <file.buni> [--port N] [--no-open]");
         return 2;
       }
-      const { url } = await serveViewer(file, port);
-      console.log(`Showing ${file} at ${url} (ctrl+c stops). It follows the file as agents change it.`);
+      const { url, stop } = await serveEditor(file, port);
+      process.on("exit", stop);
+      for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => process.exit(0));
+      console.log(`Editing ${file} at ${url} (ctrl+c stops).`);
       if (!args.includes("--no-open")) openUrl(url);
       return new Promise<number>(() => {});
     }

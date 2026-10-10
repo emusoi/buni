@@ -36,7 +36,10 @@ jobs:
       - if: runner.os == 'macOS'
         run: codesign --force --sign - dist/buni
       - name: The binary runs
-        run: dist/buni --version && dist/buni tree examples/portal.buni > /dev/null
+        run: |
+          dist/buni --version
+          dist/buni tree examples/portal.buni > /dev/null
+          bun scripts/check-editor.ts dist/buni
       - name: Package
         run: |
           name="buni-${GITHUB_REF_NAME#v}-${{ matrix.asset }}.tar.gz"

@@ -3,15 +3,15 @@ import { Glob } from "bun";
 import { join } from "node:path";
 
 // The core is open source and stands alone: the file format, the tools, the skills, MCP, drawing pages, the account
-// and the CLI. The desktop app (app/) and the hosted web (web/) build on it; it never reaches back into them,
+// and the shared browser editor. The hosted web builds on it; it never reaches back into the hosted product,
 // nor loads Electron, so it can be published and contributed to on its own.
-const ENGINE = ["format", "tools", "skills", "mcp", "oplog", "term", "account", "view"];
+const ENGINE = ["format", "tools", "skills", "mcp", "oplog", "term", "account", "editor"];
 // from "…", import "…" and import("…"): every way a module is loaded.
 const LOAD = String.raw`(?:from\s*|import\s*\(?\s*)["']`;
 const PRODUCT = new RegExp(`${LOAD}(?:\\.\\.?/)+(?:app|web)/`);
 const ELECTRON = new RegExp(`${LOAD}electron["']`);
 
-test("the engine imports nothing from the desktop app, the web or Electron", async () => {
+test("the engine imports nothing from the hosted app or Electron", async () => {
   const src = import.meta.dir;
   const files = ["cli.ts", "command.ts"];
   for (const dir of ENGINE) for await (const f of new Glob(`${dir}/**/*.{ts,tsx}`).scan(src)) files.push(f);

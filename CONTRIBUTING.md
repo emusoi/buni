@@ -24,13 +24,13 @@ Both must pass before a pull request is reviewed; CI runs the same two commands.
 | `src/skills/` | Design guidance agents read, as markdown (`design/*.md`), served by `buni skills` and MCP. |
 | `src/mcp/` | The MCP server: the tools, served to any MCP client. |
 | `src/oplog/` | The operation log edits are recorded in. |
-| `src/term/` | Drawing pages without an editor: with the desktop app or the browser on the machine, and terminal screens as text. |
+| `src/term/` | Drawing pages with the browser on the machine, and terminal screens as text. |
+| `src/editor/` | The shared browser editor, its local server and storage contract for hosted products. |
 | `src/account/` | `buni login` with Wazo, the keychain, and designs on a buni server (`--remote`). |
 | `src/cli.ts` | The `buni` command; a package that carries it adds commands through its `Extension`. |
 
-This repository is the core. The design agent (buni-agent), the buni desktop app and the hosted web editor are
-built on it in separate, closed repositories; nothing here imports from them, and `src/boundary.test.ts` keeps it
-that way.
+This repository is the core, including the editor. The design agent (buni-agent) and the hosted product build on
+it in separate repositories; nothing here imports from them, and `src/boundary.test.ts` keeps that boundary.
 
 ## Making a change
 

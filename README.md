@@ -11,8 +11,8 @@ them, the components they share, and the system behind them (the API, the data, 
 read and edit it through the buni CLI or MCP server, and buni's own design agent works in it beside you.
 
 This repository is buni's open core: the [file format](FORMAT.md), the design tools, the design skills, the CLI and the
-MCP server. buni's design agent and the buni apps (the desktop editor and [buni.emusoi.app](https://buni.emusoi.app))
-are built on it.
+MCP server, and the full browser editor. [buni.emusoi.app](https://buni.emusoi.app) hosts the same editor with accounts
+and cloud storage; its product features are built on this core.
 
 ## Install
 
@@ -41,19 +41,21 @@ Edit a design the way an agent does: one tool call at a time, each written to th
 bun src/cli.ts new my.buni                    # an empty design
 bun src/cli.ts call my.buni create_page '{"name":"Home","route":"/"}'
 bun src/cli.ts tools                          # every tool and its arguments
-bun src/cli.ts open my.buni                   # see it in your browser, live as an agent designs it
+bun src/cli.ts open my.buni                   # edit in your browser, live beside an agent
 ```
 
 A design keeps a few working files beside it: `<file>.live` while something holds it open, and `<file>.chats/` for
 an agent's chats. Keep both out of git.
 
-## See it
+## Edit in your browser
 
-`buni open design.buni` shows the design in your browser: its pages on a canvas, the flows between them, and one
-page at a time when you pick it; and the system behind them: the map of parts, the API, the data, events, traces,
-where each part runs, and the plan. Anything you click opens its detail, linked to everything it touches. It is view only and follows the file, so as an agent designs, the pages it changes
-appear and are marked, and each agent's face sits on what it is working on (whatever edits it through buni, the command
-line, MCP or an app, notes who edited what in `design.buni.activity` beside the file; keep it out of git). To change the design, ask your agent. `buni shot` draws one page to a PNG or PDF instead.
+`buni open design.buni` starts the full editor on this machine: pages and flows on a canvas, components, an
+inspector, playback, and the system behind the design. Edit directly or work beside an agent. Changes save to the
+file and appear in every open tab. The command line and MCP send edits through the open editor, keeping one writer.
+No sign-in or database is needed. Use `--port N` to choose a port or `--no-open` to print the URL without opening it.
+
+The editor records who edited what in `design.buni.activity` beside the file; keep it out of git. `buni shot` draws
+one page to a PNG or PDF instead.
 
 ## Use it from your coding agent
 
