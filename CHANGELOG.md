@@ -3,6 +3,12 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- Agents can import static HTML pages and selected sections with `import_html_page` through CLI or MCP,
+  resolving CSS and images while retaining source references in one undoable design edit.
+- Empty designs open directly on the canvas; the introductory prompt screen is removed.
+
 ## 0.4.1 — 2026-10-10
 
 - **Large designs move more smoothly:** virtualized page navigation and canvas overviews keep distant pages and

@@ -1112,7 +1112,7 @@ export function Canvas(props: Props) {
       onPointerCancel={endPan}
       onLostPointerCapture={endPan}
     >
-      {pages.length === 0 && <div className="empty">No pages yet. Add one from the bar below, or ask your coding agent.</div>}
+      {pages.length === 0 && <div className="empty">No pages yet. Use + beside Pages to add one.</div>}
       {view.zoom < FAR && <canvas ref={overview} className="canvas-overview" style={{ left: -OVERVIEW_PAD, top: -OVERVIEW_PAD, width: `calc(100% + ${OVERVIEW_PAD * 2}px)`, height: `calc(100% + ${OVERVIEW_PAD * 2}px)` }} aria-hidden="true" />}
       <div ref={world} className="world" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, ...cssVars({ "--zoom": view.zoom, "--inv": 1 / view.zoom }) }}>
         {sets.map((s) => (

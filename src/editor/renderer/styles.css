@@ -708,26 +708,10 @@ svg { flex-shrink: 0; }
 .card-agent { display: flex; align-items: center; gap: 5px; padding: 0 2px; font-size: 11px; color: var(--accent-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-meta { padding: 0 2px; }
 
-/* ---------- empty file: start with the agent ---------- */
-.start { display: grid; place-items: center; min-width: 0; background: var(--canvas); overflow: auto; }
-.start-inner { width: min(600px, 90%); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
 .agent-avatar.big { width: 42px; height: 42px; border-radius: 21px; background: var(--accent); }
-.start h2 { margin: 8px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
-.start p { margin: 0; font-size: 14px; color: var(--label); }
-.start-inner > svg { color: var(--ink); }
-.start-prompt { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; padding: 16px 16px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--rule); box-shadow: var(--shadow-1); text-align: left; }
-.start-go { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 16px; background: var(--ink); color: var(--surface); }
-.start-go:disabled { opacity: 0.25; cursor: default; }
-.start-prompt textarea { resize: none; border: 0; outline: none; font: inherit; font-size: 14px; line-height: 1.5; color: var(--ink); }
-.start-foot { display: flex; align-items: center; gap: 8px; }
-.start-foot .grow { flex: 1; }
 .bar-btn.round { border-radius: 16px; }
 .bar-btn:disabled { opacity: 0.4; cursor: default; }
 .plan-toggle.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
-.start-alts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 10px; }
-.start-alts button { padding: 4px 6px; border: 0; background: none; font-size: 13px; color: var(--ink-2); }
-.start-alts button + button::before { content: "·"; margin-right: 12px; color: var(--label); }
-.start-alts button:hover { color: var(--ink); }
 
 /* ---------- library health ---------- */
 .health-strip { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 0; border-radius: 8px; background: var(--accent-tint); color: var(--accent-ink); font-size: 11.5px; font-weight: 600; text-align: left; }
@@ -1435,22 +1419,10 @@ svg { flex-shrink: 0; }
 .main:has(> .tabs:empty) > .home { border-top: 0; }
 .notice.dismissable { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .notice.dismissable .icon-btn { color: inherit; }
-.start-connect { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 20px; padding: 10px 12px; border: 0; border-radius: 8px; background: var(--hover); color: var(--label); font-size: 12px; text-align: left; cursor: copy; }
-.start-connect span { flex: none; }
-.start-connect code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
-.start-connect:hover { color: var(--ink); }
 .dialog-field { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 18px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .dialog-field input { height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--content); font: inherit; font-size: 14px; font-weight: 500; color: var(--ink); outline: none; }
 .dialog-field input:focus { border-color: var(--ink-2); }
 .dialog-actions .btn { height: 32px; }
-/* The start screen fits any canvas width: it wraps rather than spilling sideways. */
-.start { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 24px 0; }
-.start h2 { text-wrap: balance; }
-.start p { text-wrap: pretty; }
-.start-connect { flex-wrap: wrap; }
-.start-connect span { flex: 0 1 auto; }
-.start-connect code { flex: 1 1 200px; }
-.start-prompt textarea { background: transparent; }
 /* On a narrow canvas the insert bar takes the bottom middle, so zoom and the canvas tools move to the top corners. */
 .canvas { container-type: size; }
 @container (max-width: 760px) {

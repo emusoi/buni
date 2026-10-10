@@ -27,7 +27,6 @@ import type { SystemSelection, SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
-import { Start } from "./Start.tsx";
 
 declare global {
   interface Window {
@@ -755,9 +754,7 @@ export function App({ snap }: { snap: Snapshot }) {
       </aside>
       <main className="main">
         <div className="workspace" style={{ gridTemplateColumns: panelOpen ? `minmax(0, 1fr) ${panelWidth}px` : "minmax(0, 1fr)" }}>
-          {!system && pages.length === 0 && Object.keys(doc.shared).length === 0 ? (
-            <Start onImport={() => setImportingHtml(true)} onBlank={() => void addPage()} mcpUrl={snap.mcpUrl} onToast={setToast} onSystem={() => goMode("system")} />
-          ) : shownJourney ? (
+          {shownJourney ? (
             <Journey doc={doc} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={openPage} />
           ) : system ? (
             <OwnersContext.Provider value={snap.owners}><SystemScreen doc={snap.system} fileName={fileName} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} onView={setSystem} /></OwnersContext.Provider>
