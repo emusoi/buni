@@ -3,6 +3,18 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## 0.4.1 — 2026-10-10
+
+- **Large designs move more smoothly:** virtualized page navigation and canvas overviews keep distant pages and
+  connections in bounded bitmap previews, while selected pages remain editable.
+- **Fix:** trackpad pinch and wheel gestures stay inside the canvas instead of zooming the browser page.
+- **Import HTML as editable designs**, from a URL, files or pasted markup. Preview a page and select a smaller
+  section to bring into a new page or the current frame, with its styles, images and fonts.
+- **Keep source context with the design:** attach file paths, symbols, line ranges and URLs to layers, components
+  and system entities, whether imported or built manually; the inspector and agent tools expose these references.
+- **More reliable manual system, plan and agent editing**, including saved API access settings and agent test
+  cases, with forms that follow undo and external edits without replacing unsaved work.
+
 ## 0.4.0 — 2026-10-09
 
 - `buni open` now runs the full shared browser editor, with direct editing, playback, undo and live agent updates.
