@@ -1,9 +1,10 @@
+import { useDraft } from "./useDraft.ts";
 import { useState, type ReactNode } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { runtimesFor } from "buni/format/parse.ts";
 import { PRIMITIVES, type Access, type ApiStyle, type FailurePolicy, type Phase, type Priority, type Question, type Requirement, type Role, type CachePolicy, type Cluster, type ClusterKind, type Column, type Environment, type Placement, type Runtime, type Doc, type Endpoint, type ErrorCase, type Field, type Id, type Link, type LinkKind, type Method, type Operation, type OperationKind, type Part, type PartKind, type QueueEvent, type Shape, type Table, type Trace, type TraceStep } from "buni/format/doc.ts";
 import type { EditTool } from "../api.ts";
-import { allCalls, callName } from "./system.ts";
+import { allCalls, callName, linkKindFor } from "./system.ts";
 
 const PART_KINDS: PartKind[] = ["client", "service", "store", "cache", "queue", "external"];
 const LINK_KINDS: LinkKind[] = ["calls", "reads", "writes", "publishes", "subscribes"];
@@ -14,35 +15,36 @@ const CLUSTER_KINDS: [ClusterKind, string][] = [["kubernetes", "Kubernetes"], ["
 const LINK_TARGET: Record<LinkKind, readonly PartKind[]> = { calls: ["service", "external"], reads: ["store", "cache"], writes: ["store", "cache"], publishes: ["queue"], subscribes: ["queue"] };
 
 /** Runs one tool; the form stays open with the reason when it is refused. */
-export function useSave(onDone: (reply: string) => void): { error: string | undefined; save: (tool: EditTool, args: Record<string, unknown>) => Promise<void> } {
+export function useSave(onDone: (reply: string) => void): { error: string | undefined; save: (tool: EditTool, args: Record<string, unknown>) => Promise<boolean> } {
   const [error, setError] = useState<string>();
   return {
     error,
     save: async (tool, args) => {
-      const r = await window.buni.edit(tool, args);
-      if (r.ok) {
-        setError(undefined);
-        onDone(r.reply);
-      } else setError(r.reply);
+      try {
+        const r = await window.buni.edit(tool, args);
+        if (!r.ok) { setError(r.reply); return false; }
+        setError(undefined); onDone(r.reply); return true;
+      } catch (e) { setError(e instanceof Error ? e.message : String(e)); return false; }
     },
   };
 }
 
 export function Form({ title, kicker, error, onSave, onDelete, children }: {
-  title: ReactNode; kicker: string; error: string | undefined; onSave: () => void; onDelete?: () => void; children: ReactNode;
+  title: ReactNode; kicker: string; error: string | undefined; onSave: () => Promise<boolean>; onDelete?: () => void; children: ReactNode;
 }) {
+  const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   return (
-    <form className="sys-form" onSubmit={(e) => { e.preventDefault(); onSave(); }}>
+    <form className="sys-form" onChangeCapture={() => setState("idle")} onSubmit={(e) => { e.preventDefault(); if (state === "saving") return; setState("saving"); void onSave().then((ok) => setState(ok ? "saved" : "idle")); }}>
       <div className="sys-form-head">
         <span className="sys-kicker">{kicker}</span>
         <div className="sys-form-title">{title}</div>
       </div>
       {children}
-      {error && <div className="notice sys-refusal">{error}</div>}
+      {error && <div role="alert" className="notice sys-refusal">{error}</div>}
       <div className="sys-form-actions">
         {onDelete && <button type="button" className="btn danger" onClick={onDelete}><Trash2 size={13} /> Delete</button>}
         <span className="grow" />
-        <button type="submit" className="btn primary">Save</button>
+        <span role="status">{state === "saved" ? "Saved" : ""}</span><button type="submit" className="btn primary" disabled={state === "saving"}>{state === "saving" ? "Saving…" : "Save"}</button>
       </div>
     </form>
   );
@@ -180,14 +182,14 @@ function CacheEditor({ doc, value, onChange, allowed, why }: { doc: Doc; value: 
 }
 
 export function PartForm({ part, onDone }: { part: Part; onDone: () => void }) {
-  const [d, setD] = useState({ kind: part.kind, name: part.name, purpose: part.purpose, tech: part.tech ?? "", api: part.api ?? "rest", ifDown: part.ifDown ?? "" });
+  const [d, setD] = useDraft({ kind: part.kind, name: part.name, purpose: part.purpose, tech: part.tech ?? "", api: part.api ?? "rest", ifDown: part.ifDown ?? "" });
   const { error, save } = useSave(onDone);
   return (
     <Form
       kicker={part.kind}
       title={part.name}
       error={error}
-      onSave={() => void save("set_part", { part: part.id, kind: d.kind, name: d.name, purpose: d.purpose, ...(d.tech ? { tech: d.tech } : {}), ...(d.kind === "service" ? { api: d.api } : {}), ifDown: d.ifDown })}
+      onSave={() => save("set_part", { part: part.id, kind: d.kind, name: d.name, purpose: d.purpose, tech: d.tech, ...(d.kind === "service" ? { api: d.api } : {}), ifDown: d.ifDown })}
       onDelete={() => void save("delete_system", { what: "part", id: part.id })}
     >
       <Row label="Name"><Text label="Name" value={d.name} onChange={(name) => setD({ ...d, name })} /></Row>
@@ -200,8 +202,12 @@ export function PartForm({ part, onDone }: { part: Part; onDone: () => void }) {
   );
 }
 
-export function LinkForm({ doc, link, onDone }: { doc: Doc; link: Link; onDone: () => void }) {
-  const [d, setD] = useState<{ kind: LinkKind; note: string; carries: Id[]; failure: FailurePolicy }>({ kind: link.kind, note: link.note ?? "", carries: link.carries ?? [], failure: link.failure ?? {} });
+export function LinkForm({ doc, link, from: initialFrom, onDone }: { doc: Doc; link: Link | undefined; from?: Id; onDone: (reply: string) => void }) {
+  const starters = Object.values(doc.parts).filter((p) => !["store", "cache", "queue"].includes(p.kind));
+  const [from, setFrom] = useState(link?.from ?? (starters.some((p) => p.id === initialFrom) ? initialFrom : undefined) ?? starters[0]?.id ?? "");
+  const destinations = (id: Id) => Object.values(doc.parts).filter((p) => doc.parts[id] && linkKindFor(doc.parts[id]!, p));
+  const [toId, setTo] = useState(link?.to ?? destinations(from)[0]?.id ?? "");
+  const [d, setD] = useDraft<{ kind: LinkKind; note: string; carries: Id[]; failure: FailurePolicy }>({ kind: link?.kind ?? (doc.parts[from] && doc.parts[toId] ? linkKindFor(doc.parts[from]!, doc.parts[toId]!) : undefined) ?? "calls", note: link?.note ?? "", carries: link?.carries ?? [], failure: link?.failure ?? {} });
   const f = d.failure;
   const setF = (k: keyof FailurePolicy, v: string) => {
     const { [k]: _, ...rest } = f;
@@ -210,16 +216,21 @@ export function LinkForm({ doc, link, onDone }: { doc: Doc; link: Link; onDone: 
   };
   const { error, save } = useSave(onDone);
   const name = (id: Id) => doc.parts[id]?.name ?? id;
-  const to = doc.parts[link.to];
+  const to = doc.parts[toId];
   const kinds = LINK_KINDS.filter((k) => !to || LINK_TARGET[k].includes(to.kind));
   return (
     <Form
       kicker="link"
-      title={<>{name(link.from)} <span className="dim">→</span> {name(link.to)}</>}
+      title={link ? <>{name(from)} <span className="dim">→</span> {name(toId)}</> : "Connect parts"}
       error={error}
-      onSave={() => void save("link_parts", { link: link.id, from: link.from, to: link.to, kind: d.kind, note: d.note, carries: d.carries, failure: d.failure })}
-      onDelete={() => void save("delete_system", { what: "link", id: link.id })}
+      onSave={() => save("link_parts", { ...(link ? { link: link.id } : {}), from, to: toId, kind: d.kind, note: d.note, carries: d.carries, failure: d.failure })}
+      {...(link ? { onDelete: () => void save("delete_system", { what: "link", id: link.id }) } : {})}
     >
+      {!link && <>
+        <Row label="Source part"><Pick label="Source part" value={from} options={starters.map((p) => [p.id, p.name])} onChange={(id) => { const to = destinations(id)[0]; setFrom(id); setTo(to?.id ?? ""); setD({ ...d, kind: to ? linkKindFor(doc.parts[id]!, to) ?? "calls" : "calls" }); }} /></Row>
+        <Row label="Destination part"><Pick label="Destination part" value={toId} options={destinations(from).map((p) => [p.id, p.name])} onChange={(id) => { setTo(id); setD({ ...d, kind: linkKindFor(doc.parts[from]!, doc.parts[id]!) ?? "calls" }); }} /></Row>
+        {!to && <p className="hint">Add a service, store, cache, queue or external system to connect to.</p>}
+      </>}
       <Row label="How they talk"><Segments value={d.kind} options={kinds.map((k) => [k, k] as const)} onChange={(kind) => setD({ ...d, kind })} /></Row>
       <Row label="Carries" hint="shapes on this link"><Checks options={Object.values(doc.shapes).map((s) => [s.id, s.name])} value={d.carries} onChange={(carries) => setD({ ...d, carries })} empty="No shapes yet; add them in Shapes." /></Row>
       <Row label="Note"><Text label="Note" value={d.note} placeholder="HTTPS, JSON, bearer token…" onChange={(note) => setD({ ...d, note })} /></Row>
@@ -240,14 +251,14 @@ export function LinkForm({ doc, link, onDone }: { doc: Doc; link: Link; onDone: 
 }
 
 export function ShapeForm({ doc, shape, onDone }: { doc: Doc; shape: Shape | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ name: shape?.name ?? "", note: shape?.note ?? "", fields: shape?.fields ?? [{ name: "id", type: "id" }], values: shape?.values ?? [""], isEnum: shape?.values !== undefined });
+  const [d, setD] = useDraft({ name: shape?.name ?? "", note: shape?.note ?? "", fields: shape?.fields ?? [{ name: "id", type: "id" }], values: shape?.values ?? [""], isEnum: shape?.values !== undefined });
   const { error, save } = useSave(onDone);
   return (
     <Form
       kicker={d.isEnum ? "enum" : "shape"}
       title={shape ? shape.name : "New shape"}
       error={error}
-      onSave={() => void save("set_shape", { ...(shape ? { shape: shape.id } : {}), name: d.name, ...(d.isEnum ? { fields: [], values: d.values.filter(Boolean) } : { fields: d.fields }), ...(d.note ? { note: d.note } : {}) })}
+      onSave={() => save("set_shape", { ...(shape ? { shape: shape.id } : {}), name: d.name, ...(d.isEnum ? { fields: [], values: d.values.filter(Boolean) } : { fields: d.fields }), ...(d.note ? { note: d.note } : {}) })}
       {...(shape ? { onDelete: () => void save("delete_system", { what: "shape", id: shape.id }) } : {})}
     >
       <Row label="Name"><Text label="Name" value={d.name} placeholder="Quote" mono onChange={(name) => setD({ ...d, name })} /></Row>
@@ -305,13 +316,13 @@ function AccessEditor({ doc, value, onChange }: { doc: Doc; value: Access | unde
 }
 
 /** Saves a call, then clears its access when the form cleared it (set_endpoint and set_operation keep access when it is left out). */
-async function saveCall(save: (tool: EditTool, args: Record<string, unknown>) => Promise<void>, tool: "set_endpoint" | "set_operation", args: Record<string, unknown>, id: Id | undefined, had: boolean, access: Access | undefined) {
-  await save(tool, { ...args, ...(access ? { access } : {}) });
-  if (id && had && !access) await window.buni.edit("set_access", { call: id });
+async function saveCall(save: (tool: EditTool, args: Record<string, unknown>) => Promise<boolean>, tool: "set_endpoint" | "set_operation", args: Record<string, unknown>, id: Id | undefined, had: boolean, access: Access | undefined) {
+  if (!await save(tool, { ...args, ...(access ? { access } : {}) })) return false;
+  return id && had && !access ? save("set_access", { call: id }) : true;
 }
 
 export function EndpointForm({ doc, service, endpoint, onDone }: { doc: Doc; service: Id; endpoint: Endpoint | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({
+  const [d, setD] = useDraft({
     method: endpoint?.method ?? "GET", path: endpoint?.path ?? "/", summary: endpoint?.summary ?? "",
     request: endpoint?.request ?? [], response: endpoint?.response ?? [],
     requestShape: endpoint?.requestShape, responseShape: endpoint?.responseShape,
@@ -324,7 +335,7 @@ export function EndpointForm({ doc, service, endpoint, onDone }: { doc: Doc; ser
       kicker={`endpoint · ${doc.parts[service]?.name ?? service}`}
       title={endpoint ? `${endpoint.method} ${endpoint.path}` : "New endpoint"}
       error={error}
-      onSave={() => void saveCall(save, "set_endpoint", {
+      onSave={() => saveCall(save, "set_endpoint", {
         ...(endpoint ? { endpoint: endpoint.id } : {}), service, method: d.method, path: d.path, summary: d.summary,
         request: d.requestShape ?? d.request, response: d.responseShape ?? d.response, reads: d.reads, writes: d.writes, emits: d.emits,
         cache: d.cache ?? null, invalidates: d.invalidates, errors: d.errors.filter((e) => e.code),
@@ -349,7 +360,7 @@ export function EndpointForm({ doc, service, endpoint, onDone }: { doc: Doc; ser
 }
 
 export function OperationForm({ doc, service, operation, onDone }: { doc: Doc; service: Id; operation: Operation | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({
+  const [d, setD] = useDraft({
     kind: operation?.kind ?? "query", name: operation?.name ?? "", summary: operation?.summary ?? "",
     args: operation?.args ?? [], returns: operation?.returns.replace(/\[\]$/, "") ?? "", list: operation?.returns.endsWith("[]") ?? false, nullable: operation?.nullable ?? false,
     reads: operation?.reads ?? [], writes: operation?.writes ?? [], emits: operation?.emits ?? [],
@@ -361,7 +372,7 @@ export function OperationForm({ doc, service, operation, onDone }: { doc: Doc; s
       kicker={`GraphQL · ${doc.parts[service]?.name ?? service}`}
       title={operation ? `${operation.kind} ${operation.name}` : "New operation"}
       error={error}
-      onSave={() => void saveCall(save, "set_operation", {
+      onSave={() => saveCall(save, "set_operation", {
         ...(operation ? { operation: operation.id } : {}), service, kind: d.kind, name: d.name, summary: d.summary,
         args: d.args, returns: `${d.returns}${d.list ? "[]" : ""}`, ...(d.nullable ? { nullable: true } : {}),
         reads: d.reads, writes: d.writes, emits: d.emits, cache: d.cache ?? null, invalidates: d.invalidates, errors: d.errors.filter((e) => e.code),
@@ -389,7 +400,7 @@ export function OperationForm({ doc, service, operation, onDone }: { doc: Doc; s
 }
 
 export function TableForm({ doc, store, table, onDone }: { doc: Doc; store: Id; table: Table | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState<{ name: string; columns: Column[] }>({ name: table?.name ?? "", columns: table?.columns ?? [{ name: "id", type: "uuid", primary: true }] });
+  const [d, setD] = useDraft<{ name: string; columns: Column[] }>({ name: table?.name ?? "", columns: table?.columns ?? [{ name: "id", type: "uuid", primary: true }] });
   const { error, save } = useSave(onDone);
   const set = (i: number, c: Column) => setD({ ...d, columns: d.columns.map((x, j) => (j === i ? c : x)) });
   const flag = (c: Column, k: "primary" | "nullable" | "unique", on: boolean): Column => {
@@ -402,7 +413,7 @@ export function TableForm({ doc, store, table, onDone }: { doc: Doc; store: Id; 
       kicker={`table · ${doc.parts[store]?.name ?? store}`}
       title={table ? table.name : "New table"}
       error={error}
-      onSave={() => void save("set_table", { ...(table ? { table: table.id } : {}), store, name: d.name, columns: d.columns })}
+      onSave={() => save("set_table", { ...(table ? { table: table.id } : {}), store, name: d.name, columns: d.columns })}
       {...(table ? { onDelete: () => void save("delete_system", { what: "table", id: table.id }) } : {})}
     >
       <Row label="Name"><Text label="Name" value={d.name} mono placeholder="quotes" onChange={(name) => setD({ ...d, name })} /></Row>
@@ -447,14 +458,14 @@ export function TableForm({ doc, store, table, onDone }: { doc: Doc; store: Id; 
 }
 
 export function EventForm({ doc, queue, event, onDone }: { doc: Doc; queue: Id; event: QueueEvent | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ name: event?.name ?? "", payload: event?.payload ?? [] });
+  const [d, setD] = useDraft({ name: event?.name ?? "", payload: event?.payload ?? [] });
   const { error, save } = useSave(onDone);
   return (
     <Form
       kicker={`event · ${doc.parts[queue]?.name ?? queue}`}
       title={event ? event.name : "New event"}
       error={error}
-      onSave={() => void save("set_event", { ...(event ? { event: event.id } : {}), queue, name: d.name, payload: d.payload })}
+      onSave={() => save("set_event", { ...(event ? { event: event.id } : {}), queue, name: d.name, payload: d.payload })}
       {...(event ? { onDelete: () => void save("delete_system", { what: "event", id: event.id }) } : {})}
     >
       <Row label="Name"><Text label="Name" value={d.name} mono placeholder="quote.created" onChange={(name) => setD({ ...d, name })} /></Row>
@@ -466,7 +477,7 @@ export function EventForm({ doc, queue, event, onDone }: { doc: Doc; queue: Id; 
 export function TraceForm({ doc, trace, onDone }: { doc: Doc; trace: Trace | undefined; onDone: (reply: string) => void }) {
   const firstLink = Object.values(doc.links)[0];
   const blank = (): TraceStep => ({ from: firstLink?.from ?? "", to: firstLink?.to ?? "", action: "" });
-  const [d, setD] = useState({ name: trace?.name ?? "", page: trace?.page ?? "", steps: trace?.steps ?? [blank()] });
+  const [d, setD] = useDraft({ name: trace?.name ?? "", page: trace?.page ?? "", steps: trace?.steps ?? [blank()] });
   const { error, save } = useSave(onDone);
   const parts = Object.values(doc.parts).map((p) => [p.id, p.name] as const);
   const vias: [string, string][] = [["", "no call"], ...allCalls(doc).map((c): [string, string] => [c.value.id, callName(c)]), ...Object.values(doc.events).map((e): [string, string] => [e.id, `event ${e.name}`])];
@@ -481,7 +492,7 @@ export function TraceForm({ doc, trace, onDone }: { doc: Doc; trace: Trace | und
       kicker="trace"
       title={trace ? trace.name : "New trace"}
       error={error}
-      onSave={() => void save("set_trace", { ...(trace ? { trace: trace.id } : {}), name: d.name, ...(d.page ? { page: d.page } : {}), steps: d.steps })}
+      onSave={() => save("set_trace", { ...(trace ? { trace: trace.id } : {}), name: d.name, ...(d.page ? { page: d.page } : {}), steps: d.steps })}
       {...(trace ? { onDelete: () => void save("delete_system", { what: "trace", id: trace.id }) } : {})}
     >
       <Row label="Action"><Text label="Name" value={d.name} placeholder="Submit a quote" onChange={(name) => setD({ ...d, name })} /></Row>
@@ -518,14 +529,14 @@ export function TraceForm({ doc, trace, onDone }: { doc: Doc; trace: Trace | und
 }
 
 export function EnvironmentForm({ environment, onDone }: { environment: Environment | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ name: environment?.name ?? "", provider: environment?.provider ?? "", regions: (environment?.regions ?? []).join(", ") });
+  const [d, setD] = useDraft({ name: environment?.name ?? "", provider: environment?.provider ?? "", regions: (environment?.regions ?? []).join(", ") });
   const { error, save } = useSave(onDone);
   return (
     <Form
       kicker="environment"
       title={environment ? environment.name : "New environment"}
       error={error}
-      onSave={() => void save("set_environment", { ...(environment ? { environment: environment.id } : {}), name: d.name, provider: d.provider, regions: d.regions.split(",").map((r) => r.trim()).filter(Boolean) })}
+      onSave={() => save("set_environment", { ...(environment ? { environment: environment.id } : {}), name: d.name, provider: d.provider, regions: d.regions.split(",").map((r) => r.trim()).filter(Boolean) })}
       {...(environment ? { onDelete: () => void save("delete_system", { what: "environment", id: environment.id }) } : {})}
     >
       <Row label="Name"><Text label="Name" value={d.name} mono placeholder="prod" onChange={(name) => setD({ ...d, name })} /></Row>
@@ -537,14 +548,14 @@ export function EnvironmentForm({ environment, onDone }: { environment: Environm
 
 export function ClusterForm({ doc, environment, cluster, onDone }: { doc: Doc; environment: Id; cluster: Cluster | undefined; onDone: (reply: string) => void }) {
   const env = doc.environments[environment];
-  const [d, setD] = useState({ name: cluster?.name ?? "", kind: cluster?.kind ?? "kubernetes", region: cluster?.region ?? env?.regions[0] ?? "", version: cluster?.version ?? "" });
+  const [d, setD] = useDraft({ name: cluster?.name ?? "", kind: cluster?.kind ?? "kubernetes", region: cluster?.region ?? env?.regions[0] ?? "", version: cluster?.version ?? "" });
   const { error, save } = useSave(onDone);
   return (
     <Form
       kicker={`cluster · ${env?.name ?? environment}`}
       title={cluster ? cluster.name : "New cluster"}
       error={error}
-      onSave={() => void save("set_cluster", { ...(cluster ? { cluster: cluster.id } : {}), environment, name: d.name, kind: d.kind, region: d.region, ...(d.version ? { version: d.version } : {}) })}
+      onSave={() => save("set_cluster", { ...(cluster ? { cluster: cluster.id } : {}), environment, name: d.name, kind: d.kind, region: d.region, ...(d.version ? { version: d.version } : {}) })}
       {...(cluster ? { onDelete: () => void save("delete_system", { what: "cluster", id: cluster.id }) } : {})}
     >
       <Row label="Name"><Text label="Name" value={d.name} mono placeholder="prod-use1" onChange={(name) => setD({ ...d, name })} /></Row>
@@ -563,7 +574,7 @@ export function PlacementForm({ doc, part, environment, placement, onDone }: { d
   const p = doc.parts[part];
   const env = doc.environments[environment];
   const fits = p ? runtimesFor(p) : [];
-  const [d, setD] = useState({
+  const [d, setD] = useDraft({
     runtime: placement?.runtime ?? fits[0] ?? "deployment",
     regions: placement?.regions ?? (env?.regions.slice(0, 1) ?? []),
     cluster: placement?.cluster ?? "", namespace: placement?.namespace ?? "",
@@ -584,7 +595,7 @@ export function PlacementForm({ doc, part, environment, placement, onDone }: { d
     const cluster = k8s ? d.cluster || clusters[0]?.id : undefined;
     const clusterRegion = cluster ? doc.clusters[cluster]?.region : undefined;
     const scale = num(d.min) !== undefined && num(d.max) !== undefined ? { min: num(d.min), max: num(d.max), ...(num(d.cpuTarget) !== undefined ? { cpuTarget: num(d.cpuTarget) } : {}) } : undefined;
-    void save("place", {
+    return save("place", {
       part, environment, runtime: d.runtime, regions: clusterRegion ? [clusterRegion] : d.regions,
       ...(cluster ? { cluster, namespace: d.namespace || undefined } : {}),
       ...(scale ? { scale } : {}),
@@ -657,11 +668,11 @@ export function PlacementForm({ doc, part, environment, placement, onDone }: { d
 // The design process: phases, requirements, questions, roles
 
 export function PhaseForm({ phase, onDone }: { phase: Phase | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ name: phase?.name ?? "", goal: phase?.goal ?? "" });
+  const [d, setD] = useDraft({ name: phase?.name ?? "", goal: phase?.goal ?? "" });
   const { error, save } = useSave(onDone);
   return (
     <Form kicker="phase" title={phase ? phase.name : "New phase"} error={error}
-      onSave={() => void save("set_phase", { ...(phase ? { phase: phase.id } : {}), name: d.name, ...(d.goal ? { goal: d.goal } : {}) })}
+      onSave={() => save("set_phase", { ...(phase ? { phase: phase.id } : {}), name: d.name, ...(d.goal ? { goal: d.goal } : {}) })}
       {...(phase ? { onDelete: () => void save("delete_system", { what: "phase", id: phase.id }) } : {})}>
       <Row label="Name"><Text label="Name" value={d.name} placeholder="v1, later" onChange={(name) => setD({ ...d, name })} /></Row>
       <Row label="Goal"><Text label="Goal" value={d.goal} placeholder="What this phase delivers" onChange={(goal) => setD({ ...d, goal })} /></Row>
@@ -701,12 +712,12 @@ export function GroupedChecks({ groups, value, onChange }: { groups: [string, [I
 const PRIORITIES: [Priority, string][] = [["must", "Must"], ["should", "Should"], ["could", "Could"]];
 
 export function RequirementForm({ doc, requirement, phase, onDone }: { doc: Doc; requirement: Requirement | undefined; phase?: Id; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ title: requirement?.title ?? "", detail: requirement?.detail ?? "", priority: requirement?.priority ?? "must", phase: requirement?.phase ?? phase ?? "", servedBy: requirement?.servedBy ?? [] });
+  const [d, setD] = useDraft({ title: requirement?.title ?? "", detail: requirement?.detail ?? "", priority: requirement?.priority ?? "must", phase: requirement?.phase ?? phase ?? "", servedBy: requirement?.servedBy ?? [] });
   const { error, save } = useSave(onDone);
   const phases = Object.values(doc.phases).sort((a, b) => (a.index < b.index ? -1 : 1));
   return (
     <Form kicker={`requirement${requirement ? ` · ${requirement.id}` : ""}`} title={requirement ? requirement.title : "New requirement"} error={error}
-      onSave={() => void save("set_requirement", { ...(requirement ? { requirement: requirement.id } : {}), title: d.title, priority: d.priority, servedBy: d.servedBy, ...(d.detail ? { detail: d.detail } : {}), ...(d.phase ? { phase: d.phase } : {}) })}
+      onSave={() => save("set_requirement", { ...(requirement ? { requirement: requirement.id } : {}), title: d.title, priority: d.priority, servedBy: d.servedBy, ...(d.detail ? { detail: d.detail } : {}), ...(d.phase ? { phase: d.phase } : {}) })}
       {...(requirement ? { onDelete: () => void save("delete_system", { what: "requirement", id: requirement.id }) } : {})}>
       <Row label="Outcome" hint="something you can check"><textarea className="field text" rows={2} aria-label="Outcome" value={d.title} placeholder="A buyer sends a quote in under a minute" onChange={(e) => setD({ ...d, title: e.target.value })} /></Row>
       <Row label="Priority"><Segments value={d.priority} options={PRIORITIES} onChange={(priority) => setD({ ...d, priority })} /></Row>
@@ -718,7 +729,7 @@ export function RequirementForm({ doc, requirement, phase, onDone }: { doc: Doc;
 }
 
 export function QuestionForm({ doc, question, kind, onDone }: { doc: Doc; question: Question | undefined; kind?: Question["kind"]; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ kind: question?.kind ?? kind ?? "question", text: question?.text ?? "", options: question?.options ?? [{ name: "" }, { name: "" }], about: question?.about ?? [] });
+  const [d, setD] = useDraft({ kind: question?.kind ?? kind ?? "question", text: question?.text ?? "", options: question?.options ?? [{ name: "" }, { name: "" }], about: question?.about ?? [] });
   const [why, setWhy] = useState("");
   const { error, save } = useSave(onDone);
   const setO = (i: number, patch: Partial<Question["options"][number]>) => setD({ ...d, options: d.options.map((o, j) => (j === i ? { ...o, ...patch } : o)) });
@@ -726,7 +737,7 @@ export function QuestionForm({ doc, question, kind, onDone }: { doc: Doc; questi
   return (
     <>
       <Form kicker={d.kind === "assumption" ? "assumption" : question?.status === "decided" ? "decided" : "open question"} title={question ? question.text : d.kind === "assumption" ? "New assumption" : "New question"} error={error}
-        onSave={() => void save("set_question", { ...(question ? { question: question.id } : {}), kind: d.kind, text: d.text, options: d.kind === "question" ? options : [], about: d.about })}
+        onSave={() => save("set_question", { ...(question ? { question: question.id } : {}), kind: d.kind, text: d.text, options: d.kind === "question" ? options : [], about: d.about })}
         {...(question ? { onDelete: () => void save("delete_system", { what: "question", id: question.id }) } : {})}>
         <Row label="Kind"><Segments value={d.kind} options={[["question", "Not decided"], ["assumption", "Taken as given"]]} onChange={(k) => setD({ ...d, kind: k })} /></Row>
         <Row label={d.kind === "assumption" ? "We assume" : "Question"}><textarea className="field text" rows={2} aria-label="Text" value={d.text} placeholder={d.kind === "assumption" ? "Under 500 quotes a day in v1" : "SQS or a Redis queue for Jobs?"} onChange={(e) => setD({ ...d, text: e.target.value })} /></Row>
@@ -770,12 +781,12 @@ export function QuestionForm({ doc, question, kind, onDone }: { doc: Doc; questi
 }
 
 export function RoleForm({ doc, role, onDone }: { doc: Doc; role: Role | undefined; onDone: (reply: string) => void }) {
-  const [d, setD] = useState({ name: role?.name ?? "", description: role?.description ?? "" });
+  const [d, setD] = useDraft({ name: role?.name ?? "", description: role?.description ?? "" });
   const { error, save } = useSave(onDone);
   const calls = role ? allCalls(doc).filter((c) => c.value.access?.roles?.includes(role.id)) : [];
   return (
     <Form kicker="role" title={role ? role.name : "New role"} error={error}
-      onSave={() => void save("set_role", { ...(role ? { role: role.id } : {}), name: d.name, description: d.description })}
+      onSave={() => save("set_role", { ...(role ? { role: role.id } : {}), name: d.name, description: d.description })}
       {...(role ? { onDelete: () => void save("delete_system", { what: "role", id: role.id }) } : {})}>
       <Row label="Name"><Text label="Name" value={d.name} placeholder="admin, reviewer" onChange={(name) => setD({ ...d, name })} /></Row>
       <Row label="Who they are"><textarea className="field text" rows={2} aria-label="Description" value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} /></Row>

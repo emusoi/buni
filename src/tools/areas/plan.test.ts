@@ -16,3 +16,17 @@ test("a new record never replaces an existing one of any kind", async () => {
   await ws.call("t", "set_agent", { name: "Support", instructions: "second" });
   expect(Object.values(ws.view().agents).map((a) => a.instructions).sort()).toEqual(["first", "second"]);
 });
+
+
+test("clearing a case's mocked answers returns it to the normal mock", async () => {
+  const file = join(await mkdtemp(join(tmpdir(), "buni-eval-")), "d.buni");
+  await copyFile(new URL("../../../examples/portal.buni", import.meta.url), file);
+  const ws = await Workspace.open(file);
+  const args = { agent: "buni", ask: "Show my orders", must: ["Do not invent an order"] };
+  expect((await ws.call("you", "set_eval", { ...args, given: { api_get_orders: [] } })).ok).toBe(true);
+  const id = Object.values(ws.view().evals).find((e) => e.ask === args.ask)!.id;
+  expect((await ws.call("you", "set_eval", { ...args, eval: id, given: {} })).ok).toBe(true);
+  expect(ws.view().evals[id]?.given).toBeUndefined();
+  expect((await ws.undo()).ok).toBe(true);
+  expect(ws.view().evals[id]?.given).toEqual({ api_get_orders: [] });
+});

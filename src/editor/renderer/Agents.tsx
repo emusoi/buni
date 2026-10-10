@@ -1,3 +1,4 @@
+import { useDraft } from "./useDraft.ts";
 import { Sources } from "./Sources.tsx";
 // The Agents mode: agents designed in the file, by hand. Design says who an agent is, its model, its tools and what
 // it never does; Cases says what a person asks it and what it must do. Both are saved in the design (set_agent,
@@ -13,12 +14,13 @@ const ENGINE_TOOLS = [["ask", "Ask the person and wait"], ["plan", "Show a check
 
 /** An agent designed in the file, by hand: who it is, its model, exactly which tools, and what it never does. Saved with set_agent, so it undoes like any edit. */
 function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; onSaved: (id: string) => void }) {
-  const [name, setName] = useState(def?.name ?? "");
-  const [instructions, setInstructions] = useState(def?.instructions ?? "");
-  const [model, setModel] = useState(def?.model ?? "");
-  const [tools, setTools] = useState<string[]>(def?.tools ?? []);
-  const [never, setNever] = useState((def?.never ?? []).join("\n"));
+  const [name, setName] = useDraft(def?.name ?? "");
+  const [instructions, setInstructions] = useDraft(def?.instructions ?? "");
+  const [model, setModel] = useDraft(def?.model ?? "");
+  const [tools, setTools] = useDraft<string[]>(def?.tools ?? []);
+  const [never, setNever] = useDraft((def?.never ?? []).join("\n"));
   const [said, setSaid] = useState<string>();
+  const [busy, setBusy] = useState(false);
   const api = [
     ...Object.values(doc.endpoints).map((e) => [endpointToolName(e), `${e.method} ${e.path}`] as const),
     ...Object.values(doc.operations).filter((o) => o.kind !== "subscription").map((o) => [operationToolName(o), `${o.kind} ${o.name}`] as const),
@@ -27,19 +29,19 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
   const box = (t: string, label: string, hint: string) => (
     <label key={t} className="ag-def-tool"><input type="checkbox" checked={tools.includes(t)} onChange={() => toggle(t)} /><code>{t}</code><span>{label || hint}</span></label>
   );
-  const save = () => void window.buni.edit("set_agent", {
+  const save = () => { setBusy(true); void window.buni.edit("set_agent", {
     ...(def ? { agent: def.id } : {}), name: name.trim(), instructions, model: model.trim(), tools,
     never: never.split("\n").map((n) => n.trim()).filter(Boolean),
   }).then((r) => {
     setSaid(r.reply);
     const id = r.ok ? (def?.id ?? r.reply.match(/^Agent (\S+) saved/)?.[1]) : undefined;
     if (id) onSaved(id);
-  });
+  }).catch((e: Error) => setSaid(e.message)).finally(() => setBusy(false)); };
   return (
     <div className="ag-def ag-pad">
       <label className="ag-def-field"><span className="ag-label">Name</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Refund helper" /></label>
       <label className="ag-def-field"><span className="ag-label">Instructions <em>who it is, its job, how it works</em></span><textarea rows={6} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="You help support staff refund returns that arrived back…" /></label>
-      <label className="ag-def-field"><span className="ag-label">Model <em>provider/model; empty uses buni's pick</em></span><input value={model} onChange={(e) => setModel(e.target.value)} placeholder="anthropic/claude-sonnet-5-5" /></label>
+      <label className="ag-def-field"><span className="ag-label">Model <em>provider/model; empty uses buni's pick</em></span><input value={model} onChange={(e) => setModel(e.target.value)} placeholder="provider/model" /></label>
       <div className="ag-def-field">
         <span className="ag-label">Tools <em>{tools.length} picked; the fewest its job needs</em></span>
         {api.length > 0 && <p className="ag-note">Your API</p>}
@@ -53,9 +55,9 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
       <label className="ag-def-field"><span className="ag-label">Never <em>one per line</em></span><textarea rows={3} value={never} onChange={(e) => setNever(e.target.value)} placeholder="Refund more than was paid" /></label>
       {def && <Sources key={def.id} doc={doc} id={def.id} />}
       <div className="ag-def-actions">
-        <button type="button" className="btn primary" disabled={!name.trim() || !instructions.trim()} onClick={save}>{def ? "Save" : "Create agent"}</button>
+        <button type="button" className="btn primary" disabled={busy || !name.trim() || !instructions.trim()} onClick={save}>{busy ? "Saving…" : def ? "Save agent" : "Create agent"}</button>
         {def && <button type="button" className="btn" title="Removes it from the design; undo brings it back" onClick={() => void window.buni.edit("delete_system", { what: "agent", id: def.id }).then((r) => setSaid(r.reply))}><Trash2 size={12} /> Delete</button>}
-        {said && <span className="ag-note">{said}</span>}
+        {said && <span role="status" className="ag-note">{said}</span>}
       </div>
     </div>
   );
@@ -63,19 +65,23 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
 
 /** One case, written by hand: what the person asks and each thing the agent must do. Saved with set_eval. */
 function CaseForm({ doc, me, c, onDone }: { doc: Doc; me: string; c: EvalCase | undefined; onDone: () => void }) {
-  const [text, setText] = useState(c?.ask ?? "");
-  const [must, setMust] = useState((c?.must ?? []).join("\n"));
-  const [given, setGiven] = useState(c?.given ? JSON.stringify(c.given, null, 2) : "");
+  const [text, setText] = useDraft(c?.ask ?? "");
+  const [must, setMust] = useDraft((c?.must ?? []).join("\n"));
+  const [given, setGiven] = useDraft(c?.given ? JSON.stringify(c.given, null, 2) : "");
   const [said, setSaid] = useState<string>();
+  const [busy, setBusy] = useState(false);
   const musts = must.split("\n").map((m) => m.trim()).filter(Boolean);
   const save = () => {
-    let answers: unknown;
+    let answers: Record<string, unknown> = {};
     try {
-      answers = given.trim() ? JSON.parse(given) : undefined;
+      const parsed: unknown = given.trim() ? JSON.parse(given) : {};
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("Expected an object");
+      answers = parsed as Record<string, unknown>;
     } catch {
       return setSaid("Given isn't JSON: an object of tool name to what it answers.");
     }
-    void window.buni.edit("set_eval", { ...(c ? { eval: c.id } : {}), agent: me, ask: text.trim(), must: musts, ...(answers ? { given: answers } : {}) }).then((r) => (r.ok ? onDone() : setSaid(r.reply)));
+    setBusy(true);
+    void window.buni.edit("set_eval", { ...(c ? { eval: c.id } : {}), agent: me, ask: text.trim(), must: musts, given: answers }).then((r) => (r.ok ? onDone() : setSaid(r.reply))).catch((e: Error) => setSaid(e.message)).finally(() => setBusy(false));
   };
   return (
     <div className="ag-case-form">
@@ -84,10 +90,10 @@ function CaseForm({ doc, me, c, onDone }: { doc: Doc; me: string; c: EvalCase | 
       <label className="ag-def-field"><span className="ag-label">Given <em>optional: what the API answers in this case, by tool name, instead of the mock</em></span><textarea className="mono" rows={3} value={given} onChange={(e) => setGiven(e.target.value)} placeholder={'{ "api_get_plants": { "items": [{ "name": "Monstera", "isDue": true }] } }'} /></label>
       {c && <Sources key={c.id} doc={doc} id={c.id} />}
       <div className="ag-def-actions">
-        <button type="button" className="btn primary" disabled={!text.trim() || !musts.length} onClick={save}>{c ? "Save case" : "Add case"}</button>
+        <button type="button" className="btn primary" disabled={busy || !text.trim() || !musts.length} onClick={save}>{busy ? "Saving…" : c ? "Save case" : "Add case"}</button>
         {c && <button type="button" className="btn" onClick={() => void window.buni.edit("delete_system", { what: "eval", id: c.id }).then(onDone)}><Trash2 size={12} /> Delete</button>}
         <button type="button" className="btn" onClick={onDone}>Cancel</button>
-        {said && <span className="ag-note">{said}</span>}
+        {said && <span role="status" className="ag-note">{said}</span>}
       </div>
     </div>
   );
@@ -114,8 +120,8 @@ function Cases({ doc, me }: { doc: Doc; me: string }) {
               editing === c.id ? (
                 <tr key={c.id}><td colSpan={2}><CaseForm doc={doc} me={me} c={c} onDone={done} /></td></tr>
               ) : (
-                <tr key={c.id} onClick={() => setEditing(c.id)} title="Edit this case">
-                  <td>{c.ask}</td>
+                <tr key={c.id}>
+                  <td><button type="button" className="link-btn" onClick={() => setEditing(c.id)} title="Edit this test case">{c.ask}</button></td>
                   <td className="ag-musts">{c.must.join(" · ")}</td>
                 </tr>
               )
@@ -163,7 +169,7 @@ export function Agents({ doc }: { doc: Doc }) {
           <header className="ag-head">
             <div className="ag-title"><b>{def.name}</b><span className="ag-sub">{def.model || "buni's pick of model"} · {def.tools.length} tool{def.tools.length === 1 ? "" : "s"}</span></div>
             <div className="ag-tabs" role="tablist">
-              {(["design", "cases"] as const).map((t) => <button type="button" key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t[0]?.toUpperCase()}{t.slice(1)}</button>)}
+              {(["design", "cases"] as const).map((t) => <button type="button" key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "cases" ? "Test cases" : "Design"}</button>)}
             </div>
           </header>
           {tab === "design" ? <Design key={def.id} doc={doc} def={def} onSaved={setCurrent} /> : <Cases doc={doc} me={def.id} />}

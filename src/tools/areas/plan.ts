@@ -107,9 +107,10 @@ export const planTools = {
       if (a.eval !== undefined && !old) throw new ToolError(`eval "${a.eval}" does not exist`);
       if (a.agent !== "buni" && !doc.agents[a.agent]) throw new ToolError(`no agent "${a.agent}"; use "buni" or one of ${Object.keys(doc.agents).join(", ") || "(none designed yet)"}`);
       const last = Object.values(doc.evals).map((x) => x.index).sort().at(-1) ?? null;
+      const given = a.given ?? old?.given;
       const value: EvalCase = {
         ...(old?.sources ? { sources: old.sources } : {}), id: old?.id ?? new Ids(doc, ctx).slug(a.ask.split(/\s+/).slice(0, 5).join(" ")), index: old?.index ?? generateKeyBetween(last, null),
-        agent: a.agent, ask: a.ask, must: a.must, ...(a.given ?? old?.given ? { given: a.given ?? old?.given } : {}),
+        agent: a.agent, ask: a.ask, must: a.must, ...(given && Object.keys(given).length ? { given } : {}),
       };
       return { label: `${old ? "Change" : "Add"} eval case`, ops: [{ kind: "put", collection: "evals", value }], reply: `Eval ${value.id} saved with ${value.must.length} check${value.must.length === 1 ? "" : "s"}.` };
     },

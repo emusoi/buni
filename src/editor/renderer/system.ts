@@ -56,7 +56,7 @@ export const PLAN_VIEWS: readonly SystemView[] = ["requirements", "questions", "
 /** What the system inspector is showing: one thing, or a new one being added. */
 export type SystemSelection =
   | { kind: "part" | "link" | "endpoint" | "operation" | "table" | "event" | "shape" | "trace" | "environment" | "cluster" | "placement" | "phase" | "requirement" | "question" | "role" | "page"; id: Id }
-  | { kind: "new"; what: "endpoint" | "operation" | "table" | "event" | "shape" | "trace" | "environment" | "phase" | "requirement" | "question" | "role"; parent?: Id }
+  | { kind: "new"; what: "link" | "endpoint" | "operation" | "table" | "event" | "shape" | "trace" | "environment" | "phase" | "requirement" | "question" | "role"; parent?: Id }
   | { kind: "new"; what: "cluster"; environment: Id }
   | { kind: "new"; what: "placement"; part: Id; environment: Id };
 

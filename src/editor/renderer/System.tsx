@@ -180,7 +180,7 @@ function MapView({ doc, selection, onSelect, onToast }: ViewProps) {
   const parts = Object.keys(doc.parts).length;
   return (
     <div className="sys-view sys-map-view">
-      <Head kicker="System map" title={parts ? `${parts} parts · ${allCalls(doc).length} operations · ${Object.keys(doc.tables).length} tables · ${Object.keys(doc.shapes).length} shapes` : "No system yet"} />
+      <Head kicker="System map" title={parts ? `${parts} part${parts === 1 ? "" : "s"} · ${allCalls(doc).length} operations · ${Object.keys(doc.tables).length} tables · ${Object.keys(doc.shapes).length} shapes` : "No system yet"} />
       <div className="sys-flow">
         {parts === 0 && (
           // An empty map says where to start instead of showing a bare grid.
@@ -217,6 +217,7 @@ function MapView({ doc, selection, onSelect, onToast }: ViewProps) {
               const Icon = KIND_ICON[k];
               return <button key={k} type="button" title={`Add a ${k}`} onClick={() => void add(k)}><Icon size={13} /> {KIND_LABEL[k]}</button>;
             })}
+            <button type="button" disabled={parts < 2} onClick={() => onSelect({ kind: "new", what: "link", ...(focus ? { parent: focus } : {}) })}>Connect parts</button>
           </Panel>
           <Panel position="bottom-right" className="sys-hint-panel">Drag from a card’s edge to link · ⌫ removes</Panel>
         </ReactFlow>
@@ -668,7 +669,7 @@ const HINTS: Record<SystemView, string> = {
 /** The right panel in the System area: the form for whatever is selected. */
 export function SystemInspector({ doc, view, selection, onSelect, onOpenPage, onToast, dir: dirOf = "" }: ViewProps & { view: SystemView; dir?: string }) {
   const key = JSON.stringify(selection ?? null);
-  const reselect = (kind: "endpoint" | "operation" | "table" | "event" | "shape" | "trace") => (reply: string) => {
+  const reselect = (kind: "link" | "endpoint" | "operation" | "table" | "event" | "shape" | "trace") => (reply: string) => {
     const id = reply.match(/^\w+ (\S+) saved/)?.[1];
     onSelect(id ? { kind, id } : undefined);
   };
@@ -812,6 +813,7 @@ export function SystemInspector({ doc, view, selection, onSelect, onOpenPage, on
         break;
       }
       const parent = selection.parent ?? "";
+      if (selection.what === "link") { body = <LinkForm key={key} doc={doc} link={undefined} from={parent || undefined} onDone={reselect("link")} />; break; }
       body =
         selection.what === "endpoint" ? <EndpointForm key={key} doc={doc} service={parent} endpoint={undefined} onDone={reselect("endpoint")} />
         : selection.what === "operation" ? <OperationForm key={key} doc={doc} service={parent} operation={undefined} onDone={reselect("operation")} />
@@ -846,17 +848,16 @@ function PartContracts({ doc, part, onSelect, onToast }: { doc: Doc; part: Part;
   };
   return (
     <div className="sys-contracts">
-      {links.length > 0 && (
-        <div className="sys-group">
-          <div className="sys-row-label">Links</div>
+      <div className="sys-group">
+          <div className="sys-row-label sys-row-head">Connections{!["store", "cache", "queue"].includes(part.kind) && <button type="button" className="link-btn" onClick={() => onSelect({ kind: "new", what: "link", parent: part.id })}>Connect to…</button>}</div>
           {links.map((l) => (
             <button key={l.id} type="button" className="sys-mini" onClick={() => onSelect({ kind: "link", id: l.id })}>
               <span>{l.from === part.id ? <><b>{l.kind}</b> {doc.parts[l.to]?.name}</> : <>{doc.parts[l.from]?.name} <b>{l.kind}</b></>}</span>
               <code className="dim">{(l.carries ?? []).map((id) => doc.shapes[id]?.name).join(", ")}</code>
             </button>
           ))}
+          {!links.length && <p className="hint">No connections yet.</p>}
         </div>
-      )}
       {part.kind === "service" && style !== "none" && (
         <div className="sys-group">
           <div className="sys-row-label sys-row-head">{style === "graphql" ? "Operations" : "Endpoints"} · {calls.length}<button type="button" className="link-btn" onClick={() => onSelect({ kind: "new", what: style === "graphql" ? "operation" : "endpoint", parent: part.id })}><Plus size={12} /> Add</button></div>
