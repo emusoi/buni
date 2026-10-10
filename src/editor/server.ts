@@ -1,4 +1,5 @@
 /// <reference path="./raw.d.ts" />
+import { readImportResource } from "./import-resource.ts";
 import { exampleBody, matchEndpoint, mockGraphql } from "buni/tools/backend.ts";
 import { MockStore } from "buni/tools/mockstore.ts";
 import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts";
@@ -323,6 +324,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     versions: async (file) => versionsOf(store, (await need(file)).path),
     restoreVersion: async (file, id) => restoreVersion(store, await need(file), id),
     // An image from the person's computer or clipboard, kept in the design's assets/ folder and attached.
+    readImportResource: async (file, url, pageUrl) => { await need(file); return readImportResource(str(url, "URL"), str(pageUrl, "Page URL"), loopback); },
     uploadImage: async (file, name, base64, mime) => {
       const ws = await need(file);
       const img = checkImage(name, base64, mime);

@@ -1915,3 +1915,40 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .source-lines { display: flex; gap: 8px; }
 .source-lines label { flex: 1; min-width: 0; }
 .source-inherited code { display: block; overflow-wrap: anywhere; font-size: 11px; margin: 4px 0; }
+
+.html-import { width: min(1500px, calc(100vw - 48px)); height: min(920px, calc(100vh - 48px)); padding: 0; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-2); overflow: hidden; }
+.html-import[open] { display: flex; flex-direction: column; }
+.html-import::backdrop { background: rgb(0 0 0 / 0.28); }
+.html-import > header, .html-import > footer { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.html-import > header { border-bottom: 1px solid var(--line); justify-content: space-between; }
+.html-import h2 { margin: 0 0 4px; font-size: 18px; }
+.html-import p { margin: 0; font-size: 12px; color: var(--ink-2); }
+.html-import-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 0; flex: 1; }
+.html-import-options { padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-right: 1px solid var(--line); }
+.html-import-options label { display: grid; gap: 5px; font-size: 12px; }
+.html-import-options input, .html-import-options select, .html-import-options textarea { width: 100%; padding: 7px; color: var(--ink); background: var(--content); border: 1px solid var(--line); border-radius: 4px; font: 12px var(--mono); }
+.html-import-options textarea { min-height: 160px; resize: vertical; }
+.html-import-options small { font-size: 11px; color: var(--ink-2); }
+.html-import-options .mode-tabs button, .html-import-options .btn { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.html-import-source { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; }
+.html-import-preview { min-width: 0; display: flex; flex-direction: column; background: var(--surface-2); }
+.html-import-preview-head { padding: 14px 16px; display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.html-import-preview-head span { color: var(--ink-2); }
+.html-import-viewport { min-height: 120px; flex: 1; overflow: auto; padding: 12px; }
+.html-import-viewport iframe { display: block; border: 0; background: white; box-shadow: var(--shadow-1); }
+.html-import-empty { height: 100%; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--label); }
+.html-import-crumbs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.html-import-crumbs button { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink-2); padding: 4px 8px; cursor: pointer; font: 11px var(--mono); }
+.html-import-crumbs button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-2); }
+.html-import-notes { padding: 8px 16px; font-size: 11px; max-height: 100px; overflow: auto; }
+.html-import-notes summary { cursor: pointer; }
+.html-import > footer { border-top: 1px solid var(--line); }
+.html-import > footer > div { flex: 1; min-width: 0; }
+.html-import > footer .notice { margin: 0; max-height: 72px; overflow: auto; }
+@media (max-width: 800px) { .html-import-body { grid-template-columns: 240px minmax(0, 1fr); } .html-import-preview-head span { display: none; } }
+.html-import > header, .html-import > footer { flex: none; }
+.html-import-options, .html-import-preview { min-height: 0; }
+.html-import-options > * { flex: none; }
+.html-import-options .btn { flex: none; min-height: 32px; }
+
+.html-import > footer .btn { flex: none; min-width: 140px; }

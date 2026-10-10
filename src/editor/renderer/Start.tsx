@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Copy } from "lucide-react";
 
 /** An empty file opens on a question, not a blank canvas: say what you are making and hand it to a coding agent. */
-export function Start({ onBlank, onSystem, mcpUrl, onToast }: {
+export function Start({ onBlank, onSystem, onImport, mcpUrl, onToast }: {
   /** Where a coding agent connects to this file. */
   mcpUrl: string;
   onToast: (t: string) => void;
   onBlank: () => void;
+  onImport: () => void;
   /** Starts from the system instead of a screen. */
   onSystem: () => void;
 }) {
@@ -19,7 +20,7 @@ export function Start({ onBlank, onSystem, mcpUrl, onToast }: {
     <div className="start">
       <div className="start-inner">
         <h2>What are you designing?</h2>
-        <p>Describe it, then hand it to Claude Code or Codex; it builds here while you watch.</p>
+        <p>Start with a page, map out a system, or import existing HTML. You can also describe it and hand the brief to your coding agent.</p>
         <div className="start-prompt">
           <textarea
             autoFocus
@@ -41,9 +42,9 @@ export function Start({ onBlank, onSystem, mcpUrl, onToast }: {
         </div>
         {/* Other ways in, as one quiet line: the prompt is the way most people start. */}
         <div className="start-alts">
-          <button type="button" onClick={onBlank}>Blank page</button>
-          <button type="button" onClick={onSystem}>Sketch the system</button>
-          <button type="button" onClick={() => setText("Study https:// and design ")}>From a website</button>
+          <button type="button" onClick={onBlank}>Create a page</button>
+          <button type="button" onClick={onSystem}>Design a system</button>
+          <button type="button" onClick={onImport}>Import HTML</button>
         </div>
         <button type="button" className="start-connect" title="Copy" onClick={() => void navigator.clipboard.writeText(`claude mcp add --transport http buni "${mcpUrl}"`).then(() => onToast("Copied the Claude Code line."))}>
           <span>Not connected yet? In Claude Code:</span>

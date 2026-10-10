@@ -113,6 +113,32 @@ export const pagesTools = {
     },
   }),
 
+  import_html: tool({
+    description: "Import prepared, inline-styled HTML as editable layers, either into a parent frame or onto a new page, in one undoable edit. Images use asset: attachment ids; per-element data-buni-sources retains implementation context.",
+    input: {
+      html: z.string().min(1), parent: z.string().optional(), after: z.string().optional(),
+      page: z.object({ name: z.string().min(1), width: z.number().int().positive().default(1440), route: z.string().optional() }).optional(),
+    },
+    run: async (doc, a, ctx) => {
+      if (Boolean(a.parent) === Boolean(a.page)) throw new ToolError("Choose a parent frame or a new page.");
+      const { drafts, warnings } = parseHtml(a.html);
+      if (!drafts.length) throw new ToolError("No editable elements were found in this selection.");
+      const ids = new Ids(doc, ctx);
+      const ops: Op[] = [];
+      let parent = a.parent;
+      let madePage: string | undefined;
+      if (a.page) {
+        parent = ids.next(); madePage = ids.next();
+        ops.push({ kind: "put", collection: "nodes", value: { id: parent, kind: "frame", name: a.page.name, index: "a0", style: { width: `${a.page.width}px` } } });
+        ops.push({ kind: "put", collection: "pages", value: { id: madePage, name: a.page.name, frame: parent, index: generateKeyBetween(pagesInOrder(doc).at(-1)?.index ?? null, null), ...(a.page.route !== undefined ? { route: a.page.route } : {}), ...(drafts[0]?.sources ? { sources: drafts[0].sources } : {}) } });
+      } else if (!parent || node(doc, parent).kind !== "frame") throw new ToolError("Import into a frame or a new page.");
+      if (!parent) throw new ToolError("No destination frame.");
+      const created: Id[] = [];
+      ops.push(...draftOps(ids, drafts, parent, madePage ? "a0" : indexAt(doc, parent, a.after), created, madePage ? null : nextIndex(doc, parent, a.after)));
+      return { label: "Import HTML", ops, reply: `${madePage ? `Created page ${madePage}.\n` : ""}Created ${created.length} nodes: ${created.join(", ")}.\n${warnings.map((w) => `Warning: ${w}`).join("\n")}` };
+    },
+  }),
+
   replace_html: tool({
     description:
       "Rewrite a layer as HTML, in the form write_html reads (layer_html gives it). The layer becomes what the HTML " +

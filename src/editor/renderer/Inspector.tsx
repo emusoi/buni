@@ -25,7 +25,7 @@ const SHADOWS: [string, string][] = [
 const TYPED = new Set([
   "fontFamily", "fontWeight", "fontSize", "lineHeight", "letterSpacing", "textAlign", "color",
   "display", "flexDirection", "gap", "padding", "alignItems", "justifyContent", "gridTemplateColumns", "boxShadow",
-  "width", "height", "maxWidth", "minHeight", "background", "borderRadius", "border", "opacity",
+  "width", "height", "maxWidth", "minHeight", "background", "backgroundColor", "borderRadius", "border", "opacity",
 ]);
 const WEIGHTS: [string, string][] = [["300", "Light"], ["400", "Regular"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"], ["800", "Extra bold"]];
 const FONTS = ["Manrope, sans-serif", "Inter, sans-serif", "system-ui, sans-serif", "Georgia, serif", "\"Iowan Old Style\", serif", "ui-monospace, monospace"];
@@ -283,7 +283,7 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
           const r = await placeImage(file, at);
           if ("id" in r) onAdded(r.id); else onError(r.error);
         }} />
-        <button type="button" className={`add-btn${writing ? " on" : ""}`} title={`Write HTML ${where}`} onClick={() => setWriting((w) => !w)}><Code2 size={14} /></button>
+        <button type="button" className={`add-btn${writing ? " on" : ""}`} title={`Write HTML ${where}`} onClick={() => setWriting((w) => !w)} aria-label="Write HTML"><Code2 size={14} /><span>Code</span></button>
         {Object.keys(doc.shared).length > 0 && (
           <select
             className="add-component"
@@ -678,6 +678,7 @@ export function Inspector({ doc, node, also = [], root, preview, page, onJump, o
           <textarea
             key={`${node.id}:${node.text}`}
             className="field text"
+            aria-label="Text content"
             defaultValue={node.text}
             rows={Math.min(8, Math.max(2, Math.ceil(node.text.length / 34)))}
             onBlur={(e) => {
@@ -765,7 +766,7 @@ export function Inspector({ doc, node, also = [], root, preview, page, onJump, o
         </div>
       </Group>
       <Group title="Fill and shape">
-        <div className="prow"><ColorField doc={doc} value={st.background ?? ""} onSave={(v) => setStyle("background", v)} /></div>
+        <div className="prow"><ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} /></div>
         <div className="prow">
           <Num prefix="◜" title="Corner radius" value={st.borderRadius ?? ""} onSave={(v) => setStyle("borderRadius", v)} />
           <Num prefix="α" title="Opacity, 0 to 1" value={st.opacity ?? ""} onSave={(v) => setStyle("opacity", v)} />

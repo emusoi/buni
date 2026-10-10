@@ -22,7 +22,7 @@ export interface SettleResult {
 
 /** Tools a person can run from the window; everything else stays with agents. */
 export const EDIT_TOOLS = [
-  "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "set_variant", "write_html", "create_page",
+  "import_html", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "set_variant", "write_html", "create_page",
   "make_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "decide", "drop_decision", "comment", "merge_components", "delete_component", "rename_component",
   "bind", "set_motion", "connect", "disconnect", "place_page", "set_flow", "set_screen",
@@ -38,6 +38,8 @@ export interface EditResult {
 
 /** The only bridge between the sandboxed window and the file. */
 export interface BuniApi {
+  /** Read a page, stylesheet or image for the static HTML picker, without browser credentials. */
+  readImportResource?(url: string, pageUrl: string): Promise<import("./import-resource.ts").ImportResource>;
   /** The open file, or undefined on the home screen. */
   snapshot(): Promise<Snapshot | undefined>;
   onChange(fn: (u: SnapshotUpdate) => void): () => void;

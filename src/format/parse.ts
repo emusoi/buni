@@ -1071,6 +1071,7 @@ function checkRefs(doc: Doc, r: Reader): void {
     for (const [k, v] of Object.entries(style)) {
       if (!STYLE_KEY.test(k)) r.fail(join(path, k), "a style property is a CSS name (letters, digits and -) or a --custom-property");
       else if (UNSAFE_CSS.test(v)) r.fail(join(path, k), CSS_MESSAGE);
+      if (v.includes("asset:")) for (const match of v.matchAll(/url\(\s*["']?asset:([a-zA-Z0-9_-]+)["']?\s*\)/g)) if (!attachments[match[1]!]) r.fail(join(path, k), `attachment "${match[1]}" does not exist`);
     }
   };
   const checkAt = (at: Record<string, Style> | undefined, path: string) => {

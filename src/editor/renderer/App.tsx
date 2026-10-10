@@ -1,3 +1,4 @@
+import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, type Doc, type Id, type Node } from "buni/format/doc.ts";
@@ -374,6 +375,7 @@ export function App({ snap }: { snap: Snapshot }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  const [importingHtml, setImportingHtml] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [health, setHealth] = useState(false);
   useEffect(() => {
@@ -603,6 +605,7 @@ export function App({ snap }: { snap: Snapshot }) {
             <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
           ))}
         </button>
+        {mode === "screens" && <button type="button" className="bar-btn ghost" onClick={() => setImportingHtml(true)}>Import HTML</button>}
         <History onToast={setToast} />
         <SidebarToggle side="right" open={panelOpen} onToggle={togglePanel} hint="⌘\\ hides or shows both panels" />
         {activePage && (
@@ -766,7 +769,7 @@ export function App({ snap }: { snap: Snapshot }) {
       <main className="main">
         <div className="workspace" style={{ gridTemplateColumns: panelOpen ? `minmax(0, 1fr) ${panelWidth}px` : "minmax(0, 1fr)" }}>
           {!system && pages.length === 0 && Object.keys(doc.shared).length === 0 ? (
-            <Start onBlank={() => void addPage()} mcpUrl={snap.mcpUrl} onToast={setToast} onSystem={() => goMode("system")} />
+            <Start onImport={() => setImportingHtml(true)} onBlank={() => void addPage()} mcpUrl={snap.mcpUrl} onToast={setToast} onSystem={() => goMode("system")} />
           ) : shownJourney ? (
             <Journey doc={doc} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={openPage} />
           ) : system ? (
@@ -860,6 +863,7 @@ export function App({ snap }: { snap: Snapshot }) {
           }}
         />
       )}
+      {importingHtml && <ImportHtml at={selNode?.kind === "frame" ? { parent: selNode.id } : selNode?.parent ? { parent: selNode.parent, after: selNode.id } : frame ? { parent: frame.id } : undefined} onClose={() => setImportingHtml(false)} onImported={(page, node, message) => { setImportingHtml(false); if (page) openPage(page); if (node) setSelected(node); setToast(message); }} />}
       {keysShown && <Shortcuts onClose={() => setKeysShown(false)} />}
     </div>
   );

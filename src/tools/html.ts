@@ -498,11 +498,17 @@ export function motionCss(doc: Doc): string {
   return `@media (prefers-reduced-motion: no-preference) {\n${frames}${rules}}\n`;
 }
 
+/** CSS images stay in attachments rather than being repeated as base64 in layer styles. */
+function assetCss(doc: Doc, css: string, prefix = ""): string {
+  if (!css.includes("asset:")) return css;
+  return css.replace(/url\(\s*["']?asset:([a-zA-Z0-9_-]+)["']?\s*\)/g, (_, id: string) => `url(${JSON.stringify(prefix + (doc.attachments[id]?.path ?? ""))})`);
+}
+
 /** One page as HTML plus the CSS it needs, e.g. for the Code tab. */
 export function renderPage(doc: Doc, pageId: Id, opts: RenderOptions = {}): { html: string; css: string } {
   const renderer = new Renderer(doc, pageId, opts);
   const r = renderer.render();
-  return { html: r.html, css: tokensCss(doc) + sharedCss(doc, renderer.components) + r.css };
+  return { html: r.html, css: assetCss(doc, tokensCss(doc) + sharedCss(doc, renderer.components) + r.css, opts.assetPrefix) };
 }
 
 /** One layer of a page on its own, as it looks there: a copy the components view shows next to the components. */
@@ -511,7 +517,7 @@ export function renderLayer(doc: Doc, pageId: Id, nodeId: Id): { html: string; c
   if (!n) throw new Error(`layer "${nodeId}" does not exist`);
   const renderer = new Renderer(doc, pageId, {});
   const r = renderer.layer(n);
-  return { html: r.html, css: tokensCss(doc) + sharedCss(doc, renderer.components) + r.css };
+  return { html: r.html, css: assetCss(doc, tokensCss(doc) + sharedCss(doc, renderer.components) + r.css) };
 }
 
 /** One component's source tree on its own, as drawn on its canvas board. */
@@ -521,7 +527,7 @@ export function renderComponent(doc: Doc, sharedId: Id): { html: string; css: st
   const renderer = new Renderer(doc, "", {});
   const html = renderer.node(root, 0);
   renderer.components.add(sharedId);
-  return { html, css: tokensCss(doc) + sharedCss(doc, renderer.components) };
+  return { html, css: assetCss(doc, tokensCss(doc) + sharedCss(doc, renderer.components)) };
 }
 
 /**
@@ -643,9 +649,9 @@ export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
       ].join("\n"),
     );
   }
-  files.set("styles/tokens.css", fontFaces(doc, font) + tokensCss(doc));
-  files.set("styles/shared.css", sharedCss(doc) + motionCss(doc));
-  files.set("styles/pages.css", pages);
+  files.set("styles/tokens.css", assetCss(doc, fontFaces(doc, font) + tokensCss(doc), "../"));
+  files.set("styles/shared.css", assetCss(doc, sharedCss(doc) + motionCss(doc), "../"));
+  files.set("styles/pages.css", assetCss(doc, pages, "../"));
   return files;
 }
 

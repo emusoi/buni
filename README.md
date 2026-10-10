@@ -120,6 +120,14 @@ Donne Martin ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). The cr
 the commands of [Impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus (MIT). The embedded fonts come from
 [Fontsource](https://fontsource.org) under the SIL Open Font License; see [FONT-LICENSES.md](FONT-LICENSES.md).
 
+### Import existing HTML
+
+In the browser editor, choose **Import HTML**. Paste a fragment or full document, choose an HTML file with its stylesheets and images, or open a page URL. Click a rendered element and use the parent breadcrumbs to choose a larger section. Import into the current frame or a new page; the import is one undoable edit.
+
+The importer resolves class styles at the preview width and creates editable layout, text, SVG and image layers. Images are stored once as attachments, including CSS background images. It captures the static HTML returned by a URL, without running scripts or sending browser cookies. Pages that need JavaScript or sign-in need their rendered HTML supplied instead. Media queries are resolved at the chosen width; matching fonts must be available in Buni or on the computer.
+
+Use **Source file** and **Symbol or component** to connect the selection to its implementation. HTML can also provide `data-source-file="src/OrderCard.tsx"`, `data-source-symbol="OrderCard"`, or a JSON `data-buni-sources` array. The URL and selected element's selector are kept automatically for URL imports. **Source files** is also available when editing layers, components, system parts, plan items and agents by hand; agents use `set_sources` and read the context from `read_tree`, `get_node` or `read_context`.
+
 ## License
 
 [Apache 2.0](LICENSE).

@@ -137,6 +137,7 @@ function pickFile(): Promise<void> {
 }
 
 const api: BuniApi = {
+  readImportResource: (url, pageUrl) => call("readImportResource", url, pageUrl),
   snapshot: () => {
     if (!watching || firstServed) return fetchSnapshot();
     firstServed = true;
