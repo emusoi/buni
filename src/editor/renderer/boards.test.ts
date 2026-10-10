@@ -4,7 +4,7 @@ import type { Doc, Node } from "buni/format/doc.ts";
 import { parseDoc } from "buni/format/parse.ts";
 import { applyChange, type Op } from "buni/oplog/oplog.ts";
 import { pageWindow } from "./sidebar.ts";
-import { touchedBoards, previewWidth, previewSize, boardAt, arrows } from "./Canvas.tsx";
+import { touchedBoards, previewWidth, previewSize, boardAt, arrows, nearbyBoards } from "./Canvas.tsx";
 
 const base = (() => {
   const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/portal.buni")), "utf8"));
@@ -74,4 +74,19 @@ test("a thousand-page sidebar mounts only its visible rows and overscan", () => 
   expect(pageWindow(1000, 28000, 560)).toEqual({ start: 994, end: 1000 });
   expect(pageWindow(1000, -100, 560)).toEqual({ start: 0, end: 23 });
   expect(pageWindow(0, 0, 560)).toEqual({ start: 0, end: 0 });
+});
+
+
+test("canvas boards load only inside the detail or overview drawing buffer", () => {
+  const boxes = new Map([
+    ["visible", { x: -50, y: 10, width: 100, height: 100 }],
+    ["next", { x: 150, y: 10, width: 100, height: 100 }],
+    ["distant", { x: 300, y: 10, width: 100, height: 100 }],
+    ["below", { x: 10, y: 200, width: 100, height: 100 }],
+  ]);
+  const size = { width: 100, height: 100 };
+  expect(nearbyBoards(boxes, { x: 0, y: 0, zoom: 1 }, size)).toEqual(new Set(["visible", "next"]));
+  expect(nearbyBoards(boxes, { x: -200, y: 0, zoom: 1 }, size)).toEqual(new Set(["next", "distant"]));
+  // The overview's bitmap has a wider buffer, in screen pixels at its own scale.
+  expect(nearbyBoards(boxes, { x: 270, y: 0, zoom: 0.1 }, size)).toEqual(new Set(["visible", "next", "below"]));
 });

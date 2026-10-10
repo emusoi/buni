@@ -659,6 +659,17 @@ export function boardAt(boxes: ReadonlyMap<Id, BoardRect>, point: Point): Id | u
   return found;
 }
 
+/** Only boards inside the drawing buffer need React state or a browsing context. */
+export function nearbyBoards(boxes: ReadonlyMap<Id, BoardRect>, view: Point & { zoom: number }, size: { width: number; height: number }): Set<Id> {
+  const pad = view.zoom < FAR ? OVERVIEW_PAD : 64;
+  const near = new Set<Id>();
+  for (const [id, b] of boxes) {
+    if (b.x * view.zoom + view.x < size.width + pad && (b.x + b.width) * view.zoom + view.x > -pad
+      && b.y * view.zoom + view.y < size.height + pad && (b.y + b.height) * view.zoom + view.y > -pad) near.add(id);
+  }
+  return near;
+}
+
 /** Every page on one big canvas, where it was placed; drag a page by its name, wheel pans, pinch or ⌘-wheel zooms. */
 export function Canvas(props: Props) {
   // Opens with room on the left for the rows' titles.
@@ -856,7 +867,7 @@ export function Canvas(props: Props) {
       height: heights.current.get(board.id) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400),
     }];
   })), [pages, props.doc, props.viewAt, at, loads]);
-  const nearby = useMemo(() => new Set([...boxes].filter(([, b]) => b.x * view.zoom + view.x < canvasSize.width + 600 && (b.x + b.width) * view.zoom + view.x > -600 && b.y * view.zoom + view.y < canvasSize.height + 600 && (b.y + b.height) * view.zoom + view.y > -600).map(([id]) => id)), [boxes, view, canvasSize]);
+  const nearby = useMemo(() => nearbyBoards(boxes, view, canvasSize), [boxes, view, canvasSize]);
   useLayoutEffect(() => setLinks(arrows(props.doc, boxes, boards.current)), [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
   const sets = useMemo(() => {
@@ -1128,7 +1139,7 @@ export function Canvas(props: Props) {
             <span className="set-label">◆ {s.name} · {s.count} {s.variants ? "variants" : "in this set"}</span>
           </div>
         ))}
-        {[...pages, ...Object.values(props.doc.shared)].map((p) => (
+        {[...pages, ...Object.values(props.doc.shared)].filter((p) => nearby.has(p.id) || p.id === props.activePage || retained.has(p.id) || p.id === dragging?.page).map((p) => (
           <Artboard
             key={p.id}
             doc={props.doc}
