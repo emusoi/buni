@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
+import { memo, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { fontFaces, fontSlug, renderComponent, renderPage } from "buni/tools/html.ts";
@@ -999,10 +999,11 @@ export function Canvas(props: Props) {
     }, 200);
   };
 
-  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
+  const onWheel = useEffectEvent((e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       zoomingNow();
-      const rect = e.currentTarget.getBoundingClientRect();
+      const rect = box.current?.getBoundingClientRect();
+      if (!rect) return;
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       updateView((v) => {
@@ -1012,7 +1013,15 @@ export function Canvas(props: Props) {
     } else {
       updateView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
     }
-  };
+  });
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    // React's wheel listener is passive: the browser would also zoom the whole page on a pinch.
+    const wheel = (event: WheelEvent) => { event.preventDefault(); onWheel(event); };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  }, []);
 
   /** Shows the given boards whole, under the toolbar, at no more than 100%. */
   const fitTo = (ids: readonly Id[]) => {
@@ -1063,7 +1072,6 @@ export function Canvas(props: Props) {
     <div
       ref={box}
       className={`canvas${panning ? " panning" : ""}${spaceHeld ? " space" : ""}${redraw ? " redraw" : ""}${view.zoom < FAR ? " far" : ""}`}
-      onWheel={onWheel}
       // Capture phase, so Space-drag pans even when it starts over a page.
       onPointerDownCapture={(e) => {
         const onBackground = e.target === e.currentTarget || e.target === world.current;
