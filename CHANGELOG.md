@@ -3,8 +3,11 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
-## Unreleased
+## 0.4.2 — 2026-10-11
 
+- Large designs retain less memory when parsed, and the editor releases its startup design snapshot after loading.
+- Offscreen canvas boards release their mounted state and documents; distant previews decode at bounded sizes.
+- Canvas zoom gestures update the camera directly, keeping React updates out of the active gesture.
 - Agents can import static HTML pages and selected sections with `import_html_page` through CLI or MCP,
   resolving CSS and images while retaining source references in one undoable design edit.
 - Empty designs open directly on the canvas; the introductory prompt screen is removed.
