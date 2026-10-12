@@ -3,6 +3,10 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- Parallel standalone CLI calls to the same design preserve each other's edits and activity, including calls through symlinks.
+
 ## 0.4.2 — 2026-10-11
 
 - Large designs retain less memory when parsed, and the editor releases its startup design snapshot after loading.

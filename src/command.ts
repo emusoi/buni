@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 // The buni command line: the design tools for any coding agent that can run a shell.
 import { readFileSync, rmSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, rmdir, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -92,6 +93,8 @@ Rules that save retries:
 - If a call is refused, the reply says which rule it broke; fix the arguments and call again.
 
 Pass --as YOUR_NAME on every call so the person sees who is working where.
+Parallel local calls to the same file wait their turn, reading the latest design before editing.
+If a process is killed while writing, its FILE.buni.lock directory may remain: remove it only after confirming no call is still writing.
 Run "buni tools" for every tool and its arguments.
 
 Workflow for a bigger design:
@@ -223,9 +226,29 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
     return screenshotPng(resolve(file), page).then((png) => ({ ok: true, text: "", png: Buffer.from(png, "base64") }), (e: unknown) => ({ ok: false, text: e instanceof Error ? e.message : String(e) }));
   }
   if (!isTool(name)) return { ok: false, text: `Unknown tool "${name}". Run "buni tools".` };
-  const ws = await Workspace.open(file);
-  const r = await ws.call(as, name, args);
-  return { ok: r.ok, text: r.reply };
+  file = await realpath(file);
+  // Atomic saves alone still lose edits: hold the lock from the first read through the activity write.
+  const lock = `${file}.lock`;
+  const deadline = performance.now() + 30_000;
+  for (;;) {
+    try {
+      await mkdir(lock);
+      break;
+    } catch (e) {
+      if (!(e instanceof Error) || !("code" in e) || e.code !== "EEXIST") throw e;
+      if (performance.now() >= deadline) {
+        throw new Error(`Timed out waiting for ${lock}. Retry when the other call finishes. If a writer was killed, remove this lock directory only after confirming no call is still writing.`);
+      }
+      await delay(25);
+    }
+  }
+  try {
+    const ws = await Workspace.open(file);
+    const r = await ws.call(as, name, args);
+    return { ok: r.ok, text: r.reply };
+  } finally {
+    await rmdir(lock);
+  }
 }
 
 /** `context` arguments: what to focus on, and --target ratatui for one build of a terminal client designed several ways. */
