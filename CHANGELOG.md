@@ -3,7 +3,7 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
-## Unreleased
+## 0.4.3 — 2026-10-11
 
 - Parallel standalone CLI calls to the same design preserve each other's edits and activity, including calls through symlinks.
 
