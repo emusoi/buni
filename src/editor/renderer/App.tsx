@@ -27,6 +27,7 @@ import type { SystemSelection, SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
+import { ProjectSwitch } from "./ProjectSwitch.tsx";
 
 declare global {
   interface Window {
@@ -588,7 +589,7 @@ export function App({ snap }: { snap: Snapshot }) {
         <nav className="crumbs" aria-label="Where you are">
           <button type="button" onClick={() => void window.buni.close()} title="All designs"><ArrowLeft size={14} /> Designs</button>
           <span aria-hidden="true">/</span>
-          <b title={snap.path}>{fileName.replace(/\.buni$/, "")}</b>
+          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} />
         </nav>
         <FileTabs />
         <div className="modes-bar" role="tablist" aria-label="Mode">

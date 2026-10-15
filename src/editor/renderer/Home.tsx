@@ -152,8 +152,8 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
               <span className="name">Example</span>
             </button>
           </div>
-          {/* One folder is no choice: folders show when designs live in several. */}
-          {folders.length > 1 && <div className="section-label">Folders</div>}
+          {/* A project is a folder of designs; one is no choice, so projects show when designs live in several. */}
+          {folders.length > 1 && <div className="section-label">Projects</div>}
           {folders.length > 1 && folders.map((f) => {
             const Icon = f === folder ? FolderOpen : Folder;
             // "designs" alone repeats across projects, so each folder reads as its parent, then itself.
