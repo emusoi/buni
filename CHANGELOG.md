@@ -3,7 +3,7 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
-## Unreleased
+## 0.4.4 — 2026-10-15
 
 - Projects: the designs in one folder are a project. The file name in the editor's top bar lists the project's other
   designs and starts a new one beside them; Home lists projects, including folders nested up to three deep.
