@@ -1359,7 +1359,11 @@ svg { flex-shrink: 0; }
 .project-switch { position: relative; min-width: 0; -webkit-app-region: no-drag; }
 .project-switch > button { padding: 0 6px 0 8px; }
 .project-menu { left: 0; right: auto; width: 280px; }
-.project-menu .menu-chat.on { background: var(--hover); }
+/* The menu sits in .crumbs; its rows are menu rows, not crumb buttons. */
+.crumbs .project-menu .menu-chat { display: flex; align-items: flex-start; width: 100%; height: auto; padding: 7px 10px; text-align: left; color: var(--ink); }
+.crumbs .project-menu .menu-chat.preset { flex-direction: row; align-items: center; color: var(--ink-2); }
+.project-menu .menu-chat.preset .menu-name { display: inline-flex; align-items: center; gap: 6px; }
+.project-menu .menu-chat.on { background: var(--hover); opacity: 1; }
 .project-menu .rail-empty { margin: 4px 10px 8px; }
 .modes-bar { display: flex; gap: 2px; margin: 0 auto; padding: 3px; border-radius: 8px; background: var(--hover); -webkit-app-region: no-drag; }
 .modes-bar button { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--ink-2); font-size: 12.5px; font-weight: 600; }

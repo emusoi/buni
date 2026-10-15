@@ -3,7 +3,7 @@
 import { readFileSync, rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, rmdir, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -87,6 +87,9 @@ Rules that save retries:
   Tie pages in with place_page {page, client}, connect {…, endpoint}, and bind {node, endpoint, field}. Read buni skills system-design, api-design and database-design first.
 - Why and what's open: set_phase, set_requirement, serve {requirement, id}; set_question (options, assumptions), decide_question;
   set_role, set_access {call, who, roles, rule}; failure on link_parts, ifDown on set_part, ifFails on trace steps; review {id, state}, discuss. Read buni skills design-process.
+- A big app is a project: one folder with a .buni file per section (checkout.buni, account.buni, admin.buni), made with
+  buni new FOLDER/SECTION.buni. Work on the section asked for; the person switches between a project's files from the
+  file name in the editor's top bar.
 - Big systems split across files: buni split FILE part:ID NEW.buni, or import_file {path}; imported parts, shapes and calls can be used, and are edited in their own file.
 - Before building any piece, read its brief: buni context FILE part:ID (or page:, flow:, endpoint:, table:); with no focus, the whole system.
 - Name components "Group / Name" (e.g. "Buttons / Primary"). library_report finds unused and near-duplicate ones; merge_components and rename_component tidy them.
@@ -486,7 +489,8 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       return new Promise<number>(() => {});
     }
     case "new":
-      // wx: never over an existing design.
+      // wx: never over an existing design. Its folder is made, so a project's section starts in a folder of its own.
+      await mkdir(dirname(file), { recursive: true });
       await writeFile(file, serializeDoc(emptyDoc()), { encoding: "utf8", flag: "wx" });
       console.log(`Created ${file}. Next: buni call ${file} create_page '{"name":"Home","route":"/"}'`);
       return 0;

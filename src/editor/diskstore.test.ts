@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DiskStore } from "./store.ts";
 
-test("local designs are files in place: read, written whole, listed one folder down, never moved or removed by folder", async () => {
+test("local designs are files in place: read, written whole, listed in the folders below, never moved or removed by folder", async () => {
   const root = await mkdtemp(join(tmpdir(), "buni-disk-"));
   await mkdir(join(root, "app"));
   await writeFile(join(root, "app", "a.buni"), "{}");
@@ -14,6 +14,12 @@ test("local designs are files in place: read, written whole, listed one folder d
   await store.write("/designs/app/b.buni", '{"b":1}');
   expect(await readFile(join(root, "app", "b.buni"), "utf8")).toBe('{"b":1}');
   expect((await store.list("/designs")).map((f) => f.path).sort()).toEqual(["/designs/app/a.buni", "/designs/app/b.buni"]);
+  // A project nests its sections; files at the root itself and hidden folders stay out.
+  await mkdir(join(root, "app", "checkout", ".git"), { recursive: true });
+  await writeFile(join(root, "app", "checkout", "pay.buni"), "{}");
+  await writeFile(join(root, "app", "checkout", ".git", "x.buni"), "{}");
+  await writeFile(join(root, "loose.buni"), "{}");
+  expect((await store.list("/designs")).map((f) => f.path).sort()).toEqual(["/designs/app/a.buni", "/designs/app/b.buni", "/designs/app/checkout/pay.buni"]);
   // Nothing outside the folder, however the path is spelled.
   await expect(store.read("/designs/../secret")).rejects.toThrow("outside your designs");
   await expect(store.read("/elsewhere/app/a.buni")).rejects.toThrow("outside your designs");

@@ -77,19 +77,26 @@ export class DiskStore implements EditorStore {
     throw new Error("Local designs live in your own folders: delete them in Finder.");
   }
 
-  /** The .buni files one folder down from the root, newest first. */
+  /** The .buni files in the folders below the root, newest first; a project nests its sections in folders of their own. */
   async list(dir: string): Promise<{ path: string; text: string; modified: Date }[]> {
     if (dir !== this.virtual) return [];
     const out: { path: string; text: string; modified: Date }[] = [];
-    for (const folder of await readdir(this.root, { withFileTypes: true }).catch(() => [])) {
-      if (!folder.isDirectory() || folder.name.startsWith(".") || folder.name === "node_modules") continue;
-      for (const f of await readdir(join(this.root, folder.name)).catch(() => [])) {
-        if (!f.endsWith(".buni")) continue;
-        const real = join(this.root, folder.name, f);
+    // ponytail: three folders deep keeps a repo-sized root quick; deeper projects need a manifest or a walk with a budget.
+    const walk = async (rel: string, depth: number): Promise<void> => {
+      for (const e of await readdir(join(this.root, rel), { withFileTypes: true }).catch(() => [])) {
+        if (e.name.startsWith(".") || e.name === "node_modules") continue;
+        const sub = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          if (depth < 3) await walk(sub, depth + 1);
+          continue;
+        }
+        if (!rel || !e.name.endsWith(".buni")) continue;
+        const real = join(this.root, sub);
         const [text, info] = await Promise.all([readFile(real, "utf8"), stat(real)]).catch(() => [undefined, undefined] as const);
-        if (text !== undefined && info) out.push({ path: `${this.virtual}/${folder.name}/${f}`, text, modified: info.mtime });
+        if (text !== undefined && info) out.push({ path: `${this.virtual}/${sub}`, text, modified: info.mtime });
       }
-    }
+    };
+    await walk("", 0);
     return out.sort((a, b) => b.modified.getTime() - a.modified.getTime());
   }
 }

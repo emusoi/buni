@@ -3,6 +3,11 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- Projects: the designs in one folder are a project. The file name in the editor's top bar lists the project's other
+  designs and starts a new one beside them; Home lists projects, including folders nested up to three deep.
+
 ## 0.4.3 — 2026-10-11
 
 - Parallel standalone CLI calls to the same design preserve each other's edits and activity, including calls through symlinks.

@@ -135,14 +135,15 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
    * A file name the person typed, as a path of its own that isn't taken yet. Each file gets its own
    * folder, so the images beside it never collide with another file's.
    */
-  async function freePath(name: string, dir: string): Promise<string> {
+  async function freePath(name: string, dir: string, beside?: string): Promise<string> {
     // Letters, digits, spaces and dashes only: a name never reaches another folder.
     const stem = name.trim().replace(/\.buni$/, "").replace(/[^\w -]+/g, " ").replace(/\s+/g, " ").trim() || "Untitled";
     if (LOCAL_PATH) {
-      // On disk, a new design goes beside the one opened, in the folder it already shares with others.
+      // On disk, a new design joins the project of the one open (else the one buni started with), in the folder they share.
       const files = new Set((await store.list(dir)).map((f) => f.path));
+      const near = beside && files.has(beside) ? beside : LOCAL_PATH;
       for (let n = 1; ; n++) {
-        const p = join(dirname(LOCAL_PATH), `${n === 1 ? stem : `${stem} ${n}`}.buni`);
+        const p = join(dirname(near), `${n === 1 ? stem : `${stem} ${n}`}.buni`);
         if (!files.has(p)) return p;
       }
     }
@@ -270,8 +271,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         return b64 === undefined ? undefined : Uint8Array.fromBase64(b64);
       }, dir);
     },
-    create: async (_file, name) => {
-      const path = await freePath(str(name, "create"), dir);
+    create: async (file, name) => {
+      const path = await freePath(str(name, "create"), dir, file);
       await store.write(path, serializeDoc(emptyDoc()));
       return path;
     },
