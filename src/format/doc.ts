@@ -1213,6 +1213,20 @@ export function withUseLinks(doc: Doc): Doc {
   return { ...doc, connections };
 }
 
+/**
+ * `doc` with the other designs of its project alongside, as one app to walk and play: their pages, layers,
+ * components, links, flows and attachments, this design's own winning. Flows and Play cross from one design into the
+ * next; nothing of it is written, and their pages show in this design's tokens.
+ */
+export function withProject(doc: Doc, others: readonly Doc[]): Doc {
+  if (!others.length) return doc;
+  const merge = <K extends "pages" | "nodes" | "shared" | "connections" | "flows" | "journeys" | "attachments">(k: K): Doc[K] =>
+    Object.assign({}, ...others.map((o) => o[k]), doc[k]);
+  const elsewhere = { ...doc.elsewhere };
+  for (const o of others) for (const id of Object.keys(o.pages)) delete elsewhere[id];
+  return { ...doc, pages: merge("pages"), nodes: merge("nodes"), shared: merge("shared"), connections: merge("connections"), flows: merge("flows"), journeys: merge("journeys"), attachments: merge("attachments"), elsewhere };
+}
+
 /** A page's name, here or in an imported file a link reaches. */
 export function pageName(doc: Doc, id: Id): string {
   return doc.pages[id]?.name ?? doc.elsewhere?.[id]?.name ?? id;

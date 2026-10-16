@@ -1,7 +1,7 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, FolderOpen, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
-import { childrenOf, pageLabel, pagesInOrder, walkFlow, type Doc, type Id, type Node } from "buni/format/doc.ts";
+import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
@@ -425,6 +425,11 @@ export function App({ snap }: { snap: Snapshot }) {
   const [project, setProject] = useState<HomeFile[]>([]);
   const [switching, setSwitching] = useState(false);
   useEffect(() => { void window.buni.home().then((all) => setProject(siblings(all, snap.path))); }, [snap.path]);
+  // The whole app, this design and the project's others, for walking and playing flows that cross from one into the next.
+  const app = useMemo(() => withProject(doc, project.filter((f) => f.path !== snap.path).map((f) => f.doc)), [doc, project, snap.path]);
+  const fileOfPage = useMemo(() => new Map(project.flatMap((f) => Object.keys(f.doc.pages).filter((id) => !snap.view.pages[id]).map((id) => [id, f.path] as const))), [project, snap.view.pages]);
+  /** Opens a page here, or in the design of the project it belongs to. */
+  const showPage = (page: Id) => { const file = fileOfPage.get(page); if (file && !snap.view.pages[page]) openAt(file, page); else openPage(page); };
   /** Opens another design of the project, at one of its pages if given. */
   const openAt = (path: string, page?: Id) => {
     if (page) try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page, play: false })); } catch { /* opens at its start */ }
@@ -835,13 +840,13 @@ export function App({ snap }: { snap: Snapshot }) {
           {flows.map((f) => renaming === f.id ? (
             <form key={f.id} className="row rename" onSubmit={(e) => { e.preventDefault(); const name = new FormData(e.currentTarget).get("name"); if (typeof name === "string" && name.trim()) void window.buni.edit("set_flow", { flow: f.id, name: name.trim() }).then((r) => !r.ok && setToast(r.reply)); setRenaming(undefined); }}>
               <Workflow size={16} strokeWidth={1.75} />
-              <input name="name" className="field" defaultValue={f.name} autoFocus aria-label="Flow name" onBlur={(e) => e.currentTarget.form?.requestSubmit()} onKeyDown={(e) => e.key === "Escape" && setRenaming(undefined)} />
+              <input name="name" className="field" defaultValue={f.name} autoFocus onFocus={(e) => e.currentTarget.select()} aria-label="Flow name" onBlur={(e) => e.currentTarget.form?.requestSubmit()} onKeyDown={(e) => e.key === "Escape" && setRenaming(undefined)} />
             </form>
           ) : (
             <button type="button" key={f.id} className={`row flow-row${f.id === shownJourney ? " active" : ""}`} onClick={() => setJourney(f.id)} onDoubleClick={() => setRenaming(f.id)} title="Double-click to rename">
               <Workflow size={16} strokeWidth={1.75} />
               <span className="name">{f.name}</span>
-              <span className="meta">{walkFlow(doc, f.start).pages.length} screens</span>
+              <span className="meta">{walkFlow(app, f.start).pages.length} screens</span>
               <span className="row-x" role="button" aria-label={`Remove flow ${f.name}`} title="Remove this flow (the pages stay)" onClick={(e) => { e.stopPropagation(); if (shownJourney === f.id) setJourney(undefined); void window.buni.edit("set_flow", { flow: f.id, remove: true }).then((r) => setToast(r.reply)); }}><X size={12} /></span>
             </button>
           ))}
@@ -888,7 +893,7 @@ export function App({ snap }: { snap: Snapshot }) {
       <main className="main">
         <div className="workspace" style={{ gridTemplateColumns: panelOpen ? `minmax(0, 1fr) ${panelWidth}px` : "minmax(0, 1fr)" }}>
           {shownJourney ? (
-            <Journey doc={doc} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={openPage} />
+            <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={showPage} />
           ) : system ? (
             <OwnersContext.Provider value={snap.owners}><SystemScreen doc={snap.system} fileName={fileName} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} onView={setSystem} /></OwnersContext.Provider>
           ) : (
@@ -976,7 +981,7 @@ export function App({ snap }: { snap: Snapshot }) {
       ])} />}
       {play && doc.pages[play.page] && (
         <Play
-          doc={doc}
+          doc={app}
           dir={snap.dir}
           start={play.page}
           {...(play.flow ? { flow: play.flow } : {})}

@@ -111,7 +111,8 @@ A big app is a project: one folder of .buni files, a core and its sections.
   kept, and the file imports it; then start the next section beside it and import core.buni there too.
 - Start each file with buni new FOLDER/NAME.buni. Work only in the file asked for; read the others with buni tree.
 - Sections link to each other: import the other section (import_file; two sections may import each other), then
-  connect {node, to} with the other file's page id. Play follows it into that file; a flow stays within one file.
+  connect {node, to} with the other file's page id. Play follows it into that file; in the editor a flow walks on
+  through the project's designs (the CLI's briefs stop at the file's edge).
 - A core's nav links once: connect {node, page: COMPONENT_ID, to} on its layer holds on every use of the component,
   in every section that imports the core (import the sections the links go to). A page's own link wins there.
 - Inside a section, every screen and state is a page; name pages "NN · Name" so the sitemap reads in order, and

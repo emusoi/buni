@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emptyDoc, walkFlow } from "../format/doc.ts";
+import { emptyDoc, walkFlow, withProject } from "../format/doc.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { exportSite, renderPage } from "./html.ts";
 import { embeddedFont } from "./fontdata.ts";
@@ -147,4 +147,31 @@ test("a core's nav links once, on every use: each section's pages follow it, and
   expect(Object.keys(site.view().connections)).toEqual([]);
   await ok(site, "connect", { node: link, page: homePage, to: homePage });
   expect(Object.values(site.system().connections).filter((c) => c.page === homePage && c.node === link).map((c) => c.to)).toEqual([homePage]);
+});
+
+test("a flow walks the whole project: from a page here into the next design's pages, and on through their links", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-flow-"));
+  for (const f of ["site.buni", "shop.buni"]) await writeFile(join(dir, f), serializeDoc(emptyDoc()));
+  const ok = async (ws: Workspace, tool: Parameters<Workspace["call"]>[1], args: object) => {
+    const r = await ws.call("pi", tool, args);
+    if (!r.ok) throw new Error(`${tool}: ${r.reply}`);
+    return r.reply;
+  };
+  const page = async (ws: Workspace, name: string, route: string, html: string) => {
+    const reply = await ok(ws, "create_page", { name, route });
+    const [id, frame] = [reply.match(/page (\S+) /)![1]!, reply.match(/root frame (\S+?)[;.]/)![1]!];
+    await ok(ws, "write_html", { parent: frame, html });
+    return id;
+  };
+  const shop = await Workspace.open(join(dir, "shop.buni"));
+  const pay = await page(shop, "Pay", "/pay", "<p>Paid</p>");
+  const boxes = await page(shop, "Boxes", "/boxes", '<a layer-name="Pick">Pick</a>');
+  await ok(shop, "connect", { node: Object.values(shop.view().nodes).find((n) => n.name === "Pick")!.id, to: pay });
+  const site = await Workspace.open(join(dir, "site.buni"));
+  await ok(site, "import_file", { path: "shop.buni" });
+  const home = await page(site, "Home", "/", '<a layer-name="Go">Go</a>');
+  await ok(site, "connect", { node: Object.values(site.view().nodes).find((n) => n.name === "Go")!.id, to: boxes });
+  // On its own, the flow stops where it leaves the design; with the project alongside, it walks on.
+  expect(walkFlow(site.system(), home).pages).toEqual([home]);
+  expect(walkFlow(withProject(site.system(), [shop.system()]), home).pages).toEqual([home, boxes, pay]);
 });

@@ -9,6 +9,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- Flows cross the project: in the editor a flow walks from a page here into the next design's pages, and Play plays
+  it through in place (site → shop → account) rather than opening each file.
 - Switching designs: the sidebar lists the project's designs, one click apart, and ⌘P goes to any of them, or straight
   to a page in one, by a few letters ("shop chec").
 - A component's layer can link on every use (`connect` with the component as `page`; "Link on every use" in the
