@@ -1,12 +1,13 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, pageName, pagesInOrder, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
 import { siblings } from "./ProjectSwitch.tsx";
 import type { HomeFile } from "../api.ts";
+import { NameDialog } from "./Ask.tsx";
 import { OwnersContext } from "./SystemCanvas.tsx";
 import { SmallSizes } from "./SmallSizes.tsx";
 import { Tokens } from "./Tokens.tsx";
@@ -33,6 +34,8 @@ const TYPED = new Set([
 const WEIGHTS: [string, string][] = [["300", "Light"], ["400", "Regular"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"], ["800", "Extra bold"]];
 const FONTS = ["Manrope, sans-serif", "Inter, sans-serif", "system-ui, sans-serif", "Georgia, serif", "\"Iowan Old Style\", serif", "ui-monospace, monospace"];
 /** Starting points for new layers; plain values so they read the same in any design. */
+const TRANSITIONS: [Transition, string][] = [["none", "Appears at once"], ["fade", "Fades in"], ["slide-left", "Slides in from the right"], ["slide-right", "Slides in from the left"]];
+
 /** A text layer the insert bar just added, whose text the person types next. */
 let typeNext: Id | undefined;
 
@@ -64,17 +67,20 @@ function usesOf(doc: Doc, sharedId: Id): number {
 }
 
 /** Text layers inside a component, in order, for per-instance overrides. */
-function textsOf(doc: Doc, root: Id): Node[] {
-  const out: Node[] = [];
-  const walk = (id: Id) => {
-    for (const c of childrenOf(doc, id)) {
-      if (c.kind === "text") out.push(c);
-      walk(c.id);
+function textsOf(doc: Doc, root: Id): { key: string; name: string; text: string }[] {
+  const out: { key: string; name: string; text: string }[] = [];
+  // Into a use of another component too (a card's button): its texts are overridden by path, "use/layer", and read as
+  // that use already shows them.
+  const visit = (n: Node, prefix: string, outer: InstanceNode | undefined, depth: number) => {
+    if (n.kind === "text") out.push({ key: `${prefix}${n.id}`, name: n.name, text: outer?.overrides[n.id]?.text ?? n.text });
+    if (n.kind === "instance" && depth < 4) {
+      const inner = doc.nodes[doc.shared[n.shared]?.root ?? ""];
+      if (inner) visit(inner, `${prefix}${n.id}/`, n, depth + 1);
     }
+    for (const c of childrenOf(doc, n.id)) visit(c, prefix, outer, depth);
   };
   const r = doc.nodes[root];
-  if (r?.kind === "text") out.push(r);
-  walk(root);
+  if (r) visit(r, "", undefined, 0);
   return out;
 }
 
@@ -106,14 +112,14 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
   for (const p of Object.values(doc.elsewhere ?? {})) add(owners[p.id] ?? "another file", p);
   for (const f of project) for (const p of Object.values(f.doc.pages)) if (p.route !== undefined && !doc.elsewhere?.[p.id]) add(`${f.name}.buni`, p, `${f.name}.buni`);
   if (here.length + away.size === 0) return null;
-  const set = async (target: Id) => {
+  const set = async (target: Id, transition: Transition = links[0]?.transition ?? "none") => {
     const file = [...away.values()].flat().find((p) => p.id === target)?.file;
     if (file) {
       const r = await window.buni.edit("import_file", { path: file });
       if (!r.ok) return onError(r.reply);
     }
     const r = target
-      ? await window.buni.edit("connect", { node: node.id, to: target, trigger: "click", transition: "none", durationMs: 0 })
+      ? await window.buni.edit("connect", { node: node.id, to: target, trigger: "click", transition, durationMs: transition === "none" ? 0 : 250 })
       : await window.buni.edit("disconnect", { connections: links.map((c) => c.id) });
     onError(r.ok ? undefined : r.reply);
   };
@@ -126,6 +132,14 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
           {[...away].map(([file, pages]) => <optgroup key={file} label={file}>{pages.map((p) => <option key={p.id} value={p.id}>{p.name}{p.route ? ` · ${p.route}` : ""}</option>)}</optgroup>)}
         </select>
       </label>
+      {/* How the next page comes in, in Play: the canvas shows only where it goes. */}
+      {to && (
+        <label className="select" title="How the page it opens comes in, in Play">
+          <select value={links[0]?.transition ?? "none"} onChange={(e) => { const t = TRANSITIONS.find(([v]) => v === e.target.value)?.[0]; if (t) void set(to, t); }} aria-label="Transition">
+            {TRANSITIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+          </select>
+        </label>
+      )}
     </Group>
   );
 }
@@ -285,14 +299,14 @@ function InstanceSection({ doc, node, onOpen, onError, onSelect, atWidth }: { do
       })()}
       {texts.length > 0 && <div className="group-title sub">Text in this use</div>}
       {texts.map((t) => {
-        const source = t.kind === "text" ? t.text : "";
-        const own = node.overrides[t.id]?.text;
+        const source = t.text;
+        const own = node.overrides[t.key]?.text;
         return (
-          <label key={t.id} className="prop stacked">
+          <label key={t.key} className="prop stacked">
             <span className="prop-name">{t.name}{own !== undefined && <span className="overridden"> · changed</span>}</span>
             <Field
               value={own ?? source}
-              onSave={(v) => void (v === source || v === "" ? run({ node: t.id, reset: true }) : run({ node: t.id, text: v }))}
+              onSave={(v) => void (v === source || v === "" ? run({ node: t.key, reset: true }) : run({ node: t.key, text: v }))}
             />
           </label>
         );
@@ -610,6 +624,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   onOpenElsewhere?: ((page: Id) => void) | undefined;
 }) {
   const [notice, setNotice] = useState<string>();
+  const [namingComponent, setNamingComponent] = useState(false);
   // Design or Code, remembered for next time; a convenience, so a browser that won't store it just starts on Design.
   const [mode, setModeState] = useState<"design" | "code">(() => { try { return localStorage.getItem("buni.inspectorMode") === "code" ? "code" : "design"; } catch { return "design"; } });
   const setMode = (m: "design" | "code") => { setModeState(m); try { localStorage.setItem("buni.inspectorMode", m); } catch { /* not stored */ } };
@@ -867,15 +882,20 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         <button
           type="button"
           className="btn"
-          onClick={async () => {
-            const r = await window.buni.edit("make_component", { node: node.id });
-            const inst = r.reply.match(/instance (\S+) is/)?.[1];
-            if (r.ok && inst) onSelect(inst);
-            setNotice(r.ok ? undefined : r.reply);
-          }}
+          // Named first, as a component is reused by its name ("Cards / Box").
+          onClick={() => setNamingComponent(true)}
         >
           <Component size={13} /> Make component
         </button>
+      )}
+      {namingComponent && (
+        <NameDialog title="Make a component" label="Name" initial={node.name} action="Make component" onClose={() => setNamingComponent(false)} onSubmit={async (name) => {
+          setNamingComponent(false);
+          const r = await window.buni.edit("make_component", { node: node.id, name });
+          const inst = r.reply.match(/instance (\S+) is/)?.[1];
+          if (r.ok && inst) onSelect(inst);
+          setNotice(r.ok ? undefined : r.reply);
+        }} />
       )}
       <button
         type="button"

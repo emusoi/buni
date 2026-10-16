@@ -29,6 +29,8 @@ interface Props {
   onTidy: (at: Map<Id, Point>) => void;
   /** The file each imported page lives in, by id, to name where a link out of this file goes. */
   owners?: Readonly<Record<Id, string>> | undefined;
+  /** Uses of this file's components in the project's other designs, by component, for their boards' counts. */
+  usedElsewhere?: Readonly<Record<Id, number>> | undefined;
   /** A link out of this file was clicked: open its page there. */
   onOpenElsewhere?: ((page: Id) => void) | undefined;
 }
@@ -103,11 +105,14 @@ async function thumbnail(html: string, width: number, height: number, previewWid
 function pickNode(doc: Doc, frame: HTMLIFrameElement | null, x: number, y: number): Id | undefined {
   let el = frame?.contentDocument?.elementFromPoint(x, y)?.closest("[class^='b-']") ?? null;
   const first = el?.classList[0]?.slice(2);
+  // The outermost use under the point: a button inside a card component is part of the card's source, so a click on
+  // the page takes the card, not a layer every card shares.
+  let use: Id | undefined;
   while (el) {
-    for (const c of el.classList) if (c.startsWith("b-") && doc.nodes[c.slice(2)]?.kind === "instance") return unlocked(doc, c.slice(2));
+    for (const c of el.classList) if (c.startsWith("b-") && doc.nodes[c.slice(2)]?.kind === "instance") use = c.slice(2);
     el = el.parentElement?.closest("[class^='b-']") ?? null;
   }
-  return first && unlocked(doc, first);
+  return use ? unlocked(doc, use) : first && unlocked(doc, first);
 }
 
 /**
@@ -824,8 +829,9 @@ export function Canvas(props: Props) {
   const uses = useMemo(() => {
     const n = new Map<Id, number>();
     for (const x of Object.values(props.doc.nodes)) if (x.kind === "instance") n.set(x.shared, (n.get(x.shared) ?? 0) + 1);
+    for (const [id, more] of Object.entries(props.usedElsewhere ?? {})) n.set(id, (n.get(id) ?? 0) + more);
     return n;
-  }, [props.doc.nodes]);
+  }, [props.doc.nodes, props.usedElsewhere]);
   // Laid out again as boards report their heights, so rows keep clear of the tall pages and components above them.
   const saved = useMemo(() => placement(own, heights.current), [own, loads]);
   // An agent's jump chip needs its target document even when the board is offscreen.

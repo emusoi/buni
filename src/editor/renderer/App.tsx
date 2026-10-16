@@ -315,18 +315,19 @@ export function App({ snap }: { snap: Snapshot }) {
     if (select !== undefined) setSelected(select);
     else if (was !== id) setSelected(undefined);
   }, []);
-  // How often the project's other designs place this file's components (a core's); counted when one is opened.
+  // How often the project's other designs place this file's components (a core's): read when the file opens, its
+  // components change in number, or one is opened.
   const [usedElsewhere, setUsedElsewhere] = useState<Record<Id, number>>({});
   useEffect(() => {
-    if (!component || !snap.view.shared[component]) return;
+    if (!Object.keys(snap.view.shared).length) return;
     void window.buni.home().then((all) => {
       const counts: Record<Id, number> = {};
       // Their documents carry this file's own components' layers too; only their own instances count.
       for (const f of siblings(all, snap.path)) if (f.path !== snap.path) for (const n of Object.values(f.doc.nodes)) if (n.kind === "instance" && snap.view.shared[n.shared] && !snap.view.nodes[n.id]) counts[n.shared] = (counts[n.shared] ?? 0) + 1;
       setUsedElsewhere(counts);
     });
-  // Read once per component opened: other designs don't change with this file's edits.
-  }, [component, snap.path]);
+  // Not on every edit: other designs don't change with this file's.
+  }, [component, snap.path, Object.keys(snap.view.shared).length]);
   /** Opens the file a page or component of another file lives in, at it; playing the page, if `play`. */
   const openElsewhere = (page: Id, play = false) => {
     const file = snap.owners[page];
@@ -834,7 +835,7 @@ export function App({ snap }: { snap: Snapshot }) {
                 <ChevronLeft size={14} className="dim" />
                 <span className="name">Pages</span>
               </button>
-              <LibraryPanel doc={doc} path={snap.path} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
+              <LibraryPanel doc={doc} imported={imported} path={snap.path} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
               {compRoot && (
                 <>
                   <div className="section-label">Layers of {doc.shared[component ?? ""]?.name}</div>
@@ -870,6 +871,7 @@ export function App({ snap }: { snap: Snapshot }) {
               reveal={reveal}
               onTidy={(at) => void tidyPages(at)}
               owners={snap.owners}
+              usedElsewhere={usedElsewhere}
               onOpenElsewhere={openElsewhere}
             />
             <InsertBar doc={doc} node={selected ? doc.nodes[selected] : undefined} root={frame?.id} onAdded={setSelected} onError={setToast} />

@@ -9,6 +9,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- On a page, a click selects the component placed there (a card), not a layer of its source (the card's button);
+  a use's text overrides reach into the components it holds; links choose how the next page comes in.
+- Making a component asks its name; a library tile renames one on double-click; component boards count their uses in
+  the project's other designs.
 - Links by hand: a layer's Link picks any page of the project, here or in another design (imported when picked).
 - `buni open FOLDER` opens the folder's newest design, or starts one named for it.
 - A tool given bad arguments says what's wrong in a line, not as raw JSON.

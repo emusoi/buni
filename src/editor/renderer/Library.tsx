@@ -71,8 +71,10 @@ function Uses({ doc, path }: { doc: Doc; path: string }) {
   );
 }
 
-export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onHealth }: {
+export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onHealth, imported }: {
   doc: Doc;
+  /** Components that live in a file this one imports: renamed there. */
+  imported?: ReadonlySet<Id> | undefined;
   /** This file's path, to offer the other designs of its project. */
   path: string;
   dir: string;
@@ -145,7 +147,7 @@ export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onH
             </button>
             {isOpen && (
               <div className="library-tiles">
-                {g.items.map((i) => <Tile key={i.id} doc={doc} dir={dir} item={i} on={i.id === open} onOpen={onOpen} />)}
+                {g.items.map((i) => <Tile key={i.id} doc={doc} dir={dir} item={i} on={i.id === open} onOpen={onOpen} renamable={!imported?.has(i.id)} />)}
               </div>
             )}
           </div>
@@ -155,12 +157,17 @@ export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onH
   );
 }
 
-function Tile({ doc, dir, item, on, onOpen }: { doc: Doc; dir: string; item: LibraryItem; on: boolean; onOpen: (id: Id) => void }) {
+function Tile({ doc, dir, item, on, onOpen, renamable }: { doc: Doc; dir: string; item: LibraryItem; on: boolean; onOpen: (id: Id) => void; renamable: boolean }) {
+  const [naming, setNaming] = useState(false);
   return (
-    <button type="button" className={`library-tile${on ? " on" : ""}`} title={`${item.full} · ${item.uses} use${item.uses === 1 ? "" : "s"}`} onClick={() => onOpen(item.id)}>
-      <ComponentThumb doc={doc} dir={dir} id={item.id} width={104} height={52} />
-      <span className="meta"><span className="name">{item.name}</span><span className={item.uses === 0 ? "warn" : ""}>{item.uses}×</span></span>
-    </button>
+    <>
+      <button type="button" className={`library-tile${on ? " on" : ""}`} title={`${item.full} · ${item.uses} use${item.uses === 1 ? "" : "s"}${renamable ? " · double-click to rename" : ""}`} onClick={() => onOpen(item.id)} onDoubleClick={() => renamable && setNaming(true)}>
+        <ComponentThumb doc={doc} dir={dir} id={item.id} width={104} height={52} />
+        <span className="meta"><span className="name">{item.name}</span><span className={item.uses === 0 ? "warn" : ""}>{item.uses}×</span></span>
+      </button>
+      {/* Renamed in full: "Group / Name" files it under its group. */}
+      {naming && <NameDialog title="Rename component" label="Name" initial={item.full} action="Rename" onClose={() => setNaming(false)} onSubmit={(name) => { setNaming(false); if (name !== item.full) void window.buni.edit("rename_component", { component: item.id, name }); }} />}
+    </>
   );
 }
 
