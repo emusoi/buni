@@ -41,6 +41,8 @@ const tilde = (path: string) => path.replace(/^\/Users\/[^/]+/, "~");
 /** What the Export menu offers for a page: pictures and PDF always; SVG and an icon set when the page is fit for them. */
 type Mode = "screens" | "system" | "plan" | "agents";
 const ARRIVE = "buni.arrive";
+/** How long after its last edit an agent still counts as working here. */
+const WORKING_MS = 60_000;
 const isArrival = (v: unknown): v is { page: Id; play: boolean } => typeof v === "object" && v !== null && "page" in v && typeof v.page === "string" && "play" in v && typeof v.play === "boolean";
 
 /** A path written relative to the file at `from`, as the file's own path. */
@@ -254,18 +256,33 @@ export function App({ snap }: { snap: Snapshot }) {
   // What agents changed in the last few seconds lands on the canvas in their colour; a tick clears it after.
   const [, tick] = useState(0);
   const edits = snap.edits ?? [];
+  // Layers this window has drawn before: a layer that lands new rises in, one that changed only flashes.
+  // Which those were is settled when an edit first arrives, so a redraw in the meantime doesn't restart it.
+  const seen = useRef<Set<Id> | undefined>(undefined);
+  seen.current ??= new Set(Object.keys(doc.nodes));
+  const freshOf = useRef(new Map<string, Id[]>());
   const landing: Landing[] = edits
     .filter((e) => e.author !== "you" && Date.now() - Date.parse(e.at) < 3000)
     // Only the tops of what landed: a new section outlined once, not every layer inside it.
-    .map((e) => ({ nodes: e.nodes.filter((id) => !e.nodes.includes(doc.nodes[id]?.parent ?? "")), color: colorOf(e.author) }));
+    .map((e) => {
+      const nodes = e.nodes.filter((id) => !e.nodes.includes(doc.nodes[id]?.parent ?? ""));
+      const key = `${e.author} ${e.at} ${e.label}`;
+      if (!freshOf.current.has(key)) freshOf.current.set(key, nodes.filter((id) => !seen.current?.has(id)));
+      return { nodes, fresh: freshOf.current.get(key) ?? [], color: colorOf(e.author) };
+    });
+  useEffect(() => { for (const id of Object.keys(doc.nodes)) seen.current?.add(id); });
+  // Who is working now: agents connected over MCP, and any that edited in the last minute (the buni command, another
+  // tab); each is marked where it last edited, and the canvas can follow it.
+  const working = [...new Set([...connected, ...edits.filter((e) => e.author !== "you" && Date.now() - Date.parse(e.at) < WORKING_MS).map((e) => e.author)])];
   useEffect(() => {
-    if (!landing.length) return;
-    const t = setTimeout(() => tick((n) => n + 1), 3000);
+    const last = Math.max(0, ...edits.filter((e) => e.author !== "you").map((e) => Date.parse(e.at)));
+    const left = [3000, WORKING_MS].map((ms) => last + ms - Date.now()).filter((ms) => ms > 0);
+    if (!left.length) return;
+    const t = setTimeout(() => tick((n) => n + 1), Math.min(...left) + 50);
     return () => clearTimeout(t);
-  }, [edits, landing.length]);
+  }, [edits, landing.length, working.length]);
   const agentCount = connected.length;
-  // Coding agents connected over MCP are marked where they last edited.
-  const spots: AgentSpot[] = connected.flatMap((name) => {
+  const spots: AgentSpot[] = working.flatMap((name) => {
     const at = snap.recent[name]?.[0];
     return at ? [{ agent: name, nodes: [at], label: name, color: agentColor(name) }] : [];
   });
@@ -619,6 +636,11 @@ export function App({ snap }: { snap: Snapshot }) {
                 >
                   <FileText size={16} strokeWidth={1.75} />
                   <span className="name">{p.name}</span>
+                  {(() => {
+                    // An agent working on this page shows here too, in its colour.
+                    const here = spots.find((sp) => sp.nodes[0] !== undefined && pageOfNode(doc, sp.nodes[0]) === p.id);
+                    return here && <span className="page-agent" style={{ background: here.color }} title={`${here.agent} is working here`} />;
+                  })()}
                   <span className="meta">{pageLabel(doc, p)}</span>
                 </button>
               </Fragment>

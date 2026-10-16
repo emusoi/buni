@@ -156,10 +156,14 @@ export function nodeAt(frame: HTMLIFrameElement | null, x: number, y: number): I
 /** Layers an agent just changed, in its colour: they land with an outline that settles, then fades. */
 export interface Landing {
   nodes: readonly Id[];
+  /** Of those, the layers that are new: they rise into place rather than only flash. */
+  fresh?: readonly Id[];
   color: string;
 }
 
-const LAND = "@keyframes buni-land{0%{outline:3px solid var(--land);outline-offset:10px;opacity:.35}35%{outline:3px solid var(--land);outline-offset:2px;opacity:1}100%{outline:3px solid transparent;outline-offset:2px}}";
+const LAND = "@keyframes buni-land{0%{outline:3px solid var(--land);outline-offset:10px}35%{outline:3px solid var(--land);outline-offset:2px}100%{outline:3px solid transparent;outline-offset:2px}}"
+  + "@keyframes buni-enter{from{opacity:0;transform:translateY(14px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}"
+  + "@media (prefers-reduced-motion:reduce){[class^='b-']{animation-duration:1ms!important}}";
 
 /** Outlines for the selected node, where each agent works and what just landed, as CSS; the same for every board. */
 function marksCss(focus: readonly AgentSpot[], selected: Id | undefined, landing: readonly Landing[], also: readonly Id[] = [], commented: readonly Id[] = []): string {
@@ -167,7 +171,7 @@ function marksCss(focus: readonly AgentSpot[], selected: Id | undefined, landing
     // Layers someone is talking about, dashed; selection and agents draw over it.
     ...commented.map((id) => `.b-${id}{outline:1.5px dashed #d97706;outline-offset:2px}`),
     landing.length ? LAND : "",
-    ...landing.flatMap((l) => l.nodes.map((id) => `.b-${id}{--land:${l.color};animation:buni-land 1.8s ease-out}`)),
+    ...landing.flatMap((l) => l.nodes.map((id) => `.b-${id}{--land:${l.color};animation:buni-land 1.8s ease-out${l.fresh?.includes(id) ? ",buni-enter .7s cubic-bezier(.2,.8,.2,1) both" : ""}}`)),
     ...focus.flatMap((f) => f.nodes.map((id) => `.b-${id}{outline:2px solid ${f.color};outline-offset:3px}`)),
     selected ? `.b-${selected}{outline:2px solid #3346d3;outline-offset:2px}` : "",
     ...also.map((id) => `.b-${id}{outline:2px solid #3346d3;outline-offset:2px}`),

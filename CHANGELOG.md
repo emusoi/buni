@@ -9,6 +9,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- Agents at work show wherever they edit from (the buni command too, not only MCP): tagged where they last edited,
+  a dot on the page they're on, and a pill to jump there. What they add rises into place in their colour.
+- Text or a heading added from the insert bar is typed straight away.
 - Adding tokens keeps the form open for the next; text with no font reads in the system face, not Times.
 - Core files: `imports` now shares components and tokens as well as the system. A section that imports `core.buni`
   places its components and inherits its tokens (its own value wins); they stay edited in the core, and open sections

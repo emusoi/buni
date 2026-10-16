@@ -30,6 +30,9 @@ const TYPED = new Set([
 const WEIGHTS: [string, string][] = [["300", "Light"], ["400", "Regular"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"], ["800", "Extra bold"]];
 const FONTS = ["Manrope, sans-serif", "Inter, sans-serif", "system-ui, sans-serif", "Georgia, serif", "\"Iowan Old Style\", serif", "ui-monospace, monospace"];
 /** Starting points for new layers; plain values so they read the same in any design. */
+/** A text layer the insert bar just added, whose text the person types next. */
+let typeNext: Id | undefined;
+
 const ADD: { label: string; icon: LucideIcon; html: string }[] = [
   { label: "Heading", icon: Heading, html: '<h2 style="margin:0;font-size:36px;line-height:1.15;font-weight:700">Heading</h2>' },
   { label: "Text", icon: Type, html: '<p style="margin:0;font-size:18px;line-height:1.5">Write something here.</p>' },
@@ -310,6 +313,8 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
               if (a.label === "Image" && window.buni.uploadImage) return picker.current?.click();
               const r = await window.buni.edit("write_html", { ...at, html: a.html });
               const id = r.reply.match(/Created \d+ nodes?: ([^,.\s]+)/)?.[1];
+              // Text just added is typed next: its field opens focused, the placeholder selected.
+              if (r.ok && id && (a.label === "Heading" || a.label === "Text")) typeNext = id;
               if (r.ok && id) onAdded(id);
               else if (!r.ok) onError(r.reply);
             }}
@@ -688,6 +693,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
             className="field text"
             aria-label="Text content"
             defaultValue={node.text}
+            autoFocus={node.id === typeNext}
+            onFocus={(e) => { if (node.id === typeNext) { typeNext = undefined; e.currentTarget.select(); } }}
             rows={Math.min(8, Math.max(2, Math.ceil(node.text.length / 34)))}
             onBlur={(e) => {
               if (e.target.value !== node.text && e.target.value.trim()) void run("set_text", { node: node.id, text: e.target.value });
