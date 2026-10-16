@@ -203,8 +203,9 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
     // The node under the pointer or any ancestor may carry the link.
     let el = frame.current?.contentDocument?.elementFromPoint(x, y)?.closest("[class^='b-']");
     while (el) {
-      const id = el.classList[0]?.slice(2);
-      const here = links.filter((c) => c.node === id);
+      // A component's use draws as its root, carrying the use's class after the root's own: either may be linked.
+      const ids = [...el.classList].filter((c) => c.startsWith("b-")).map((c) => c.slice(2));
+      const here = links.filter((c) => ids.includes(c.node));
       // The usual link first, then each condition's.
       here.sort((a, b) => Number(Boolean(a.condition)) - Number(Boolean(b.condition)));
       const [only, ...more] = here;
