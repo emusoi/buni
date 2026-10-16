@@ -1,6 +1,6 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
+import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
 import { EASINGS, ENTRANCES, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
@@ -44,6 +44,7 @@ const ADD: { label: string; icon: LucideIcon; html: string }[] = [
   { label: "Text", icon: Type, html: '<p style="margin:0;font-size:18px;line-height:1.5">Write something here.</p>' },
   { label: "Box", icon: Square, html: '<div layer-name="Box" style="padding:24px;min-height:120px;background:#EDEDE9;border-radius:4px"></div>' },
   { label: "Row", icon: LayoutGrid, html: '<div layer-name="Row" style="display:flex;gap:24px;padding:24px;min-height:80px"></div>' },
+  { label: "Field", icon: TextCursorInput, html: '<label layer-name="Field" style="display:flex;flex-direction:column;gap:6px;max-width:480px;font-size:14px;font-weight:600">Label<input placeholder="Type here" style="padding:12px 14px;border:1px solid #CFCBBF;border-radius:6px;background:#fff;font-size:15px;font-weight:400"></label>' },
   { label: "Button", icon: MousePointerClick, html: '<a layer-name="Button" style="display:inline-block;padding:12px 20px;background:#16140F;color:#fff;border-radius:4px;font-family:-apple-system, sans-serif;font-size:14px;font-weight:600;text-decoration:none">Button</a>' },
   { label: "Image", icon: Image, html: '<div layer-name="Image" style="aspect-ratio:16/9;background:linear-gradient(160deg, #C9C4B8, #8F897C)"></div>' },
 ];
@@ -374,9 +375,11 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
               // With somewhere to keep files, Image asks for a real one; without, it adds a placeholder.
               if (a.label === "Image" && window.buni.uploadImage) return picker.current?.click();
               const r = await window.buni.edit("write_html", { ...at, html: a.html });
-              const id = r.reply.match(/Created \d+ nodes?: ([^,.\s]+)/)?.[1];
-              // Text just added is typed next: its field opens focused, the placeholder selected.
-              if (r.ok && id && (a.label === "Heading" || a.label === "Text")) typeNext = id;
+              const made = r.reply.match(/Created \d+ nodes?: ([^.]+)/)?.[1]?.split(/,\s*/) ?? [];
+              // Text just added is typed next: its field opens focused, the placeholder selected. A field's label is its
+              // text (Shift+Enter then selects the whole field, and ⌘D makes the next).
+              const id = a.label === "Field" ? made[1] : made[0];
+              if (r.ok && id && (a.label === "Heading" || a.label === "Text" || a.label === "Field")) typeNext = id;
               if (r.ok && id) onAdded(id);
               else if (!r.ok) onError(r.reply);
             }}
