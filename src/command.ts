@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 // The buni command line: the design tools for any coding agent that can run a shell.
 import { readFileSync, rmSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, realpath, rm, rmdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -32,7 +32,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
-  open <file.buni>                  edit it in your browser, live as agents design it
+  open <file.buni|folder>           edit it in your browser, live as agents design it; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id] [--target fw]   brief to build from: doc + system slice (part:, page:, flow:, endpoint:, table:);
@@ -478,6 +478,9 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
   switch (cmd) {
     case "open": {
       const { openUrl } = await import("./term/open.ts");
+      // A folder (a project) opens its newest design; an empty one starts a design named for it.
+      const target = await designIn(file);
+      if (target !== file) return main(["open", target, ...args], ext);
       const live = await liveApp(file);
       if (live) {
         const at = new URL(live);
@@ -617,6 +620,24 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       console.error(usage(ext));
       return 2;
   }
+}
+
+/** The design to open for `path`: itself, or for a folder, its newest .buni (one level down too), made if there is none. */
+async function designIn(path: string): Promise<string> {
+  if (!(await stat(path).catch(() => undefined))?.isDirectory()) return path;
+  const top = await readdir(path, { withFileTypes: true });
+  const names = [
+    ...top.filter((e) => e.isFile() && e.name.endsWith(".buni")).map((e) => e.name),
+    ...(await Promise.all(top.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules")
+      .map(async (d) => (await readdir(join(path, d.name)).catch(() => [])).filter((f) => f.endsWith(".buni")).map((f) => join(d.name, f))))).flat(),
+  ];
+  const found = await Promise.all(names.map(async (f) => ({ f: join(path, f), at: (await stat(join(path, f))).mtimeMs })));
+  const newest = found.sort((a, b) => b.at - a.at)[0]?.f;
+  if (newest) return newest;
+  const made = join(path, `${basename(resolve(path)) || "design"}.buni`);
+  await writeFile(made, serializeDoc(emptyDoc()), { encoding: "utf8", flag: "wx" });
+  console.log(`Started ${made}: the folder had no design yet.`);
+  return made;
 }
 
 /** Runs the CLI on this process's arguments, with `ext`'s commands too, and sets the exit code. */

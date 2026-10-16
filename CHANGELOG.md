@@ -9,6 +9,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- Links by hand: a layer's Link picks any page of the project, here or in another design (imported when picked).
+- `buni open FOLDER` opens the folder's newest design, or starts one named for it.
+- A tool given bad arguments says what's wrong in a line, not as raw JSON.
 - Agents at work show wherever they edit from (the buni command too, not only MCP): tagged where they last edited,
   a dot on the page they're on, and a pill to jump there. What they add rises into place in their colour.
 - Text or a heading added from the insert bar is typed straight away.

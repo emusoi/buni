@@ -1,10 +1,13 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, pageName, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, pageName, pagesInOrder, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
+import { siblings } from "./ProjectSwitch.tsx";
+import type { HomeFile } from "../api.ts";
+import { OwnersContext } from "./SystemCanvas.tsx";
 import { SmallSizes } from "./SmallSizes.tsx";
 import { Tokens } from "./Tokens.tsx";
 import { Widths } from "./Widths.tsx";
@@ -80,6 +83,51 @@ function pageOfNodeIn(doc: Doc, id: Id): Id | undefined {
   let n = doc.nodes[id];
   while (n?.parent) n = doc.nodes[n.parent];
   return n ? Object.values(doc.pages).find((p) => p.frame === n?.id)?.id : undefined;
+}
+
+/**
+ * Where clicking a layer goes: a page here, or one of a file this one imports. On a component's layer the link holds
+ * on every page that uses it (a nav item); off, it goes nowhere.
+ */
+function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
+  const owners = useContext(OwnersContext);
+  const path = useContext(OpenFile);
+  // The project's other designs, read once a layer here is selected: any of their pages can be linked to.
+  const [project, setProject] = useState<HomeFile[]>([]);
+  useEffect(() => { if (path) void window.buni.home().then((all) => setProject(siblings(all, path).filter((f) => f.path !== path))); }, [path]);
+  // A page's own frame is the page, and a core file's layers are linked there.
+  if (node.parent === undefined || (owners[componentOf(doc, node)?.id ?? ""] !== undefined)) return null;
+  const links = Object.values(doc.connections).filter((c) => c.node === node.id && c.trigger === "click" && !c.condition);
+  const to = links[0]?.to ?? "";
+  const here = pagesInOrder(doc).filter((p) => p.route !== undefined || p.id === to);
+  // Other files' pages: those it imports already, then the rest of the project's; one of those is imported when picked.
+  const away = new Map<string, { id: Id; name: string; route?: string | undefined; file?: string }[]>();
+  const add = (file: string, p: { id: Id; name: string; route?: string | undefined }, imports?: string) => { if (!doc.pages[p.id] && !(away.get(file) ?? []).some((x) => x.id === p.id)) away.set(file, [...(away.get(file) ?? []), { ...p, ...(imports ? { file: imports } : {}) }]); };
+  for (const p of Object.values(doc.elsewhere ?? {})) add(owners[p.id] ?? "another file", p);
+  for (const f of project) for (const p of Object.values(f.doc.pages)) if (p.route !== undefined && !doc.elsewhere?.[p.id]) add(`${f.name}.buni`, p, `${f.name}.buni`);
+  if (here.length + away.size === 0) return null;
+  const set = async (target: Id) => {
+    const file = [...away.values()].flat().find((p) => p.id === target)?.file;
+    if (file) {
+      const r = await window.buni.edit("import_file", { path: file });
+      if (!r.ok) return onError(r.reply);
+    }
+    const r = target
+      ? await window.buni.edit("connect", { node: node.id, to: target, trigger: "click", transition: "none", durationMs: 0 })
+      : await window.buni.edit("disconnect", { connections: links.map((c) => c.id) });
+    onError(r.ok ? undefined : r.reply);
+  };
+  return (
+    <Group title="Link">
+      <label className="select" title="Where clicking it goes, in Play and on the exported site">
+        <select value={to} onChange={(e) => void set(e.target.value)} aria-label="Links to">
+          <option value="">Goes nowhere</option>
+          <optgroup label="This design">{here.map((p) => <option key={p.id} value={p.id}>{p.name}{p.route ? ` · ${p.route}` : ""}</option>)}</optgroup>
+          {[...away].map(([file, pages]) => <optgroup key={file} label={file}>{pages.map((p) => <option key={p.id} value={p.id}>{p.name}{p.route ? ` · ${p.route}` : ""}</option>)}</optgroup>)}
+        </select>
+      </label>
+    </Group>
+  );
 }
 
 /** Where a layer meets the system: the response field it shows, and the endpoint each of its links calls. */
@@ -530,6 +578,9 @@ function ScreenSection({ page, onError }: { page: Page & { terminal: TerminalScr
   );
 }
 
+/** The open design's path, for what depends on its project (the other designs a link may go to). */
+export const OpenFile = createContext("");
+
 /** How often other designs of the project place this file's components, by component: they change with it too. */
 export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
 
@@ -705,6 +756,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           />
         </Group>
       )}
+      <LinkSection doc={doc} node={node} onError={setNotice} />
       {node.kind === "svg" && (
         <Group title="Markup">
           <textarea

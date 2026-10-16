@@ -105,7 +105,7 @@ export function tool<S extends z.ZodRawShape>(def: {
     input: def.input,
     run: async (doc, raw, ctx) => {
       const parsed = schema.safeParse(raw ?? {});
-      if (!parsed.success) throw new ToolError(`Invalid arguments: ${parsed.error.message}`);
+      if (!parsed.success) throw new ToolError(`Invalid arguments:\n${z.prettifyError(parsed.error)}`);
       return def.run(doc, parsed.data, ctx);
     },
   };
