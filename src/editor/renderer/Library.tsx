@@ -94,7 +94,7 @@ export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onH
   // A component made here, not from a layer: a core file of components needs no page to draw them on.
   const create = (name: string) => {
     setNaming(false);
-    void window.buni.edit("create_component", { name, html: '<div style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px"><span>New component</span></div>' }).then((r) => {
+    void window.buni.edit("create_component", { name, root: true, html: '<div style="display: inline-flex; width: fit-content; align-items: center; gap: 8px; padding: 12px 16px"><span>New component</span></div>' }).then((r) => {
       const id = r.reply.match(/^Component (\S+) /)?.[1];
       if (id) onOpen(id);
     });

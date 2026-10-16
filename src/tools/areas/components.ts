@@ -323,12 +323,24 @@ export const componentsTools = {
   }),
 
   create_component: tool({
-    description: "Make a new component from HTML (same rules as write_html). It starts unused; place it with place_component.",
-    input: { name: z.string().min(1), html: z.string(), sources: sourceRefs.optional() },
+    description: "Make a new component from HTML (same rules as write_html). It starts unused; place it with place_component. " +
+      "With root, the HTML's one top element is the component itself (a button that hugs its label), not inside a frame of its own.",
+    input: { name: z.string().min(1), html: z.string(), sources: sourceRefs.optional(), root: z.boolean().optional().describe("Make the one top element the component's root") },
     run: async (doc, a, ctx) => {
       const { drafts, warnings } = parseHtml(a.html);
       if (drafts.length === 0) throw new ToolError("the HTML produced no nodes");
       const ids = new Ids(doc, ctx);
+      if (a.root) {
+        if (drafts.length !== 1) throw new ToolError("root needs the HTML to be one element (that holds the rest)");
+        const created: Id[] = [];
+        const ops = draftOps(ids, drafts, "", "a0", created);
+        // Drawn at the top, as a component's root is: no parent.
+        const first = ops[0];
+        if (first?.kind === "put" && first.collection === "nodes") { const { parent: _, ...top } = first.value; ops[0] = { ...first, value: top }; }
+        const section: SharedSection = { id: ids.next(), name: a.name, root: created[0] ?? "", ...(a.sources?.length ? { sources: a.sources } : {}) };
+        ops.push({ kind: "put", collection: "shared", value: section });
+        return { label: `Create component ${a.name}`, ops, reply: [`Component ${section.id} "${a.name}" with root ${section.root}.`, ...warnings.map((w) => `Warning: ${w}`)].join("\n") };
+      }
       const root = ids.next();
       const section: SharedSection = { id: ids.next(), name: a.name, root, ...(a.sources?.length ? { sources: a.sources } : {}) };
       const created: Id[] = [];

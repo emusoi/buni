@@ -50,9 +50,9 @@ const ADD: { label: string; icon: LucideIcon; html: string }[] = [
 ];
 
 /** Where a new layer goes: inside a selected container, after any other selected layer, else at the end of the page. */
-function target(node: Node | undefined, root: Id | undefined): { parent: Id; after?: Id } | undefined {
+function target(node: Node | undefined, root: Id | undefined, beside = false): { parent: Id; after?: Id } | undefined {
   if (!node) return root ? { parent: root } : undefined;
-  if (node.kind === "frame") return { parent: node.id };
+  if (node.kind === "frame" && !(beside && node.parent)) return { parent: node.id };
   return node.parent ? { parent: node.parent, after: node.id } : undefined;
 }
 
@@ -371,12 +371,15 @@ function InstanceSection({ doc, node, onOpen, onError, onSelect, atWidth }: { do
 
 /** The canvas toolbar: adds a layer inside the selected frame, after any other selected layer, or to the page. */
 export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; node: Node | undefined; root: Id | undefined; onAdded: (id: Id) => void; onError: (m: string) => void }) {
-  const at = target(node, root);
+  // A frame takes the next layer inside it, or after it once that's asked for; the choice is per selection.
+  const [beside, setBeside] = useState<Id>();
+  const after = node !== undefined && beside === node.id;
+  const at = target(node, root, after);
   const [writing, setWriting] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
   if (!at) return null;
   // Said as a sentence, so it's plain where the next layer lands.
-  const where = !node ? "Adds to the end of the page" : node.kind === "frame" ? `Adds inside ${node.name}` : `Adds after ${node.name}`;
+  const where = !node ? "Adds to the end of the page" : node.kind === "frame" && !after ? `Adds inside ${node.name}` : `Adds after ${node.name}`;
   return (
     <div className="insert-bar" role="toolbar" aria-label={`Add ${where}`}>
         {writing && (
@@ -436,7 +439,9 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
             <span>{a.label}</span>
           </button>
         ))}
-      <span className="insert-where">{where}</span>
+      {node?.kind === "frame" && node.parent
+        ? <button type="button" className="insert-where" title="Switch between inside it and after it" onClick={() => setBeside(after ? undefined : node.id)}>{where} ⇄</button>
+        : <span className="insert-where">{where}</span>}
     </div>
   );
 }

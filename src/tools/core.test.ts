@@ -105,3 +105,16 @@ test("rename_page renames a page and its frame, moves its route and its states w
   await ws.call("pi", "create_page", { name: "Other", route: "/other" });
   expect((await ws.call("pi", "rename_page", { page: id, route: "/other" })).ok).toBe(false);
 });
+
+test("create_component with root makes the one top element the component, so it hugs where it's placed", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-root-"));
+  await writeFile(join(dir, "a.buni"), serializeDoc(emptyDoc()));
+  const ws = await Workspace.open(join(dir, "a.buni"));
+  const r = await ws.call("pi", "create_component", { name: "Buttons / Go", root: true, html: '<a style="padding:12px;width:fit-content">Go</a>' });
+  expect(r.ok).toBe(true);
+  const section = Object.values(ws.view().shared)[0]!;
+  const root = ws.view().nodes[section.root]!;
+  expect(root.parent).toBeUndefined();
+  expect(root.kind !== "instance" && root.kind !== "svg" ? root.tag : undefined).toBe("a");
+  expect((await ws.call("pi", "create_component", { name: "Two", root: true, html: "<a>1</a><a>2</a>" })).ok).toBe(false);
+});

@@ -9,6 +9,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- With a frame selected, the insert bar's "Adds inside" switches to "Adds after"; a design's first page takes the
+  project's look; a component made with New (or `create_component` with `root`) is its element, hugging its content.
 - A component placed on a page links its own layers there ("Links in this use": a nav's items and button), once for
   every page of the design that uses it; a core's nav is linked in each section that shows it.
 - The insert bar adds a form field (label and input), its label ready to type; a new page takes the open page's

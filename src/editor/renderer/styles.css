@@ -1367,6 +1367,8 @@ svg { flex-shrink: 0; }
 .use-chip button:hover { color: var(--ink); background: var(--sidebar); }
 /* The agents panel's .agent-dot is an avatar; in the jump pill it's a status dot. */
 .agent-jump .agent-dot { width: 8px; height: 8px; border-radius: 50%; }
+button.insert-where { border: 0; background: none; cursor: pointer; }
+button.insert-where:hover { color: var(--ink); }
 .page-agent { width: 7px; height: 7px; flex: none; margin-left: auto; border-radius: 50%; animation: pulse 0.8s ease-in-out infinite alternate; }
 .page-agent + .meta { margin-left: 6px; }
 .token-from { flex: none; width: 24px; font-size: 10px; color: var(--placeholder); text-align: center; }
