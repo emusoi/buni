@@ -525,8 +525,10 @@ function ScreenSection({ page, onError }: { page: Page & { terminal: TerminalScr
   );
 }
 
-export function Inspector({ doc, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onWiden, viewWidth, onViewWidth }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onWiden, viewWidth, onViewWidth }: {
   doc: Doc;
+  /** This file's own tokens, when some come from an imported file. */
+  ownTokens?: Doc["tokens"] | undefined;
   node: Node | undefined;
   /** More layers selected with Shift: style changes apply to them too. */
   also?: readonly Id[];
@@ -568,7 +570,7 @@ export function Inspector({ doc, node, also = [], root, preview, page, onJump, o
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {notice && <div className="notice">{notice}</div>}
         {page ? <Sources key={page} doc={doc} id={page} /> : (() => { const component = Object.values(doc.shared).find((c) => c.root === root); return component ? <Sources key={component.id} doc={doc} id={component.id} /> : null; })()}
-        <Tokens doc={doc} onError={setNotice} />
+        <Tokens doc={doc} own={ownTokens} onError={setNotice} />
         {preview && <SmallSizes doc={doc} page={preview.page} dir={preview.dir} />}
       </div>
     );

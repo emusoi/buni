@@ -8,7 +8,7 @@ import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { applyChange, diffOps, invert, propose, view, type ChangeSet, type Op, type Rejected, type Session } from "../oplog/oplog.ts";
 import { exportSite } from "./html.ts";
-import { splitPart } from "./split.ts";
+import { splitCore, splitPart } from "./split.ts";
 import { gridProblems } from "./terminal.ts";
 import { copyHints, REPEAT_MIN } from "./library.ts";
 import { ToolError, tools, type ToolContext, type ToolName, type ToolOutput } from "./tools.ts";
@@ -112,6 +112,12 @@ async function loadImports(store: Store, path: string, doc: Doc): Promise<Import
   };
   await walk(path, doc);
   return out;
+}
+
+/** `doc` (the file at `path`) with what it imports, to draw it; as it is, if an import can't be read. */
+export async function withImported(store: Store, path: string, doc: Doc): Promise<Doc> {
+  if (!doc.imports?.length) return doc;
+  return withImports(doc, systemOf(await loadImports(store, path, doc).catch(() => [])));
 }
 
 /** The system of several files as one document: what an importing file's references resolve against. */
@@ -227,7 +233,7 @@ export class Workspace {
       session = r.session;
     }
     // The side file is ours but not trusted: the resulting document must pass the full parser.
-    const check = parseDoc(serializeDoc(view(session).doc));
+    const check = parseDoc(serializeDoc(view(session).doc), session.context ? { context: session.context } : {});
     if (!check.ok) throw new Error(`${this.pendingPath} produces an invalid document`);
     await this.store.write(this.path, serializeDoc(view(session).doc));
     this.session = { base: view(session).doc, pending: [] };
@@ -291,7 +297,7 @@ export class Workspace {
    * Moves a part and what it owns into a new file at `to`, and makes the two import each other.
    * Both are checked as one system before either is written.
    */
-  split(part: Id, to: string): Promise<CallResult> {
+  split(part: Id | "core", to: string): Promise<CallResult> {
     return this.exclusive(async () => {
       const target = resolve(dirname(this.path), to);
       if (!target.endsWith(".buni")) return { ok: false, reply: "the new file's name ends in .buni" };
@@ -301,7 +307,7 @@ export class Workspace {
       } catch {
         // a new file: good
       }
-      const r = splitPart(this.view(), part, relative(dirname(target), this.path), relative(dirname(this.path), target));
+      const r = part === "core" ? splitCore(this.view(), relative(dirname(this.path), target)) : splitPart(this.view(), part, relative(dirname(target), this.path), relative(dirname(this.path), target));
       if (typeof r === "string") return { ok: false, reply: r };
       const others = systemOf(this.imported);
       const restErrors = parseDoc(serializeDoc(r.rest), { context: withImports(r.moved, others) });
@@ -317,6 +323,7 @@ export class Workspace {
       this.undos = [];
       this.redos = [];
       this.changed();
+      if (part === "core") return { ok: true, reply: `Moved ${Object.keys(r.moved.shared).length} components and ${Object.keys(r.moved.tokens).length} tokens to ${to}, which this file now imports; edit them there.` };
       const n = (c: "endpoints" | "operations" | "tables" | "events" | "shapes") => Object.keys(r.moved[c]).length;
       return { ok: true, reply: `Moved ${r.moved.parts[part]?.name} to ${to} with ${n("endpoints") + n("operations")} calls, ${n("tables")} tables, ${n("events")} events and ${n("shapes")} shapes; the two files import each other.` };
     });

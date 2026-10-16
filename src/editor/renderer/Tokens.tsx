@@ -28,7 +28,8 @@ function hex(value: string): string | undefined {
   return undefined;
 }
 
-export function Tokens({ doc, onError }: { doc: Doc; onError: (m: string | undefined) => void }) {
+/** `own` is this file's tokens when it imports others': the rest come from a core file and are overridden, not removed, here. */
+export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | undefined; onError: (m: string | undefined) => void }) {
   const uses = useMemo(() => tokenUses(doc.nodes), [doc.nodes]);
   const [adding, setAdding] = useState<{ name: string; value: string }>();
   const set = async (name: string, value: string) => {
@@ -75,7 +76,7 @@ export function Tokens({ doc, onError }: { doc: Doc; onError: (m: string | undef
               <input key={value} className="field mono" defaultValue={value} aria-label={`${name} value`}
                 onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v && v !== value) void set(name, v); }}
                 onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.currentTarget.value = value; e.currentTarget.blur(); } }} />
-              <button type="button" className="icon-btn small" aria-label={`Remove ${name}`} title={(uses.get(name) ?? 0) ? `${(uses.get(name) ?? 0)} layers use it; they lose this value` : "Remove"} onClick={() => void set(name, "")}><X size={12} /></button>
+              {own && own[name] === undefined ? <span className="token-from" title="From an imported file; a value set here overrides it in this file">core</span> : <button type="button" className="icon-btn small" aria-label={`Remove ${name}`} title={(uses.get(name) ?? 0) ? `${(uses.get(name) ?? 0)} layers use it; they lose this value` : "Remove"} onClick={() => void set(name, "")}><X size={12} /></button>}
             </div>
           ))}
         </div>

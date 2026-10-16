@@ -45,6 +45,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   export <file.buni> <out-dir>      write the site as static HTML + CSS
   pdf <file.buni> <out.pdf>         the whole system design as one PDF to share
   split <file.buni> part:<id> <new.buni>  move a part and what it owns into its own file; the two import each other
+  split <file.buni> core <core.buni>      move every component and token into a core file the design imports
   mcp <file.buni>                   serve the tools over MCP (stdio)
   login [--server URL]              sign in with Wazo; your designs on buni.emusoi.app (or URL) then work with --remote
   logout | whoami                   sign out of it, or say who you are signed in as
@@ -106,6 +107,8 @@ A big app is a project: one folder of .buni files, a core and its sections.
   token the section doesn't set comes from the core. Set a token in the section only to override it there.
 - A core component is edited in the core file, never copied: change the core and every section shows it. A component
   only one section uses stays in that section.
+- An existing file grown big: buni split FILE core core.buni moves all its components and tokens into core.buni, ids
+  kept, and the file imports it; then start the next section beside it and import core.buni there too.
 - Start each file with buni new FOLDER/NAME.buni. Work only in the file asked for; read the others with buni tree.
 - Inside a section, every screen and state is a page; name pages "NN · Name" so the sitemap reads in order, and
   link them with connect and name each path through them with set_flow.
@@ -600,9 +603,9 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     }
     case "split": {
       const [focus, to] = args;
-      const part = focus?.startsWith("part:") ? focus.slice(5) : undefined;
+      const part = focus === "core" ? "core" : focus?.startsWith("part:") ? focus.slice(5) : undefined;
       if (!part || !to) {
-        console.error("usage: buni split <file.buni> part:<id> <new.buni>");
+        console.error("usage: buni split <file.buni> part:<id>|core <new.buni>");
         return 2;
       }
       const r = await (await Workspace.open(file)).split(part, to);

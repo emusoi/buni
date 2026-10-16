@@ -17,7 +17,7 @@ import { parseDoc } from "buni/format/parse.ts";
 import { diffDoc } from "buni/format/patch.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { systemChanges } from "buni/tools/changes.ts";
-import { Workspace } from "buni/tools/workspace.ts";
+import { Workspace, withImported } from "buni/tools/workspace.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -192,14 +192,19 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   async function home(dir: string): Promise<HomeFile[]> {
     const files = await store.list(dir);
     const notes = await Promise.all(files.map((f) => working(f.path)));
-    return files.flatMap(({ path, text, modified }, i) => {
-      const r = parseDoc(text);
-      if (!r.ok) return [];
-      const first = pagesInOrder(r.doc)[0];
+    const docs = await Promise.all(files.map(async ({ path, text }) => {
+      // Listed by shape only: a section's references resolve in the core it imports, and it's drawn with them.
+      const r = parseDoc(text, { refs: false });
+      return r.ok ? withImported(store, path, r.doc) : undefined;
+    }));
+    return files.flatMap(({ path, modified }, i) => {
+      const doc = docs[i];
+      if (!doc) return [];
+      const first = pagesInOrder(doc)[0];
       const agentNote = notes[i];
       // Every file has a folder of its own, so they're shown together rather than one folder each.
       // Hosted, every design has a folder of its own, so they're shown together; on disk, by the folder they're in.
-      return [{ path, name: basename(path, ".buni"), folder: LOCAL ? dirname(path) : dir, modified: modified.toISOString(), pages: Object.keys(r.doc.pages).length, doc: r.doc, ...(first ? { preview: first.id } : {}), ...(agentNote ? { agentNote } : {}) }];
+      return [{ path, name: basename(path, ".buni"), folder: LOCAL ? dirname(path) : dir, modified: modified.toISOString(), pages: Object.keys(doc.pages).length, doc, ...(first ? { preview: first.id } : {}), ...(agentNote ? { agentNote } : {}) }];
     });
   }
 
@@ -349,7 +354,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       const ws = await need(file);
       const text = await store.read(`${ws.path}.version`).catch(() => undefined);
       if (text === undefined) return { error: "No version is saved yet. Save one, and the changes from then on show here." };
-      const before = parseDoc(text);
+      const before = parseDoc(text, { refs: false });
       if (!before.ok) return { error: "The saved version doesn't read as a .buni file." };
       return { changes: systemChanges(before.doc, ws.view()) };
     },

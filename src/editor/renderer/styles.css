@@ -1356,6 +1356,7 @@ svg { flex-shrink: 0; }
 .crumbs button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 4px; border: 0; border-radius: 6px; background: none; color: var(--label); font-size: 13px; }
 .crumbs button:hover { background: var(--hover); color: var(--ink); }
 .crumbs b { color: var(--ink); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.token-from { flex: none; width: 24px; font-size: 10px; color: var(--placeholder); text-align: center; }
 .project-switch { position: relative; min-width: 0; -webkit-app-region: no-drag; }
 .project-switch > button { padding: 0 6px 0 8px; }
 .project-menu { left: 0; right: auto; width: 280px; }

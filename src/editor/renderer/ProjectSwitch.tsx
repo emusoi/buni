@@ -10,6 +10,12 @@ export function siblings(files: readonly HomeFile[], path: string): HomeFile[] {
   return folder === undefined ? [] : files.filter((f) => f.folder === folder).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** "12 pages", or for a core file of components only, "4 components". */
+const describe = (f: HomeFile): string => {
+  const n = f.pages || Object.keys(f.doc.shared).length;
+  return `${n} ${f.pages || n === 0 ? "page" : "component"}${n === 1 ? "" : "s"}`;
+};
+
 /** The open file's name in the top bar; it opens the other designs of its project, so a big app split across files is one click apart. */
 export function ProjectSwitch({ path, name }: { path: string; name: string }) {
   const [files, setFiles] = useState<HomeFile[]>();
@@ -33,7 +39,7 @@ export function ProjectSwitch({ path, name }: { path: string; name: string }) {
           {files.map((f) => (
             <button type="button" role="menuitem" key={f.path} className={`menu-chat${f.path === path ? " on" : ""}`} disabled={f.path === path} onClick={() => { close(); void window.buni.open(f.path); }}>
               <span className="menu-name">{f.name}</span>
-              <span className="menu-state">{f.pages} page{f.pages === 1 ? "" : "s"}{f.agentNote ? ` · ${f.agentNote}` : ""}</span>
+              <span className="menu-state">{describe(f)}{f.agentNote ? ` · ${f.agentNote}` : ""}</span>
             </button>
           ))}
           <button type="button" role="menuitem" className="menu-chat preset" onClick={add}>

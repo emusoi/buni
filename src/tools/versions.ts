@@ -37,7 +37,8 @@ export async function saveVersion(store: Store, ws: Workspace, name: unknown): P
 export async function restoreVersion(store: Store, ws: Workspace, id: unknown): Promise<CallResult> {
   const v = (await versionsOf(store, ws.path)).find((x) => x.id === id);
   if (!v) return { ok: false, reply: "No such version." };
-  const saved = parseDoc(await store.read(versionPath(ws.path, v.id)));
+  // Its references may lie in the files it imports; restoring checks it with them, as every edit is.
+  const saved = parseDoc(await store.read(versionPath(ws.path, v.id)), { refs: false });
   if (!saved.ok) return { ok: false, reply: "That version doesn't read as a .buni file." };
   return ws.restore("you", `Restore ${v.name ? `"${v.name}"` : `the version of ${v.at.slice(0, 16).replace("T", " ")}`}`, saved.doc);
 }

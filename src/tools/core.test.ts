@@ -45,3 +45,21 @@ test("a core file shares its components and tokens; sections place them, overrid
   await section.refreshImports();
   expect(section.system().tokens["--ink"]).toBe("#222222");
 });
+
+test("buni split core moves components and tokens out, ids kept, and the design draws the same", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-split-core-"));
+  const file = join(dir, "portal.buni");
+  await writeFile(file, await readFile(new URL("../../examples/portal.buni", import.meta.url), "utf8"));
+  const ws = await Workspace.open(file);
+  const before = Object.keys(ws.view().pages).map((p) => renderPage(ws.system(), p).html);
+  const components = Object.keys(ws.view().shared);
+  expect(components.length).toBeGreaterThan(0);
+  const r = await ws.split("core", "core.buni");
+  expect(r.ok).toBe(true);
+  expect(ws.view().shared).toEqual({});
+  expect(ws.view().imports).toEqual(["core.buni"]);
+  expect(Object.keys((await Workspace.open(join(dir, "core.buni"))).view().shared).sort()).toEqual(components.sort());
+  // Reopened from disk, every page renders exactly as before.
+  const again = await Workspace.open(file);
+  expect(Object.keys(again.view().pages).map((p) => renderPage(again.system(), p).html)).toEqual(before);
+});
