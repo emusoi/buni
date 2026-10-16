@@ -267,7 +267,10 @@ export type Transition = "none" | "fade" | "slide-left" | "slide-right";
 
 export interface Connection extends SourceOwner {
   id: Id;
-  /** Page the trigger node lives on. */
+  /**
+   * Page the trigger node lives on; or a component, for a link on one of its layers that holds on every use of it,
+   * in this file and in the designs that import it (a core's nav). A page's own link for the layer wins there.
+   */
   page: Id;
   node: Id;
   to: Id;
@@ -1147,11 +1150,67 @@ export function withImports(doc: Doc, context: Doc | undefined): Doc {
   out.shared = { ...context.shared, ...doc.shared };
   out.nodes = { ...componentNodes(context), ...doc.nodes };
   out.tokens = { ...context.tokens, ...doc.tokens };
+  // Links a component holds on every use come with it.
+  out.connections = { ...Object.fromEntries(Object.entries(context.connections).filter(([, c]) => context.shared[c.page])), ...doc.connections };
   // The imported files' pages, as places a link may go: names and routes only, never drawn here.
   out.elsewhere = { ...context.elsewhere };
   for (const p of Object.values(context.pages)) out.elsewhere[p.id] = { id: p.id, name: p.name, ...(p.route !== undefined ? { route: p.route } : {}) };
   for (const id of Object.keys(doc.pages)) delete out.elsewhere[id];
   return out;
+}
+
+/** A link drawn from a component's every-use link onto one page: its id is the link's, then "~", then the page. */
+export const isUseLink = (id: Id): boolean => id.includes("~");
+
+/** The pages that show a component, directly or inside another component they show. */
+export function pagesUsing(doc: Doc): Map<Id, Set<Id>> {
+  const pageOfFrame = new Map(Object.values(doc.pages).map((p) => [p.frame, p.id]));
+  const componentOfRoot = new Map(Object.values(doc.shared).map((s) => [s.root, s.id]));
+  const top = (id: Id): Id => { let n = doc.nodes[id]; for (let i = 0; n?.parent !== undefined && i < 512; i++) n = doc.nodes[n.parent]; return n?.id ?? id; };
+  // Where each component is placed: on pages, or in other components.
+  const placed = new Map<Id, { pages: Set<Id>; in: Set<Id> }>();
+  for (const n of Object.values(doc.nodes)) {
+    if (n.kind !== "instance") continue;
+    const root = top(n.id);
+    const at = placed.get(n.shared) ?? { pages: new Set<Id>(), in: new Set<Id>() };
+    const page = pageOfFrame.get(root), holder = componentOfRoot.get(root);
+    if (page) at.pages.add(page);
+    if (holder) at.in.add(holder);
+    placed.set(n.shared, at);
+  }
+  const out = new Map<Id, Set<Id>>();
+  const pagesOf = (id: Id, seen: Set<Id>): Set<Id> => {
+    const known = out.get(id);
+    if (known) return known;
+    const at = placed.get(id);
+    const pages = new Set(at?.pages ?? []);
+    for (const holder of at?.in ?? []) if (!seen.has(holder)) for (const p of pagesOf(holder, new Set([...seen, holder]))) pages.add(p);
+    out.set(id, pages);
+    return pages;
+  };
+  for (const id of Object.keys(doc.shared)) pagesOf(id, new Set([id]));
+  return out;
+}
+
+/**
+ * `doc` with each every-use link (on a component) also as a link on each page that uses the component, where that
+ * page has no link of its own for the layer: what Play, export, flows and the canvas follow. Never written to a file.
+ */
+export function withUseLinks(doc: Doc): Doc {
+  const everyUse = Object.values(doc.connections).filter((c) => doc.shared[c.page]);
+  if (!everyUse.length) return doc;
+  const using = pagesUsing(doc);
+  const same = (a: Connection, b: Connection) => a.node === b.node && a.trigger === b.trigger && (a.key ?? "") === (b.key ?? "") && (a.condition ?? "") === (b.condition ?? "");
+  const own = Object.values(doc.connections).filter((c) => doc.pages[c.page]);
+  const connections = { ...doc.connections };
+  for (const c of everyUse) {
+    for (const page of using.get(c.page) ?? []) {
+      if (own.some((o) => o.page === page && same(o, c))) continue;
+      const id = `${c.id}~${page}`;
+      connections[id] = { ...c, id, page };
+    }
+  }
+  return { ...doc, connections };
 }
 
 /** A page's name, here or in an imported file a link reaches. */

@@ -2,19 +2,26 @@
 // gathers them.
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { walkFlow, type Connection, type Endpoint, type Journey, type Link } from "../../format/doc.ts";
+import { isUseLink, walkFlow, type Connection, type Doc, type Endpoint, type Id, type Journey, type Link } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { Ids, type Tool, ToolError, linkPages, node, page, tool } from "../kit.ts";
+
+/** Whether `id` is `root` or under it. */
+const inComponent = (doc: Doc, id: Id, root: Id): boolean => {
+  for (let n = doc.nodes[id]; n; n = n.parent !== undefined ? doc.nodes[n.parent] : undefined) if (n.id === root) return true;
+  return false;
+};
 
 export const flowsTools = {
   connect: tool({
     description:
       "Link a node to a page: in Play mode and in export, triggering the node goes there. Replaces the node's existing link for the same trigger and condition; " +
       "a link with a condition is an alternative path from the same node (\"the carrier was slow\"), next to its usual one. " +
-      "For a layer inside a component (a nav item), it links on every page that uses the component; give page to link on one only.",
+      "For a layer inside a component (a nav item), it links on every page here that uses the component; give page to link on one only, " +
+      "or the component's id as page to link on every use of it, in this file and in every design that imports it (a core's nav).",
     input: {
       node: z.string(),
-      page: z.string().optional().describe("Only for layers inside a component: link on this page only, not every page that uses it"),
+      page: z.string().optional().describe("Only for layers inside a component: this page only, or the component's id for every use of it anywhere"),
       to: z.string().describe("Destination page id: here, or in a file this one imports"),
       trigger: z.enum(["click", "hover", "submit", "key"]).default("click"),
       key: z.string().optional().describe('For a "key" trigger: the key, e.g. "enter", "ctrl+k", "?", or a tmux binding "prefix g". Give the screen\'s frame as node for a key that works anywhere on it'),
@@ -30,11 +37,14 @@ export const flowsTools = {
       if (!to) throw new ToolError(`page "${a.to}" does not exist here or in a file this one imports`);
       if (a.trigger === "key" && !a.key) throw new ToolError('a "key" trigger needs key, e.g. "enter"');
       // Across a component's uses, the page it points to doesn't link to itself (the nav item for where you are).
-      const froms = a.page === undefined ? linkPages(doc, a.node).filter((p, _, all) => all.length === 1 || p.id !== to.id) : [page(doc, a.page)];
+      const component = a.page !== undefined ? doc.shared[a.page] : undefined;
+      if (component && !inComponent(doc, a.node, component.root)) throw new ToolError(`"${a.node}" is not a layer of ${component.name}`);
+      const froms = component ? [{ id: component.id, name: `every use of ${component.name}` }] : a.page === undefined ? linkPages(doc, a.node).filter((p, _, all) => all.length === 1 || p.id !== to.id) : [page(doc, a.page)];
       const ids = new Ids(doc, ctx);
       const made = froms.map((from) => {
         // One link per node, trigger and condition (for keys, per key): a condition makes an alternative path, not a replacement.
-        const existing = Object.values(doc.connections).find((c) => c.node === a.node && c.page === from.id && c.trigger === a.trigger && (a.trigger !== "key" || c.key === a.key) && (c.condition ?? "") === (a.condition ?? ""));
+        // A link drawn from a component's every-use link isn't one to update: this page gets its own.
+        const existing = Object.values(doc.connections).find((c) => !isUseLink(c.id) && c.node === a.node && c.page === from.id && c.trigger === a.trigger && (a.trigger !== "key" || c.key === a.key) && (c.condition ?? "") === (a.condition ?? ""));
         const value: Connection = {
           ...(existing?.sources ? { sources: existing.sources } : {}), id: existing?.id ?? ids.next(),
           page: from.id, node: a.node, to: to.id, trigger: a.trigger, transition: a.transition, durationMs: a.durationMs,

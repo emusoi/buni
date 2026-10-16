@@ -2,7 +2,7 @@ import { sourceRefs } from "../../format/sources.ts";
 // Components: making and placing them, variants, overrides, and keeping the library tidy. One area of buni's design
 // tools (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
-import { layered, nestedOverrides, overrideTarget, setOf, variantProperties, type Connection, type Doc, type Id, type InstanceNode, type Node, type Override, type SharedSection, type Style } from "../../format/doc.ts";
+import { isUseLink, layered, nestedOverrides, overrideTarget, setOf, variantProperties, type Connection, type Doc, type Id, type InstanceNode, type Node, type Override, type SharedSection, type Style } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { parseHtml } from "../html.ts";
 import { findRepeats, layersOf, libraryReport, shapeOf, usesOf } from "../library.ts";
@@ -374,7 +374,8 @@ export const componentsTools = {
       const key = (c: Connection) => `${c.node} ${c.to} ${c.trigger} ${c.condition ?? ""}`;
       const here = new Set(Object.values(doc.connections).filter((c) => c.page === page?.id).map(key));
       const links = new Map<string, Connection>();
-      if (page) for (const c of Object.values(doc.connections)) if (inside.has(c.node) && c.to !== page.id && !here.has(key(c))) links.set(key(c), c);
+      // Not a link the component holds on every use: that one reaches this page by itself.
+      if (page) for (const c of Object.values(doc.connections)) if (inside.has(c.node) && doc.pages[c.page] && !isUseLink(c.id) && c.to !== page.id && !here.has(key(c))) links.set(key(c), c);
       const ops: Op[] = [{ kind: "put", collection: "nodes", value: instance }, ...(page ? [...links.values()].map((c): Op => ({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: page.id } })) : [])];
       return { label: `Place ${section.name}`, ops, reply: `Placed instance ${instance.id} of ${section.name}${links.size ? `, with its ${links.size} link${links.size === 1 ? "" : "s"}` : ""}.` };
     },
@@ -478,7 +479,7 @@ export const componentsTools = {
         }
         for (const c of Object.values(doc.connections)) {
           const to = pair.get(c.node);
-          if (!to) continue;
+          if (!to || isUseLink(c.id)) continue;
           ops.push({ kind: "delete", collection: "connections", id: c.id });
           const clash = Object.values(doc.connections).some((x) => x.node === to && x.page === c.page && x.trigger === c.trigger);
           if (!clash) ops.push({ kind: "put", collection: "connections", value: { ...c, node: to } });

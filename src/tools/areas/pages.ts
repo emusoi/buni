@@ -6,7 +6,7 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type Post, type Thread, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type Post, type Thread, type Style } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { layerHtml, parseHtml, renderPage, snippet, type Draft } from "../html.ts";
 import { findIcons } from "../icons.ts";
@@ -108,7 +108,7 @@ export const pagesTools = {
       });
       // Its links go where the original's go, from the copied layers.
       for (const c of Object.values(doc.connections)) {
-        if (c.page !== from.id || !fresh.has(c.node)) continue;
+        if (c.page !== from.id || !fresh.has(c.node) || isUseLink(c.id)) continue;
         ops.push({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: pageId, node: id(c.node) } });
       }
       return { label: `Duplicate ${from.name}`, ops, reply: `Created page ${pageId} (${name}) with root frame ${id(from.frame)}; ${nodes.length} layers copied.` };

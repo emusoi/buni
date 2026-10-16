@@ -23,8 +23,9 @@ const SET_GAP = 160;
 /** A component board's width: its own, else its maximum, else small for a control (a button, a link), else wide. */
 export function componentWidth(doc: Doc, sharedId: Id): number {
   const root = doc.nodes[doc.shared[sharedId]?.root ?? ""];
-  const control = (n: Node | undefined) => n?.kind === "text" || ["button", "a", "span", "input", "label"].includes(n?.tag ?? "")
-    || ["inline-flex", "inline-block", "inline"].includes(n?.style.display ?? "") || n?.style.width === "fit-content";
+  // Something that hugs its content: a control, or inline with no width of its own ("100%" fills, so isn't one).
+  const control = (n: Node | undefined) => n?.style.width === "fit-content" || (!n?.style.width && (n?.kind === "text" || ["button", "a", "span", "input", "label"].includes(n?.tag ?? "")
+    || ["inline-flex", "inline-block", "inline"].includes(n?.style.display ?? "")));
   // A component's root frame often just wraps the one thing it is (a button); that thing decides.
   const inner = root && root.tag === undefined ? childrenOf(doc, root.id) : [];
   const small = control(root) || (inner.length === 1 && control(inner[0]));

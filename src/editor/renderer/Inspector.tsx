@@ -1,7 +1,7 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, isUseLink, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
@@ -126,13 +126,14 @@ function LinkPicker({ doc, node, page, onError }: { doc: Doc; node: Id; page?: I
       if (!r.ok) return onError(r.reply);
     }
     const r = target
-      ? await window.buni.edit("connect", { node, to: target, trigger: "click", transition, durationMs: transition === "none" ? 0 : 250 })
+      ? await window.buni.edit("connect", { node, ...(page && doc.shared[page] ? { page } : {}), to: target, trigger: "click", transition, durationMs: transition === "none" ? 0 : 250 })
       : await unlink();
     onError(r.ok ? undefined : r.reply);
   };
-  // Unlinked everywhere it's linked here, as it was linked: on every page that uses it.
+  // Unlinked as it was linked: on every page that uses it, or on every use; a link drawn from an every-use one isn't
+  // this design's to remove.
   const unlink = () => {
-    const all = Object.values(doc.connections).filter((c) => c.node === node && c.trigger === "click" && !c.condition).map((c) => c.id);
+    const all = Object.values(doc.connections).filter((c) => c.node === node && (page && doc.shared[page] ? c.page === page : !doc.shared[c.page]) && !isUseLink(c.id) && c.trigger === "click" && !c.condition).map((c) => c.id);
     return all.length ? window.buni.edit("disconnect", { connections: all }) : Promise.resolve({ ok: true, reply: "" });
   };
   const name = (p: { name: string; route?: string | undefined }) => `${p.name}${p.route ? ` · ${p.route}` : ""}`;
@@ -147,6 +148,7 @@ function LinkPicker({ doc, node, page, onError }: { doc: Doc; node: Id; page?: I
           {[...away].map(([file, pages]) => <optgroup key={file} label={file}>{pages.map((p) => <option key={p.id} value={p.id}>{name(p)}</option>)}</optgroup>)}
         </select>
       </label>
+      {links[0] && isUseLink(links[0].id) && <span className="hint">As on every use of its component; picking here sets this design's own.</span>}
       {/* How the next page comes in, in Play: the canvas shows only where it goes. */}
       {to && (
         <label className="select" title="How the page it opens comes in, in Play">
@@ -162,8 +164,14 @@ function LinkPicker({ doc, node, page, onError }: { doc: Doc; node: Id; page?: I
 /** Where clicking a layer goes; a page's own frame is the page, and a core file's layers are linked from their uses. */
 function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
   const owners = useContext(OwnersContext);
-  if (node.parent === undefined || owners[componentOf(doc, node)?.id ?? ""] !== undefined) return null;
-  return <Group title="Link"><LinkPicker doc={doc} node={node.id} onError={onError} /></Group>;
+  const component = componentOf(doc, node);
+  if (node.parent === undefined || owners[component?.id ?? ""] !== undefined) return null;
+  // A component's layer links on every use of it: here, and in the designs that build on this one (a core's nav).
+  return (
+    <Group title={component ? "Link on every use" : "Link"}>
+      <LinkPicker doc={doc} node={node.id} page={component?.id} onError={onError} />
+    </Group>
+  );
 }
 
 /** The layers of a use that can be clicked (its texts and the buttons in it), each linked on this page alone. */

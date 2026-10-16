@@ -118,3 +118,33 @@ test("create_component with root makes the one top element the component, so it 
   expect(root.kind !== "instance" && root.kind !== "svg" ? root.tag : undefined).toBe("a");
   expect((await ws.call("pi", "create_component", { name: "Two", root: true, html: "<a>1</a><a>2</a>" })).ok).toBe(false);
 });
+
+test("a core's nav links once, on every use: each section's pages follow it, and a page's own link wins", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-every-"));
+  for (const f of ["core.buni", "site.buni", "shop.buni"]) await writeFile(join(dir, f), serializeDoc(emptyDoc()));
+  const ok = async (ws: Workspace, tool: Parameters<Workspace["call"]>[1], args: object) => {
+    const r = await ws.call("pi", tool, args);
+    if (!r.ok) throw new Error(`${tool}: ${r.reply}`);
+    return r.reply;
+  };
+  const shop = await Workspace.open(join(dir, "shop.buni"));
+  const boxes = (await ok(shop, "create_page", { name: "Boxes", route: "/boxes" })).match(/page (\S+) /)![1]!;
+  const core = await Workspace.open(join(dir, "core.buni"));
+  await ok(core, "import_file", { path: "shop.buni" });
+  const nav = (await ok(core, "create_component", { name: "Nav", root: true, html: '<nav><a layer-name="Boxes link">Our boxes</a></nav>' })).match(/Component (\S+) /)![1]!;
+  const link = Object.values(core.view().nodes).find((n) => n.name === "Boxes link")!.id;
+  await ok(core, "connect", { node: link, page: nav, to: boxes });
+  const site = await Workspace.open(join(dir, "site.buni"));
+  await ok(site, "import_file", { path: "core.buni" });
+  const home = (await ok(site, "create_page", { name: "Home", route: "/" })).match(/root frame (\S+?)[;.]/)![1]!;
+  const homePage = Object.keys(site.view().pages)[0]!;
+  await ok(site, "place_component", { component: nav, parent: home });
+  // Drawn onto Home from the core's every-use link; exported as a link by route.
+  const drawn = Object.values(site.system().connections).filter((c) => c.page === homePage && c.node === link);
+  expect(drawn.map((c) => c.to)).toEqual([boxes]);
+  expect([...exportSite(site.system(), embeddedFont).values()].join("")).toContain('href="/boxes"');
+  // Nothing was written into site for it; a link of Home's own replaces it there.
+  expect(Object.keys(site.view().connections)).toEqual([]);
+  await ok(site, "connect", { node: link, page: homePage, to: homePage });
+  expect(Object.values(site.system().connections).filter((c) => c.page === homePage && c.node === link).map((c) => c.to)).toEqual([homePage]);
+});

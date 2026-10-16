@@ -99,7 +99,9 @@ what breaks them.
 `imports` lists other `.buni` files (relative paths) whose system, components and tokens this file builds on. This
 file's references resolve against everything it imports: an instance may place an imported component, a token the
 file doesn't set comes from its imports (its own value wins), and a connection may go to an imported file's page,
-which opens that file. Imported pages are only places to go: they aren't drawn, and flows stay in their own file. An id may live in
+which opens that file. Imported pages are only places to go: they aren't drawn, and flows stay in their own file.
+A connection whose `page` is a component (not a page) holds on every use of it: on each page that shows the component,
+here or in a file that imports this one, unless that page links the same layer itself. An id may live in
 only one of the files, so an imported component is edited in its own file; each imported file is checked in full
 when it is opened itself. (`tokensRef` is reserved for a shared tokens file; nothing reads it yet.)
 

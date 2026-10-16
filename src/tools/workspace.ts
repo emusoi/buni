@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { checkImage } from "./assets.ts";
-import { emptyDoc, SYSTEM_COLLECTIONS, withImports, type Doc, type Id } from "../format/doc.ts";
+import { emptyDoc, SYSTEM_COLLECTIONS, withImports, withUseLinks, type Doc, type Id } from "../format/doc.ts";
 import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { applyChange, diffOps, invert, propose, view, type ChangeSet, type Op, type Rejected, type Session } from "../oplog/oplog.ts";
@@ -116,8 +116,8 @@ async function loadImports(store: Store, path: string, doc: Doc): Promise<Import
 
 /** `doc` (the file at `path`) with what it imports, to draw it; as it is, if an import can't be read. */
 export async function withImported(store: Store, path: string, doc: Doc): Promise<Doc> {
-  if (!doc.imports?.length) return doc;
-  return withImports(doc, systemOf(await loadImports(store, path, doc).catch(() => [])));
+  if (!doc.imports?.length) return withUseLinks(doc);
+  return withUseLinks(withImports(doc, systemOf(await loadImports(store, path, doc).catch(() => []))));
 }
 
 /** The system of several files as one document: what an importing file's references resolve against. */
@@ -280,7 +280,8 @@ export class Workspace {
 
   /** This file with what it imports (the system, components and tokens): what briefs, drawing and tools read. */
   system(): Doc {
-    return withImports(this.view(), this.session.context);
+    // Links a component holds on every use are drawn onto the pages that use it.
+    return withUseLinks(withImports(this.view(), this.session.context));
   }
 
   /** Which imported file each shared thing lives in, by id; things in this file are absent. */

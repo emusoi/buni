@@ -1261,12 +1261,14 @@ function checkRefs(doc: Doc, r: Reader): void {
   for (const c of Object.values(doc.connections)) {
     const p = join("connections", c.id);
     const page = pages[c.page];
-    if (!page) r.fail(join(p, "page"), `page "${c.page}" does not exist`);
+    // A link on a component's layer may hold on every use of the component: its "page" is the component.
+    const everyUse = page ? undefined : shared[c.page];
+    if (!page && !everyUse) r.fail(join(p, "page"), `page or component "${c.page}" does not exist`);
     if (!nodes[c.node]) r.fail(join(p, "node"), `node "${c.node}" does not exist`);
     else if (page) {
       const root = rootOf.get(c.node);
       if (root !== page.frame && !(root && usedOn.get(root)?.has(page.frame))) r.fail(join(p, "node"), `node "${c.node}" is not on page "${c.page}"`);
-    }
+    } else if (everyUse && rootOf.get(c.node) !== everyUse.root) r.fail(join(p, "node"), `node "${c.node}" is not in component "${everyUse.name}"`);
     if (!pages[c.to] && !doc.elsewhere?.[c.to]) r.fail(join(p, "to"), `page "${c.to}" does not exist here or in a file this one imports`);
     if (c.durationMs < 0) r.fail(join(p, "durationMs"), "duration cannot be negative");
   }
@@ -1731,7 +1733,7 @@ export function validateDoc(given: Doc, givenContext?: Doc): FormatError[] {
   checkRefs(withImports(doc, context), r);
   // Components and their nodes come in from imports as the system does; each file answers only for its own.
   const importedNodes = componentNodes(context);
-  const collections = [...SYSTEM_COLLECTIONS, "shared", "nodes"] as const;
+  const collections = [...SYSTEM_COLLECTIONS, "shared", "nodes", "connections"] as const;
   const theirs = (c: (typeof collections)[number]): Record<string, unknown> => (c === "nodes" ? importedNodes : context[c]);
   const own = (path: string) => {
     const c = collections.find((x) => path.startsWith(`${x}.`));
