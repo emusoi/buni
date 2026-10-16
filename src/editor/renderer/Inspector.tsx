@@ -96,22 +96,28 @@ function pageOfNodeIn(doc: Doc, id: Id): Id | undefined {
  * Where clicking a layer goes: a page here, or one of a file this one imports. On a component's layer the link holds
  * on every page that uses it (a nav item); off, it goes nowhere.
  */
-function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
+/** Pages a link may go to: this design's, the ones it imports, then the rest of the project's (imported when picked). */
+function useLinkTargets(doc: Doc) {
   const owners = useContext(OwnersContext);
   const path = useContext(OpenFile);
   // The project's other designs, read once a layer here is selected: any of their pages can be linked to.
   const [project, setProject] = useState<HomeFile[]>([]);
   useEffect(() => { if (path) void window.buni.home().then((all) => setProject(siblings(all, path).filter((f) => f.path !== path))); }, [path]);
-  // A page's own frame is the page, and a core file's layers are linked there.
-  if (node.parent === undefined || (owners[componentOf(doc, node)?.id ?? ""] !== undefined)) return null;
-  const links = Object.values(doc.connections).filter((c) => c.node === node.id && c.trigger === "click" && !c.condition);
-  const to = links[0]?.to ?? "";
-  const here = pagesInOrder(doc).filter((p) => p.route !== undefined || p.id === to);
-  // Other files' pages: those it imports already, then the rest of the project's; one of those is imported when picked.
   const away = new Map<string, { id: Id; name: string; route?: string | undefined; file?: string }[]>();
   const add = (file: string, p: { id: Id; name: string; route?: string | undefined }, imports?: string) => { if (!doc.pages[p.id] && !(away.get(file) ?? []).some((x) => x.id === p.id)) away.set(file, [...(away.get(file) ?? []), { ...p, ...(imports ? { file: imports } : {}) }]); };
   for (const p of Object.values(doc.elsewhere ?? {})) add(owners[p.id] ?? "another file", p);
   for (const f of project) for (const p of Object.values(f.doc.pages)) if (p.route !== undefined && !doc.elsewhere?.[p.id]) add(`${f.name}.buni`, p, `${f.name}.buni`);
+  return { here: pagesInOrder(doc).filter((p) => p.route !== undefined), away, owners };
+}
+
+/**
+ * Where clicking `node` goes, picked from the project's pages. A component's layer links on every page of this design
+ * that uses it; `page` is where its current link is read (the page a use was selected on).
+ */
+function LinkPicker({ doc, node, page, onError }: { doc: Doc; node: Id; page?: Id | undefined; onError: (m: string | undefined) => void }) {
+  const { here, away } = useLinkTargets(doc);
+  const links = Object.values(doc.connections).filter((c) => c.node === node && (page === undefined || c.page === page) && c.trigger === "click" && !c.condition);
+  const to = links[0]?.to ?? "";
   if (here.length + away.size === 0) return null;
   const set = async (target: Id, transition: Transition = links[0]?.transition ?? "none") => {
     const file = [...away.values()].flat().find((p) => p.id === target)?.file;
@@ -120,17 +126,25 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
       if (!r.ok) return onError(r.reply);
     }
     const r = target
-      ? await window.buni.edit("connect", { node: node.id, to: target, trigger: "click", transition, durationMs: transition === "none" ? 0 : 250 })
-      : await window.buni.edit("disconnect", { connections: links.map((c) => c.id) });
+      ? await window.buni.edit("connect", { node, to: target, trigger: "click", transition, durationMs: transition === "none" ? 0 : 250 })
+      : await unlink();
     onError(r.ok ? undefined : r.reply);
   };
+  // Unlinked everywhere it's linked here, as it was linked: on every page that uses it.
+  const unlink = () => {
+    const all = Object.values(doc.connections).filter((c) => c.node === node && c.trigger === "click" && !c.condition).map((c) => c.id);
+    return all.length ? window.buni.edit("disconnect", { connections: all }) : Promise.resolve({ ok: true, reply: "" });
+  };
+  const name = (p: { name: string; route?: string | undefined }) => `${p.name}${p.route ? ` · ${p.route}` : ""}`;
   return (
-    <Group title="Link">
+    <>
       <label className="select" title="Where clicking it goes, in Play and on the exported site">
         <select value={to} onChange={(e) => void set(e.target.value)} aria-label="Links to">
           <option value="">Goes nowhere</option>
-          <optgroup label="This design">{here.map((p) => <option key={p.id} value={p.id}>{p.name}{p.route ? ` · ${p.route}` : ""}</option>)}</optgroup>
-          {[...away].map(([file, pages]) => <optgroup key={file} label={file}>{pages.map((p) => <option key={p.id} value={p.id}>{p.name}{p.route ? ` · ${p.route}` : ""}</option>)}</optgroup>)}
+          {/* A link to a page no longer listed (a graphic, say) still shows where it goes. */}
+          {to && !here.some((p) => p.id === to) && ![...away.values()].flat().some((p) => p.id === to) && <option value={to}>{pageName(doc, to)}</option>}
+          <optgroup label="This design">{here.map((p) => <option key={p.id} value={p.id}>{name(p)}</option>)}</optgroup>
+          {[...away].map(([file, pages]) => <optgroup key={file} label={file}>{pages.map((p) => <option key={p.id} value={p.id}>{name(p)}</option>)}</optgroup>)}
         </select>
       </label>
       {/* How the next page comes in, in Play: the canvas shows only where it goes. */}
@@ -141,7 +155,40 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
           </select>
         </label>
       )}
-    </Group>
+    </>
+  );
+}
+
+/** Where clicking a layer goes; a page's own frame is the page, and a core file's layers are linked from their uses. */
+function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
+  const owners = useContext(OwnersContext);
+  if (node.parent === undefined || owners[componentOf(doc, node)?.id ?? ""] !== undefined) return null;
+  return <Group title="Link"><LinkPicker doc={doc} node={node.id} onError={onError} /></Group>;
+}
+
+/** The layers of a use that can be clicked (its texts and the buttons in it), each linked on this page alone. */
+function UseLinks({ doc, use, onError }: { doc: Doc; use: InstanceNode; onError: (m: string | undefined) => void }) {
+  const page = pageOfNodeIn(doc, use.id);
+  const root = doc.nodes[doc.shared[use.shared]?.root ?? ""];
+  if (!page || !root) return null;
+  // Not into the components it holds: a button inside a nav is one thing to click.
+  const out: Node[] = [];
+  const walk = (n: Node) => {
+    if (n.kind === "text" || n.kind === "instance" || n.tag === "a" || n.tag === "button") return void out.push(n);
+    for (const c of childrenOf(doc, n.id)) walk(c);
+  };
+  walk(root);
+  if (!out.length) return null;
+  return (
+    <>
+      <div className="group-title sub">Links in this use<span className="hint"> · on every page here that uses it</span></div>
+      {out.map((n) => (
+        <div key={n.id} className="prop stacked">
+          <span className="prop-name">{n.kind === "instance" ? doc.shared[n.shared]?.name ?? n.name : n.name}</span>
+          <LinkPicker doc={doc} node={n.id} page={page} onError={onError} />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -317,6 +364,7 @@ function InstanceSection({ doc, node, onOpen, onError, onSelect, atWidth }: { do
           Reset all changes
         </button>
       )}
+      <UseLinks doc={doc} use={node} onError={onError} />
     </section>
   );
 }

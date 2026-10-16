@@ -526,7 +526,7 @@ export function App({ snap }: { snap: Snapshot }) {
     // A new web page of a design looks like the one open: its background and font, so it isn't a white sheet.
     const look = activePage && !preset ? snap.view.nodes[snap.view.pages[activePage]?.frame ?? ""]?.style : undefined;
     const frameId = r.reply.match(/root frame (\S+?)[.;]/)?.[1];
-    const carried = Object.fromEntries((["background", "fontFamily", "color"] as const).flatMap((k) => (look?.[k] ? [[k, look[k]]] : [])));
+    const carried = Object.fromEntries((["background", "fontFamily", "color", "minHeight"] as const).flatMap((k) => (look?.[k] ? [[k, look[k]]] : [])));
     if (frameId && Object.keys(carried).length) await window.buni.edit("update_styles", { nodes: [frameId], style: carried });
     openPage(id);
     // A new page is named first, as a new file is.
