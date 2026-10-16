@@ -33,6 +33,31 @@ function Group({ title, rows }: { title: string; rows: ReactNode[] }) {
   );
 }
 
+/** The page's own background and font, set here rather than by finding its root frame in Layers. */
+function PageLook({ doc, frame }: { doc: Doc; frame: Id }) {
+  const style = doc.nodes[frame]?.style ?? {};
+  const tokens = Object.keys(doc.tokens);
+  const colors = tokens.filter((t) => /^(#|rgb|hsl|oklch)/i.test(doc.tokens[t]?.trim() ?? "")).map((t) => `var(${t})`);
+  const fonts = tokens.filter((t) => /font/i.test(t)).map((t) => `var(${t})`);
+  const set = (prop: "background" | "fontFamily", value: string) => void window.buni.edit("update_styles", { nodes: [frame], style: { [prop]: value } });
+  const pick = (label: string, prop: "background" | "fontFamily", options: string[]) => (
+    <label className="select" title={label}>
+      <select value={style[prop] ?? ""} aria-label={label} onChange={(e) => set(prop, e.target.value)}>
+        <option value="">{prop === "background" ? "White" : "System font"}</option>
+        {[...new Set([...options, ...(style[prop] ? [style[prop]] : [])])].map((v) => <option key={v} value={v}>{v.replace(/^var\(--(.*)\)$/, "$1")}</option>)}
+      </select>
+    </label>
+  );
+  if (!colors.length && !fonts.length) return null;
+  return (
+    <section className="sum-group page-look">
+      <h3>Page</h3>
+      {colors.length > 0 && pick("Page background", "background", colors)}
+      {fonts.length > 0 && pick("Page font", "fontFamily", fonts)}
+    </section>
+  );
+}
+
 export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; page: Id; onJump: (hit: Hit) => void; onOpenElsewhere?: ((page: Id) => void) | undefined }) {
   const s = useMemo(() => pageSummary(doc, page), [doc, page]);
   const owners = useContext(OwnersContext);
@@ -60,6 +85,7 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
         </div>
       </div>
 
+      <PageLook doc={doc} frame={s.page.frame} />
       {s.client && (
         <section className="sum-group">
           <h3>Client</h3>
