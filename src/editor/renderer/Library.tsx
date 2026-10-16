@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, CircleDashed, Component, Copy, FolderX, GitM
 import { libraryReport, usesOf } from "buni/tools/library.ts";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { componentSrcdoc } from "./Canvas.tsx";
+import { NameDialog } from "./Ask.tsx";
 import { componentWidth } from "./layout.ts";
 import { libraryGroups, libraryItems, type LibraryFilter, type LibraryItem } from "./library.ts";
 
@@ -59,13 +60,24 @@ export function LibraryPanel({ doc, dir, page, open, onOpen, onInsert, onHealth 
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
   const items = useMemo(() => libraryItems(doc), [doc]);
   const groups = libraryGroups(items, query, filter, page);
+  const [naming, setNaming] = useState(false);
+  // A component made here, not from a layer: a core file of components needs no page to draw them on.
+  const create = (name: string) => {
+    setNaming(false);
+    void window.buni.edit("create_component", { name, html: '<div style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px"><span>New component</span></div>' }).then((r) => {
+      const id = r.reply.match(/^Component (\S+) /)?.[1];
+      if (id) onOpen(id);
+    });
+  };
+  const newButton = <button type="button" className="library-insert" title="A new component, drawn on its own board" onClick={() => setNaming(true)}><Plus size={13} /> New</button>;
+  const dialog = naming && <NameDialog title="New component" label="Name" initial="Buttons / Primary" action="Create" onClose={() => setNaming(false)} onSubmit={create} />;
   // Big libraries start folded past the first few groups, so the list opens short.
   useEffect(() => {
     if (groups.length > 4) setClosed(new Set(groups.slice(3).map((g) => g.name)));
     // Only when the library first appears or its size class changes.
   }, [groups.length > 4]);
 
-  if (items.length === 0) return <p className="hint side-empty">No components yet. Select a layer and make it a component, or ask the agent.</p>;
+  if (items.length === 0) return <div className="side-empty"><p className="hint">No components yet. Start one here, or select a layer and make it a component.</p>{newButton}{dialog}</div>;
   return (
     <div className="library">
       <label className="library-search">
@@ -77,7 +89,9 @@ export function LibraryPanel({ doc, dir, page, open, onOpen, onInsert, onHealth 
           <button type="button" key={f.id} className={filter === f.id ? "on" : ""} onClick={() => setFilter(f.id)}>{f.label}</button>
         ))}
         <button type="button" className="library-insert" title="Insert a component (⌘I)" onClick={onInsert}><Plus size={13} /> ⌘I</button>
+        {newButton}
       </div>
+      {dialog}
       {(report.duplicates.length > 0 || report.unused.length > 0) && (
         <button type="button" className="health-strip" onClick={onHealth}>
           <Sparkles size={14} />

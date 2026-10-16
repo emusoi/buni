@@ -417,7 +417,8 @@ class Renderer {
  * Sizes include padding and borders, so a panel at height 100% with padding fits its window instead of spilling
  * past it; the way designers and agents expect boxes to measure. Every page, board and export starts with it.
  */
-const BASE_CSS = "*, *::before, *::after {\n  box-sizing: border-box;\n}\n";
+// Text with no font of its own reads in the system face, not the browser's Times.
+const BASE_CSS = "*, *::before, *::after {\n  box-sizing: border-box;\n}\nbody {\n  font-family: system-ui, sans-serif;\n}\n";
 
 function tokensCss(doc: Doc): string {
   // In name order, as the file keeps them: the CSS of a page doesn't change when only the tokens' order did.

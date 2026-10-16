@@ -46,7 +46,17 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
         <span className="layer-icon">{s.page.terminal ? <Monitor size={15} /> : <FileText size={15} />}</span>
         <div className="layer-who">
           <b>{s.page.name}</b>
-          <span>{pageLabel(doc, s.page)}</span>
+          {/* A screen's route is edited here; a state keeps its screen's, and a graphic has none. */}
+          {s.page.route !== undefined && s.page.state === undefined ? (
+            <input key={s.page.route} className="route-field mono" defaultValue={s.page.route} aria-label="Route" title="Where this page lives on the site"
+              onBlur={(e) => {
+                const field = e.currentTarget, was = s.page.route ?? "", route = field.value.trim();
+                if (!route || route === was) { field.value = was; return; }
+                // Refused (taken, or not a path): back to the route it has, with the reason on hover.
+                void window.buni.edit("rename_page", { page: s.page.id, route }).then((r) => { if (!r.ok) { field.value = was; field.title = r.reply; } });
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.currentTarget.value = s.page.route ?? ""; e.currentTarget.blur(); } }} />
+          ) : <span>{pageLabel(doc, s.page)}</span>}
         </div>
       </div>
 

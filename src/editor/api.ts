@@ -22,8 +22,8 @@ export interface SettleResult {
 
 /** Tools a person can run from the window; everything else stays with agents. */
 export const EDIT_TOOLS = [
-  "import_html", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "set_variant", "write_html", "create_page",
-  "make_component", "place_component", "override", "move_component",
+  "import_html", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "set_variant", "write_html", "create_page",
+  "make_component", "create_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "decide", "drop_decision", "comment", "merge_components", "delete_component", "rename_component",
   "bind", "set_motion", "connect", "disconnect", "place_page", "set_flow", "set_screen",
   "set_part", "move_part", "link_parts", "delete_system", "set_agent", "set_eval", "set_shape", "set_table", "set_endpoint", "set_event", "set_operation", "set_trace", "set_environment", "set_cluster", "place", "move_table", "arrange_tables", "move_on_canvas", "arrange_canvas",

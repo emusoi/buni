@@ -91,3 +91,17 @@ test("sections link to each other's pages: checked, exported by route, and flows
   expect([...site.values()].join("")).toContain('href="/account/orders"');
   expect(walkFlow(again.system(), paid).pages).toEqual([paid]);
 });
+
+test("rename_page renames a page and its frame, moves its route and its states with it", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-rename-"));
+  await writeFile(join(dir, "a.buni"), serializeDoc(emptyDoc()));
+  const ws = await Workspace.open(join(dir, "a.buni"));
+  const id = (await ws.call("pi", "create_page", { name: "Untitled 1", route: "/untitled-1" })).reply.match(/page (\S+) /)![1]!;
+  expect((await ws.call("pi", "duplicate_page", { page: id, state: "Empty" })).ok).toBe(true);
+  expect((await ws.call("pi", "rename_page", { page: id, name: "Orders", route: "/orders" })).ok).toBe(true);
+  const pages = Object.values(ws.view().pages);
+  expect(pages.map((p) => p.route)).toEqual(["/orders", "/orders"]);
+  expect(ws.view().nodes[ws.view().pages[id]!.frame]!.name).toBe("Orders");
+  await ws.call("pi", "create_page", { name: "Other", route: "/other" });
+  expect((await ws.call("pi", "rename_page", { page: id, route: "/other" })).ok).toBe(false);
+});

@@ -487,8 +487,21 @@ export function App({ snap }: { snap: Snapshot }) {
       preset ? { name: preset.name, width: preset.width, height: preset.height } : { name: `Untitled ${n}`, route: `/untitled-${n}` },
     );
     const id = r.reply.match(/Created page (\S+) /)?.[1];
-    if (id) openPage(id);
-    else setToast(r.reply);
+    if (!id) return setToast(r.reply);
+    openPage(id);
+    // A new page is named first, as a new file is.
+    setRenaming(id);
+  };
+  /** Renames a page; one still at its placeholder route takes a route from its new name. */
+  const renamePage = async (id: Id, given: string) => {
+    const p = snap.view.pages[id];
+    const name = given.trim();
+    if (!p || !name || name === p.name) return;
+    const slug = `/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+    const taken = new Set(Object.values(snap.view.pages).filter((x) => x.id !== id).map((x) => x.route));
+    const route = p.route && /^\/untitled-\d+$/.test(p.route) && slug !== "/" && !taken.has(slug) ? slug : undefined;
+    const r = await window.buni.edit("rename_page", { page: id, name, ...(route ? { route } : {}) });
+    if (!r.ok) setToast(r.reply);
   };
   // Open the path to whatever is selected, e.g. after clicking it on the canvas.
   useEffect(() => {
@@ -552,6 +565,12 @@ export function App({ snap }: { snap: Snapshot }) {
 
   const pageRow = (p: (typeof pages)[number], indent = false) => {
             const open = p.id === activePage;
+            if (renaming === p.id) return (
+              <form key={p.id} className={`row rename${indent ? " indent" : ""}`} onSubmit={(e) => { e.preventDefault(); const name = new FormData(e.currentTarget).get("name"); if (typeof name === "string") void renamePage(p.id, name); setRenaming(undefined); }}>
+                <FileText size={16} strokeWidth={1.75} />
+                <input name="name" className="field" defaultValue={p.name} autoFocus onFocus={(e) => e.currentTarget.select()} aria-label="Page name" onBlur={(e) => e.currentTarget.form?.requestSubmit()} onKeyDown={(e) => e.key === "Escape" && setRenaming(undefined)} />
+              </form>
+            );
             return (
               <Fragment key={p.id}>
                 <button
@@ -559,6 +578,8 @@ export function App({ snap }: { snap: Snapshot }) {
                   draggable
                   className={`row${indent ? " indent" : ""}${open ? " active" : ""}${dropAt?.id === p.id ? (dropAt.before ? " drop-before" : " drop-after") : ""}`}
                   onClick={() => { openPage(p.id); setReveal({ page: p.id, at: Date.now() }); }}
+                  onDoubleClick={() => setRenaming(p.id)}
+                  title="Double-click to rename"
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = "move";
                     setDragPage(p.id);

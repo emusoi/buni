@@ -1113,6 +1113,10 @@ export function Canvas(props: Props) {
       className={`canvas${panning ? " panning" : ""}${spaceHeld ? " space" : ""}${redraw ? " redraw" : ""}${view.zoom < FAR ? " far" : ""}`}
       // Capture phase, so Space-drag pans even when it starts over a page.
       onPointerDownCapture={(e) => {
+        // A field still being edited (a layer's text, a width) saves first: the press below changes the selection,
+        // and its preventDefault would keep the field from ever losing focus.
+        const editing = document.activeElement;
+        if (editing instanceof HTMLElement && !e.currentTarget.contains(editing)) editing.blur();
         const onBackground = e.target === e.currentTarget || e.target === world.current;
         if (!onBackground && e.button !== 1 && !space.current) return;
         // No text selection or native drag: either can steal the pointer mid-pan.

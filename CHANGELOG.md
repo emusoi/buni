@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Pages can be renamed and moved: double-click a page in the sidebar (a new page starts there, named first), edit
+  the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
+- The library starts a component on its own board ("New"), so a core file of components needs no page.
+- Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- Adding tokens keeps the form open for the next; text with no font reads in the system face, not Times.
 - Core files: `imports` now shares components and tokens as well as the system. A section that imports `core.buni`
   places its components and inherits its tokens (its own value wins); they stay edited in the core, and open sections
   redraw when the core changes. The editor lists imported components and tokens with the file they come from.

@@ -1,6 +1,6 @@
 // The design's tokens, editable by hand: colours with a picker, fonts, and the rest (radius, spacing). Every layer
 // that uses var(--name) follows a change, so each token says how many layers use it.
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { Doc } from "buni/format/doc.ts";
 
@@ -32,6 +32,7 @@ function hex(value: string): string | undefined {
 export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | undefined; onError: (m: string | undefined) => void }) {
   const uses = useMemo(() => tokenUses(doc.nodes), [doc.nodes]);
   const [adding, setAdding] = useState<{ name: string; value: string }>();
+  const nameField = useRef<HTMLInputElement>(null);
   const set = async (name: string, value: string) => {
     const r = await window.buni.edit("tokens", { set: { [name]: value } });
     onError(r.ok ? undefined : r.reply);
@@ -54,9 +55,10 @@ export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | 
         <form className="token-row" onSubmit={(e) => {
           e.preventDefault();
           const name = adding.name.trim().startsWith("--") ? adding.name.trim() : `--${adding.name.trim()}`;
-          if (name.length > 2 && adding.value.trim()) void set(name, adding.value.trim()).then((ok) => ok && setAdding(undefined));
+          // Added, the form clears for the next: a palette is a handful of tokens in a row. Escape closes it.
+          if (name.length > 2 && adding.value.trim()) void set(name, adding.value.trim()).then((ok) => { if (ok) { setAdding({ name: "--", value: "" }); nameField.current?.focus(); } });
         }}>
-          <input className="field mono" autoFocus aria-label="Token name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} />
+          <input ref={nameField} className="field mono" autoFocus aria-label="Token name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} onKeyDown={(e) => e.key === "Escape" && setAdding(undefined)} />
           <input className="field mono" aria-label="Token value" placeholder="#0f766e, 8px, Inter" value={adding.value} onChange={(e) => setAdding({ ...adding, value: e.target.value })} onKeyDown={(e) => e.key === "Escape" && setAdding(undefined)} />
           <button type="submit" className="link-btn">Add</button>
         </form>

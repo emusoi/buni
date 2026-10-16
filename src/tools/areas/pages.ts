@@ -54,6 +54,28 @@ export const pagesTools = {
     },
   }),
 
+  rename_page: tool({
+    description: "Rename a page, or move it to another route. A screen's states move with it, keeping its route.",
+    input: { page: z.string(), name: z.string().min(1).optional(), route: z.string().optional().describe('Starts with /; "" makes it a graphic, off the site') },
+    run: async (doc, a) => {
+      const p = page(doc, a.page);
+      if (a.name === undefined && a.route === undefined) throw new ToolError("give a new name, a route, or both");
+      const route = a.route === undefined ? p.route : a.route || undefined;
+      const value: Page = { ...p, ...(a.name !== undefined ? { name: a.name } : {}) };
+      if (route === undefined) delete value.route;
+      else value.route = route;
+      const ops: Op[] = [{ kind: "put", collection: "pages", value }];
+      // The root frame is named for its page; one renamed by hand keeps its own name.
+      const frame = doc.nodes[p.frame];
+      if (a.name !== undefined && frame && frame.name === p.name) ops.push({ kind: "put", collection: "nodes", value: { ...frame, name: a.name } });
+      // A screen's states share its route, so they move with it.
+      if (p.state === undefined && route !== p.route && p.route !== undefined) {
+        for (const s of Object.values(doc.pages)) if (s.id !== p.id && s.state !== undefined && s.route === p.route) ops.push({ kind: "put", collection: "pages", value: route === undefined ? (({ route: _, ...rest }) => rest)(s) : { ...s, route } });
+      }
+      return { label: `Rename page ${p.name}${a.name !== undefined && a.name !== p.name ? ` to ${a.name}` : ""}`, ops, reply: `Page ${p.id} is ${value.name}${value.route ? ` at ${value.route}` : ", a graphic"}.` };
+    },
+  }),
+
   duplicate_page: tool({
     description:
       "Copy a page with its layers and links, right after it. Give state to make a state of the same screen (\"Error\", \"Refund retrying\"), " +
