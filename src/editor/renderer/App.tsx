@@ -1,8 +1,8 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { Bot, FolderOpen, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, type Doc, type Id, type Node } from "buni/format/doc.ts";
-import type { BuniApi, EditTool, PageExport, Snapshot } from "../api.ts";
+import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
@@ -421,6 +421,15 @@ export function App({ snap }: { snap: Snapshot }) {
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
   const [finding, setFinding] = useState(false);
+  // The project's designs, for switching between them: the sidebar's list and ⌘P. Read when the file opens.
+  const [project, setProject] = useState<HomeFile[]>([]);
+  const [switching, setSwitching] = useState(false);
+  useEffect(() => { void window.buni.home().then((all) => setProject(siblings(all, snap.path))); }, [snap.path]);
+  /** Opens another design of the project, at one of its pages if given. */
+  const openAt = (path: string, page?: Id) => {
+    if (page) try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page, play: false })); } catch { /* opens at its start */ }
+    void window.buni.open(path);
+  };
   const [keysShown, setKeysShown] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -440,6 +449,11 @@ export function App({ snap }: { snap: Snapshot }) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setFinding((f) => !f);
+      }
+      // ⌘P: another design of the project, or a page in one, by name.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "p" && !e.shiftKey) {
+        e.preventDefault();
+        setSwitching((f) => !f);
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") {
         e.preventDefault();
@@ -754,6 +768,20 @@ export function App({ snap }: { snap: Snapshot }) {
           </div>
         )}
         <nav className="tree">
+          {sideTab === "pages" && outline === "pages" && project.length > 1 && (
+            // The project's designs, one click apart; ⌘P finds one, or a page in one, by name.
+            <div className="project-list">
+              <div className="section-label">Project <span className="n" title="⌘P goes to any of them">⌘P</span></div>
+              {project.map((f) => (
+                <button type="button" key={f.path} className={`row${f.path === snap.path ? " active" : ""}`} aria-current={f.path === snap.path ? "page" : undefined} title={f.agentNote ?? f.path} onClick={() => f.path !== snap.path && openAt(f.path)}>
+                  <FolderOpen size={15} strokeWidth={1.75} />
+                  <span className="name">{f.name}</span>
+                  {f.agentNote && <span className="page-agent" style={{ background: "var(--accent)" }} />}
+                  <span className="meta">{f.pages || Object.keys(f.doc.shared).length}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {sideTab === "pages" && outline === "layers" ? (
             frame && activePage
               ? <Layers doc={doc} root={frame} depth={0} selected={selected} also={also} expanded={new Set([...expanded, frame.id])} onToggle={toggle} onSelect={selectNode} />
@@ -942,6 +970,10 @@ export function App({ snap }: { snap: Snapshot }) {
       )}
       {inserting && <QuickInsert doc={doc} dir={snap.dir} where={insertWhere} onInsert={(id, mode) => void insert(id, mode)} onClose={() => setInserting(false)} />}
       {finding && <Palette doc={doc} system={snap.system} actions={actions} onPick={jump} onClose={() => setFinding(false)} />}
+      {switching && <Palette doc={doc} only placeholder="Go to a design, or a page in one" onPick={jump} onClose={() => setSwitching(false)} actions={project.filter((f) => f.path !== snap.path).flatMap((f): Action[] => [
+        { id: f.path, title: f.name, detail: f.pages ? `${f.pages} page${f.pages === 1 ? "" : "s"}` : `${Object.keys(f.doc.shared).length} components`, icon: FolderOpen, run: () => openAt(f.path) },
+        ...pagesInOrder(f.doc).map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),
+      ])} />}
       {play && doc.pages[play.page] && (
         <Play
           doc={doc}
