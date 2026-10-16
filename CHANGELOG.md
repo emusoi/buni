@@ -3,6 +3,11 @@
 What changed in each release of the buni engine and command line. Versions follow [semver](https://semver.org);
 the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
+## Unreleased
+
+- The agent guide (`buni skill`, `buni help`) explains how to split a big app into a project: a file per section, the
+  system shared with `import_file`, and tokens and components kept in step by hand.
+
 ## 0.4.4 — 2026-10-15
 
 - Projects: the designs in one folder are a project. The file name in the editor's top bar lists the project's other

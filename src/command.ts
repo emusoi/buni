@@ -87,9 +87,6 @@ Rules that save retries:
   Tie pages in with place_page {page, client}, connect {…, endpoint}, and bind {node, endpoint, field}. Read buni skills system-design, api-design and database-design first.
 - Why and what's open: set_phase, set_requirement, serve {requirement, id}; set_question (options, assumptions), decide_question;
   set_role, set_access {call, who, roles, rule}; failure on link_parts, ifDown on set_part, ifFails on trace steps; review {id, state}, discuss. Read buni skills design-process.
-- A big app is a project: one folder with a .buni file per section (checkout.buni, account.buni, admin.buni), made with
-  buni new FOLDER/SECTION.buni. Work on the section asked for; the person switches between a project's files from the
-  file name in the editor's top bar.
 - Big systems split across files: buni split FILE part:ID NEW.buni, or import_file {path}; imported parts, shapes and calls can be used, and are edited in their own file.
 - Before building any piece, read its brief: buni context FILE part:ID (or page:, flow:, endpoint:, table:); with no focus, the whole system.
 - Name components "Group / Name" (e.g. "Buttons / Primary"). library_report finds unused and near-duplicate ones; merge_components and rename_component tidy them.
@@ -99,6 +96,19 @@ Pass --as YOUR_NAME on every call so the person sees who is working where.
 Parallel local calls to the same file wait their turn, reading the latest design before editing.
 If a process is killed while writing, its FILE.buni.lock directory may remain: remove it only after confirming no call is still writing.
 Run "buni tools" for every tool and its arguments.
+
+A big app is a project: one folder, one .buni file per section.
+- Split by area of the product, not by page: checkout.buni, account.buni, admin.buni, marketing.buni. Split once a
+  file passes about 15 pages, or when two agents or people would work in it at once; a small app stays one file.
+- Start each with buni new FOLDER/SECTION.buni. Work only in the section asked for; read the others with buni tree.
+- The system lives in one file (system.buni); each section shares it with import_file {"path":"system.buni"}.
+- Tokens and components are not shared between files: set the same tokens call in every section, and copy a shared
+  component (nav, footer) into each file that uses it: layer_html {node} in one, create_component {name, html} in the
+  other, under the same "Group / Name".
+- Inside a section, every screen and state is a page; name pages "NN · Name" so the sitemap reads in order, and
+  link them with connect and name each path through them with set_flow.
+- The person switches between a project's files from the file name in the editor's top bar, and Home groups designs
+  by folder.
 
 Workflow for a bigger design:
 1. buni tree FILE, then buni tools once, to learn the file and the tools. Read buni skills principles, and the skills for the work ahead.
