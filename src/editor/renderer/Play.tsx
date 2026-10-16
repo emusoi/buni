@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Layers, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleAlert, Flag, MessageSquarePlus, Monitor, MousePointerClick, Paperclip, RotateCcw, Sparkles, Unlink, Workflow, X } from "lucide-react";
-import { statesOf, type Connection, type Doc, type Id } from "buni/format/doc.ts";
+import { pageName, statesOf, type Connection, type Doc, type Id } from "buni/format/doc.ts";
 import { nodeAt, srcdoc } from "./Canvas.tsx";
 import { motionCss } from "buni/tools/html.ts";
 import { widthOf } from "./layout.ts";
@@ -34,7 +34,7 @@ function elapsed(ms: number): string {
  * the journey drawer says what the person should be doing and thinking here, and notes pinned on
  * the page go to the agent in one request.
  */
-export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSend }: {
+export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSend, onLeave }: {
   doc: Doc;
   dir: string;
   start: Id;
@@ -44,6 +44,8 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
   onClose: () => void;
   /** Hands the notes and found issues to the agent as a request. */
   onSend: (request: string) => void;
+  /** A link went to a page of another file: play on there. */
+  onLeave?: ((page: Id) => void) | undefined;
 }) {
   const [flowId, setFlowId] = useState(() => flowFor(doc, start, wanted)?.id);
   const flow = flowId ? doc.flows[flowId] : undefined;
@@ -113,6 +115,7 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
   }, [doc, dir, here.page, links, hot, flash, noting]);
 
   const go = (page: Id, via?: Connection) => {
+    if (!doc.pages[page]) return onLeave?.(page);
     setDraft(undefined);
     setChoice(undefined);
     setTrail((t) => [...t, { page, ...(via ? { via } : {}) }]);
@@ -366,7 +369,7 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
                   {choice.links.map((c) => (
                     <button type="button" role="menuitem" key={c.id} onClick={() => go(c.to, c)}>
                       <small>{c.condition ? `If ${c.condition.charAt(0).toLowerCase()}${c.condition.slice(1)}` : "Usually"}</small>
-                      <b>{doc.pages[c.to]?.name ?? c.to}</b>
+                      <b>{pageName(doc, c.to)}</b>
                     </button>
                   ))}
                 </div>
@@ -376,7 +379,7 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
               <div className="play-keys" aria-label="Keys on this screen">
                 {keyLinks.map((c) => (
                   <button type="button" key={c.id} onClick={() => go(c.to, c)}>
-                    <kbd>{c.key}</kbd> {doc.pages[c.to]?.name ?? c.to}
+                    <kbd>{c.key}</kbd> {pageName(doc, c.to)}
                   </button>
                 ))}
               </div>

@@ -110,6 +110,8 @@ A big app is a project: one folder of .buni files, a core and its sections.
 - An existing file grown big: buni split FILE core core.buni moves all its components and tokens into core.buni, ids
   kept, and the file imports it; then start the next section beside it and import core.buni there too.
 - Start each file with buni new FOLDER/NAME.buni. Work only in the file asked for; read the others with buni tree.
+- Sections link to each other: import the other section (import_file; two sections may import each other), then
+  connect {node, to} with the other file's page id. Play follows it into that file; a flow stays within one file.
 - Inside a section, every screen and state is a page; name pages "NN · Name" so the sitemap reads in order, and
   link them with connect and name each path through them with set_flow.
 - The person switches between a project's files from the file name in the editor's top bar, and Home groups designs

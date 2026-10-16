@@ -622,6 +622,8 @@ export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
       assetPrefix: up,
       // A state of a screen opens the screen; a graphic isn't part of the site, so a link to one goes nowhere.
       hrefFor: (to) => {
+        // A page of another file is exported with that file: linked by its route, as the sites are served together.
+        if (!doc.pages[to]) return doc.elsewhere?.[to]?.route;
         const target = doc.pages[to];
         const screen = target?.state === undefined ? to : sitePages.find((s) => s.route === target.route)?.id;
         const file = screen === undefined ? undefined : fileOf.get(screen);

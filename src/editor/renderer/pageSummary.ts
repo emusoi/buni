@@ -11,6 +11,8 @@ export interface PageSummary {
   /** Pages it links to, and pages that link to it. */
   out: Page[];
   in: Page[];
+  /** Pages of other files it links to. */
+  away: NonNullable<Doc["elsewhere"]>[Id][];
   /** Endpoints and operations it calls: from its links, and from layers that show live data. */
   calls: Call[];
   /** The services behind those calls. */
@@ -58,6 +60,7 @@ export function pageSummary(doc: Doc, id: Id): PageSummary | undefined {
     client: page.client === undefined ? undefined : doc.parts[page.client],
     flows,
     out: unique(links.filter((c) => c.page === id && c.to !== id).map((c) => doc.pages[c.to])),
+    away: unique(links.filter((c) => c.page === id && !doc.pages[c.to]).map((c) => doc.elsewhere?.[c.to])),
     in: unique(links.filter((c) => c.to === id && c.page !== id).map((c) => doc.pages[c.page])),
     calls,
     parts: unique(calls.map((c) => doc.parts[c.value.service])),

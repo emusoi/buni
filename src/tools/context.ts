@@ -4,7 +4,7 @@ import { SOURCE_COLLECTIONS, sourceLabel, sourceTarget, type SourceOwner } from 
 import { designNotes } from "./notes.ts";
 import { screenText, terminalClientText } from "./terminal.ts";
 import { placementLine, topologyText } from "./topology.ts";
-import { bodyTypes, outline, pieceName, reviewablePieces, reviewOf, walkFlow, type Access, type Connection, type Decision, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Page, type Part, type QueueEvent, type Section, type Shape, type Table, type Thread, type Trace } from "../format/doc.ts";
+import { bodyTypes, outline, pageName, pieceName, reviewablePieces, reviewOf, walkFlow, type Access, type Connection, type Decision, type Doc, type Endpoint, type Field, type Id, type Link, type Operation, type Page, type Part, type QueueEvent, type Section, type Shape, type Table, type Thread, type Trace } from "../format/doc.ts";
 
 export function sectionsInOrder(doc: Doc): Section[] {
   return Object.values(doc.sections).sort((a, b) => (a.index < b.index ? -1 : a.index > b.index ? 1 : a.id < b.id ? -1 : 1));
@@ -194,7 +194,7 @@ function processSections(doc: Doc, ids: Iterable<Id>): [string, string[]][] {
 function connectionLine(doc: Doc, c: Connection): string {
   const calls = c.endpoint ? `, calls ${nameOf(doc, c.endpoint)}` : "";
   const when = c.condition ? ` (only when ${c.condition.charAt(0).toLowerCase()}${c.condition.slice(1)})` : c.nav ? " (navigation, on every screen)" : "";
-  return `- ${doc.pages[c.page]?.name ?? c.page}: ${c.trigger}${c.key ? ` ${c.key}` : ""} on "${doc.nodes[c.node]?.name ?? c.node}"${calls} → ${doc.pages[c.to]?.name ?? c.to}${when}`;
+  return `- ${doc.pages[c.page]?.name ?? c.page}: ${c.trigger}${c.key ? ` ${c.key}` : ""} on "${doc.nodes[c.node]?.name ?? c.node}"${calls} → ${pageName(doc, c.to)}${when}`;
 }
 
 /** The page's layers as an outline, so the brief carries the screen's structure and words, not only its contracts. */

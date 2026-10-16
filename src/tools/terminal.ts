@@ -1,5 +1,5 @@
 // Terminal clients in the brief, in each framework's own words, and what to look at before building them.
-import { CELL, type Doc, type Id, type Node, type Page, type Part, type Style, type TerminalFramework, type TerminalLanguage, type TerminalSurface, type TerminalTarget } from "../format/doc.ts";
+import { CELL, pageName, type Doc, type Id, type Node, type Page, type Part, type Style, type TerminalFramework, type TerminalLanguage, type TerminalSurface, type TerminalTarget } from "../format/doc.ts";
 
 /**
  * The 16 colours a terminal names, in ANSI order (black is 0, bright white 15), as a dark theme draws them on the
@@ -86,7 +86,7 @@ export function screenText(doc: Doc, page: Page): string | undefined {
   if (!t) return undefined;
   const keys = Object.values(doc.connections)
     .filter((c) => c.page === page.id && c.trigger === "key")
-    .map((c) => `${c.key} → ${doc.pages[c.to]?.name ?? c.to}`);
+    .map((c) => `${c.key} → ${pageName(doc, c.to)}`);
   return [
     `${SURFACE[t.surface]}, ${t.cols}${t.rows !== undefined ? `×${t.rows}` : " columns wide, growing as it prints"}, designed for ${COLORS[t.colors]}`,
     keys.length ? `keys: ${keys.join(", ")}` : "",
@@ -105,7 +105,7 @@ export function terminalNotes(doc: Doc): string[] {
     if (!t) continue;
     const links = Object.values(doc.connections).filter((c) => c.page === p.id);
     if (INTERACTIVE.has(t.surface) && !links.some((c) => c.trigger === "key")) notes.push(`${p.name} has no keys linked; say how to move, act and leave.`);
-    for (const c of links) if (c.trigger === "click" || c.trigger === "hover") notes.push(`${p.name} reaches ${doc.pages[c.to]?.name ?? c.to} only with the mouse; give it a key.`);
+    for (const c of links) if (c.trigger === "click" || c.trigger === "hover") notes.push(`${p.name} reaches ${pageName(doc, c.to)} only with the mouse; give it a key.`);
   }
   // Colour is a client's choice more than a screen's: one note per client, naming its screens.
   for (const part of Object.values(doc.parts)) {

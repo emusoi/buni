@@ -1267,7 +1267,7 @@ function checkRefs(doc: Doc, r: Reader): void {
       const root = rootOf.get(c.node);
       if (root !== page.frame && !(root && usedOn.get(root)?.has(page.frame))) r.fail(join(p, "node"), `node "${c.node}" is not on page "${c.page}"`);
     }
-    if (!pages[c.to]) r.fail(join(p, "to"), `page "${c.to}" does not exist`);
+    if (!pages[c.to] && !doc.elsewhere?.[c.to]) r.fail(join(p, "to"), `page "${c.to}" does not exist here or in a file this one imports`);
     if (c.durationMs < 0) r.fail(join(p, "durationMs"), "duration cannot be negative");
   }
 

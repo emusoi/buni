@@ -8,6 +8,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 - Core files: `imports` now shares components and tokens as well as the system. A section that imports `core.buni`
   places its components and inherits its tokens (its own value wins); they stay edited in the core, and open sections
   redraw when the core changes. The editor lists imported components and tokens with the file they come from.
+- Links across files: a section that imports another can `connect` to its pages. Export links them by route, the
+  inspector lists them under "Goes to other files", and Play follows one into the other file; flows stay in one file.
 - `buni split FILE core core.buni` moves a design's components and tokens into a core file it imports, ids kept, so
   every page draws as before and the next section can share them.
 - The agent guide (`buni skill`, `buni help`) explains how to split a big app into a project: core files for what

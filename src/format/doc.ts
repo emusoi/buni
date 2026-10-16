@@ -953,6 +953,11 @@ export interface Doc {
   /** CSS custom property name ("--color-ink") to value. */
   tokens: Record<string, string>;
   pages: Record<Id, Page>;
+  /**
+   * Pages of the files this one imports, as links may reach them: filled in with the imports (withImports),
+   * never written to a file. A link to one opens the other file.
+   */
+  elsewhere?: Record<Id, Pick<Page, "id" | "name" | "route">>;
   nodes: Record<Id, Node>;
   shared: Record<Id, SharedSection>;
   connections: Record<Id, Connection>;
@@ -1082,11 +1087,13 @@ export function walkFlow(doc: Doc, start: Id): { pages: Id[]; links: Connection[
   const main = [start];
   // Navigation is always there; following it would make every flow the whole app.
   const from = (page: Id) => Object.values(doc.connections).filter((x) => x.page === page && !x.nav).sort((a, b) => (a.id < b.id ? -1 : 1));
-  for (let i = 0; i < main.length; i++) for (const c of from(main[i] ?? "")) if (!c.condition && !main.includes(c.to)) main.push(c.to);
+  // A flow stays in its file: a link to another file's page ends it there.
+  for (let i = 0; i < main.length; i++) for (const c of from(main[i] ?? "")) if (!c.condition && doc.pages[c.to] && !main.includes(c.to)) main.push(c.to);
   const pages = [...main];
   const links: Connection[] = [];
   for (let i = 0; i < pages.length; i++) {
     for (const c of from(pages[i] ?? "")) {
+      if (!doc.pages[c.to]) continue;
       links.push(c);
       if (!pages.includes(c.to)) pages.push(c.to);
     }
@@ -1140,7 +1147,16 @@ export function withImports(doc: Doc, context: Doc | undefined): Doc {
   out.shared = { ...context.shared, ...doc.shared };
   out.nodes = { ...componentNodes(context), ...doc.nodes };
   out.tokens = { ...context.tokens, ...doc.tokens };
+  // The imported files' pages, as places a link may go: names and routes only, never drawn here.
+  out.elsewhere = { ...context.elsewhere };
+  for (const p of Object.values(context.pages)) out.elsewhere[p.id] = { id: p.id, name: p.name, ...(p.route !== undefined ? { route: p.route } : {}) };
+  for (const id of Object.keys(doc.pages)) delete out.elsewhere[id];
   return out;
+}
+
+/** A page's name, here or in an imported file a link reaches. */
+export function pageName(doc: Doc, id: Id): string {
+  return doc.pages[id]?.name ?? doc.elsewhere?.[id]?.name ?? id;
 }
 
 /** Every node of a document's components, roots and all; not its pages'. */

@@ -288,7 +288,7 @@ export class Workspace {
     const out: Record<Id, string> = {};
     for (const f of this.imported) {
       const name = relative(dirname(this.path), f.path) || basename(f.path);
-      for (const c of [...SYSTEM_COLLECTIONS, "shared"] as const) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
+      for (const c of [...SYSTEM_COLLECTIONS, "shared", "pages"] as const) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
     }
     return out;
   }

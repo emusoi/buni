@@ -2,10 +2,11 @@ import { emptyDoc, type Doc } from "./doc.ts";
 
 /** The fields of a document that hold entries by key: tokens and every collection. */
 type BagKey = Exclude<keyof Doc, "buni" | "imports" | "tokensRef">;
-/** A document seen as its bags of entries, whatever each entry is. */
-type Bags = Record<BagKey, Record<string, unknown>>;
+/** A document seen as its bags of entries, whatever each entry is; `elsewhere` only on a document with its imports. */
+type Bags = Partial<Record<BagKey, Record<string, unknown>>>;
 
-const BAGS = Object.keys(emptyDoc()).filter((k): k is BagKey => k !== "buni");
+const BAGS: BagKey[] = [...Object.keys(emptyDoc()).filter((k): k is BagKey => k !== "buni"), "elsewhere"];
+const NONE: Record<string, unknown> = {};
 
 /**
  * How one version of a document differs from an earlier one, entry by entry. Versions share every
@@ -24,9 +25,10 @@ export function diffDoc(prev: Doc, next: Doc): DocPatch {
   const bags: DocPatch["bags"] = {};
   for (const k of BAGS) {
     if (a[k] === b[k]) continue;
+    const was = a[k] ?? NONE, now = b[k] ?? NONE;
     const put: Record<string, unknown> = {};
-    for (const [id, v] of Object.entries(b[k])) if (a[k][id] !== v) put[id] = v;
-    const removed = Object.keys(a[k]).filter((id) => !(id in b[k]));
+    for (const [id, v] of Object.entries(now)) if (was[id] !== v) put[id] = v;
+    const removed = Object.keys(was).filter((id) => !(id in now));
     if (removed.length > 0 || Object.keys(put).length > 0) bags[k] = { put, removed };
   }
   const { buni, imports, tokensRef } = next;
@@ -41,7 +43,7 @@ export function applyPatch(doc: Doc, patch: DocPatch): Doc {
   for (const k of BAGS) {
     const p = patch.bags[k];
     if (!p) continue;
-    const next = { ...bags[k], ...p.put };
+    const next = { ...(bags[k] ?? NONE), ...p.put };
     for (const id of p.removed) delete next[id];
     bags[k] = next;
   }

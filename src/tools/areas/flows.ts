@@ -15,7 +15,7 @@ export const flowsTools = {
     input: {
       node: z.string(),
       page: z.string().optional().describe("Only for layers inside a component: link on this page only, not every page that uses it"),
-      to: z.string().describe("Destination page id"),
+      to: z.string().describe("Destination page id: here, or in a file this one imports"),
       trigger: z.enum(["click", "hover", "submit", "key"]).default("click"),
       key: z.string().optional().describe('For a "key" trigger: the key, e.g. "enter", "ctrl+k", "?", or a tmux binding "prefix g". Give the screen\'s frame as node for a key that works anywhere on it'),
       transition: z.enum(["none", "fade", "slide-left", "slide-right"]).default("none"),
@@ -25,7 +25,9 @@ export const flowsTools = {
       nav: z.boolean().optional().describe("Navigation that is always there (a sidebar item, a tab bar): flows don't follow it as a step. Kept from the existing link when omitted"),
     },
     run: async (doc, a, ctx) => {
-      const to = page(doc, a.to);
+      // A page of an imported file is a place to go too: following the link opens that file.
+      const to = doc.pages[a.to] ?? doc.elsewhere?.[a.to];
+      if (!to) throw new ToolError(`page "${a.to}" does not exist here or in a file this one imports`);
       if (a.trigger === "key" && !a.key) throw new ToolError('a "key" trigger needs key, e.g. "enter"');
       // Across a component's uses, the page it points to doesn't link to itself (the nav item for where you are).
       const froms = a.page === undefined ? linkPages(doc, a.node).filter((p, _, all) => all.length === 1 || p.id !== to.id) : [page(doc, a.page)];

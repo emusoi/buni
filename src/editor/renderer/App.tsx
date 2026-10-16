@@ -40,6 +40,9 @@ const tilde = (path: string) => path.replace(/^\/Users\/[^/]+/, "~");
 
 /** What the Export menu offers for a page: pictures and PDF always; SVG and an icon set when the page is fit for them. */
 type Mode = "screens" | "system" | "plan" | "agents";
+const ARRIVE = "buni.arrive";
+const isArrival = (v: unknown): v is { page: Id; play: boolean } => typeof v === "object" && v !== null && "page" in v && typeof v.page === "string" && "play" in v && typeof v.play === "boolean";
+
 /** A path written relative to the file at `from`, as the file's own path. */
 export const besideFile = (from: string, rel: string): string => decodeURIComponent(new URL(rel, `file://${from}`).pathname);
 
@@ -294,6 +297,22 @@ export function App({ snap }: { snap: Snapshot }) {
     // Set outside setPage's updater: React runs updaters later, and one clearing the selection there undid a jump's.
     if (select !== undefined) setSelected(select);
     else if (was !== id) setSelected(undefined);
+  }, []);
+  /** Opens the file a page of another file lives in, at that page; playing it, if `play`. */
+  const openElsewhere = (page: Id, play = false) => {
+    const file = snap.owners[page];
+    if (!file) return;
+    // Handed to the next window by the tab, as hosts open a file with no more than its path.
+    try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page, play })); } catch { /* the file opens at its start */ }
+    void window.buni.open(besideFile(snap.path, file));
+  };
+  // Arrived by a link from another file: go to its page, playing if the link was followed in Play.
+  useEffect(() => {
+    let arrive: unknown;
+    try { arrive = JSON.parse(sessionStorage.getItem(ARRIVE) ?? "null"); sessionStorage.removeItem(ARRIVE); } catch { return; }
+    if (!isArrival(arrive) || !snap.view.pages[arrive.page]) return;
+    if (arrive.play) setPlay({ page: arrive.page });
+    else openPage(arrive.page);
   }, []);
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and
   // under the desktop app's Edit menu alike.
@@ -827,7 +846,7 @@ export function App({ snap }: { snap: Snapshot }) {
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
             {panel === "design" && system && !shownJourney && <OwnersContext.Provider value={snap.owners}><SystemInspector doc={snap.system} dir={snap.dir} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} /></OwnersContext.Provider>}
-            {panel === "design" && !(system && !shownJourney) && <Inspector doc={doc} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} />}
+            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth}  /></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
             </div>
@@ -857,6 +876,7 @@ export function App({ snap }: { snap: Snapshot }) {
           {...(play.flow ? { flow: play.flow } : {})}
           startWidth={viewAt[play.page]}
           onClose={() => setPlay(undefined)}
+          onLeave={(page) => openElsewhere(page, true)}
           onSend={(request) => {
             setPlay(undefined);
             askAgent(request);

@@ -1,7 +1,7 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, pageName, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
@@ -119,7 +119,7 @@ function DataSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
       </div>
       {links.map((c) => (
         <div key={c.id} className="data-row">
-          <span className="prop-name">On {c.trigger} → {doc.pages[c.to]?.name ?? c.to}, calls</span>
+          <span className="prop-name">On {c.trigger} → {pageName(doc, c.to)}, calls</span>
           <Select
             title="The endpoint this link calls"
             value={c.endpoint ?? ""}
@@ -525,7 +525,7 @@ function ScreenSection({ page, onError }: { page: Page & { terminal: TerminalScr
   );
 }
 
-export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onWiden, viewWidth, onViewWidth }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth }: {
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
   ownTokens?: Doc["tokens"] | undefined;
@@ -547,6 +547,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   onDeleted: () => void;
   onSelect: (id: Id) => void;
   onOpenComponent: (id: Id) => void;
+  /** Opens the file a page of another file lives in, at that page. */
+  onOpenElsewhere?: ((page: Id) => void) | undefined;
 }) {
   const [notice, setNotice] = useState<string>();
   // Design or Code, remembered for next time; a convenience, so a browser that won't store it just starts on Design.
@@ -567,7 +569,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
-        {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
+        {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {notice && <div className="notice">{notice}</div>}
         {page ? <Sources key={page} doc={doc} id={page} /> : (() => { const component = Object.values(doc.shared).find((c) => c.root === root); return component ? <Sources key={component.id} doc={doc} id={component.id} /> : null; })()}
         <Tokens doc={doc} own={ownTokens} onError={setNotice} />
