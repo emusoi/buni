@@ -1,5 +1,5 @@
 import { Sources } from "./Sources.tsx";
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
 import { EASINGS, ENTRANCES, pageName, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
@@ -525,6 +525,9 @@ function ScreenSection({ page, onError }: { page: Page & { terminal: TerminalScr
   );
 }
 
+/** How often other designs of the project place this file's components, by component: they change with it too. */
+export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
+
 export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth }: {
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
@@ -599,6 +602,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
     );
   };
   const source = componentOf(doc, node);
+  const elsewhere = useContext(UsedElsewhere);
   const onPage = !source && node.parent !== undefined && node.kind !== "instance";
   const extra = [...new Set([...Object.keys(st), ...added])].filter((p) => !TYPED.has(p)).sort();
   const fonts = [...new Set([...FONTS, ...Object.values(doc.nodes).flatMap((n) => (n.style.fontFamily ? [n.style.fontFamily] : [])), ...Object.keys(doc.tokens).filter((k) => /font/i.test(k)).map((k) => `var(${k})`)])];
@@ -668,7 +672,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       {source && <ComponentVariants doc={doc} component={source.id} onOpen={onOpenComponent} onError={setNotice} />}
       {source && (
         <div className="notice component-note">
-          Part of the <b>{source.name}</b> component. Changes here show in all {usesOf(doc, source.id)} uses.
+          Part of the <b>{source.name}</b> component. {(() => { const n = usesOf(doc, source.id) + (elsewhere[source.id] ?? 0); return `Changes here show in ${n === 1 ? "its 1 use" : `all ${n} uses`}${elsewhere[source.id] ? `, ${elsewhere[source.id]} in other designs` : ""}.`; })()}
         </div>
       )}
       {preview && node.id === root && <SmallSizes doc={doc} page={preview.page} dir={preview.dir} />}

@@ -6,7 +6,7 @@ import type { BuniApi, EditTool, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
-import { InsertBar, Inspector } from "./Inspector.tsx";
+import { InsertBar, Inspector, UsedElsewhere } from "./Inspector.tsx";
 import { HandOff } from "./HandOff.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -27,7 +27,7 @@ import type { SystemSelection, SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
-import { ProjectSwitch } from "./ProjectSwitch.tsx";
+import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
 
 declare global {
   interface Window {
@@ -298,7 +298,19 @@ export function App({ snap }: { snap: Snapshot }) {
     if (select !== undefined) setSelected(select);
     else if (was !== id) setSelected(undefined);
   }, []);
-  /** Opens the file a page of another file lives in, at that page; playing it, if `play`. */
+  // How often the project's other designs place this file's components (a core's); counted when one is opened.
+  const [usedElsewhere, setUsedElsewhere] = useState<Record<Id, number>>({});
+  useEffect(() => {
+    if (!component || !snap.view.shared[component]) return;
+    void window.buni.home().then((all) => {
+      const counts: Record<Id, number> = {};
+      // Their documents carry this file's own components' layers too; only their own instances count.
+      for (const f of siblings(all, snap.path)) if (f.path !== snap.path) for (const n of Object.values(f.doc.nodes)) if (n.kind === "instance" && snap.view.shared[n.shared] && !snap.view.nodes[n.id]) counts[n.shared] = (counts[n.shared] ?? 0) + 1;
+      setUsedElsewhere(counts);
+    });
+  // Read once per component opened: other designs don't change with this file's edits.
+  }, [component, snap.path]);
+  /** Opens the file a page or component of another file lives in, at it; playing the page, if `play`. */
   const openElsewhere = (page: Id, play = false) => {
     const file = snap.owners[page];
     if (!file) return;
@@ -310,8 +322,10 @@ export function App({ snap }: { snap: Snapshot }) {
   useEffect(() => {
     let arrive: unknown;
     try { arrive = JSON.parse(sessionStorage.getItem(ARRIVE) ?? "null"); sessionStorage.removeItem(ARRIVE); } catch { return; }
-    if (!isArrival(arrive) || !snap.view.pages[arrive.page]) return;
-    if (arrive.play) setPlay({ page: arrive.page });
+    if (!isArrival(arrive)) return;
+    if (snap.view.shared[arrive.page]) { openComponent(arrive.page); setReveal({ page: arrive.page, at: Date.now() }); }
+    else if (!snap.view.pages[arrive.page]) return;
+    else if (arrive.play) setPlay({ page: arrive.page });
     else openPage(arrive.page);
   }, []);
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and
@@ -430,6 +444,8 @@ export function App({ snap }: { snap: Snapshot }) {
   const modeKey = useRef(goMode);
   modeKey.current = goMode;
   const openComponent = (id: Id) => {
+    // A core file's component is edited there.
+    if (!snap.view.shared[id] && snap.owners[id]) return openElsewhere(id);
     setJourney(undefined);
     setSystem(undefined);
     setComponent(id);
@@ -776,7 +792,7 @@ export function App({ snap }: { snap: Snapshot }) {
           {Object.values(doc.shared).sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
             imported.has(c.id) ? (
               // A core file's component is edited there: its row opens that file.
-              <button type="button" key={c.id} className="row" title={`From ${snap.owners[c.id]}: open it to edit`} onClick={() => void window.buni.open(besideFile(snap.path, snap.owners[c.id] ?? ""))}>
+              <button type="button" key={c.id} className="row" title={`From ${snap.owners[c.id]}: open it to edit`} onClick={() => openElsewhere(c.id)}>
                 <Component size={16} strokeWidth={1.75} className="dim" />
                 <span className="name">{c.name}</span>
                 <span className="meta">{snap.owners[c.id]?.replace(/^.*\//, "")}</span>
@@ -796,7 +812,7 @@ export function App({ snap }: { snap: Snapshot }) {
                 <ChevronLeft size={14} className="dim" />
                 <span className="name">Pages</span>
               </button>
-              <LibraryPanel doc={doc} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
+              <LibraryPanel doc={doc} path={snap.path} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
               {compRoot && (
                 <>
                   <div className="section-label">Layers of {doc.shared[component ?? ""]?.name}</div>
@@ -870,7 +886,7 @@ export function App({ snap }: { snap: Snapshot }) {
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
             {panel === "design" && system && !shownJourney && <OwnersContext.Provider value={snap.owners}><SystemInspector doc={snap.system} dir={snap.dir} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} /></OwnersContext.Provider>}
-            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth}  /></OwnersContext.Provider>}
+            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth}  /></UsedElsewhere.Provider></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
             </div>

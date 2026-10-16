@@ -33,7 +33,8 @@ export function componentWidth(doc: Doc, sharedId: Id): number {
   return own ?? (small ? 320 : 1200);
 }
 
-const px = (v: string | undefined) => Number.parseInt(v ?? "", 10) || undefined;
+// Pixels only: "100%" fills whatever holds it, so says nothing about a board's size.
+const px = (v: string | undefined) => (v && /^\d+(\.\d+)?(px)?$/.test(v.trim()) ? Number.parseFloat(v) || undefined : undefined);
 const pageHeight = (doc: Doc, pageId: Id) => {
   const style = doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style;
   return px(style?.height) ?? px(style?.minHeight) ?? 900;

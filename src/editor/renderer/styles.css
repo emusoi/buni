@@ -1360,6 +1360,11 @@ svg { flex-shrink: 0; }
 .link-away span { opacity: 0.75; font-weight: 400; }
 .route-field { width: 100%; padding: 0; border: 0; background: none; color: var(--label); font-size: 12px; }
 .route-field:hover, .route-field:focus { color: var(--ink); outline: none; }
+.library-uses { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 10px 8px; }
+.library-uses .field { flex: 1; min-width: 0; height: 26px; font-size: 12px; }
+.use-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 999px; background: var(--hover); font-size: 12px; color: var(--ink); }
+.use-chip button { display: inline-flex; padding: 2px; border: 0; border-radius: 999px; background: none; color: var(--label); }
+.use-chip button:hover { color: var(--ink); background: var(--sidebar); }
 .token-from { flex: none; width: 24px; font-size: 10px; color: var(--placeholder); text-align: center; }
 .project-switch { position: relative; min-width: 0; -webkit-app-region: no-drag; }
 .project-switch > button { padding: 0 6px 0 8px; }

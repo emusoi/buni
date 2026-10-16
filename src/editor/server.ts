@@ -285,7 +285,16 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     },
     create: async (file, name) => {
       const path = await freePath(str(name, "create"), dir, file);
-      await store.write(path, serializeDoc(emptyDoc()));
+      const doc = emptyDoc();
+      // A new section of a project builds on what the open design does: its imports, and the design itself when
+      // it is a core (components, no pages); so it starts with the project's tokens and components.
+      const from = typeof file === "string" && isDesignFile(file, dir) ? await opened.get(file)?.then((o) => o.ws.view(), () => undefined) : undefined;
+      if (from && dirname(file ?? "") === dirname(path)) {
+        const core = Object.keys(from.shared).length > 0 && Object.keys(from.pages).length === 0;
+        const imports = [...(from.imports ?? []), ...(core ? [basename(file ?? "")] : [])];
+        if (imports.length) doc.imports = [...new Set(imports)];
+      }
+      await store.write(path, serializeDoc(doc));
       return path;
     },
     openExample: async () => {

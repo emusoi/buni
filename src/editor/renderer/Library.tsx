@@ -4,6 +4,8 @@ import { libraryReport, usesOf } from "buni/tools/library.ts";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { componentSrcdoc } from "./Canvas.tsx";
 import { NameDialog } from "./Ask.tsx";
+import { siblings } from "./ProjectSwitch.tsx";
+import type { HomeFile } from "../api.ts";
 import { componentWidth } from "./layout.ts";
 import { libraryGroups, libraryItems, type LibraryFilter, type LibraryItem } from "./library.ts";
 
@@ -45,8 +47,34 @@ const FILTERS: { id: LibraryFilter; label: string }[] = [
 ];
 
 /** The sidebar's Library tab: components by group, as thumbnails, searchable and filterable. */
-export function LibraryPanel({ doc, dir, page, open, onOpen, onInsert, onHealth }: {
+/** The files this one builds on (a core of tokens and components), and a way to build on another of its project. */
+function Uses({ doc, path }: { doc: Doc; path: string }) {
+  const [others, setOthers] = useState<HomeFile[]>();
+  const uses = doc.imports ?? [];
+  const run = (args: { path: string; remove?: true }) => void window.buni.edit("import_file", args).then(() => setOthers(undefined));
+  const name = (rel: string) => rel.replace(/^.*\//, "").replace(/\.buni$/, "");
+  // Projects are folders, so the files on offer sit beside this one and are named by their file name.
+  const offer = (others ?? []).filter((f) => f.path !== path && !uses.includes(`${f.name}.buni`));
+  return (
+    <div className="library-uses">
+      <span className="prop-name">Uses</span>
+      {uses.map((u) => (
+        <span key={u} className="use-chip" title={`Tokens and components from ${u}`}>{name(u)}<button type="button" aria-label={`Stop using ${u}`} onClick={() => run({ path: u, remove: true })}><X size={11} /></button></span>
+      ))}
+      {others === undefined
+        ? <button type="button" className="library-insert" title="Use the tokens and components of another design in this project" onClick={() => void window.buni.home().then((all) => setOthers(siblings(all, path)))}><Plus size={13} /> {uses.length ? "" : "A core file"}</button>
+        : <select className="field" autoFocus aria-label="Design to use" value="" onChange={(e) => e.target.value && run({ path: e.target.value })} onBlur={() => setOthers(undefined)}>
+            <option value="">{offer.length ? "Use…" : "No other designs here"}</option>
+            {offer.map((f) => <option key={f.path} value={`${f.name}.buni`}>{f.name} · {Object.keys(f.doc.shared).length} components</option>)}
+          </select>}
+    </div>
+  );
+}
+
+export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onHealth }: {
   doc: Doc;
+  /** This file's path, to offer the other designs of its project. */
+  path: string;
   dir: string;
   page: Id | undefined;
   open: Id | undefined;
@@ -77,9 +105,10 @@ export function LibraryPanel({ doc, dir, page, open, onOpen, onInsert, onHealth 
     // Only when the library first appears or its size class changes.
   }, [groups.length > 4]);
 
-  if (items.length === 0) return <div className="side-empty"><p className="hint">No components yet. Start one here, or select a layer and make it a component.</p>{newButton}{dialog}</div>;
+  if (items.length === 0) return <div className="side-empty"><Uses doc={doc} path={path} /><p className="hint">No components yet. Start one here, use a core file's, or select a layer and make it a component.</p>{newButton}{dialog}</div>;
   return (
     <div className="library">
+      <Uses doc={doc} path={path} />
       <label className="library-search">
         <Search size={14} className="dim" />
         <input placeholder={`Search ${items.length} component${items.length === 1 ? "" : "s"}`} value={query} onChange={(e) => setQuery(e.target.value)} />
