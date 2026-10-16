@@ -40,7 +40,7 @@ const NEEDS = "Drawing pages needs Chrome, Chromium or Edge (or set BUNI_CHROME 
 export async function renderHeadless(job: RenderJob, app: AppRenderer | undefined = appRenderer()): Promise<Reply> {
   try {
     const ws = await Workspace.open(job.file);
-    const doc = ws.view();
+    const doc = ws.system();
     if (job.format === "system") {
       if (app) return await renderInApp(app, job);
       const browser = findBrowser();
@@ -112,7 +112,7 @@ export async function screenshotPng(file: string, page: string): Promise<string>
 
 /** A terminal screen of the design in `file` as the characters a terminal shows; the agent's and MCP's read_screen. */
 export async function screenAsText(file: string, pageId: Id): Promise<string> {
-  const doc = (await Workspace.open(file)).view();
+  const doc = (await Workspace.open(file)).system();
   const page = doc.pages[pageId];
   if (!page) throw new Error(`page "${pageId}" does not exist`);
   const screen = await screenOf(doc, page, dirname(file));

@@ -4,7 +4,10 @@ import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from 
 import { fontFaces, fontSlug, renderComponent, renderPage } from "buni/tools/html.ts";
 
 interface Props {
+  /** The design with what it imports: imported components render in instances, but aren't boards here. */
   doc: Doc;
+  /** Components that live in an imported file, by id. */
+  imported?: ReadonlySet<Id>;
   dir: string;
   activePage: Id | undefined;
   selected: Id | undefined;
@@ -770,6 +773,8 @@ export function Canvas(props: Props) {
   }, []);
   const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>());
   const pages = useMemo(() => pagesInOrder(props.doc), [props.doc.pages]);
+  // This file's own boards; imported components are drawn inside instances only, and edited in their own file.
+  const own = useMemo(() => !props.imported?.size ? props.doc : { ...props.doc, shared: Object.fromEntries(Object.entries(props.doc.shared).filter(([id]) => !props.imported?.has(id))) }, [props.doc, props.imported]);
   const resources = useMemo(() => new Map<string, Promise<string>>(), [props.dir]);
 
   const register = useMemo(
@@ -804,7 +809,7 @@ export function Canvas(props: Props) {
     return n;
   }, [props.doc.nodes]);
   // Laid out again as boards report their heights, so rows keep clear of the tall pages and components above them.
-  const saved = useMemo(() => placement(props.doc, heights.current), [props.doc, loads]);
+  const saved = useMemo(() => placement(own, heights.current), [own, loads]);
   // An agent's jump chip needs its target document even when the board is offscreen.
   const retained = useMemo(() => {
     const roots = new Map<Id, Id>([
@@ -856,7 +861,7 @@ export function Canvas(props: Props) {
     if (p) m.set(dragging.page, { x: p.x + dragging.delta.x, y: p.y + dragging.delta.y });
     return m;
   }, [saved, dragging]);
-  const boxes = useMemo(() => new Map([...pages, ...Object.values(props.doc.shared)].map((board) => {
+  const boxes = useMemo(() => new Map([...pages, ...Object.values(own.shared)].map((board) => {
     const page = props.doc.pages[board.id];
     const style = props.doc.nodes[page?.frame ?? props.doc.shared[board.id]?.root ?? ""]?.style;
     const given = style?.height ?? style?.minHeight ?? "";
@@ -866,13 +871,13 @@ export function Canvas(props: Props) {
       width: page ? props.viewAt?.[board.id] ?? widthOf(props.doc, board.id) : componentWidth(props.doc, board.id),
       height: heights.current.get(board.id) ?? (/^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : page ? 900 : 400),
     }];
-  })), [pages, props.doc, props.viewAt, at, loads]);
+  })), [pages, own, props.doc, props.viewAt, at, loads]);
   const nearby = useMemo(() => nearbyBoards(boxes, view, canvasSize), [boxes, view, canvasSize]);
   useLayoutEffect(() => setLinks(arrows(props.doc, boxes, boards.current)), [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
   const sets = useMemo(() => {
     const groups = new Map<string, Id[]>();
-    for (const s of Object.values(props.doc.shared)) {
+    for (const s of Object.values(own.shared)) {
       const cut = s.name.lastIndexOf("/");
       if (cut > 0) groups.set(s.name.slice(0, cut).trim(), [...(groups.get(s.name.slice(0, cut).trim()) ?? []), s.id]);
     }
@@ -885,7 +890,7 @@ export function Canvas(props: Props) {
       const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
       return [{ name, count: ids.length, variants: ids.some((id) => props.doc.shared[id]?.variant), x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y }];
     });
-  }, [props.doc.shared, props.doc.nodes, at, loads]); // heights arrive with loads
+  }, [own.shared, props.doc.nodes, at, loads]); // heights arrive with loads
   const { onMovePage } = props;
   const onDrag = useMemo(
     () => (page: Id, delta: Point | undefined, done: boolean) => {
@@ -1059,7 +1064,7 @@ export function Canvas(props: Props) {
     zoomingNow();
     updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
   };
-  const fitAll = () => fitTo([...pages.map((p) => p.id), ...Object.keys(props.doc.shared)]);
+  const fitAll = () => fitTo([...pages.map((p) => p.id), ...Object.keys(own.shared)]);
   const fitPage = () => props.activePage && fitTo([props.activePage]);
   const fit = useRef({ all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) });
   fit.current = { all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) };
@@ -1078,7 +1083,7 @@ export function Canvas(props: Props) {
     framed.current = true;
     requestAnimationFrame(() => fitPages.current());
   }, [pages.length]);
-  const titles = useMemo(() => rowTitles(props.doc, at), [props.doc, at]);
+  const titles = useMemo(() => rowTitles(own, at), [own, at]);
   /** Top of the last row title drawn this render; closer ones are skipped. */
   let shown: number | undefined;
 
@@ -1139,7 +1144,7 @@ export function Canvas(props: Props) {
             <span className="set-label">◆ {s.name} · {s.count} {s.variants ? "variants" : "in this set"}</span>
           </div>
         ))}
-        {[...pages, ...Object.values(props.doc.shared)].filter((p) => nearby.has(p.id) || p.id === props.activePage || retained.has(p.id) || p.id === dragging?.page).map((p) => (
+        {[...pages, ...Object.values(own.shared)].filter((p) => nearby.has(p.id) || p.id === props.activePage || retained.has(p.id) || p.id === dragging?.page).map((p) => (
           <Artboard
             key={p.id}
             doc={props.doc}
@@ -1230,7 +1235,7 @@ export function Canvas(props: Props) {
         <button type="button" onClick={() => setLinkMode((m) => NEXT_MODE[m])} title={`Links drawn: ${linkMode === "page" ? "this page's" : linkMode}. Click for the next.`}>
           Links {linkMode === "page" ? "here" : linkMode}
         </button>
-        <button type="button" onClick={() => props.onTidy(tidy(props.doc, heights.current))} title="One row per flow, then the rest">Tidy</button>
+        <button type="button" onClick={() => props.onTidy(tidy(own, heights.current))} title="One row per flow, then the rest">Tidy</button>
       </div>
     </div>
   );

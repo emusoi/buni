@@ -51,6 +51,7 @@ import {
   PRIMITIVES,
   SYSTEM_COLLECTIONS,
   withImports,
+  componentNodes,
   type Table,
   type Comment,
   type CommentState,
@@ -1728,15 +1729,19 @@ export function validateDoc(given: Doc, givenContext?: Doc): FormatError[] {
     return r.errors;
   }
   checkRefs(withImports(doc, context), r);
+  // Components and their nodes come in from imports as the system does; each file answers only for its own.
+  const importedNodes = componentNodes(context);
+  const collections = [...SYSTEM_COLLECTIONS, "shared", "nodes"] as const;
+  const theirs = (c: (typeof collections)[number]): Record<string, unknown> => (c === "nodes" ? importedNodes : context[c]);
   const own = (path: string) => {
-    const c = SYSTEM_COLLECTIONS.find((x) => path.startsWith(`${x}.`));
+    const c = collections.find((x) => path.startsWith(`${x}.`));
     if (!c) return true;
     const id = path.slice(c.length + 1).split(/[.[]/)[0] ?? "";
     return doc[c][id] !== undefined;
   };
   const errors = r.errors.filter((e) => own(e.path));
-  for (const c of SYSTEM_COLLECTIONS) {
-    for (const id of Object.keys(doc[c])) if (context[c][id] !== undefined) errors.push({ path: `${c}.${id}`, message: `"${id}" is also in an imported file; ids are unique across files` });
+  for (const c of collections) {
+    for (const id of Object.keys(doc[c])) if (theirs(c)[id] !== undefined) errors.push({ path: `${c}.${id}`, message: `"${id}" is also in an imported file; ids are unique across files` });
   }
   return errors;
 }

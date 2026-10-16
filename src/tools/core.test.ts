@@ -1,0 +1,47 @@
+import { expect, test } from "bun:test";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emptyDoc } from "../format/doc.ts";
+import { serializeDoc } from "../format/serialize.ts";
+import { renderPage } from "./html.ts";
+import { Workspace } from "./workspace.ts";
+
+test("a core file shares its components and tokens; sections place them, override tokens, and can't edit them", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-core-"));
+  await mkdir(join(dir, "checkout"));
+  for (const f of ["core.buni", "checkout/checkout.buni"]) await writeFile(join(dir, f), serializeDoc(emptyDoc()));
+  const core = await Workspace.open(join(dir, "core.buni"));
+  const ok = async (ws: Workspace, tool: Parameters<Workspace["call"]>[1], args: object) => {
+    const r = await ws.call("pi", tool, args);
+    if (!r.ok) throw new Error(`${tool}: ${r.reply}`);
+    return r.reply;
+  };
+  await ok(core, "tokens", { set: { "--ink": "#111111", "--accent": "#0055ff" } });
+  await ok(core, "create_component", { name: "Buttons / Primary", html: '<button style="color: var(--accent)">Pay now</button>' });
+  const button = Object.values(core.view().shared)[0]!;
+
+  const section = await Workspace.open(join(dir, "checkout/checkout.buni"));
+  await ok(section, "import_file", { path: "../core.buni" });
+  expect(section.owners()[button.id]).toBe("../core.buni");
+  const page = (await ok(section, "create_page", { name: "Pay", route: "/pay" })).match(/root frame (\S+?)[;.]/)?.[1];
+  await ok(section, "place_component", { component: button.id, parent: page });
+  await ok(section, "tokens", { set: { "--accent": "#ff3300" } });
+
+  // Drawn with the core's component and tokens, the section's own token winning.
+  const html = renderPage(section.system(), Object.keys(section.view().pages)[0]!);
+  expect(html.html).toContain("Pay now");
+  expect(html.css).toContain("#ff3300");
+  expect(html.css).toContain("#111111");
+  // The core's component stays in the core: not copied in, and not editable from here.
+  const saved = await readFile(join(dir, "checkout/checkout.buni"), "utf8");
+  expect(saved).not.toContain("Pay now");
+  const r = await section.call("pi", "update_styles", { nodes: [button.root], style: { color: "red" } });
+  expect(r.ok).toBe(false);
+  expect(r.reply).toContain("imported file");
+  // An edit to the core reaches the section once it reads its imports again.
+  await ok(core, "tokens", { set: { "--ink": "#222222" } });
+  expect(section.system().tokens["--ink"]).toBe("#111111");
+  await section.refreshImports();
+  expect(section.system().tokens["--ink"]).toBe("#222222");
+});

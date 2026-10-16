@@ -96,9 +96,11 @@ what breaks them.
 
 ## Imports
 
-`imports` lists other `.buni` files (relative paths) whose system this file builds on. This file's references
-resolve against everything it imports, and an id may live in only one of the files; each imported file is checked
-in full when it is opened itself. (`tokensRef` is reserved for a shared tokens file; nothing reads it yet.)
+`imports` lists other `.buni` files (relative paths) whose system, components and tokens this file builds on. This
+file's references resolve against everything it imports: an instance may place an imported component, and a token
+the file doesn't set comes from its imports (its own value wins). Imported pages are not shared. An id may live in
+only one of the files, so an imported component is edited in its own file; each imported file is checked in full
+when it is opened itself. (`tokensRef` is reserved for a shared tokens file; nothing reads it yet.)
 
 ## Validity
 

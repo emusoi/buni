@@ -1136,5 +1136,21 @@ export function withImports(doc: Doc, context: Doc | undefined): Doc {
   if (!context) return doc;
   const out: Doc = { ...doc };
   for (const c of SYSTEM_COLLECTIONS) (out as unknown as Record<string, unknown>)[c] = { ...context[c], ...doc[c] };
+  // A file shares its components and tokens too, so a core file can hold what every section reuses. Its pages stay its own.
+  out.shared = { ...context.shared, ...doc.shared };
+  out.nodes = { ...componentNodes(context), ...doc.nodes };
+  out.tokens = { ...context.tokens, ...doc.tokens };
+  return out;
+}
+
+/** Every node of a document's components, roots and all; not its pages'. */
+export function componentNodes(doc: Doc): Record<Id, Node> {
+  const out: Record<Id, Node> = {};
+  const walk = (n: Node | undefined): void => {
+    if (!n || out[n.id]) return;
+    out[n.id] = n;
+    for (const c of childrenOf(doc, n.id)) walk(c);
+  };
+  for (const s of Object.values(doc.shared)) walk(doc.nodes[s.root]);
   return out;
 }

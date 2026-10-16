@@ -360,7 +360,7 @@ export const systemTools = {
   }),
 
   import_file: tool({
-    description: "Build on another .buni file's system: its parts, shapes, tables and calls become usable here (they stay edited in their own file). Pass a path relative to this file.",
+    description: "Build on another .buni file: its components, tokens, parts, shapes, tables and calls become usable here (they stay edited in their own file; a token set here wins). Pass a path relative to this file.",
     input: { path: z.string().min(1).describe('"catalog.buni"'), remove: z.boolean().optional().describe("Stop importing it") },
     run: async (doc, a) => {
       const now = doc.imports ?? [];

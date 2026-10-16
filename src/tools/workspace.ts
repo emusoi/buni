@@ -255,12 +255,24 @@ export class Workspace {
     return this.session.base;
   }
 
+  /** Reads the imported files again, as one changed elsewhere (a core file's components, say). Not an edit: onChange stays quiet, so files importing each other don't refresh each other forever. */
+  refreshImports(): Promise<void> {
+    return this.exclusive(async () => {
+      if (!this.view().imports?.length) return;
+      // ponytail: rereads every import on each refresh; compare mtimes if cores get large.
+      const imported = await loadImports(this.store, this.path, this.view()).catch(() => undefined);
+      if (!imported) return;
+      this.imported = imported;
+      this.session = { ...this.session, context: systemOf(imported) };
+    });
+  }
+
   /** The files this one imports, as last read. */
   imports(): readonly ImportedFile[] {
     return this.imported;
   }
 
-  /** This file's system with everything it imports: what briefs, specs and the System views read. */
+  /** This file with what it imports (the system, components and tokens): what briefs, drawing and tools read. */
   system(): Doc {
     return withImports(this.view(), this.session.context);
   }
@@ -270,7 +282,7 @@ export class Workspace {
     const out: Record<Id, string> = {};
     for (const f of this.imported) {
       const name = relative(dirname(this.path), f.path) || basename(f.path);
-      for (const c of SYSTEM_COLLECTIONS) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
+      for (const c of [...SYSTEM_COLLECTIONS, "shared"] as const) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
     }
     return out;
   }
@@ -360,7 +372,8 @@ export class Workspace {
   /** Runs a design tool as `author`. An edit is written to the file at once and can be undone; reads change nothing. */
   call(author: string, name: ToolName, args: unknown): Promise<CallResult> {
     return this.exclusive(async () => {
-      const out = await this.plan(name, args, this.view(), author);
+      // Tools see imported components and tokens; their edits are checked against this file's own, so an imported thing stays read-only here.
+      const out = await this.plan(name, args, this.system(), author);
       if (!("ops" in out)) return out;
       if (out.ops.length === 0) return { ok: true, reply: out.reply };
       const undo = invert(this.view(), out.ops);
@@ -488,7 +501,7 @@ export class Workspace {
 
   /** Writes the committed document as a static site under `outDir`. */
   async exportSite(outDir: string): Promise<string[]> {
-    return this.writeFiles(outDir, exportSite(this.view(), (await import("./fontdata.ts")).embeddedFont));
+    return this.writeFiles(outDir, exportSite(this.system(), (await import("./fontdata.ts")).embeddedFont));
   }
 
   private async writeFiles(outDir: string, files: Map<string, string>): Promise<string[]> {

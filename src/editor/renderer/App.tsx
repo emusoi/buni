@@ -40,6 +40,9 @@ const tilde = (path: string) => path.replace(/^\/Users\/[^/]+/, "~");
 
 /** What the Export menu offers for a page: pictures and PDF always; SVG and an icon set when the page is fit for them. */
 type Mode = "screens" | "system" | "plan" | "agents";
+/** A path written relative to the file at `from`, as the file's own path. */
+export const besideFile = (from: string, rel: string): string => decodeURIComponent(new URL(rel, `file://${from}`).pathname);
+
 const MODES: readonly [Mode, string, LucideIcon][] = [["screens", "Screens", LayoutTemplate], ["system", "System", Network], ["plan", "Plan", ListChecks], ["agents", "Agents", Bot]];
 
 function pageExports(doc: Doc, pageId: Id): [string, string, PageExport][] {
@@ -232,7 +235,9 @@ export function App({ snap }: { snap: Snapshot }) {
   const [component, setComponent] = useState<Id>();
   const [play, setPlay] = useState<{ page: Id; flow?: Id }>();
 
-  const doc = snap.view;
+  // The design with what it imports, so instances of a core file's components draw; those stay edited in their own file.
+  const doc = snap.system;
+  const imported = useMemo(() => new Set(Object.keys(snap.owners).filter((id) => doc.shared[id])), [snap.owners, doc.shared]);
   // How many times each component is placed, for the rail.
   const uses = useMemo(() => {
     const n = new Map<Id, number>();
@@ -728,11 +733,20 @@ export function App({ snap }: { snap: Snapshot }) {
           </div>
           {Object.keys(doc.shared).length === 0 && <p className="rail-empty">Make a layer a component to reuse it across pages; the library keeps them.</p>}
           {Object.values(doc.shared).sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-            <button type="button" key={c.id} className={`row${c.id === component ? " active" : ""}`} onClick={() => { openComponent(c.id); setReveal({ page: c.id, at: Date.now() }); }}>
-              <Component size={16} strokeWidth={1.75} />
-              <span className="name">{c.name}</span>
-              <span className="meta">{uses.get(c.id) ?? 0}</span>
-            </button>
+            imported.has(c.id) ? (
+              // A core file's component is edited there: its row opens that file.
+              <button type="button" key={c.id} className="row" title={`From ${snap.owners[c.id]}: open it to edit`} onClick={() => void window.buni.open(besideFile(snap.path, snap.owners[c.id] ?? ""))}>
+                <Component size={16} strokeWidth={1.75} className="dim" />
+                <span className="name">{c.name}</span>
+                <span className="meta">{snap.owners[c.id]?.replace(/^.*\//, "")}</span>
+              </button>
+            ) : (
+              <button type="button" key={c.id} className={`row${c.id === component ? " active" : ""}`} onClick={() => { openComponent(c.id); setReveal({ page: c.id, at: Date.now() }); }}>
+                <Component size={16} strokeWidth={1.75} />
+                <span className="name">{c.name}</span>
+                <span className="meta">{uses.get(c.id) ?? 0}</span>
+              </button>
+            )
           ))}
             </>
           ) : (
@@ -763,6 +777,7 @@ export function App({ snap }: { snap: Snapshot }) {
             <div className="canvas-wrap">
             <Canvas
               doc={doc}
+              imported={imported}
               dir={snap.dir}
               activePage={component ?? activePage}
               selected={selected}

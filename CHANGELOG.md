@@ -5,8 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
-- The agent guide (`buni skill`, `buni help`) explains how to split a big app into a project: a file per section, the
-  system shared with `import_file`, and tokens and components kept in step by hand.
+- Core files: `imports` now shares components and tokens as well as the system. A section that imports `core.buni`
+  places its components and inherits its tokens (its own value wins); they stay edited in the core, and open sections
+  redraw when the core changes. The editor lists imported components with the file they come from.
+- The agent guide (`buni skill`, `buni help`) explains how to split a big app into a project: core files for what
+  sections share, a file per product area.
 
 ## 0.4.4 — 2026-10-15
 

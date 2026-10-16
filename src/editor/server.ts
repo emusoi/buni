@@ -85,7 +85,11 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
           await writeFile(live, `${JSON.stringify({ pid: process.pid, mcp: mcpUrl(path) })}\n`, "utf8");
           lives.add(live);
         }
-        ws.onChange(() => file.listeners.forEach((fn) => fn()));
+        ws.onChange(() => {
+          file.listeners.forEach((fn) => fn());
+          // A core file changed: the open files built on it draw its components and tokens afresh.
+          for (const [other, o] of opened) if (other !== path) void o.then(async (x) => { if (x.ws.imports().some((f) => f.path === path)) { await x.ws.refreshImports(); x.listeners.forEach((fn) => fn()); } }, () => undefined);
+        });
         return file;
       });
       // A file that failed to open is tried again next time.
@@ -257,7 +261,10 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   const rpcFor = (dir: string): Record<string, (file: string | undefined, ...args: unknown[]) => Promise<unknown>> => ({
     snapshot: async (file) => {
       if (!file) return undefined;
-      const s = snapshot(await load(file));
+      const o = await load(file);
+      // A tab opening the file reads its imports again: a core may have been edited outside this server.
+      await o.ws.refreshImports();
+      const s = snapshot(o);
       // Usually the system is the view itself; sent once, the tab puts it back (bridge.ts).
       return s.system === s.view ? { ...s, system: undefined } : s;
     },
