@@ -317,12 +317,13 @@ export function App({ snap }: { snap: Snapshot }) {
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and
   // under the desktop app's Edit menu alike.
   useEffect(() => {
-    const typing = () => { const el = document.activeElement; return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el instanceof HTMLElement && el.isContentEditable); };
+    // Where the key was pressed, not what has focus now: a field's own Enter blurs it before this runs.
+    const typing = (e: Event) => { const el = e.target; return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el instanceof HTMLElement && el.isContentEditable); };
     const run = (tool: EditTool, args: Record<string, unknown>, pick?: (reply: string) => Id | undefined) =>
       void window.buni.edit(tool, args).then((r) => { if (!r.ok) setToast(r.reply); else if (pick) setSelected(pick(r.reply)); });
     const onKey = (e: KeyboardEvent) => {
       const n = selected ? doc.nodes[selected] : undefined;
-      if (!n || typing()) return;
+      if (!n || typing(e)) return;
       const mod = e.metaKey || e.ctrlKey;
       const siblings = n.parent ? childrenOf(doc, n.parent) : [];
       const at = siblings.findIndex((x) => x.id === n.id);
@@ -351,14 +352,14 @@ export function App({ snap }: { snap: Snapshot }) {
       }
     };
     const onCopy = (e: ClipboardEvent) => {
-      if (!selected || !doc.nodes[selected] || typing()) return;
+      if (!selected || !doc.nodes[selected] || typing(e)) return;
       e.preventDefault();
       const nodes = [selected, ...also.filter((x) => doc.nodes[x])];
       e.clipboardData?.setData("text/plain", JSON.stringify({ buni: "layers", nodes }));
       setToast(`Copied ${nodes.length === 1 ? "the layer" : `${nodes.length} layers`}; paste with ⌘V.`);
     };
     const onPaste = (e: ClipboardEvent) => {
-      if (typing()) return;
+      if (typing(e)) return;
       // A copied image (a screenshot, a logo) goes in as an image layer.
       const image = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
       const pageRoot = page && doc.pages[page] ? doc.pages[page].frame : undefined;

@@ -1,4 +1,4 @@
-import { pagesInOrder, walkFlow, type Doc, type Id } from "buni/format/doc.ts";
+import { childrenOf, pagesInOrder, walkFlow, type Doc, type Id, type Node } from "buni/format/doc.ts";
 
 export interface Point {
   x: number;
@@ -23,8 +23,14 @@ const SET_GAP = 160;
 /** A component board's width: its own, else its maximum, else small for a control (a button, a link), else wide. */
 export function componentWidth(doc: Doc, sharedId: Id): number {
   const root = doc.nodes[doc.shared[sharedId]?.root ?? ""];
-  const small = root?.kind === "text" || ["button", "a", "span", "input", "label"].includes(root?.tag ?? "");
-  return px(root?.style.width) ?? px(root?.style.maxWidth) ?? (small ? 320 : 1200);
+  const control = (n: Node | undefined) => n?.kind === "text" || ["button", "a", "span", "input", "label"].includes(n?.tag ?? "")
+    || ["inline-flex", "inline-block", "inline"].includes(n?.style.display ?? "") || n?.style.width === "fit-content";
+  // A component's root frame often just wraps the one thing it is (a button); that thing decides.
+  const inner = root && root.tag === undefined ? childrenOf(doc, root.id) : [];
+  const small = control(root) || (inner.length === 1 && control(inner[0]));
+  // A wrapper takes the width its one child sets: a nav of 1200px is a 1200px board.
+  const own = px(root?.style.width) ?? px(root?.style.maxWidth) ?? (inner.length === 1 ? px(inner[0]?.style.width) ?? px(inner[0]?.style.maxWidth) : undefined);
+  return own ?? (small ? 320 : 1200);
 }
 
 const px = (v: string | undefined) => Number.parseInt(v ?? "", 10) || undefined;
