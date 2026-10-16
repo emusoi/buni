@@ -27,6 +27,10 @@ interface Props {
   onMovePage: (id: Id, x: number, y: number) => void;
   /** Tidy was pressed: every page's new position. */
   onTidy: (at: Map<Id, Point>) => void;
+  /** The file each imported page lives in, by id, to name where a link out of this file goes. */
+  owners?: Readonly<Record<Id, string>> | undefined;
+  /** A link out of this file was clicked: open its page there. */
+  onOpenElsewhere?: ((page: Id) => void) | undefined;
 }
 
 export interface AgentSpot {
@@ -653,6 +657,16 @@ export function arrows(doc: Doc, boxes: ReadonlyMap<Id, BoardRect>, boards: Read
   return out;
 }
 
+/** Links to another file's page: a tag on the right edge of the page they leave, level with what triggers them. */
+export function exits(doc: Doc, boxes: ReadonlyMap<Id, BoardRect>, boards: ReadonlyMap<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>): { id: Id; from: Id; to: Id; x: number; y: number }[] {
+  return Object.values(doc.connections).flatMap((c) => {
+    const from = boxes.get(c.page);
+    if (!from || doc.pages[c.to] || !doc.elsewhere?.[c.to]) return [];
+    const r = boards.get(c.page)?.iframe?.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`)?.getBoundingClientRect();
+    return [{ id: c.id, from: c.page, to: c.to, x: from.x + from.width, y: from.y + (r ? r.top + r.height / 2 : 24) }];
+  });
+}
+
 export interface BoardRect extends Point { width: number; height: number }
 
 /** Hit testing works even when overview boards have no DOM of their own. Last drawn wins. */
@@ -873,7 +887,8 @@ export function Canvas(props: Props) {
     }];
   })), [pages, own, props.doc, props.viewAt, at, loads]);
   const nearby = useMemo(() => nearbyBoards(boxes, view, canvasSize), [boxes, view, canvasSize]);
-  useLayoutEffect(() => setLinks(arrows(props.doc, boxes, boards.current)), [props.doc, loads, boxes]);
+  const [away, setAway] = useState<ReturnType<typeof exits>>([]);
+  useLayoutEffect(() => { setLinks(arrows(props.doc, boxes, boards.current)); setAway(exits(props.doc, boxes, boards.current)); }, [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
   const sets = useMemo(() => {
     const groups = new Map<string, Id[]>();
@@ -1195,6 +1210,12 @@ export function Canvas(props: Props) {
             </g>;
           })}
         </svg>
+        {linkMode !== "off" && away.filter((e) => linkMode === "all" || e.from === props.activePage).map((e) => (
+          <button type="button" key={e.id} className="link-away" style={{ left: e.x, top: e.y, transform: `translate(${8 / view.zoom}px, -50%) scale(${1 / view.zoom})` }}
+            title={`Opens ${props.doc.elsewhere?.[e.to]?.name} in ${props.owners?.[e.to] ?? "another file"}`} onPointerDown={(ev) => ev.stopPropagation()} onClick={() => props.onOpenElsewhere?.(e.to)}>
+            → {props.doc.elsewhere?.[e.to]?.name}<span>{props.owners?.[e.to]?.replace(/^.*\//, "")}</span>
+          </button>
+        ))}
       </div>
       {/* Drawn over the world at screen size, so a row's name reads the same at any zoom. */}
       <div ref={rowLabels} className="row-titles" aria-hidden="true">

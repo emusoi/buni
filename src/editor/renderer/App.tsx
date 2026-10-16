@@ -809,6 +809,8 @@ export function App({ snap }: { snap: Snapshot }) {
               landing={landing}
               reveal={reveal}
               onTidy={(at) => void tidyPages(at)}
+              owners={snap.owners}
+              onOpenElsewhere={openElsewhere}
             />
             <InsertBar doc={doc} node={selected ? doc.nodes[selected] : undefined} root={frame?.id} onAdded={setSelected} onError={setToast} />
             </div>
