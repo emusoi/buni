@@ -552,7 +552,7 @@ function Num({ prefix, title, value, placeholder, onSave }: { prefix: string; ti
 function Select({ value, options, onChange, title }: { value: string; options: [string, string][]; onChange: (v: string) => void; title: string }) {
   const known = options.some(([v]) => v === value);
   return (
-    <label className="select" title={title}>
+    <label className={`select${value ? "" : " unset"}`} title={title}>
       <select value={value} onChange={(e) => onChange(e.target.value)}>
         {!known && <option value={value}>{value || "—"}</option>}
         {options.map(([v, label]) => <option key={v} value={v}>{label}</option>)}

@@ -2180,5 +2180,7 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   .play-keys { display: none; }
   .play-bar { max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; }
   .play-journey { margin: 0 8px; }
-  .play-journey [class*="grid"], .play-journey [class*="cols"] { grid-template-columns: 1fr 1fr !important; }
+  .play-journey .lanes { flex-wrap: wrap; gap: 12px 20px; }
+  .play-journey .lane { flex: 1 1 40%; }
 }
+.select.unset select { color: var(--label); }
