@@ -14,7 +14,7 @@ const describe = (f: ProjectFile): string => {
 };
 
 /** The open file's name in the top bar; it opens the other designs of its project, so a big app split across files is one click apart. */
-export function ProjectSwitch({ path, name }: { path: string; name: string }) {
+export function ProjectSwitch({ path, name, detail }: { path: string; name: string; detail?: string }) {
   const [files, setFiles] = useState<ProjectFile[]>();
   const [naming, setNaming] = useState(false);
   const anchor = useRef<HTMLDivElement>(null);
@@ -27,7 +27,7 @@ export function ProjectSwitch({ path, name }: { path: string; name: string }) {
   return (
     <div className="project-switch" ref={anchor}>
       <button type="button" title={`${path}: other designs in this project`} aria-haspopup="menu" aria-expanded={files !== undefined} onClick={toggle}>
-        <b>{name}</b><ChevronDown size={13} />
+        <span className="title"><b>{name}</b>{detail && <small>{detail}</small>}</span><ChevronDown size={13} />
       </button>
       {files && (
         <div className="agent-menu project-menu" role="menu">

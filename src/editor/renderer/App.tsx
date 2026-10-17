@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, FolderOpen, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Bot, FileInput, FolderOpen, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -283,6 +283,10 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => clearTimeout(t);
   }, [edits, landing.length, working.length]);
   const agentCount = connected.length;
+  // What the toolbar says about agents: who is editing where, or who is connected.
+  const presence = working[0]
+    ? `${working[0]} is editing ${doc.pages[pageOfNode(doc, snap.recent[working[0]]?.[0] ?? "") ?? ""]?.name ?? "this design"}`
+    : connected.length ? `${connected.join(" and ")} connected` : undefined;
   const spots: AgentSpot[] = working.flatMap((name) => {
     const at = snap.recent[name]?.[0];
     return at ? [{ agent: name, nodes: [at], label: name, color: agentColor(name) }] : [];
@@ -692,16 +696,16 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "redo", title: "Redo", keys: "⇧⌘Z", icon: Redo2, run: () => void window.buni.redo().then((r) => setToast(r.reply)) },
   ];
 
+  // The side panels float over the canvas; what they cover, for fitting pages and laying out the views beneath.
+  const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (
-    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "agents" ? " agents-open" : ""}`}>
+    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "agents" ? " agents-open" : ""}`} style={floating}>
       <header className="tabs topbar">
-        {/* Hidden with ⌘\, the rail comes back from here. */}
-        {!sidebarOpen && <SidebarToggle open={sidebarOpen} onToggle={toggleSidebar} hint="⌘\\ shows both panels" />}
-        <nav className="crumbs" aria-label="Where you are">
-          <button type="button" onClick={() => void window.buni.close()} title="All designs"><ArrowLeft size={14} /> Designs</button>
-          <span aria-hidden="true">/</span>
-          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} />
-        </nav>
+        <div className="bar-lead">
+          <SidebarToggle open={sidebarOpen} onToggle={toggleSidebar} hint="⌘\\ hides or shows both panels" />
+          <button type="button" className="icon-btn" onClick={() => void window.buni.close()} title="All designs" aria-label="All designs"><ChevronLeft size={16} /></button>
+          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={`${snap.path.split("/").at(-2) ?? ""} · ${Object.keys(snap.view.pages).length} pages`} />
+        </div>
         <FileTabs />
         <div className="modes-bar" role="tablist" aria-label="Mode">
           {MODES.map(([m, label, Icon], i) => (
@@ -710,18 +714,21 @@ export function App({ snap }: { snap: Snapshot }) {
             </button>
           ))}
         </div>
-        {/* Who's in the file, people and agents; clicking one opens the agent panel. Saving is silent: it always happens. */}
-        <button type="button" className="presence" title="Agents" aria-label="Open the agent panel" onClick={() => setPanel("agent")}>
-          {snap.connected?.map((name) => (
-            <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
-          ))}
-        </button>
-        {mode === "screens" && <button type="button" className="bar-btn ghost" onClick={() => setImportingHtml(true)}>Import HTML</button>}
+        <div className="bar-trail">
+        {/* Who's in the file and what they're doing; clicking opens the agent panel. Saving is silent: it always happens. */}
+        {presence && (
+          <button type="button" className="presence" title="Agents" aria-label="Open the agent panel" onClick={() => setPanel("agent")}>
+            {connected.map((name) => (
+              <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
+            ))}
+            <span className="presence-text">{presence}</span>
+          </button>
+        )}
+        {mode === "screens" && <button type="button" className="icon-btn" title="Import HTML" aria-label="Import HTML" onClick={() => setImportingHtml(true)}><FileInput size={16} strokeWidth={1.75} /></button>}
         <History onToast={setToast} />
-        <SidebarToggle side="right" open={panelOpen} onToggle={togglePanel} hint="⌘\\ hides or shows both panels" />
         {activePage && (
-          <button type="button" className="bar-btn ghost" title="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
-            <PlayIcon size={14} /> Play
+          <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
+            <PlayIcon size={16} strokeWidth={1.75} />
           </button>
         )}
         <HandOff
@@ -755,6 +762,8 @@ export function App({ snap }: { snap: Snapshot }) {
             </button>
           ))}
         </HandOff>
+        <SidebarToggle side="right" open={panelOpen} onToggle={togglePanel} hint="⌘\\ hides or shows both panels" />
+        </div>
       </header>
       {mode === "agents" && <Agents doc={doc} />}
       <aside className="sidebar">
@@ -893,7 +902,7 @@ export function App({ snap }: { snap: Snapshot }) {
         </>)}
       </aside>
       <main className="main">
-        <div className="workspace" style={{ gridTemplateColumns: panelOpen ? `minmax(0, 1fr) ${panelWidth}px` : "minmax(0, 1fr)" }}>
+        <div className="workspace">
           {shownJourney ? (
             <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={showPage} />
           ) : system ? (
@@ -923,7 +932,7 @@ export function App({ snap }: { snap: Snapshot }) {
             </div>
           )}
           {panelOpen && (
-          <aside className="inspector-panel">
+          <aside className="inspector-panel" style={{ width: panelWidth }}>
             <div
               className="panel-resize"
               role="separator"

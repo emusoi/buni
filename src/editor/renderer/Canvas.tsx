@@ -937,6 +937,8 @@ export function Canvas(props: Props) {
 
   // Bring the active page into view when it is opened from elsewhere and sits off screen.
   const box = useRef<HTMLDivElement>(null);
+  /** How far a floating side panel covers the canvas on that side (set by the app as a CSS variable). */
+  const floatOf = (side: "--float-left" | "--float-right") => (box.current ? parseFloat(getComputedStyle(box.current).getPropertyValue(side)) || 0 : 0);
   // Build the overview once, patch arriving tiles, then move one surface during a gesture.
   paint.current = (all) => {
     const canvas = overview.current;
@@ -1018,7 +1020,7 @@ export function Canvas(props: Props) {
       const top = p.y * v.zoom + v.y;
       const bounds = props.activePage ? boxes.get(props.activePage) : undefined;
       const visible = left + (bounds?.width ?? 0) * v.zoom > 0 && left < r.width && top + (bounds?.height ?? 0) * v.zoom > 0 && top < r.height;
-      return visible ? v : { ...v, x: 48 - p.x * v.zoom, y: 140 - p.y * v.zoom };
+      return visible ? v : { ...v, x: floatOf("--float-left") + 48 - p.x * v.zoom, y: 140 - p.y * v.zoom };
     });
   }, [props.activePage]);
 
@@ -1083,8 +1085,8 @@ export function Canvas(props: Props) {
       [x0, y0, x1, y1] = [Math.min(x0, b.x), Math.min(y0, b.y - LABEL - 10), Math.max(x1, b.x + b.width), Math.max(y1, b.y + b.height)];
     }
     if (x0 === Infinity) return;
-    // Room for the toolbar above, the insert bar below, and row titles in the margin on the left.
-    const [left, right, top, bottom] = [titles.length ? 240 : 48, 48, 104, 72];
+    // Room for the floating side panels, the insert bar below, and row titles in the margin on the left.
+    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length ? 240 : 48), floatOf("--float-right") + 48, 56, 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
     updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
