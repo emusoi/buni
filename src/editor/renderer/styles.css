@@ -2084,3 +2084,34 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .ask-options .btn { height: 28px; padding: 0 12px; border-radius: 7px; }
 .ask-reply { display: flex; align-items: center; gap: 6px; }
 .ask-reply .field { flex: 1; }
+
+/* Agents mode as macOS Settings: a centred column of inset grouped cards, rows with switches, no header band. */
+.app.editor > .agents-view > .ag-main > .ag-head { max-width: 760px; width: 100%; margin: 0 auto; padding: 18px 20px 6px; background: none; box-shadow: none; position: static; }
+.app.editor > .agents-view > .ag-main > .ag-head .ag-title b { font-size: 22px; font-weight: 700; }
+.app.editor > .agents-view > .ag-main > .ag-pad, .app.editor > .agents-view > .ag-main > .ag-def { width: 100%; max-width: 760px; margin: 0 auto; padding: 8px 20px 40px; }
+.ag-tabs { padding: 2px; border-radius: 9px; background: var(--chip); }
+.ag-tabs button { border-radius: 7px; }
+.ag-sect { display: flex; flex-direction: column; gap: 8px; }
+.ag-sect h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 0 12px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.ag-sect h3 em, .ag-sect h4 { font-style: normal; font-weight: 400; font-size: 12px; color: var(--ink-2); }
+.ag-card { display: flex; flex-direction: column; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-1); overflow: hidden; }
+.ag-card + .ag-card { margin-top: 4px; }
+.ag-card h4 { margin: 0; padding: 10px 14px 4px; font-weight: 600; color: var(--label); }
+.ag-card textarea { width: 100%; min-height: 72px; padding: 12px 14px; border: 0; outline: none; resize: vertical; background: none; font: inherit; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.ag-row-field { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 14px; }
+.ag-row-field + .ag-row-field, .ag-row-switch + .ag-row-switch { box-shadow: inset 0 0.5px 0 var(--rule); }
+.ag-row-field > span { width: 90px; flex: none; font-size: 13px; color: var(--ink); }
+.ag-row-field input { flex: 1; min-width: 0; height: 30px; padding: 0; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink); text-align: right; }
+.ag-row-switch { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 14px; cursor: pointer; }
+.ag-row-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ag-row-text b { font-size: 13px; font-weight: 500; color: var(--ink); }
+.ag-row-text span { font-size: 12px; color: var(--ink-2); }
+.ag-row-text code { flex-basis: 100%; font-size: 11px; color: var(--label); }
+/* A macOS switch drawn from the checkbox itself. */
+input.switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 32px; height: 20px; margin: 0; border-radius: 10px; background: var(--line-2); transition: background 0.15s; cursor: pointer; }
+input.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); transition: transform 0.15s; }
+input.switch:checked { background: var(--green); }
+input.switch:checked::after { transform: translateX(12px); }
+input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ag-def-actions { justify-content: flex-end; padding-top: 4px; }
+.ag-def-actions .btn { flex: none; width: auto; height: 28px; padding: 0 14px; border-radius: 7px; }

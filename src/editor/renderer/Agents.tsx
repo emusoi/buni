@@ -26,8 +26,12 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
     ...Object.values(doc.operations).filter((o) => o.kind !== "subscription").map((o) => [operationToolName(o), `${o.kind} ${o.name}`] as const),
   ];
   const toggle = (t: string) => setTools((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
+  // A tool is a row with a switch, as in Settings: what it lets the agent do, then its name for the agent.
   const box = (t: string, label: string, hint: string) => (
-    <label key={t} className="ag-def-tool"><input type="checkbox" checked={tools.includes(t)} onChange={() => toggle(t)} /><code>{t}</code><span>{label || hint}</span></label>
+    <label key={t} className="ag-row-switch">
+      <span className="ag-row-text"><b>{label || t}</b>{hint && <span>{hint}</span>}<code>{t}</code></span>
+      <input type="checkbox" className="switch" checked={tools.includes(t)} onChange={() => toggle(t)} />
+    </label>
   );
   const save = () => { setBusy(true); void window.buni.edit("set_agent", {
     ...(def ? { agent: def.id } : {}), name: name.trim(), instructions, model: model.trim(), tools,
@@ -39,20 +43,31 @@ function Design({ doc, def, onSaved }: { doc: Doc; def: AgentDef | undefined; on
   }).catch((e: Error) => setSaid(e.message)).finally(() => setBusy(false)); };
   return (
     <div className="ag-def ag-pad">
-      <label className="ag-def-field"><span className="ag-label">Name</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Refund helper" /></label>
-      <label className="ag-def-field"><span className="ag-label">Instructions <em>who it is, its job, how it works</em></span><textarea rows={6} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="You help support staff refund returns that arrived back…" /></label>
-      <label className="ag-def-field"><span className="ag-label">Model <em>provider/model; empty uses buni's pick</em></span><input value={model} onChange={(e) => setModel(e.target.value)} placeholder="provider/model" /></label>
-      <div className="ag-def-field">
-        <span className="ag-label">Tools <em>{tools.length} picked; the fewest its job needs</em></span>
-        {api.length > 0 && <p className="ag-note">Your API</p>}
-        {api.map(([t, label]) => box(t, label, ""))}
-        <p className="ag-note">buni's tools, by area</p>
-        {AREA_IDS.filter((a) => a !== "endpoints").map((a) => box(`area:${a}`, AREAS[a].name, AREAS[a].about))}
-        {box("area:endpoints", "Every API call", "")}
-        <p className="ag-note">The person</p>
-        {ENGINE_TOOLS.map(([t, label]) => box(t, label, ""))}
-      </div>
-      <label className="ag-def-field"><span className="ag-label">Never <em>one per line</em></span><textarea rows={3} value={never} onChange={(e) => setNever(e.target.value)} placeholder="Refund more than was paid" /></label>
+      <section className="ag-sect">
+        <h3>Agent</h3>
+        <div className="ag-card">
+          <label className="ag-row-field"><span>Name</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Refund helper" /></label>
+          <label className="ag-row-field"><span>Model</span><input value={model} onChange={(e) => setModel(e.target.value)} placeholder="buni's pick, or provider/model" /></label>
+        </div>
+      </section>
+      <section className="ag-sect">
+        <h3>Instructions <em>who it is, its job, how it works</em></h3>
+        <div className="ag-card"><textarea rows={6} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="You help support staff refund returns that arrived back…" /></div>
+      </section>
+      <section className="ag-sect">
+        <h3>Tools <em>{tools.length} on · give it the fewest its job needs</em></h3>
+        {api.length > 0 && <div className="ag-card"><h4>Your API</h4>{api.map(([t, label]) => box(t, label, ""))}</div>}
+        <div className="ag-card">
+          <h4>The design</h4>
+          {AREA_IDS.filter((a) => a !== "endpoints").map((a) => box(`area:${a}`, AREAS[a].name, AREAS[a].about))}
+          {box("area:endpoints", "Every API call", "Calls any endpoint in the system")}
+        </div>
+        <div className="ag-card"><h4>The person</h4>{ENGINE_TOOLS.map(([t, label]) => box(t, label, ""))}</div>
+      </section>
+      <section className="ag-sect">
+        <h3>Never <em>one rule per line; it refuses these</em></h3>
+        <div className="ag-card"><textarea rows={3} value={never} onChange={(e) => setNever(e.target.value)} placeholder="Refund more than was paid" /></div>
+      </section>
       {def && <Sources key={def.id} doc={doc} id={def.id} />}
       <div className="ag-def-actions">
         <button type="button" className="btn primary" disabled={busy || !name.trim() || !instructions.trim()} onClick={save}>{busy ? "Saving…" : def ? "Save agent" : "Create agent"}</button>
