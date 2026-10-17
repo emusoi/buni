@@ -2048,3 +2048,11 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .app.editor .zoom button:hover, .app.editor .insert-bar .add-btn:hover { background: var(--hover); }
 .app.editor .insert-bar .add-btn { border-radius: 14px; }
 .app.editor .insert-bar .add-component { border-radius: 14px; }
+/* Agents mode floats its list like the sidebar; panels are frosted but solid enough that a white page behind
+   them never washes their text out. Sheets take focus without a ring around the whole sheet. */
+.app.editor > .agents-view { grid-template-columns: 268px minmax(0, 1fr); padding-top: 0; background: var(--canvas); }
+.app.editor > .agents-view > .ag-rail { margin: 62px 10px 10px; border-radius: 18px; background: var(--glass); box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); }
+.app.editor > .agents-view > .ag-main { padding-top: 60px; background: none; }
+.dialog:focus, .dialog:focus-visible { outline: none; }
+:root { --glass: rgba(250, 250, 252, 0.86); }
+@media (prefers-color-scheme: dark) { :root { --glass: rgba(38, 38, 41, 0.9); } }

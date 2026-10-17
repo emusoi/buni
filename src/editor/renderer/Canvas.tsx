@@ -1086,7 +1086,7 @@ export function Canvas(props: Props) {
     }
     if (x0 === Infinity) return;
     // Room for the floating side panels, the insert bar below, and row titles in the margin on the left.
-    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length ? 240 : 48), floatOf("--float-right") + 48, 96, 72];
+    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length ? 240 : 48), floatOf("--float-right") + 48, 124, 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
     updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });

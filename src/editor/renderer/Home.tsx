@@ -181,8 +181,8 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         <div className="home">
           {files && files.length > 0 && <header className="home-head">
             <div>
-              <h1>Designs</h1>
-              <p>Screens and the system behind them. Agents edit these live while you watch.</p>
+              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : "Designs"}</h1>
+              <p>{onlyAgents ? "Designs a coding agent is editing right now." : "Screens and the system behind them. Agents edit these live while you watch."}</p>
             </div>
             <button type="button" className="bar-btn" onClick={() => void run(window.buni.open())}><Upload size={14} /> {window.buni.renameFile ? "Import .buni" : "Open…"}</button>
           </header>}
