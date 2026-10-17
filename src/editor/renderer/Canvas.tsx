@@ -23,6 +23,8 @@ interface Props {
   reveal?: { page: Id; at: number } | undefined;
   onSelectPage: (id: Id) => void;
   onSelectNode: (id: Id | undefined, add?: boolean) => void;
+  /** A right-click on a layer, after it's selected: where to open its menu. */
+  onMenu?: (x: number, y: number) => void;
   /** A page was dragged to a new top-left corner. */
   onMovePage: (id: Id, x: number, y: number) => void;
   /** Tidy was pressed: every page's new position. */
@@ -303,6 +305,8 @@ const Artboard = memo(function Artboard(props: {
   onLoaded: (pageId: Id, height: number) => void;
   onSelectPage: (id: Id) => void;
   onSelectNode: (id: Id | undefined, add?: boolean) => void;
+  /** A right-click on a layer, after it's selected: where to open its menu. */
+  onMenu?: (x: number, y: number) => void;
 }) {
   const { doc, pageId } = props;
   // A board is a page or a component.
@@ -584,7 +588,7 @@ const Artboard = memo(function Artboard(props: {
         {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
         ) : <div className="board-placeholder" />}
-        <div className="hit" onPointerDown={hit} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
+        <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
         {drop && <div className="drop-line" style={{ left: drop.line.x, top: drop.line.y, width: drop.line.w, height: drop.line.h }} />}
         {box2 && !drop && !editing && (
           <div className="sel-box" style={{ left: box2.x, top: box2.y, width: box2.w, height: box2.h }}>
@@ -1202,6 +1206,7 @@ export function Canvas(props: Props) {
             onLoaded={onLoaded}
             onSelectPage={props.onSelectPage}
             onSelectNode={props.onSelectNode}
+            onMenu={props.onMenu}
           />
         ))}
         {tags.map((t) => (

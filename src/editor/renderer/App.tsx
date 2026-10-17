@@ -8,6 +8,8 @@ import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
 import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
 import { Export } from "./Export.tsx";
+import { ContextMenu } from "./ContextMenu.tsx";
+import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
 import { Shortcuts } from "./Shortcuts.tsx";
@@ -412,6 +414,12 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
+  // A layer's right-click menu, and the comment it can start.
+  const [menu, setMenu] = useState<{ x: number; y: number }>();
+  const [commenting, setCommenting] = useState<Id>();
+  const openMenu = useCallback((x: number, y: number) => setMenu({ x, y }), []);
+  const runEdit = (tool: EditTool, args: Record<string, unknown>, pick?: (reply: string) => Id | undefined) =>
+    void window.buni.edit(tool, args).then((r) => { if (!r.ok) setToast(r.reply); else if (pick) setSelected(pick(r.reply)); });
   const [finding, setFinding] = useState(false);
   // The project's designs as summaries, one request per tab: the sidebar's list, ⌘P and the use counts read it.
   const project = useProject(snap.path);
@@ -947,6 +955,7 @@ export function App({ snap }: { snap: Snapshot }) {
               viewAt={viewAt}
               onSelectPage={selectBoard}
               onSelectNode={selectNode}
+              onMenu={openMenu}
               onMovePage={movePage}
               focus={spots}
               landing={landing}
@@ -1013,6 +1022,14 @@ export function App({ snap }: { snap: Snapshot }) {
         />
       )}
       {inserting && <QuickInsert doc={doc} dir={snap.dir} where={insertWhere} onInsert={(id, mode) => void insert(id, mode)} onClose={() => setInserting(false)} />}
+      {menu && selected && doc.nodes[selected] && (
+        <ContextMenu doc={doc} node={selected} page={activePage} at={menu} onRun={runEdit} onComment={() => setCommenting(selected)} onClose={() => setMenu(undefined)} />
+      )}
+      {commenting && (
+        <NameDialog title="Comment" label="What should change here? Agents read comments and answer them." initial="" action="Comment"
+          onSubmit={(body) => { setCommenting(undefined); if (body.trim()) runEdit("comment", { node: commenting, body: body.trim() }); }}
+          onClose={() => setCommenting(undefined)} />
+      )}
       {finding && <Palette doc={doc} system={snap.system} actions={actions} onPick={jump} onClose={() => setFinding(false)} />}
       {switching && <Palette doc={doc} only placeholder="Go to a design, or a page in one" onPick={jump} onClose={() => setSwitching(false)} actions={project.filter((f) => f.path !== snap.path).flatMap((f): Action[] => [
         { id: f.path, title: f.name, detail: f.pages.length ? `${f.pages.length} page${f.pages.length === 1 ? "" : "s"}` : `${f.components.length} components`, icon: FolderOpen, run: () => openAt(f.path) },
