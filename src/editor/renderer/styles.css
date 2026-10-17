@@ -2212,3 +2212,19 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .breakpoint-frame iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
 .widths-head { display: flex; align-items: center; gap: 8px; }
 .widths-compare { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+/* An image layer's picture, its facts, its alt text, and the design's images to swap in. */
+.image-picker { display: flex; flex-direction: column; gap: 8px; }
+.image-current { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.image-current img { width: 100%; max-height: 140px; object-fit: contain; border-radius: 6px; background: var(--canvas); box-shadow: 0 0 0 1px var(--rule); }
+.image-current > span { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
+.image-current b { font-weight: 500; color: var(--ink); }
+.image-current span span, .image-choice-facts { color: var(--label); font-size: 11px; }
+.image-alt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); }
+.image-alt input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 0; border-radius: var(--radius); background: var(--chip); font: inherit; color: var(--ink); }
+.image-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.image-choice { display: flex; flex-direction: column; gap: 3px; padding: 4px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; }
+.image-choice:hover { background: var(--hover); }
+.image-choice.on { box-shadow: 0 0 0 2px var(--accent); }
+.image-choice img { width: 100%; height: 64px; object-fit: cover; border-radius: 4px; background: var(--canvas); }
+.image-choice-name { font-size: 11.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-choice.upload { align-items: center; justify-content: center; min-height: 96px; box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }

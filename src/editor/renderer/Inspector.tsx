@@ -15,6 +15,7 @@ import { ComponentVariants, PageStates } from "./Variants.tsx";
 import { CodeView } from "./CodeView.tsx";
 import { Comments } from "./Comments.tsx";
 import { placeImage } from "./images.ts";
+import { ImagePicker } from "./ImagePicker.tsx";
 
 /** Shadows from none to large; a shadow set some other way still shows, as its own value. */
 const SHADOWS: [string, string][] = [
@@ -668,7 +669,7 @@ export const OpenFile = createContext("");
 /** How often other designs of the project place this file's components, by component: they change with it too. */
 export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
 
-export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth, onCompare }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth, onCompare, dir }: {
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
   ownTokens?: Doc["tokens"] | undefined;
@@ -682,6 +683,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   onViewWidth?: (page: Id, width: number | undefined) => void;
   /** Shows the page at all its widths side by side. */
   onCompare?: () => void;
+  /** The design's folder, where its images live. */
+  dir?: string;
   /** Root frame of the page in view, for adding when nothing is selected. */
   root: Id | undefined;
   /** A graphic in view, shown at small sizes when nothing or its root frame is selected. */
@@ -840,6 +843,11 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.blur();
             }}
           />
+        </Group>
+      )}
+      {node.kind === "image" && dir !== undefined && (
+        <Group title="Image" summary={doc.attachments[node.asset]?.path.split("/").at(-1)}>
+          <ImagePicker doc={doc} node={node} dir={dir} onError={setNotice} />
         </Group>
       )}
       <LinkSection doc={doc} node={node} onError={setNotice} />
