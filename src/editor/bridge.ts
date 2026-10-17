@@ -3,17 +3,38 @@ import { systemReport } from "./report.ts";
 import { exportSite, pageSvg } from "buni/tools/html.ts";
 import { download, iconSet, pagePng, print, printPage, zip } from "./export.ts";
 
-/** The file this tab shows, from its URL; none on the home screen. */
-const file = new URLSearchParams(location.search).get("file") ?? undefined;
+/** The file this tab shows, from its URL; none on the home screen. It changes when the tab switches to another design. */
+let file = new URLSearchParams(location.search).get("file") ?? undefined;
 // No window buttons to leave room for, unlike the desktop: the styles key off this.
 document.documentElement.dataset.host = "web";
 // Browser tabs stand in for the desktop's tab strip, so each is named for its file.
-if (file) document.title = `${file.split("/").pop()?.replace(/\.buni$/, "")} · buni`;
+const title = () => { if (file) document.title = `${file.split("/").pop()?.replace(/\.buni$/, "")} · buni`; };
+title();
 const at = (path: string) => (file ? `${path}?file=${encodeURIComponent(file)}` : path);
-/** Each tab shows one file: opening another is going to its URL. */
-const go = (path: string | undefined) => {
-  location.href = path === undefined ? "/" : `/?file=${encodeURIComponent(path)}`;
+/**
+ * Opening another design: from one design to another the tab switches in place (its stream moves to the new file,
+ * the window draws what it last saw of it at once); to or from the home screen, it goes to the URL.
+ */
+const go = (path: string | undefined, push = true) => {
+  if (path === undefined || !file || !watching) {
+    location.href = path === undefined ? "/" : `/?file=${encodeURIComponent(path)}`;
+    return;
+  }
+  if (path === file) return;
+  watching.close();
+  file = path;
+  title();
+  if (push) history.pushState(null, "", `/?file=${encodeURIComponent(path)}`);
+  window.dispatchEvent(new CustomEvent<string>(SWITCH, { detail: path }));
+  watching = watchFile(true);
 };
+/** Fired on window as the tab switches designs, with the new file's path: the window shows what it has of it. */
+export const SWITCH = "buni:switch";
+// Back and forward move between the designs this tab switched through.
+window.addEventListener("popstate", () => {
+  const to = new URLSearchParams(location.search).get("file") ?? undefined;
+  if (to !== file) go(to, false);
+});
 
 async function call<T>(method: string, ...args: unknown[]): Promise<T> {
   const res = await fetch(at(`/rpc/${method}`), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(args) });
@@ -62,9 +83,8 @@ async function current(): Promise<Snapshot> {
  * each time it opens: once it's open the first time (the window's first snapshot, so no edit falls between the two),
  * and again after any reconnect, as a whole update. Changes that arrive while the first fetch is under way follow it.
  */
-function watchFile() {
+function watchFile(switched = false) {
   const events = new EventSource(at("/events"));
-  const listeners = new Set<(u: SnapshotUpdate) => void>();
   let waiting: SnapshotUpdate[] | undefined = [];
   let opens = 0;
   let build: string | undefined;
@@ -73,7 +93,11 @@ function watchFile() {
   let initial: Snapshot | undefined;
   events.onopen = () => {
     opens++;
-    if (opens === 1) {
+    if (opens === 1 && switched) {
+      // A design switched to in the tab: the fresh snapshot replaces what the window drew from its cache.
+      waiting = undefined;
+      void fetchSnapshot().then((snap) => snap && listeners.forEach((fn) => fn({ kind: "whole", snap })), () => undefined);
+    } else if (opens === 1) {
       fetchSnapshot().then((snap) => {
         initial = snap;
         first.resolve();
@@ -98,14 +122,19 @@ function watchFile() {
     if (waiting) waiting.push(u);
     else listeners.forEach((fn) => fn(u));
   };
-  return { first: async () => {
-    await first.promise;
-    const snap = initial;
-    initial = undefined;
-    return snap;
-  }, listeners };
+  return {
+    first: async () => {
+      await first.promise;
+      const snap = initial;
+      initial = undefined;
+      return snap;
+    },
+    close: () => events.close(),
+  };
 }
-const watching = file ? watchFile() : undefined;
+/** Who hears the open file's changes; they stay as the tab switches designs. */
+const listeners = new Set<(u: SnapshotUpdate) => void>();
+let watching = file ? watchFile() : undefined;
 let firstServed = false;
 const stem = (s: Snapshot) => s.path.split("/").pop()?.replace(/\.buni$/, "") ?? "buni";
 /** Where the file's images are served, for drawing its pages. */
@@ -152,9 +181,8 @@ const api: BuniApi = {
     return watching.first();
   },
   onChange: (fn) => {
-    if (!watching) return () => {};
-    watching.listeners.add(fn);
-    return () => void watching.listeners.delete(fn);
+    listeners.add(fn);
+    return () => void listeners.delete(fn);
   },
   home: () => call("home"),
   project: () => call("project"),

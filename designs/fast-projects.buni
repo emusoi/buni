@@ -501,6 +501,12 @@
       "heading": "What changes, in order",
       "id": "e4be356a",
       "index": "a1"
+    },
+    "f37ae343": {
+      "body": "Switching inside the tab (no page load; the stream moves to the new file; the last four designs drawn from a cache; the fresh copy shares every unchanged entry with it):\n\n- 1 MB designs (buni-redesign, viewer): 79 ms to a design not yet seen, 41 to 85 ms back to one seen; one long task of 54 ms across three switches (was a full page load, then a 561 ms task).\n- Harvest (small): 10 to 22 ms.\n- Back and forward move between the designs; an agent's edit to the design switched to shows live.\n\nTargets met: a warm switch under 150 ms; the editor never blocks 300 ms. Phase 2 (watcher, incremental imports) and phase 4 (thumbnails) remain.",
+      "heading": "Measured, after phase 3",
+      "id": "f37ae343",
+      "index": "a3"
     }
   },
   "shapes": {

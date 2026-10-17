@@ -49,3 +49,27 @@ export function applyPatch(doc: Doc, patch: DocPatch): Doc {
   }
   return out;
 }
+
+/**
+ * `next` sharing `prev`'s objects wherever an entry is the same: a design fetched again (after switching back to it)
+ * keeps the identity of everything that didn't change, so what is drawn from it isn't drawn again.
+ */
+export function sharing(prev: Doc, next: Doc): Doc {
+  const a: Bags = prev;
+  const out: Doc = { ...next };
+  const b: Bags = out;
+  for (const k of BAGS) {
+    const was = a[k], now = b[k];
+    if (!was || !now) continue;
+    let same = Object.keys(was).length === Object.keys(now).length;
+    const kept: Record<string, unknown> = {};
+    for (const [id, v] of Object.entries(now)) {
+      const old = was[id];
+      const keep = old !== undefined && JSON.stringify(old) === JSON.stringify(v);
+      kept[id] = keep ? old : v;
+      if (!keep) same = false;
+    }
+    b[k] = same ? was : kept;
+  }
+  return out;
+}

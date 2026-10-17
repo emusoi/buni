@@ -39,7 +39,8 @@ export function useProject(path: string): ProjectFile[] {
   const [files, setFiles] = useState<ProjectFile[]>([]);
   useEffect(() => {
     let live = true;
-    void loadProject().then((all) => live && setFiles(siblings(all, path)));
+    // A design the summaries don't know yet (made since, in this tab) asks again.
+    void loadProject().then((all) => (all.some((f) => f.path === path) ? all : loadProject(true))).then((all) => live && setFiles(siblings(all, path)));
     return () => { live = false; };
   }, [path]);
   return files;
