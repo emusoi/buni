@@ -23,7 +23,7 @@ test("startup snapshots are released after handoff, with queued edits and reconn
   const globals = {
     location: new URL("http://localhost/?file=design.buni"),
     document: { documentElement: { dataset: {} }, styleSheets: [], title: "" },
-    window: {},
+    window: { addEventListener: () => {}, dispatchEvent: () => true },
     EventSource: Stream,
     fetch: async (url: string) => {
       if (url.startsWith("/rpc/snapshot")) return ++requests === 1 ? response.promise : new Response(body);
