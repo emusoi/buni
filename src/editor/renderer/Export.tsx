@@ -13,16 +13,21 @@ function sampleCall(doc: Doc): string {
   return (e?.path ?? "/").replace(/\{[^}]+\}/g, "1");
 }
 
-export function Export({ system, path, onToast, children }: {
+export function Export({ system, path, onToast, shown, onClose, children }: {
   system: Doc;
   path: string;
   onToast: (text: string) => void;
+  /** Opens it from elsewhere (the toolbar's menu) instead of its own button; `onClose` closes it. */
+  shown?: boolean;
+  onClose?: () => void;
   /** Sharing the design itself: website, PDF, image exports. */
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [own, setOwn] = useState(false);
+  const open = shown ?? own;
+  const setOpen = (o: boolean) => (shown === undefined ? setOwn(o) : !o && onClose?.());
   const anchor = useRef<HTMLSpanElement>(null);
-  useDismiss(open, useCallback(() => setOpen(false), []), anchor);
+  useDismiss(open, useCallback(() => (shown === undefined ? setOwn(false) : onClose?.()), [shown, onClose]), anchor);
 
   const give = async (text: string, toast: string) => {
     await navigator.clipboard.writeText(text);
@@ -32,9 +37,11 @@ export function Export({ system, path, onToast, children }: {
 
   return (
     <span className="export-anchor" ref={anchor}>
-      <button type="button" className="icon-btn" aria-expanded={open} aria-label="Export" onClick={() => setOpen((o) => !o)} title="Export: the file, a website, a PDF, backend contracts">
-        <Share size={16} strokeWidth={1.75} />
-      </button>
+      {shown === undefined && (
+        <button type="button" className="icon-btn" aria-expanded={open} aria-label="Export" onClick={() => setOwn((o) => !o)} title="Export: the file, a website, a PDF, backend contracts">
+          <Share size={16} strokeWidth={1.75} />
+        </button>
+      )}
       {open && (
         <div className="agent-menu export-menu" onPointerLeave={() => setOpen(false)} onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
           <div className="menu-label">Share the design</div>

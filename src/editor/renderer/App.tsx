@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Bot, FileInput, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { Bot, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -16,7 +16,7 @@ import { History } from "./History.tsx";
 import { Shortcuts } from "./Shortcuts.tsx";
 import { Agents } from "./Agents.tsx";
 import { placeImage } from "./images.ts";
-import { SidebarToggle, useSidebar } from "./SidebarToggle.tsx";
+import { useSidebar } from "./SidebarToggle.tsx";
 import { useDismiss } from "./useDismiss.ts";
 import { agentColor, agentInitials, ConnectAgent } from "./Connect.tsx";
 import { Palette, type Action } from "./Palette.tsx";
@@ -415,6 +415,11 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
+  // The toolbar's one menu, and the Versions or Export sheet it opens.
+  const [more, setMore] = useState(false);
+  const [sheet, setSheet] = useState<"versions" | "export">();
+  const moreRef = useRef<HTMLSpanElement>(null);
+  useDismiss(more, useCallback(() => setMore(false), []), moreRef);
   // An agent's edit on a page you aren't looking at: said once, with a way there.
   const [agentNote, setAgentNote] = useState<{ author: string; label: string; page: Id; node: Id | undefined }>();
   const lastNoted = useRef(edits.at(-1)?.at ?? "");
@@ -743,9 +748,7 @@ export function App({ snap }: { snap: Snapshot }) {
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "agents" ? " agents-open" : ""}`} style={floating}>
       <header className="tabs topbar">
         <div className="bar-lead">
-          <SidebarToggle open={sidebarOpen} onToggle={toggleSidebar} hint="⌘\\ hides or shows both panels" />
-          <button type="button" className="icon-btn" onClick={() => void window.buni.close()} title="All designs" aria-label="All designs"><ChevronLeft size={16} /></button>
-          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={`${snap.path.split("/").at(-2) ?? ""} · ${Object.keys(snap.view.pages).length} pages`} />
+          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
         </div>
         <FileTabs />
         <div className="modes-bar" role="tablist" aria-label="Mode">
@@ -762,11 +765,10 @@ export function App({ snap }: { snap: Snapshot }) {
             {connected.map((name) => (
               <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
             ))}
-            <span className="presence-text">{presence}</span>
+            <span className="presence-text" title={presence}>{connected.length ? connected.join(", ") : working.join(", ")}</span>
           </button>
         )}
-        {mode === "screens" && <button type="button" className="icon-btn" title="Import HTML" aria-label="Import HTML" onClick={() => setImportingHtml(true)}><FileInput size={16} strokeWidth={1.75} /></button>}
-        <History onToast={setToast} />
+        <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
         {activePage && (
           <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
             <PlayIcon size={16} strokeWidth={1.75} />
@@ -776,6 +778,8 @@ export function App({ snap }: { snap: Snapshot }) {
           system={snap.system}
           path={snap.path}
           onToast={setToast}
+          shown={sheet === "export"}
+          onClose={() => setSheet(undefined)}
         >
           {window.buni.downloadFile && (
             <button type="button" className="menu-chat preset" onClick={() => void window.buni.downloadFile?.().then((r) => setToast(`Saved ${r.path}; commit it, or open it in the desktop app`))}>
@@ -800,7 +804,23 @@ export function App({ snap }: { snap: Snapshot }) {
             </button>
           ))}
         </Export>
-        <SidebarToggle side="right" open={panelOpen} onToggle={togglePanel} hint="⌘\\ hides or shows both panels" />
+        {/* Everything else the window can do, one click away and out of sight until then. */}
+        <span className="export-anchor" ref={moreRef}>
+          <button type="button" className="icon-btn" aria-label="More" aria-expanded={more} title="More" onClick={() => setMore((m) => !m)}><Ellipsis size={17} /></button>
+          {more && (
+            <div className="agent-menu export-menu more-menu" role="menu" onClick={() => setMore(false)}>
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("versions")}><span className="menu-name">Versions…</span><span className="menu-state">save, go back</span></button>
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("export")}><span className="menu-name">Export…</span><span className="menu-state">file, site, PDF</span></button>
+              {mode === "screens" && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>}
+              <div className="menu-rule" />
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => togglePanel()}><span className="menu-name">{panelOpen ? "Hide" : "Show"} inspector</span><span className="menu-state">⌘\ both</span></button>
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setKeysShown(true)}><span className="menu-name">Keyboard shortcuts</span><span className="menu-state">?</span></button>
+              <div className="menu-rule" />
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => void window.buni.close()}><span className="menu-name">All designs</span><span className="menu-state" /></button>
+            </div>
+          )}
+        </span>
         </div>
       </header>
       {mode === "agents" && <Agents doc={doc} />}

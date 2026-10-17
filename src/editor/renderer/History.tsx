@@ -11,13 +11,16 @@ const when = (at: string) => {
   return Number.isNaN(d.getTime()) ? at : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 };
 
-export function History({ onToast }: { onToast: (m: string) => void }) {
+/** Versions; `shown` opens it from elsewhere (the toolbar's menu) instead of its own button, `onClose` closes it. */
+export function History({ onToast, shown, onClose }: { onToast: (m: string) => void; shown?: boolean; onClose?: () => void }) {
   const { versions, saveVersion, restoreVersion } = window.buni;
-  const [open, setOpen] = useState(false);
+  const [own, setOwn] = useState(false);
+  const open = shown ?? own;
+  const setOpen = (o: boolean) => (shown === undefined ? setOwn(o) : !o && onClose?.());
   const [list, setList] = useState<VersionInfo[]>();
   const [name, setName] = useState("");
   const anchor = useRef<HTMLSpanElement>(null);
-  useDismiss(open, useCallback(() => setOpen(false), []), anchor);
+  useDismiss(open, useCallback(() => (shown === undefined ? setOwn(false) : onClose?.()), [shown, onClose]), anchor);
   useEffect(() => {
     if (!open || !versions) return;
     let live = true;
@@ -38,9 +41,11 @@ export function History({ onToast }: { onToast: (m: string) => void }) {
   };
   return (
     <span className="export-anchor" ref={anchor}>
-      <button type="button" className="icon-btn" aria-label="Versions" aria-expanded={open} title="Versions: save one, or go back to one" onClick={() => setOpen((o) => !o)}>
-        <HistoryIcon size={16} strokeWidth={1.75} />
-      </button>
+      {shown === undefined && (
+        <button type="button" className="icon-btn" aria-label="Versions" aria-expanded={open} title="Versions: save one, or go back to one" onClick={() => setOwn((o) => !o)}>
+          <HistoryIcon size={16} strokeWidth={1.75} />
+        </button>
+      )}
       {open && (
         <div className="agent-menu export-menu history-menu" onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
           <div className="menu-label">Save this version</div>

@@ -1,44 +1,52 @@
-/* Apple's Human Interface Guidelines, macOS: content first, the app's own chrome in system greys and one blue.
-   The side panels float as glass over a canvas that runs edge to edge (designs/buni-hig). The canvas selection
-   outline stays blue so it shows on dark designs. */
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("fonts/instrument-sans.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+/* Only what is necessary. One typeface, warm-neutral paper, white sheets edged by a single hairline, and one blue
+   that means "this is selected" or "this is the thing to do". No glass, no blur, no decoration: the designs on the
+   canvas carry the colour. The layout keeps Apple's structure (designs/buni-hig); the look is buni's own
+   (designs/buni-hig/identity.buni, page Minimal). */
 :root {
-  --sidebar: #f6f6f8;
-  --hover: rgba(0, 0, 0, 0.05);
+  --sidebar: #f6f6f4;
+  --hover: rgba(24, 24, 27, 0.05);
   --content: #ffffff;
-  --chip: rgba(0, 0, 0, 0.05);
-  --canvas: #e9e9ee;
-  --ink: #1d1d1f;
-  --ink-2: #6e6e73;
-  --label: #8e8e93;
-  --placeholder: #aeaeb2;
-  --rule: rgba(0, 0, 0, 0.09);
-  --green: #248a3d;
-  --accent: #007aff;
-  --accent-ink: #0062cc;
-  --accent-tint: rgba(0, 122, 255, 0.14);
-  --warn: #c93400;
-  --warn-tint: #fff4e5;
-  --radius: 7px;
+  --chip: rgba(24, 24, 27, 0.05);
+  --canvas: #f6f6f4;
+  --ink: #18181b;
+  --ink-2: #6b6b73;
+  --label: #a1a1a8;
+  --placeholder: #b4b4ba;
+  --rule: rgba(24, 24, 27, 0.08);
+  --green: #1f8a4c;
+  --accent: #2f6bff;
+  --accent-ink: #1f55d6;
+  --accent-tint: rgba(47, 107, 255, 0.1);
+  --warn: #b45309;
+  --warn-tint: #fff6e8;
+  --radius: 6px;
   --surface: #ffffff;
-  --shadow-1: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-  --shadow-2: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 12px 32px rgba(0, 0, 0, 0.14);
+  --shadow-1: 0 0 0 1px rgba(24, 24, 27, 0.08);
+  --shadow-2: 0 0 0 1px rgba(24, 24, 27, 0.08), 0 8px 24px rgba(24, 24, 27, 0.08);
   --control: 28px;
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;
-  --surface-2: #fafafc;
+  --font: "Instrument Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --surface-2: #fafafa;
   --on-ink: #ffffff;
-  --ink-3: #86868b;
-  --line: rgba(0, 0, 0, 0.09);
-  --line-2: rgba(0, 0, 0, 0.14);
-  --wire: #aeaeb2;
-  --purple: #af52de; --purple-ink: #8944ab; --purple-tint: rgba(175, 82, 222, 0.12);
-  --green-tint: rgba(52, 199, 89, 0.14);
-  --blue-tint: rgba(0, 122, 255, 0.1);
-  /* The floating panels: frosted, with a hairline and a soft lift. */
-  --glass: rgba(250, 250, 252, 0.74);
-  --glass-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.1);
-  /* Tints of ink, and the colour shadows are made of. */
-  --ink-rgb: 29 29 31;
+  --ink-3: #8a8a92;
+  --line: rgba(24, 24, 27, 0.08);
+  --line-2: rgba(24, 24, 27, 0.14);
+  --wire: #b4b4ba;
+  --purple: #9b5de5; --purple-ink: #7a3fc4; --purple-tint: rgba(155, 93, 229, 0.1);
+  --green-tint: rgba(31, 138, 76, 0.1);
+  --blue-tint: rgba(47, 107, 255, 0.08);
+  /* Panels and menus: white sheets with a hairline edge. */
+  --glass: #ffffff;
+  --glass-shadow: 0 0 0 1px rgba(24, 24, 27, 0.08);
+  --menu: #ffffff;
+  --ink-rgb: 24 24 27;
   --shade: 0 0 0;
   color-scheme: light;
 }
@@ -404,7 +412,7 @@ svg { flex-shrink: 0; }
 .btn.danger { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; color: var(--danger); }
 .btn.danger:hover { background: var(--danger-tint); }
 
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 5; padding: 8px 14px; border-radius: 6px; background: rgba(30, 30, 32, 0.92); color: #fff; backdrop-filter: blur(20px); font-size: 13px; box-shadow: 0 6px 20px rgb(var(--shade) / 0.25); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 5; padding: 8px 14px; border-radius: 6px; background: rgba(30, 30, 32, 0.92); color: #fff; font-size: 13px; box-shadow: 0 6px 20px rgb(var(--shade) / 0.25); }
 .add-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .add-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); font-size: 11px; color: var(--ink-2); }
 .add-btn:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-tint); }
@@ -1142,44 +1150,45 @@ svg { flex-shrink: 0; }
 .sys-thread.resolved { opacity: 0.6; }
 .sys-process .sys-chip { font-family: inherit; font-size: 12px; text-align: left; }
 
-/* Dark: macOS dark appearance. Designs on the canvas keep their own colours. */
+/* Dark: the same restraint, on near-black graphite. Designs on the canvas keep their own colours. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --sidebar: #1e1e20;
-    --hover: rgba(255, 255, 255, 0.07);
-    --content: #232325;
-    --chip: rgba(255, 255, 255, 0.08);
-    --canvas: #151517;
-    --ink: #f5f5f7;
-    --ink-2: #a1a1a6;
-    --ink-3: #98989d;
-    --label: #8e8e93;
-    --placeholder: #636366;
-    --rule: rgba(255, 255, 255, 0.1);
-    --line: rgba(255, 255, 255, 0.1);
-    --line-2: rgba(255, 255, 255, 0.14);
-    --wire: #636366;
-    --green: #32d74b; --green-tint: rgba(50, 215, 75, 0.16);
-    --accent: #0a84ff;
-    --accent-ink: #64b0ff;
-    --accent-tint: rgba(10, 132, 255, 0.24);
-    --warn: #ff9f0a; --warn-tint: rgba(255, 159, 10, 0.16);
-    --surface: #2c2c2e;
-    --surface-2: #262628;
+    --sidebar: #111113;
+    --hover: rgba(255, 255, 255, 0.06);
+    --content: #18181b;
+    --chip: rgba(255, 255, 255, 0.07);
+    --canvas: #111113;
+    --ink: #ededef;
+    --ink-2: #9f9fa9;
+    --ink-3: #8a8a92;
+    --label: #6f6f78;
+    --placeholder: #5a5a62;
+    --rule: rgba(255, 255, 255, 0.08);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-2: rgba(255, 255, 255, 0.13);
+    --wire: #5a5a62;
+    --green: #3ecf7a; --green-tint: rgba(62, 207, 122, 0.14);
+    --accent: #5b8cff;
+    --accent-ink: #8aaeff;
+    --accent-tint: rgba(91, 140, 255, 0.16);
+    --warn: #f5a524; --warn-tint: rgba(245, 165, 36, 0.14);
+    --surface: #18181b;
+    --surface-2: #1c1c20;
     --on-ink: #ffffff;
-    --purple: #bf5af2; --purple-ink: #d08ef5; --purple-tint: rgba(191, 90, 242, 0.18);
-    --blue-tint: rgba(10, 132, 255, 0.18);
+    --purple: #b98cf0; --purple-ink: #cdb0f5; --purple-tint: rgba(185, 140, 240, 0.16);
+    --blue-tint: rgba(91, 140, 255, 0.14);
     --get: #7cc49a; --get-tint: #1f3328;
     --post: #93a3e8; --post-tint: #232a45;
     --gql: #e08ab5; --gql-tint: #3b2230;
-    --amber: #ff9f0a; --amber-tint: rgba(255, 159, 10, 0.16);
-    --danger: #ff6961; --danger-tint: rgba(255, 69, 58, 0.16);
-    --glass: rgba(40, 40, 43, 0.72);
-    --glass-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.5);
-    --ink-rgb: 245 245 247;
+    --amber: #f5a524; --amber-tint: rgba(245, 165, 36, 0.14);
+    --danger: #ff6b61; --danger-tint: rgba(255, 107, 97, 0.14);
+    --glass: #18181b;
+    --glass-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --menu: #1c1c20;
+    --ink-rgb: 237 237 239;
     --shade: 0 0 0;
-    --shadow-1: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-2: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 12px 32px rgba(0, 0, 0, 0.55);
+    --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
@@ -1383,10 +1392,11 @@ button.insert-where:hover { color: var(--ink); }
 .project-menu .menu-chat.preset .menu-name { display: inline-flex; align-items: center; gap: 6px; }
 .project-menu .menu-chat.on { background: var(--hover); opacity: 1; }
 .project-menu .rail-empty { margin: 4px 10px 8px; }
-.modes-bar { display: flex; gap: 2px; margin: 0 auto; padding: 2px; border-radius: 9px; background: var(--chip); -webkit-app-region: no-drag; }
-.modes-bar button { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--ink-2); font-size: 12px; font-weight: 500; }
+.modes-bar { display: flex; gap: 6px; margin: 0 auto; -webkit-app-region: no-drag; }
+.modes-bar button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 7px; background: none; color: var(--ink-2); font-size: 12px; font-weight: 500; }
 .modes-bar button:hover { color: var(--ink); }
-.modes-bar button.on { background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink); font-weight: 600; }
+.modes-bar button.on { color: var(--ink); font-weight: 600; }
+.modes-bar button svg { display: none; }
 .agent-cards { display: flex; flex-direction: column; gap: 8px; }
 .agent-card { display: flex; gap: 12px; padding: 12px; border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-1); }
 .agent-card > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 12px; color: var(--ink-2); line-height: 1.45; }
@@ -1406,23 +1416,18 @@ button.insert-where:hover { color: var(--ink); }
 /* The editor window: a 52px toolbar, then the canvas edge to edge, with the side panels floating over it as glass. */
 .app.editor { position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); --float-left: 268px; }
 .app.editor.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); --float-left: 0px; }
-/* No bar: the toolbar is three frosted capsules floating over the canvas, which runs to the top of the window. */
-.app.editor > .topbar { position: absolute; z-index: 7; top: 10px; left: 10px; right: 10px; height: 40px; gap: 8px; padding: 0; background: none; box-shadow: none; }
-.app.editor > .topbar > .bar-lead, .app.editor > .topbar > .bar-trail, .app.editor > .topbar > .modes-bar {
-  height: 40px; padding: 0 6px; border-radius: 20px; background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
-}
-.app.editor > .topbar > .bar-lead { padding-left: 78px; }
-.app.editor > .topbar > .modes-bar { align-items: center; padding: 0 8px; }
+/* A plain 48px bar on the canvas's own colour: where you are, the modes as words, then only Play and its menu. */
+.app.editor > .topbar { position: absolute; z-index: 7; top: 0; left: 0; right: 0; height: 48px; gap: 8px; padding: 0 12px 0 84px; background: none; box-shadow: none; }
 .app.editor > .sidebar, .app.editor .inspector-panel {
-  position: absolute; z-index: 6; top: 10px; bottom: 10px; border-radius: 18px; overflow: hidden;
-  background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+  position: absolute; z-index: 6; bottom: 8px; border-radius: 10px; overflow: hidden;
+  background: var(--glass); box-shadow: var(--glass-shadow);
 }
-.app.editor > .sidebar { left: 10px; top: 62px; width: 248px; padding-top: 6px; }
-.app.editor .inspector-panel { top: 62px; right: 10px; border-left: 0; }
+.app.editor > .sidebar { left: 8px; top: 48px; width: 250px; padding-top: 4px; }
+.app.editor .inspector-panel { top: 48px; right: 8px; border-left: 0; }
 .app.editor > .main { grid-column: 1; grid-row: 1; grid-template-rows: minmax(0, 1fr); box-shadow: none; background: var(--canvas); }
 .app.editor .workspace { position: relative; grid-template-columns: minmax(0, 1fr); border-top: 0; }
 /* Views that aren't the canvas keep clear of the panels. */
-.app.editor .workspace > .sys-screen, .app.editor .workspace > .journey { margin: 60px var(--float-right) 0 var(--float-left); }
+.app.editor .workspace > .sys-screen, .app.editor .workspace > .journey { margin: 48px var(--float-right) 0 var(--float-left); }
 .app.editor .zoom { left: calc(var(--float-left) + 16px); }
 .app.editor .zoom.canvas-tools { left: auto; right: calc(var(--float-right) + 16px); }
 .app.editor .insert-bar { left: calc(50% + (var(--float-left) - var(--float-right)) / 2); }
@@ -1439,7 +1444,7 @@ button.insert-where:hover { color: var(--ink); }
 .presence-dot { border-color: var(--sidebar); }
 .presence-text { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 /* The web has no window buttons to clear. */
-[data-host="web"] .app.editor > .topbar > .bar-lead { padding-left: 6px; }
+[data-host="web"] .app.editor > .topbar { padding-left: 14px; }
 [data-host="web"] .sidebar-top { padding-left: 16px; }
 
 /* Canvas zoom sits bottom-left, out of the way of the boards and the insert bar. */
@@ -1982,7 +1987,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .app:not(.editor) { grid-template-columns: 274px minmax(0, 1fr); background: var(--sidebar); }
 .app:not(.editor) > .sidebar {
   margin: 10px 0 10px 10px; border-radius: 18px; overflow: hidden;
-  background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+  background: var(--glass); box-shadow: var(--glass-shadow);
 }
 .app:not(.editor) > .main { background: var(--sidebar); box-shadow: none; }
 .app:not(.editor) .home { border-top: 0; padding: 28px 40px 64px; }
@@ -1999,12 +2004,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .card-actions { top: 8px; right: 8px; }
 
 /* Menus, ⌘P and ⌘K as macOS draws them: frosted, rounded, the row under the pointer filled with the accent. */
-.agent-menu { padding: 5px; border-radius: 10px; background: var(--menu); -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%); box-shadow: var(--shadow-2); }
+.agent-menu { padding: 5px; border-radius: 10px; background: var(--menu); box-shadow: var(--shadow-2); }
 .agent-menu .menu-chat { border-radius: 5px; }
 .agent-menu .menu-chat:not(:disabled):hover { background: var(--accent); color: #fff; }
 .agent-menu .menu-chat:not(:disabled):hover .menu-state, .agent-menu .menu-chat:not(:disabled):hover svg { color: rgba(255, 255, 255, 0.8); }
 .palette-backdrop { background: rgb(0 0 0 / 0.12); }
-.palette { border-radius: 16px; background: var(--menu); -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 24px 64px rgb(0 0 0 / 0.22); }
+.palette { border-radius: 16px; background: var(--menu); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 24px 64px rgb(0 0 0 / 0.22); }
 .palette-input { border-bottom: 0.5px solid var(--rule); }
 .palette-input input { font-size: 20px; }
 .palette-head { letter-spacing: 0; text-transform: none; }
@@ -2016,21 +2021,19 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .play::before { content: ""; flex: none; height: 28px; -webkit-app-region: drag; }
 .play-bar {
   order: 2; align-self: center; height: 48px; max-width: calc(100% - 40px); margin: 0 0 16px; padding: 0 8px; gap: 6px;
-  border: 0; border-radius: 24px; background: rgba(58, 58, 60, 0.72); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+  border: 0; border-radius: 24px; background: rgba(58, 58, 60, 0.72);
   box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 12px 40px rgba(0, 0, 0, 0.45); -webkit-app-region: no-drag;
 }
 .play-bar .play-icon { border-radius: 18px; width: 34px; height: 34px; }
 .play-bar .play-flow { border-radius: 16px; }
 .play-bar .play-rail { flex: 0 1 auto; }
 .play-end { inset: 0; }
-:root { --menu: rgba(246, 246, 248, 0.88); }
-@media (prefers-color-scheme: dark) { :root { --menu: rgba(44, 44, 46, 0.88); } }
 
 /* The sidebar folded to a strip of icons, floating where it was. */
 .app.editor.sidebar-collapsed { --float-left: 72px; }
 .side-rail {
-  position: absolute; z-index: 6; left: 10px; top: 62px; bottom: 10px; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0;
-  border-radius: 18px; background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+  position: absolute; z-index: 6; left: 8px; top: 48px; bottom: 8px; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0;
+  border-radius: 10px; background: var(--glass); box-shadow: var(--glass-shadow);
 }
 .side-rail .icon-btn { position: relative; width: 36px; height: 36px; border-radius: 9px; }
 .side-rail .icon-btn.busy::after { content: ""; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 4px; background: var(--purple); box-shadow: 0 0 0 1.5px var(--surface); }
@@ -2042,7 +2045,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* The canvas's own controls float like the toolbar: frosted capsules at its foot. */
 .app.editor .zoom, .app.editor .insert-bar {
   height: 40px; padding: 0 6px; border-radius: 20px; background: var(--glass); box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
 }
 .app.editor .zoom button { height: 28px; border-radius: 14px; }
 .app.editor .zoom button:hover, .app.editor .insert-bar .add-btn:hover { background: var(--hover); }
@@ -2051,11 +2053,9 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* Agents mode floats its list like the sidebar; panels are frosted but solid enough that a white page behind
    them never washes their text out. Sheets take focus without a ring around the whole sheet. */
 .app.editor > .agents-view { grid-template-columns: 268px minmax(0, 1fr); padding-top: 0; background: var(--canvas); }
-.app.editor > .agents-view > .ag-rail { margin: 62px 10px 10px; border-radius: 18px; background: var(--glass); box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); }
+.app.editor > .agents-view > .ag-rail { margin: 62px 10px 10px; border-radius: 18px; background: var(--glass); box-shadow: var(--glass-shadow); }
 .app.editor > .agents-view > .ag-main { padding-top: 60px; background: none; }
 .dialog:focus, .dialog:focus-visible { outline: none; }
-:root { --glass: rgba(248, 248, 250, 0.93); }
-@media (prefers-color-scheme: dark) { :root { --glass: rgba(36, 36, 39, 0.95); } }
 /* A layer's right-click menu. */
 .context-menu { position: fixed; z-index: 40; width: 240px; max-height: none; overflow: visible; }
 .context-menu .menu-chat { flex-direction: row; align-items: center; justify-content: space-between; min-height: 26px; padding: 3px 10px; }
@@ -2073,7 +2073,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .presence:not(:has(.presence-dot)) { padding-left: 10px; }
 .history-by { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 4px; vertical-align: 1px; }
 /* An agent's question, floating under the toolbar until it's answered. */
-.ask-card { position: absolute; z-index: 9; top: 62px; left: 50%; transform: translateX(-50%); width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--menu); -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 18px 48px rgb(0 0 0 / 0.24); animation: tag-in 160ms ease-out; }
+.ask-card { position: absolute; z-index: 9; top: 62px; left: 50%; transform: translateX(-50%); width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--menu); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 18px 48px rgb(0 0 0 / 0.24); animation: tag-in 160ms ease-out; }
 .ask-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .ask-head .presence-dot { border-color: transparent; }
 .ask-layer { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 0; border-radius: 11px; background: var(--chip); color: var(--ink-2); font-size: 11px; }
@@ -2124,3 +2124,15 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .library-insert:hover { background: var(--hover); }
 .library-insert .kbd { margin-left: 2px; }
 .library-filters button { flex: 1 1 auto; padding: 0 6px; white-space: nowrap; font-size: 11.5px; }
+/* The toolbar's title reads as one line: the design, then its project, quieter. */
+.app.editor .project-switch .title { flex-direction: row; align-items: baseline; gap: 8px; }
+.app.editor .project-switch .title small { font-size: 13px; color: var(--label); }
+.app.editor .presence { gap: 6px; padding: 0 8px; background: none; }
+.app.editor .presence-dot { width: 8px; height: 8px; border: 0; font-size: 0; }
+.app.editor .presence-dot + .presence-dot { margin-left: -2px; }
+.more-menu { left: auto; right: 0; width: 230px; }
+/* Sidebar rows say their name; an icon that's the same on every row says nothing. Counts show when you look. */
+.app.editor > .sidebar .row:not(.layer) > svg:first-child { display: none; }
+.app.editor > .sidebar .row .count { opacity: 0; transition: opacity 0.12s; }
+.app.editor > .sidebar .row:hover .count, .app.editor > .sidebar .row.active .count { opacity: 1; }
+.app.editor > .sidebar .row { padding-left: 10px; }
