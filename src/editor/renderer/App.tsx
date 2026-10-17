@@ -28,6 +28,7 @@ import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
+import { useProject } from "./projectStore.ts";
 
 declare global {
   interface Window {
@@ -315,19 +316,6 @@ export function App({ snap }: { snap: Snapshot }) {
     if (select !== undefined) setSelected(select);
     else if (was !== id) setSelected(undefined);
   }, []);
-  // How often the project's other designs place this file's components (a core's): read when the file opens, its
-  // components change in number, or one is opened.
-  const [usedElsewhere, setUsedElsewhere] = useState<Record<Id, number>>({});
-  useEffect(() => {
-    if (!Object.keys(snap.view.shared).length) return;
-    void window.buni.home().then((all) => {
-      const counts: Record<Id, number> = {};
-      // Their documents carry this file's own components' layers too; only their own instances count.
-      for (const f of siblings(all, snap.path)) if (f.path !== snap.path) for (const n of Object.values(f.doc.nodes)) if (n.kind === "instance" && snap.view.shared[n.shared] && !snap.view.nodes[n.id]) counts[n.shared] = (counts[n.shared] ?? 0) + 1;
-      setUsedElsewhere(counts);
-    });
-  // Not on every edit: other designs don't change with this file's.
-  }, [component, snap.path, Object.keys(snap.view.shared).length]);
   /** Opens the file a page or component of another file lives in, at it; playing the page, if `play`. */
   const openElsewhere = (page: Id, play = false) => {
     const file = snap.owners[page];
@@ -421,13 +409,22 @@ export function App({ snap }: { snap: Snapshot }) {
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
   const [finding, setFinding] = useState(false);
-  // The project's designs, for switching between them: the sidebar's list and ⌘P. Read when the file opens.
-  const [project, setProject] = useState<HomeFile[]>([]);
+  // The project's designs as summaries, one request per tab: the sidebar's list, ⌘P and the use counts read it.
+  const project = useProject(snap.path);
   const [switching, setSwitching] = useState(false);
-  useEffect(() => { void window.buni.home().then((all) => setProject(siblings(all, snap.path))); }, [snap.path]);
-  // The whole app, this design and the project's others, for walking and playing flows that cross from one into the next.
-  const app = useMemo(() => withProject(doc, project.filter((f) => f.path !== snap.path).map((f) => f.doc)), [doc, project, snap.path]);
-  const fileOfPage = useMemo(() => new Map(project.flatMap((f) => Object.keys(f.doc.pages).filter((id) => !snap.view.pages[id]).map((id) => [id, f.path] as const))), [project, snap.view.pages]);
+  // How often the project's other designs place this file's components (a core's).
+  const usedElsewhere = useMemo(() => Object.fromEntries(project.find((f) => f.path === snap.path)?.components.map((c) => [c.id, c.usedElsewhere]) ?? []), [project, snap.path]);
+  // The whole app, this design and the project's others in full, for walking and playing flows that cross from one
+  // into the next: loaded only when Play or a flow's board is open, not with every design.
+  const [others, setOthers] = useState<Doc[]>([]);
+  const crossing = play !== undefined || journey !== undefined;
+  useEffect(() => {
+    if (!crossing || project.length < 2) return;
+    const paths = project.filter((f) => f.path !== snap.path).map((f) => f.path);
+    void (window.buni.documents ? window.buni.documents(paths).then((d) => Object.values(d)) : window.buni.home().then((all) => all.filter((f) => paths.includes(f.path)).map((f) => f.doc))).then(setOthers);
+  }, [crossing, project, snap.path]);
+  const app = useMemo(() => withProject(doc, others), [doc, others]);
+  const fileOfPage = useMemo(() => new Map(project.flatMap((f) => f.pages.filter((p) => !snap.view.pages[p.id]).map((p) => [p.id, f.path] as const))), [project, snap.view.pages]);
   /** Opens a page here, or in the design of the project it belongs to. */
   const showPage = (page: Id) => { const file = fileOfPage.get(page); if (file && !snap.view.pages[page]) openAt(file, page); else openPage(page); };
   /** Opens another design of the project, at one of its pages if given. */
@@ -782,7 +779,7 @@ export function App({ snap }: { snap: Snapshot }) {
                   <FolderOpen size={15} strokeWidth={1.75} />
                   <span className="name">{f.name}</span>
                   {f.agentNote && <span className="page-agent" style={{ background: "var(--accent)" }} />}
-                  <span className="meta">{f.pages || Object.keys(f.doc.shared).length}</span>
+                  <span className="meta">{f.pages.length || f.components.length}</span>
                 </button>
               ))}
             </div>
@@ -846,7 +843,12 @@ export function App({ snap }: { snap: Snapshot }) {
             <button type="button" key={f.id} className={`row flow-row${f.id === shownJourney ? " active" : ""}`} onClick={() => setJourney(f.id)} onDoubleClick={() => setRenaming(f.id)} title="Double-click to rename">
               <Workflow size={16} strokeWidth={1.75} />
               <span className="name">{f.name}</span>
-              <span className="meta">{walkFlow(app, f.start).pages.length} screens</span>
+              <span className="meta">{(() => {
+                // Counted here; a flow that walks on into another design says so, its full count shown when opened.
+                const walk = walkFlow(app, f.start);
+                const on = walk.pages.some((p) => Object.values(app.connections).some((c) => c.page === p && !app.pages[c.to] && !c.nav));
+                return `${walk.pages.length}${on ? "+" : ""} screens`;
+              })()}</span>
               <span className="row-x" role="button" aria-label={`Remove flow ${f.name}`} title="Remove this flow (the pages stay)" onClick={(e) => { e.stopPropagation(); if (shownJourney === f.id) setJourney(undefined); void window.buni.edit("set_flow", { flow: f.id, remove: true }).then((r) => setToast(r.reply)); }}><X size={12} /></span>
             </button>
           ))}
@@ -976,8 +978,8 @@ export function App({ snap }: { snap: Snapshot }) {
       {inserting && <QuickInsert doc={doc} dir={snap.dir} where={insertWhere} onInsert={(id, mode) => void insert(id, mode)} onClose={() => setInserting(false)} />}
       {finding && <Palette doc={doc} system={snap.system} actions={actions} onPick={jump} onClose={() => setFinding(false)} />}
       {switching && <Palette doc={doc} only placeholder="Go to a design, or a page in one" onPick={jump} onClose={() => setSwitching(false)} actions={project.filter((f) => f.path !== snap.path).flatMap((f): Action[] => [
-        { id: f.path, title: f.name, detail: f.pages ? `${f.pages} page${f.pages === 1 ? "" : "s"}` : `${Object.keys(f.doc.shared).length} components`, icon: FolderOpen, run: () => openAt(f.path) },
-        ...pagesInOrder(f.doc).map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),
+        { id: f.path, title: f.name, detail: f.pages.length ? `${f.pages.length} page${f.pages.length === 1 ? "" : "s"}` : `${f.components.length} components`, icon: FolderOpen, run: () => openAt(f.path) },
+        ...f.pages.map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),
       ])} />}
       {play && doc.pages[play.page] && (
         <Play

@@ -1,0 +1,814 @@
+{
+  "agents": {},
+  "attachments": {},
+  "buni": 1,
+  "clusters": {},
+  "comments": {},
+  "connections": {},
+  "decisions": {
+    "0311e578": {
+      "at": "2026-10-16T22:50:41.802Z",
+      "by": "claude",
+      "id": "0311e578",
+      "text": "What do lists and pickers get from the server? → Summaries; full documents on demand: Every list, picker and count needs names, routes and counts, not layers"
+    },
+    "14d19414": {
+      "at": "2026-10-16T22:50:39.914Z",
+      "by": "claude",
+      "id": "14d19414",
+      "text": "How does the index learn a design changed? → Watch directories, reconcile on failure: Agents and git change files outside the server; directories catch atomic renames"
+    },
+    "7070598c": {
+      "at": "2026-10-16T22:50:38.607Z",
+      "by": "claude",
+      "id": "7070598c",
+      "text": "How should the tab switch to another design? → Switch in the tab, from a snapshot cache: Most of the cost is the reload itself; the server is already warm (16 to 160 ms)"
+    }
+  },
+  "endpoints": {
+    "get-events": {
+      "emits": [],
+      "id": "get-events",
+      "index": "a3",
+      "method": "GET",
+      "path": "/events",
+      "reads": [],
+      "request": [
+        {
+          "name": "file",
+          "type": "string"
+        }
+      ],
+      "response": [
+        {
+          "name": "delta",
+          "type": "ProjectDelta"
+        }
+      ],
+      "service": "editor-server",
+      "summary": "One stream per tab: patches to the open design and ProjectDelta for the rest; its file changes without reconnecting",
+      "writes": []
+    },
+    "get-rpc-documents": {
+      "emits": [],
+      "id": "get-rpc-documents",
+      "index": "a2",
+      "method": "GET",
+      "path": "/rpc/documents",
+      "reads": [],
+      "request": [
+        {
+          "name": "files",
+          "type": "string[]"
+        }
+      ],
+      "response": [
+        {
+          "name": "docs",
+          "type": "Snapshot[]"
+        }
+      ],
+      "service": "editor-server",
+      "summary": "Full documents of the designs a flow reaches, for Play and the flow board only; the window asks for the next ones while you play",
+      "writes": []
+    },
+    "get-rpc-project": {
+      "emits": [],
+      "id": "get-rpc-project",
+      "index": "a0",
+      "method": "GET",
+      "path": "/rpc/project",
+      "reads": [],
+      "request": [],
+      "response": [
+        {
+          "name": "revision",
+          "type": "integer"
+        },
+        {
+          "name": "files",
+          "type": "FileSummary[]"
+        }
+      ],
+      "service": "editor-server",
+      "summary": "The project's designs as summaries, and the revision they are at: replaces home() for the editor's lists and pickers",
+      "writes": []
+    },
+    "get-rpc-snapshot": {
+      "emits": [],
+      "id": "get-rpc-snapshot",
+      "index": "a1",
+      "method": "GET",
+      "path": "/rpc/snapshot",
+      "reads": [],
+      "request": [
+        {
+          "name": "file",
+          "type": "string"
+        },
+        {
+          "example": "version the window has",
+          "name": "since",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "response": [
+        {
+          "name": "snapshot",
+          "type": "Snapshot"
+        }
+      ],
+      "service": "editor-server",
+      "summary": "One design as the window draws it, with the version it was made from; 304 when the window's cached one is current",
+      "writes": []
+    },
+    "get-thumbs-file-page": {
+      "emits": [],
+      "id": "get-thumbs-file-page",
+      "index": "a4",
+      "method": "GET",
+      "path": "/thumbs/:file/:page",
+      "reads": [],
+      "request": [],
+      "response": [
+        {
+          "example": "image/webp",
+          "name": "image",
+          "type": "string"
+        }
+      ],
+      "service": "editor-server",
+      "summary": "A design's first page as a small picture, cached by its version and its imports'; Home draws these, not a live page per card",
+      "writes": []
+    }
+  },
+  "environments": {},
+  "evals": {},
+  "events": {
+    "designchanged": {
+      "id": "designchanged",
+      "index": "a0",
+      "name": "DesignChanged",
+      "payload": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "example": "changed | added | removed | renamed",
+          "name": "kind",
+          "type": "string"
+        }
+      ],
+      "queue": "file-watcher"
+    }
+  },
+  "flows": {},
+  "journeys": {},
+  "links": {
+    "editor-server-calls-workspace-pool": {
+      "carries": [
+        "snapshot"
+      ],
+      "failure": {
+        "fallback": "Open the design cold, as today",
+        "timeoutMs": 2000
+      },
+      "from": "editor-server",
+      "id": "editor-server-calls-workspace-pool",
+      "kind": "calls",
+      "note": "Warm Workspace for a path; opened on first ask",
+      "to": "workspace-pool"
+    },
+    "editor-server-reads-project-index": {
+      "carries": [
+        "file-summary"
+      ],
+      "from": "editor-server",
+      "id": "editor-server-reads-project-index",
+      "kind": "reads",
+      "note": "Summaries for the project; full documents only for Play and flows",
+      "to": "project-index"
+    },
+    "editor-server-subscribes-file-watcher": {
+      "from": "editor-server",
+      "id": "editor-server-subscribes-file-watcher",
+      "kind": "subscribes",
+      "note": "To push ProjectDelta to open tabs and refresh open designs whose imports changed",
+      "to": "file-watcher"
+    },
+    "editor-window-calls-editor-server": {
+      "carries": [
+        "project-summary",
+        "snapshot",
+        "project-delta"
+      ],
+      "failure": {
+        "fallback": "The cached snapshot stays on screen, read-only, with a retry",
+        "timeoutMs": 5000
+      },
+      "from": "editor-window",
+      "id": "editor-window-calls-editor-server",
+      "kind": "calls",
+      "note": "RPC for one file at a time; one event stream per tab for edits and project deltas",
+      "to": "editor-server"
+    },
+    "project-index-reads-design-files": {
+      "from": "project-index",
+      "id": "project-index-reads-design-files",
+      "kind": "reads",
+      "note": "Stat first; read and parse only a file whose mtime or size moved",
+      "to": "design-files"
+    },
+    "project-index-subscribes-file-watcher": {
+      "from": "project-index",
+      "id": "project-index-subscribes-file-watcher",
+      "kind": "subscribes",
+      "note": "Directory events, debounced; a full reconcile when the watcher drops",
+      "to": "file-watcher"
+    },
+    "workspace-pool-reads-project-index": {
+      "from": "workspace-pool",
+      "id": "workspace-pool-reads-project-index",
+      "kind": "reads",
+      "note": "Imported documents and their versions: a system is rebuilt only when one changed",
+      "to": "project-index"
+    },
+    "workspace-pool-writes-design-files": {
+      "from": "workspace-pool",
+      "id": "workspace-pool-writes-design-files",
+      "kind": "writes",
+      "note": "Edits, written whole and atomically; the index is told directly, not by the watcher",
+      "to": "design-files"
+    }
+  },
+  "nodes": {},
+  "operations": {},
+  "pages": {},
+  "parts": {
+    "design-files": {
+      "id": "design-files",
+      "ifDown": "A design that can't be read shows as broken in the lists, with why; the others keep working",
+      "index": "a5",
+      "kind": "store",
+      "name": "Design files",
+      "purpose": "The .buni files of the project folder: a core, its sections, their attachments.",
+      "tech": "Disk"
+    },
+    "editor-server": {
+      "id": "editor-server",
+      "index": "a1",
+      "kind": "service",
+      "name": "Editor server",
+      "purpose": "buni open: answers the window over RPC and pushes edits over one event stream; one per project folder.",
+      "tech": "Bun.serve"
+    },
+    "editor-window": {
+      "id": "editor-window",
+      "index": "a0",
+      "kind": "client",
+      "name": "Editor window",
+      "purpose": "The design open in a browser tab or the desktop app: canvas, sidebar, Play. Today it reloads on every switch and asks for the whole project as full documents.",
+      "tech": "React, one tab per design"
+    },
+    "file-watcher": {
+      "id": "file-watcher",
+      "ifDown": "The index reconciles by stat every few seconds until it is back; edits made in the editor still update it directly",
+      "index": "a4",
+      "kind": "queue",
+      "name": "File watcher",
+      "purpose": "Says which design files changed on disk (an agent, git, another tool), so nothing rereads what has not.",
+      "tech": "fs.watch, debounced"
+    },
+    "project-index": {
+      "id": "project-index",
+      "index": "a3",
+      "kind": "cache",
+      "name": "Project index",
+      "purpose": "Every design of the folder parsed once, kept by path, mtime and size: a light summary for lists and pickers, the full document only when asked.",
+      "tech": "In-process map"
+    },
+    "workspace-pool": {
+      "id": "workspace-pool",
+      "index": "a2",
+      "kind": "service",
+      "name": "Workspace pool",
+      "purpose": "Open designs kept warm in memory, one Workspace each, imports resolved; the least recently used go past a budget.",
+      "tech": "In-process, LRU"
+    }
+  },
+  "phases": {
+    "1-index": {
+      "goal": "One server-side project index and a summaries RPC replace home() everywhere in the editor",
+      "id": "1-index",
+      "index": "a0",
+      "name": "1 · Index"
+    },
+    "2-incremental": {
+      "goal": "Imports invalidated by version and systems memoised; a file watcher keeps the index and open tabs fresh",
+      "id": "2-incremental",
+      "index": "a1",
+      "name": "2 · Incremental"
+    },
+    "3-one-tab": {
+      "goal": "Switching designs inside the tab, from a snapshot cache, with prefetch",
+      "id": "3-one-tab",
+      "index": "a2",
+      "name": "3 · One tab"
+    },
+    "4-lazy": {
+      "goal": "Full documents only for Play and flows; thumbnails as cached pictures",
+      "id": "4-lazy",
+      "index": "a3",
+      "name": "4 · Lazy"
+    }
+  },
+  "placements": {},
+  "positions": {},
+  "questions": {
+    "q-how-does-the-index": {
+      "about": [
+        "project-index",
+        "file-watcher"
+      ],
+      "at": "2026-10-16T22:50:39.701Z",
+      "by": "claude",
+      "chosen": "Watch directories, reconcile on failure",
+      "id": "q-how-does-the-index",
+      "index": "a1",
+      "kind": "question",
+      "options": [
+        {
+          "cons": "Grows with the folder; still a syscall per design per request",
+          "name": "Stat every file on each request",
+          "pros": "No watcher to fail"
+        },
+        {
+          "cons": "fs.watch differs by platform; needs debounce and a full reconcile when it drops",
+          "name": "Watch directories, reconcile on failure",
+          "pros": "Catches atomic replaces, renames and deletes; the server's own writes update the index directly"
+        }
+      ],
+      "status": "decided",
+      "text": "How does the index learn a design changed?"
+    },
+    "q-how-should-the-tab": {
+      "about": [
+        "editor-window",
+        "switch-to-another-design"
+      ],
+      "at": "2026-10-16T22:50:37.431Z",
+      "by": "claude",
+      "chosen": "Switch in the tab, from a snapshot cache",
+      "id": "q-how-should-the-tab",
+      "index": "a0",
+      "kind": "question",
+      "options": [
+        {
+          "cons": "Pays the bundle, the snapshot and a whole first render on every switch; selection and view lost",
+          "name": "Keep the full reload, cache on the server",
+          "pros": "Smallest change; nothing in the window's state to get wrong"
+        },
+        {
+          "cons": "The window must settle edits, drop stale answers and re-point its stream cleanly",
+          "name": "Switch in the tab, from a snapshot cache",
+          "pros": "Instant for designs seen before; selection and view kept per design; one stream re-pointed"
+        }
+      ],
+      "status": "decided",
+      "text": "How should the tab switch to another design?"
+    },
+    "q-what-do-lists-and": {
+      "about": [
+        "file-summary",
+        "get-rpc-project"
+      ],
+      "at": "2026-10-16T22:50:40.500Z",
+      "by": "claude",
+      "chosen": "Summaries; full documents on demand",
+      "id": "q-what-do-lists-and",
+      "index": "a2",
+      "kind": "question",
+      "options": [
+        {
+          "cons": "1.4 MB per call for this repo; parsed on every open",
+          "name": "Full documents, as home() sends today",
+          "pros": "Anything can be computed in the window"
+        },
+        {
+          "cons": "A new RPC and a summary shape to keep in step with the format",
+          "name": "Summaries; full documents on demand",
+          "pros": "A few KB per design; the counts (component uses) computed once on the server"
+        }
+      ],
+      "status": "decided",
+      "text": "What do lists and pickers get from the server?"
+    }
+  },
+  "requirements": {
+    "req-a-core-edited-elsewhere": {
+      "detail": "By the watcher, not by rereading imports on every snapshot",
+      "id": "req-a-core-edited-elsewhere",
+      "index": "a4",
+      "phase": "2-incremental",
+      "priority": "should",
+      "servedBy": [
+        "an-agent-edits-the-core",
+        "designchanged"
+      ],
+      "title": "A core edited elsewhere shows in open sections within a second"
+    },
+    "req-an-unchanged-design-is": {
+      "detail": "Home, lists, pickers and snapshots answer from the index; a file is reread only when its mtime or size moves",
+      "id": "req-an-unchanged-design-is",
+      "index": "a2",
+      "phase": "2-incremental",
+      "priority": "must",
+      "servedBy": [
+        "project-index",
+        "file-watcher"
+      ],
+      "title": "An unchanged design is never read or parsed twice"
+    },
+    "req-one-project-request-and": {
+      "detail": "Today six components each call home() and every LinkPicker mounts its own",
+      "id": "req-one-project-request-and",
+      "index": "a3",
+      "phase": "1-index",
+      "priority": "should",
+      "servedBy": [
+        "get-rpc-project",
+        "get-events"
+      ],
+      "title": "One project request and one event stream per tab"
+    },
+    "req-opening-the-editor-on": {
+      "detail": "Today: one 561 ms long task and 1.4 MB of home() JSON parsed on open (redesign, 2026-10-16)",
+      "id": "req-opening-the-editor-on",
+      "index": "a1",
+      "phase": "1-index",
+      "priority": "must",
+      "servedBy": [
+        "open-the-editor-on-a-1-mb-design",
+        "get-rpc-project"
+      ],
+      "title": "Opening the editor on a 1 MB design blocks the main thread under 300 ms"
+    },
+    "req-play-across-designs-starts": {
+      "detail": "Loads only the designs the flow reaches, and the next while a step plays",
+      "id": "req-play-across-designs-starts",
+      "index": "a5",
+      "phase": "4-lazy",
+      "priority": "should",
+      "servedBy": [
+        "play-a-flow-across-designs",
+        "get-rpc-documents"
+      ],
+      "title": "Play across designs starts in under 300 ms"
+    },
+    "req-switching-to-a-warm": {
+      "detail": "Measured from the click to the canvas drawn, p95, on a project of 20 designs of about 1 MB",
+      "id": "req-switching-to-a-warm",
+      "index": "a0",
+      "phase": "1-index",
+      "priority": "must",
+      "servedBy": [
+        "switch-to-another-design",
+        "get-rpc-snapshot"
+      ],
+      "title": "Switching to a warm design shows it in under 150 ms"
+    }
+  },
+  "reviews": {},
+  "roles": {},
+  "rules": {},
+  "sections": {
+    "436583e4": {
+      "body": "Same folder, same day, with the project index and /rpc/project:\n\n- /rpc/project: 6 KB (home() was 1.4 MB), 4 ms warm, 30 ms cold.\n- Opening the editor: no long task over 89 ms (was one of 561 ms); five tasks, 366 ms in all; heap 30 MB (was 48).\n- The editor no longer calls home(): the sidebar list, Cmd+P, link pickers, Uses, the project menu and use counts read one request per tab. Full documents load only when Play or a flow's board opens.\n- An unchanged design is never read or parsed again by the index (test: project.test.ts).\n\nStill to do: incremental imports and the watcher (phase 2), switching inside the tab (phase 3), thumbnails (phase 4).",
+      "heading": "Measured, after phase 1",
+      "id": "436583e4",
+      "index": "a2"
+    },
+    "7abb39cd": {
+      "body": "On this repo's designs folder (buni-redesign 1 MB, viewer 490 KB, core 91 KB), 2026-10-16:\n\n- home(): 1.4 MB of JSON (190 KB gzipped), 55 to 160 ms on the server; called by six parts of the editor, every LinkPicker mount included.\n- snapshot: 1.36 MB decoded, 22 to 90 ms.\n- Opening the editor: one 561 ms long task (284 ms in three tasks before the project features); heap 48 MB (was 30).\n- Every switch between designs is a full page load: bundle, snapshot and first render again.\n\nThe server is not the bottleneck; what it sends, how often, and the reload are.",
+      "heading": "Measured, before",
+      "id": "7abb39cd",
+      "index": "a0"
+    },
+    "e4be356a": {
+      "body": "1. Project index and /rpc/project: summaries, one store in the window, one subscription (phase 1).\n2. Versions on imports and memoised systems; the watcher pushes ProjectDelta (phase 2).\n3. Switching inside the tab from a snapshot cache keyed by path and version; selection and view kept per design; prefetch on hover (phase 3).\n4. Full documents only for Play and flows, prefetching the next design; cached thumbnails for Home (phase 4).\n\nAdvice from Codex (read-only review) agreed on the order: the index first, then incremental imports, then in-tab switching, then lazy documents.",
+      "heading": "What changes, in order",
+      "id": "e4be356a",
+      "index": "a1"
+    }
+  },
+  "shapes": {
+    "component-ref": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "id"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "example": "4",
+          "name": "uses",
+          "type": "integer"
+        }
+      ],
+      "id": "component-ref",
+      "index": "a1",
+      "name": "ComponentRef"
+    },
+    "file-summary": {
+      "fields": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "example": "mtime:size:hash",
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "modified",
+          "type": "datetime"
+        },
+        {
+          "name": "pages",
+          "type": "PageRef[]"
+        },
+        {
+          "name": "components",
+          "type": "ComponentRef[]"
+        },
+        {
+          "name": "imports",
+          "type": "string[]"
+        },
+        {
+          "name": "agentNote",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "example": "/thumbs/shop/7990c552?v=...",
+          "name": "thumbnail",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "id": "file-summary",
+      "index": "a2",
+      "name": "FileSummary",
+      "note": "What Home, the project list, Cmd+P, link pickers, Uses and use counts read: a few KB per design, not the document"
+    },
+    "page-ref": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "id"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "route",
+          "optional": true,
+          "type": "string"
+        }
+      ],
+      "id": "page-ref",
+      "index": "a0",
+      "name": "PageRef",
+      "note": "A page as lists and pickers need it: no layers"
+    },
+    "project-delta": {
+      "fields": [
+        {
+          "name": "revision",
+          "type": "integer"
+        },
+        {
+          "name": "changed",
+          "type": "FileSummary[]"
+        },
+        {
+          "name": "removed",
+          "type": "string[]"
+        }
+      ],
+      "id": "project-delta",
+      "index": "a4",
+      "name": "ProjectDelta",
+      "note": "Pushed on the event stream when a design changes; the window patches its one project store"
+    },
+    "project-summary": {
+      "fields": [
+        {
+          "name": "revision",
+          "type": "integer"
+        },
+        {
+          "name": "files",
+          "type": "FileSummary[]"
+        }
+      ],
+      "id": "project-summary",
+      "index": "a3",
+      "name": "ProjectSummary"
+    },
+    "snapshot": {
+      "fields": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "example": "the design",
+          "name": "view",
+          "type": "string"
+        },
+        {
+          "example": "with its imports",
+          "name": "system",
+          "type": "string"
+        }
+      ],
+      "id": "snapshot",
+      "index": "a5",
+      "name": "Snapshot",
+      "note": "As today, plus the version it was made from, so a cached one can be checked before editing"
+    }
+  },
+  "shared": {},
+  "tables": {},
+  "threads": {},
+  "tokens": {},
+  "traces": {
+    "an-agent-edits-the-core": {
+      "id": "an-agent-edits-the-core",
+      "index": "a2",
+      "name": "An agent edits the core",
+      "steps": [
+        {
+          "action": "core.buni changed: stat, read, parse it once",
+          "async": true,
+          "from": "file-watcher",
+          "ms": 40,
+          "to": "project-index",
+          "via": "designchanged"
+        },
+        {
+          "action": "Tell the server; it rebuilds the systems of open designs that import the core, and only those",
+          "async": true,
+          "from": "file-watcher",
+          "ms": 20,
+          "to": "editor-server",
+          "via": "designchanged"
+        },
+        {
+          "action": "Push ProjectDelta and the open design's patch on the tab's one stream",
+          "async": true,
+          "carries": "project-delta",
+          "from": "editor-server",
+          "ms": 20,
+          "to": "editor-window",
+          "via": "get-events"
+        }
+      ]
+    },
+    "open-home": {
+      "id": "open-home",
+      "index": "a4",
+      "name": "Open Home",
+      "steps": [
+        {
+          "action": "Ask for the project as summaries",
+          "carries": "project-summary",
+          "from": "editor-window",
+          "ms": 30,
+          "to": "editor-server",
+          "via": "get-rpc-project"
+        },
+        {
+          "action": "Load each card's thumbnail as a picture, cached by version, instead of a live page per card",
+          "async": true,
+          "from": "editor-window",
+          "ms": 40,
+          "to": "editor-server",
+          "via": "get-thumbs-file-page"
+        }
+      ]
+    },
+    "open-the-editor-on-a-1-mb-design": {
+      "id": "open-the-editor-on-a-1-mb-design",
+      "index": "a1",
+      "name": "Open the editor on a 1 MB design",
+      "steps": [
+        {
+          "action": "Ask for the open design's snapshot",
+          "carries": "snapshot",
+          "from": "editor-window",
+          "ms": 120,
+          "to": "editor-server",
+          "via": "get-rpc-snapshot"
+        },
+        {
+          "action": "Ask for the project as summaries, a few KB per design, not 1.4 MB of documents",
+          "carries": "project-summary",
+          "from": "editor-window",
+          "ms": 30,
+          "to": "editor-server",
+          "via": "get-rpc-project"
+        },
+        {
+          "action": "Answer from the index: no file read or parsed unless its mtime or size moved",
+          "carries": "file-summary",
+          "from": "editor-server",
+          "ms": 5,
+          "to": "project-index"
+        }
+      ]
+    },
+    "play-a-flow-across-designs": {
+      "id": "play-a-flow-across-designs",
+      "index": "a3",
+      "name": "Play a flow across designs",
+      "steps": [
+        {
+          "action": "Ask for the full documents of the designs the flow reaches, first steps first",
+          "carries": "snapshot",
+          "from": "editor-window",
+          "ms": 120,
+          "to": "editor-server",
+          "via": "get-rpc-documents"
+        },
+        {
+          "action": "Hand over the parsed documents it already holds",
+          "from": "editor-server",
+          "ms": 5,
+          "to": "project-index"
+        },
+        {
+          "action": "While a step plays, prefetch the next design's",
+          "async": true,
+          "from": "editor-window",
+          "ms": 60,
+          "to": "editor-server",
+          "via": "get-rpc-documents"
+        }
+      ]
+    },
+    "switch-to-another-design": {
+      "id": "switch-to-another-design",
+      "index": "a0",
+      "name": "Switch to another design",
+      "steps": [
+        {
+          "action": "Ask for shop's snapshot since the version cached in the tab (drawn from the cache meanwhile)",
+          "carries": "snapshot",
+          "from": "editor-window",
+          "ifFails": "The cached one stays, read-only, with a retry",
+          "ms": 40,
+          "to": "editor-server",
+          "via": "get-rpc-snapshot"
+        },
+        {
+          "action": "Take shop's warm Workspace, or open it",
+          "from": "editor-server",
+          "ms": 5,
+          "to": "workspace-pool"
+        },
+        {
+          "action": "Check the versions of shop's imports; rebuild its system only if one moved",
+          "from": "workspace-pool",
+          "ms": 5,
+          "to": "project-index"
+        },
+        {
+          "action": "Answer 304, or the snapshot; the tab moves its event stream to shop without reloading",
+          "carries": "snapshot",
+          "from": "editor-server",
+          "ms": 30,
+          "to": "editor-window",
+          "via": "get-rpc-snapshot"
+        }
+      ]
+    }
+  }
+}

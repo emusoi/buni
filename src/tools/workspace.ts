@@ -114,12 +114,6 @@ async function loadImports(store: Store, path: string, doc: Doc): Promise<Import
   return out;
 }
 
-/** `doc` (the file at `path`) with what it imports, to draw it; as it is, if an import can't be read. */
-export async function withImported(store: Store, path: string, doc: Doc): Promise<Doc> {
-  if (!doc.imports?.length) return withUseLinks(doc);
-  return withUseLinks(withImports(doc, systemOf(await loadImports(store, path, doc).catch(() => []))));
-}
-
 /** The system of several files as one document: what an importing file's references resolve against. */
 function systemOf(files: readonly ImportedFile[]): Doc | undefined {
   if (files.length === 0) return undefined;

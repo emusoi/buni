@@ -7,8 +7,8 @@ import type { FormatError } from "buni/format/parse.ts";
 
 /** Everything the window needs to draw: the live document and the work waiting on it. */
 export type { Edit };
-export type { AgentInfo, HomeFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
-import type { AgentInfo, HomeFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+export type { AgentInfo, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+import type { AgentInfo, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
 
 export interface SkillInfo {
   name: string;
@@ -44,6 +44,10 @@ export interface BuniApi {
   snapshot(): Promise<Snapshot | undefined>;
   onChange(fn: (u: SnapshotUpdate) => void): () => void;
   home(): Promise<HomeFile[]>;
+  /** The project's designs as summaries, for lists and pickers; where the host has it (else they read home()). */
+  project?(): Promise<ProjectFile[]>;
+  /** Designs in full with their imports, by path, for Play and flows across the project. */
+  documents?(paths: string[]): Promise<Record<string, Doc>>;
   /** Opens a file; without a path, asks for one. */
   open(path?: string): Promise<void>;
   /** A new, empty file, opened: named `name` where the host names files itself (the web), else saved where the person picks. */

@@ -157,6 +157,8 @@ const api: BuniApi = {
     return () => void watching.listeners.delete(fn);
   },
   home: () => call("home"),
+  project: () => call("project"),
+  documents: (paths) => call("documents", paths),
   open: async (path) => (path === undefined ? pickFile() : go(path)),
   create: async (name) => go(await call<string>("create", name ?? "Untitled")),
   close: async () => go(undefined),

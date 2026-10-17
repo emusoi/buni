@@ -5,8 +5,7 @@ import { EASINGS, ENTRANCES, isUseLink, pageName, pagesInOrder, type Transition,
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
-import { siblings } from "./ProjectSwitch.tsx";
-import type { HomeFile } from "../api.ts";
+import { useProject } from "./projectStore.ts";
 import { NameDialog } from "./Ask.tsx";
 import { OwnersContext } from "./SystemCanvas.tsx";
 import { SmallSizes } from "./SmallSizes.tsx";
@@ -101,12 +100,11 @@ function useLinkTargets(doc: Doc) {
   const owners = useContext(OwnersContext);
   const path = useContext(OpenFile);
   // The project's other designs, read once a layer here is selected: any of their pages can be linked to.
-  const [project, setProject] = useState<HomeFile[]>([]);
-  useEffect(() => { if (path) void window.buni.home().then((all) => setProject(siblings(all, path).filter((f) => f.path !== path))); }, [path]);
+  const project = useProject(path).filter((f) => f.path !== path);
   const away = new Map<string, { id: Id; name: string; route?: string | undefined; file?: string }[]>();
   const add = (file: string, p: { id: Id; name: string; route?: string | undefined }, imports?: string) => { if (!doc.pages[p.id] && !(away.get(file) ?? []).some((x) => x.id === p.id)) away.set(file, [...(away.get(file) ?? []), { ...p, ...(imports ? { file: imports } : {}) }]); };
   for (const p of Object.values(doc.elsewhere ?? {})) add(owners[p.id] ?? "another file", p);
-  for (const f of project) for (const p of Object.values(f.doc.pages)) if (p.route !== undefined && !doc.elsewhere?.[p.id]) add(`${f.name}.buni`, p, `${f.name}.buni`);
+  for (const f of project) for (const p of f.pages) if (p.route !== undefined && !doc.elsewhere?.[p.id]) add(`${f.name}.buni`, p, `${f.name}.buni`);
   return { here: pagesInOrder(doc).filter((p) => p.route !== undefined), away, owners };
 }
 

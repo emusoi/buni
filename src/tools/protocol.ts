@@ -31,6 +31,23 @@ export interface Snapshot {
   edits?: readonly Edit[];
 }
 
+/**
+ * One design of a project as lists and pickers need it: its pages and components by name, not its layers. A few KB
+ * where its document is a megabyte.
+ */
+export interface ProjectFile {
+  path: string;
+  name: string;
+  folder: string;
+  /** ISO 8601. */
+  modified: string;
+  pages: { id: Id; name: string; route?: string }[];
+  /** Its components, each with how often the project's other designs place it. */
+  components: { id: Id; name: string; usedElsewhere: number }[];
+  imports: string[];
+  agentNote?: string;
+}
+
 /** A recently opened file, as the home screen shows it. */
 export interface HomeFile {
   path: string;

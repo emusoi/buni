@@ -27,6 +27,8 @@ export interface EditorStore extends Store {
   moveDir(from: string, to: string): Promise<void>;
   removeDir(dir: string): Promise<void>;
   list(dir: string): Promise<{ path: string; text: string; modified: Date }[]>;
+  /** The same files by when they changed and their size, without reading them; where that is cheaper (disk). */
+  entries?(dir: string): Promise<{ path: string; modified: number; size: number }[]>;
 }
 
 /**
@@ -77,11 +79,10 @@ export class DiskStore implements EditorStore {
     throw new Error("Local designs live in your own folders: delete them in Finder.");
   }
 
-  /** The .buni files in the folders below the root, newest first; a project nests its sections in folders of their own. */
-  async list(dir: string): Promise<{ path: string; text: string; modified: Date }[]> {
+  /** The .buni files below the root by when they changed and their size: stat only, nothing read. */
+  async entries(dir: string): Promise<{ path: string; modified: number; size: number }[]> {
     if (dir !== this.virtual) return [];
-    const out: { path: string; text: string; modified: Date }[] = [];
-    // ponytail: three folders deep keeps a repo-sized root quick; deeper projects need a manifest or a walk with a budget.
+    const out: { path: string; modified: number; size: number }[] = [];
     const walk = async (rel: string, depth: number): Promise<void> => {
       for (const e of await readdir(join(this.root, rel), { withFileTypes: true }).catch(() => [])) {
         if (e.name.startsWith(".") || e.name === "node_modules") continue;
@@ -91,12 +92,20 @@ export class DiskStore implements EditorStore {
           continue;
         }
         if (!rel || !e.name.endsWith(".buni")) continue;
-        const real = join(this.root, sub);
-        const [text, info] = await Promise.all([readFile(real, "utf8"), stat(real)]).catch(() => [undefined, undefined] as const);
-        if (text !== undefined && info) out.push({ path: `${this.virtual}/${sub}`, text, modified: info.mtime });
+        const info = await stat(join(this.root, sub)).catch(() => undefined);
+        if (info) out.push({ path: `${this.virtual}/${sub}`, modified: info.mtimeMs, size: info.size });
       }
     };
     await walk("", 0);
-    return out.sort((a, b) => b.modified.getTime() - a.modified.getTime());
+    return out;
+  }
+
+  /** The .buni files in the folders below the root, newest first; a project nests its sections in folders of their own. */
+  async list(dir: string): Promise<{ path: string; text: string; modified: Date }[]> {
+    const read = await Promise.all((await this.entries(dir)).map(async (e) => {
+      const text = await readFile(this.real(e.path), "utf8").catch(() => undefined);
+      return text === undefined ? [] : [{ path: e.path, text, modified: new Date(e.modified) }];
+    }));
+    return read.flat().sort((a, b) => b.modified.getTime() - a.modified.getTime());
   }
 }

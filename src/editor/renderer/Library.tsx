@@ -4,8 +4,8 @@ import { libraryReport, usesOf } from "buni/tools/library.ts";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { componentSrcdoc } from "./Canvas.tsx";
 import { NameDialog } from "./Ask.tsx";
-import { siblings } from "./ProjectSwitch.tsx";
-import type { HomeFile } from "../api.ts";
+import { loadProject, siblings } from "./projectStore.ts";
+import type { ProjectFile } from "../api.ts";
 import { componentWidth } from "./layout.ts";
 import { libraryGroups, libraryItems, type LibraryFilter, type LibraryItem } from "./library.ts";
 
@@ -49,7 +49,7 @@ const FILTERS: { id: LibraryFilter; label: string }[] = [
 /** The sidebar's Library tab: components by group, as thumbnails, searchable and filterable. */
 /** The files this one builds on (a core of tokens and components), and a way to build on another of its project. */
 function Uses({ doc, path }: { doc: Doc; path: string }) {
-  const [others, setOthers] = useState<HomeFile[]>();
+  const [others, setOthers] = useState<ProjectFile[]>();
   const uses = doc.imports ?? [];
   const run = (args: { path: string; remove?: true }) => void window.buni.edit("import_file", args).then(() => setOthers(undefined));
   const name = (rel: string) => rel.replace(/^.*\//, "").replace(/\.buni$/, "");
@@ -62,10 +62,10 @@ function Uses({ doc, path }: { doc: Doc; path: string }) {
         <span key={u} className="use-chip" title={`Tokens and components from ${u}`}>{name(u)}<button type="button" aria-label={`Stop using ${u}`} onClick={() => run({ path: u, remove: true })}><X size={11} /></button></span>
       ))}
       {others === undefined
-        ? <button type="button" className="library-insert" title="Use the tokens and components of another design in this project" onClick={() => void window.buni.home().then((all) => setOthers(siblings(all, path)))}><Plus size={13} /> {uses.length ? "" : "A core file"}</button>
+        ? <button type="button" className="library-insert" title="Use the tokens and components of another design in this project" onClick={() => void loadProject().then((all) => setOthers(siblings(all, path)))}><Plus size={13} /> {uses.length ? "" : "A core file"}</button>
         : <select className="field" autoFocus aria-label="Design to use" value="" onChange={(e) => e.target.value && run({ path: e.target.value })} onBlur={() => setOthers(undefined)}>
             <option value="">{offer.length ? "Use…" : "No other designs here"}</option>
-            {offer.map((f) => <option key={f.path} value={`${f.name}.buni`}>{f.name} · {Object.keys(f.doc.shared).length} components</option>)}
+            {offer.map((f) => <option key={f.path} value={`${f.name}.buni`}>{f.name} · {f.components.length} components</option>)}
           </select>}
     </div>
   );

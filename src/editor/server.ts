@@ -17,7 +17,8 @@ import { parseDoc } from "buni/format/parse.ts";
 import { diffDoc } from "buni/format/patch.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { systemChanges } from "buni/tools/changes.ts";
-import { Workspace, withImported } from "buni/tools/workspace.ts";
+import { Workspace } from "buni/tools/workspace.ts";
+import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -69,6 +70,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   const BUILD = Date.now().toString(36);
   // ponytail: an opened file stays loaded until the server stops; evict idle ones if memory matters
   const opened = new Map<string, Promise<Open>>();
+  /** The project's designs, parsed once: what Home, lists and pickers read. */
+  const index = new ProjectIndex(store);
   /** The .live markers this server wrote, removed when it stops. */
   const lives = new Set<string>();
 
@@ -190,13 +193,11 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   }
 
   async function home(dir: string): Promise<HomeFile[]> {
-    const files = await store.list(dir);
+    // From the index: a design is read and parsed only when it changed, and drawn with its imports from the others.
+    const indexed = await index.docs(dir);
+    const files = [...indexed].map(([path, f]) => ({ path, modified: f.modified })).sort((a, b) => b.modified.getTime() - a.modified.getTime());
     const notes = await Promise.all(files.map((f) => working(f.path)));
-    const docs = await Promise.all(files.map(async ({ path, text }) => {
-      // Listed by shape only: a section's references resolve in the core it imports, and it's drawn with them.
-      const r = parseDoc(text, { refs: false });
-      return r.ok ? withImported(store, path, r.doc) : undefined;
-    }));
+    const docs = files.map(({ path }) => withImportsFrom(indexed, path));
     return files.flatMap(({ path, modified }, i) => {
       const doc = docs[i];
       if (!doc) return [];
@@ -275,6 +276,19 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     },
     build: async () => BUILD,
     home: () => home(dir),
+    /** The project's designs as summaries: what lists and pickers need, not their documents. */
+    project: async () => {
+      const indexed = await index.docs(dir);
+      const notes = await Promise.all([...indexed.keys()].map(async (p) => [p, await working(p)] as const));
+      const note = new Map(notes);
+      return summaries(indexed, (p) => (LOCAL ? dirname(p) : dir)).map((f) => ({ ...f, ...(note.get(f.path) ? { agentNote: note.get(f.path) } : {}) }));
+    },
+    /** Designs in full, each with its imports, for Play and flows across the project; only those asked for. */
+    documents: async (_file, paths) => {
+      if (!Array.isArray(paths)) throw new Error("documents expects a list of paths");
+      const indexed = await index.docs(dir);
+      return Object.fromEntries(paths.filter((p): p is string => typeof p === "string").flatMap((p) => { const d = withImportsFrom(indexed, p); return d ? [[p, d]] : []; }));
+    },
     /** A .buni file the person picked in the browser, with the images it uses, copied in; returns where it now lives. */
     import: async (_file, name, text, assets) => {
       const given = new Map(Array.isArray(assets) ? assets.filter(isUpload).map((a) => [a.name, a.base64] as const) : []);

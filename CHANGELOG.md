@@ -9,6 +9,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.
 - Fixed: an edit typed into the inspector (a layer's text, a width) was lost when the canvas was clicked next.
+- Faster projects: the server keeps a project index (a design read and parsed again only when it changes) and answers
+  lists and pickers with summaries, 6 KB where home() sent 1.4 MB; the editor asks once per tab, and loads other
+  designs in full only for Play and flow boards. Opening a 1 MB design no longer blocks the window for half a second.
 - Flows cross the project: in the editor a flow walks from a page here into the next design's pages, and Play plays
   it through in place (site → shop → account) rather than opening each file.
 - Switching designs: the sidebar lists the project's designs, one click apart, and ⌘P goes to any of them, or straight
