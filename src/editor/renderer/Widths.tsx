@@ -1,18 +1,20 @@
 // The widths a page must work at: its own, and any others. A chip shows the page at that width on the canvas, and
 // while it is shown there the Inspector edits the page's layers at that width only.
 import { useState } from "react";
-import { Monitor, Plus, Smartphone, Tablet, X } from "lucide-react";
+import { Columns3, Monitor, Plus, Smartphone, Tablet, X } from "lucide-react";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { widthOf } from "./layout.ts";
 
 const COMMON: [number, string][] = [[390, "Phone"], [768, "Tablet"], [1024, "Small laptop"], [1440, "Desktop"], [1920, "Wide"]];
 const icon = (w: number) => (w < 600 ? Smartphone : w < 1100 ? Tablet : Monitor);
 
-export function Widths({ doc, page, viewWidth, onView, onError }: {
+export function Widths({ doc, page, viewWidth, onView, onCompare, onError }: {
   doc: Doc;
   page: Id;
   viewWidth: number | undefined;
   onView: (width: number | undefined) => void;
+  /** Shows the page at every width side by side. */
+  onCompare?: (() => void) | undefined;
   onError: (m: string | undefined) => void;
 }) {
   const p = doc.pages[page];
@@ -30,6 +32,7 @@ export function Widths({ doc, page, viewWidth, onView, onError }: {
     <section className="widths" aria-label="Widths">
       <div className="widths-head">
         <b>Widths</b>
+        {onCompare && <button type="button" className="link-btn widths-compare" title="See the page at every width, side by side (⇧3)" onClick={onCompare}><Columns3 size={12} /> Side by side</button>}
         <span className="hint">{widths.length ? "Pick one to see and style the page there" : "Add the widths this page must work at"}</span>
       </div>
       <div className="width-chips">

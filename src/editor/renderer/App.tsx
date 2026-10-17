@@ -11,6 +11,7 @@ import { Export } from "./Export.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { AskCard } from "./AskCard.tsx";
 import { Changes } from "./Changes.tsx";
+import { Breakpoints } from "./Breakpoints.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -416,6 +417,19 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
+  // The open page at every width side by side, in place of the canvas.
+  const [comparing, setComparing] = useState(false);
+  useEffect(() => {
+    // ⇧3 beside the canvas's ⇧1 (every page) and ⇧2 (this page): this page at every width. Esc goes back.
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return;
+      if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.code === "Digit3") { e.preventDefault(); setComparing((c) => !c); }
+      else if (e.key === "Escape") setComparing(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // The toolbar's one menu, and the Versions or Export sheet it opens.
   const [more, setMore] = useState(false);
   const [sheet, setSheet] = useState<"versions" | "export">();
@@ -826,6 +840,7 @@ export function App({ snap }: { snap: Snapshot }) {
             <div className="agent-menu export-menu more-menu" role="menu" onClick={() => setMore(false)}>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("versions")}><span className="menu-name">Versions…</span><span className="menu-state">save, go back</span></button>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("export")}><span className="menu-name">Export…</span><span className="menu-state">file, site, PDF</span></button>
+              {mode === "screens" && activePage && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setComparing(true)}><span className="menu-name">Every width side by side</span><span className="menu-state">⇧3</span></button>}
               {mode === "screens" && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>}
               <div className="menu-rule" />
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
@@ -996,6 +1011,8 @@ export function App({ snap }: { snap: Snapshot }) {
             <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={showPage} />
           ) : system ? (
             <OwnersContext.Provider value={snap.owners}><SystemScreen doc={snap.system} fileName={fileName} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} onView={setSystem} /></OwnersContext.Provider>
+          ) : comparing && activePage && doc.pages[activePage] ? (
+            <Breakpoints doc={doc} page={activePage} dir={snap.dir} onClose={() => setComparing(false)} onEdit={(w) => { viewWidth(activePage, w); setComparing(false); }} />
           ) : (
             <div className="canvas-wrap">
             <Canvas
@@ -1054,7 +1071,7 @@ export function App({ snap }: { snap: Snapshot }) {
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
             {panel === "design" && system && !shownJourney && <OwnersContext.Provider value={snap.owners}><SystemInspector doc={snap.system} dir={snap.dir} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} /></OwnersContext.Provider>}
-            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
+            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
             </div>

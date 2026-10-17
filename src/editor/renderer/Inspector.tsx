@@ -668,7 +668,7 @@ export const OpenFile = createContext("");
 /** How often other designs of the project place this file's components, by component: they change with it too. */
 export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
 
-export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth, onCompare }: {
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
   ownTokens?: Doc["tokens"] | undefined;
@@ -680,6 +680,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   /** The width the open page is shown at, when not its own; style edits then apply at that width. */
   viewWidth?: number | undefined;
   onViewWidth?: (page: Id, width: number | undefined) => void;
+  /** Shows the page at all its widths side by side. */
+  onCompare?: () => void;
   /** Root frame of the page in view, for adding when nothing is selected. */
   root: Id | undefined;
   /** A graphic in view, shown at small sizes when nothing or its root frame is selected. */
@@ -711,7 +713,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
     return (
       <div className="inspector editing">
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
-        {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onError={setNotice} />}
+        {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onCompare={onCompare} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
         {notice && <div className="notice">{notice}</div>}
