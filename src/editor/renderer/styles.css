@@ -1274,9 +1274,10 @@ svg { flex-shrink: 0; }
 @keyframes pulse { from { opacity: 1; } to { opacity: 0.35; } }
 
 /* Inspector groups fold by their title. */
-.group-title.fold { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
-.group-title.fold svg { color: var(--label); opacity: 0; transition: opacity 0.12s; }
-.group-title.fold:hover svg, .group.shut .group-title.fold svg { opacity: 1; }
+.group-title.fold { display: flex; align-items: center; gap: 6px; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.group-title.fold svg { color: var(--label); }
+.group-title .group-name { flex: none; }
+.group-title .group-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 400; color: var(--ink-2); }
 .group.shut { padding-bottom: 0; }
 
 /* One bar: the window's files as tabs, beside the traffic lights (their centre line is 22px; so is the bar's). */

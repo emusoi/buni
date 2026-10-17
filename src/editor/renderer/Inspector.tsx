@@ -452,8 +452,11 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
   );
 }
 
-/** A titled group of fields; its title folds it, and the fold is remembered by title across layers and launches. */
-function Group({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * A titled group of fields; its title folds it, and the fold is remembered by title across layers and launches.
+ * Folded, it still says in a line what it holds (`summary`), so a panel of folded groups reads at a glance.
+ */
+function Group({ title, summary, children }: { title: string; summary?: string; children: ReactNode }) {
   const key = `buni.fold.${title}`;
   const [shut, setShut] = useState(() => {
     try {
@@ -473,8 +476,9 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className={`group${shut ? " shut" : ""}`}>
       <button type="button" className="group-title fold" aria-expanded={!shut} onClick={flip}>
-        {title}
-        {shut ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+        {shut ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+        <span className="group-name">{title}</span>
+        {shut && summary && <span className="group-summary">{summary}</span>}
       </button>
       {!shut && children}
     </section>
@@ -482,6 +486,8 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const COLOR = /^(color|background|border)/;
+/** A style value said briefly: a token by its name, a font by its first family. */
+const short = (v: string | undefined) => v?.replace(/var\(--([\w-]+)\)/g, "$1").split(",")[0]?.replace(/"/g, "").trim();
 const KIND_ICON: Record<Node["kind"], LucideIcon> = { frame: Square, text: Type, image: Image, svg: Component, instance: Component };
 
 /** A labelled input in a row: a short prefix ("W", "Aa") and the stored value. */
@@ -852,7 +858,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         </Group>
       )}
       {(node.kind === "text" || isFrame) && (
-        <Group title="Typography">
+        <Group title="Typography" summary={[short(st.fontFamily), st.fontWeight, st.fontSize].filter(Boolean).join(" · ") || "Inherited"}>
           <div className="prow">
             <Select title="Font" value={st.fontFamily ?? ""} options={[["", "Inherit"], ...fonts.map((f): [string, string] => [f, f.replace(/var\(--([\w-]+)\)/, "$1").split(",")[0]?.replace(/"/g, "") ?? f])]} onChange={(v) => setStyle("fontFamily", v)} />
             <Select title="Weight" value={st.fontWeight ?? ""} options={[["", "Weight"], ...WEIGHTS]} onChange={(v) => setStyle("fontWeight", v)} />
@@ -869,7 +875,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         </Group>
       )}
       {isFrame && (
-        <Group title="Layout">
+        <Group title="Layout" summary={st.display === "grid" ? "Grid" : st.display?.includes("flex") ? `${st.flexDirection === "column" ? "Column" : "Row"}${st.gap ? ` · gap ${st.gap}` : ""}` : "None"}>
           <div className="prow">
             <Segmented
               value={st.display === "grid" ? "grid" : st.display === "flex" || st.display === "inline-flex" ? (st.flexDirection === "column" ? "column" : "row") : undefined}
@@ -899,7 +905,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           </div>
         </Group>
       )}
-      <Group title="Size">
+      <Group title="Size" summary={`${st.width ?? "Hug"} × ${st.height ?? "Hug"}`}>
         <div className="prow">
           <Num prefix="W" title="Width: a size, 100% to fill, empty to hug" value={st.width ?? ""} placeholder="Hug" onSave={(v) => setStyle("width", v)} />
           <Num prefix="H" title="Height: a size, empty to hug" value={st.height ?? ""} placeholder="Hug" onSave={(v) => setStyle("height", v)} />
@@ -909,7 +915,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           <Num prefix="Min H" title="Minimum height" value={st.minHeight ?? ""} onSave={(v) => setStyle("minHeight", v)} />
         </div>
       </Group>
-      <Group title="Fill and shape">
+      <Group title="Fill and shape" summary={[short(st.background ?? st.backgroundColor), st.borderRadius && `◜ ${st.borderRadius}`].filter(Boolean).join(" · ") || "None"}>
         <div className="prow"><ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} /></div>
         <div className="prow">
           <Num prefix="◜" title="Corner radius" value={st.borderRadius ?? ""} onSave={(v) => setStyle("borderRadius", v)} />
