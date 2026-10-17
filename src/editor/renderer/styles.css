@@ -2136,3 +2136,18 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .app.editor > .sidebar .row .count { opacity: 0; transition: opacity 0.12s; }
 .app.editor > .sidebar .row:hover .count, .app.editor > .sidebar .row.active .count { opacity: 1; }
 .app.editor > .sidebar .row { padding-left: 10px; }
+/* The inspector says what is, not how to use it: section explanations become tooltips or go. */
+.app.editor .widths-head .hint, .app.editor .variants-head .hint, .app.editor .tokens-head .hint { display: none; }
+.app.editor .source-links { padding: 0 0 12px; margin: 0 0 12px; border: 0; border-bottom: 1px solid var(--rule); background: none; box-shadow: none; border-radius: 0; }
+.app.editor .source-links header { margin-bottom: 4px; }
+.app.editor .source-links header b { font-weight: 600; color: var(--ink); }
+.app.editor .source-links header b svg { display: none; }
+/* One style for every section title in the inspector, and labelled rows for the page's look. */
+.app.editor .widths-head b, .app.editor .variants-head b, .app.editor .tokens-head b, .app.editor .source-links header b, .app.editor .sum-group h3 { font-size: 12px; font-weight: 500; color: var(--label); }
+.sum-pick { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; font-size: 13px; color: var(--ink); }
+.sum-pick select { max-width: 60%; border: 0; background: none; font: inherit; color: var(--ink); text-align: right; cursor: pointer; }
+.app.editor .inspector > :empty { display: none; }
+.app.editor .inspector > .tokens { margin-top: 0; padding-top: 0; border-top: 0; }
+.app.editor .comments > .group-title { display: flex; align-items: center; gap: 6px; }
+.app.editor .comments > .group-title svg { display: none; }
+.app.editor .comments > .group-title .count { font-weight: 400; color: var(--label); }

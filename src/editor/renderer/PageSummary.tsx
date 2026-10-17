@@ -41,7 +41,8 @@ function PageLook({ doc, frame }: { doc: Doc; frame: Id }) {
   const fonts = tokens.filter((t) => /font/i.test(t)).map((t) => `var(${t})`);
   const set = (prop: "background" | "fontFamily", value: string) => void window.buni.edit("update_styles", { nodes: [frame], style: { [prop]: value } });
   const pick = (label: string, prop: "background" | "fontFamily", options: string[]) => (
-    <label className="select" title={label}>
+    <label className="sum-pick" title={label}>
+      <span>{prop === "background" ? "Background" : "Font"}</span>
       <select value={style[prop] ?? ""} aria-label={label} onChange={(e) => set(prop, e.target.value)}>
         <option value="">{prop === "background" ? "White" : "System font"}</option>
         {[...new Set([...options, ...(style[prop] ? [style[prop]] : [])])].map((v) => <option key={v} value={v}>{v.replace(/^var\(--(.*)\)$/, "$1")}</option>)}
@@ -51,7 +52,7 @@ function PageLook({ doc, frame }: { doc: Doc; frame: Id }) {
   if (!colors.length && !fonts.length) return null;
   return (
     <section className="sum-group page-look">
-      <h3>Page</h3>
+      <h3>Look</h3>
       {colors.length > 0 && pick("Page background", "background", colors)}
       {fonts.length > 0 && pick("Page font", "fontFamily", fonts)}
     </section>
@@ -102,7 +103,6 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
       <Group title="Goes to other files" rows={s.away.map((p) => <Row key={p.id} icon={FileText} title={p.name} detail={owners[p.id]?.replace(/^.*\//, "")} onClick={() => onOpenElsewhere?.(p.id)} />)} />
       <Group title="Comes from" rows={s.in.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => onJump({ kind: "page", id: p.id, title: p.name, detail: "" })} />)} />
       {!tied && <p className="hint">Not tied to the system yet. Say which client it belongs to, and link its buttons and forms to the calls they make.</p>}
-      <p className="hint">Click a layer to style it; add things with the bar at the bottom of the canvas.</p>
     </div>
   );
 }

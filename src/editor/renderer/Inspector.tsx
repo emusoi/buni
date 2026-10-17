@@ -166,7 +166,7 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
   if (node.parent === undefined || owners[component?.id ?? ""] !== undefined) return null;
   // A component's layer links on every use of it: here, and in the designs that build on this one (a core's nav).
   return (
-    <Group title={component ? "Link on every use" : "Link"}>
+    <Group title={component ? "Link on every use" : "Link"} empty={!Object.values(doc.connections).some((c) => c.node === node.id)} summary={Object.values(doc.connections).some((c) => c.node === node.id) ? undefined : "None"}>
       <LinkPicker doc={doc} node={node.id} page={component?.id} onError={onError} />
     </Group>
   );
@@ -222,7 +222,7 @@ function DataSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
   ));
   const others = endpoints.filter((e) => !near.has(e.id));
   return (
-    <Group title="Data">
+    <Group title="Data" empty={!node.bind} summary={node.bind ? node.bind.field : "Nothing live"}>
       <div className="data-row">
         <span className="prop-name">Shows</span>
         <label className="select" title="A field of an endpoint's response this layer shows">
@@ -456,13 +456,15 @@ export function InsertBar({ doc, node, root, onAdded, onError }: { doc: Doc; nod
  * A titled group of fields; its title folds it, and the fold is remembered by title across layers and launches.
  * Folded, it still says in a line what it holds (`summary`), so a panel of folded groups reads at a glance.
  */
-function Group({ title, summary, children }: { title: string; summary?: string; children: ReactNode }) {
+function Group({ title, summary, empty = false, children }: { title: string; summary?: string; empty?: boolean; children: ReactNode }) {
   const key = `buni.fold.${title}`;
+  // Folded by choice, remembered; otherwise a group with nothing set starts folded, its summary saying so.
   const [shut, setShut] = useState(() => {
     try {
-      return localStorage.getItem(key) === "1";
+      const kept = localStorage.getItem(key);
+      return kept === null ? empty : kept === "1";
     } catch {
-      return false;
+      return empty;
     }
   });
   const flip = () => {
@@ -504,7 +506,7 @@ function MotionSection({ node, onError }: { node: Node; onError: (m: string | un
   const change = (t: MotionTrigger, m: Motion | undefined) => void save(MOTION_TRIGGERS.flatMap((x) => (x === t ? (m ? [m] : []) : list.filter((y) => y.trigger === x))));
   const ms = (v: string) => Math.max(0, Math.min(10_000, Math.round(Number.parseFloat(v) || 0)));
   return (
-    <Group title="Motion">
+    <Group title="Motion" empty={!list.length} summary={list.length ? list.map((m) => m.trigger).join(", ") : "Still"}>
       {MOTION_TRIGGERS.map((t) => {
         const m = list.find((x) => x.trigger === t);
         const effects = entersOn(t) ? ENTRANCES : RESPONSES;
@@ -708,10 +710,10 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   if (!node) {
     return (
       <div className="inspector editing">
+        {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
-        {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {notice && <div className="notice">{notice}</div>}
         {page ? <Sources key={page} doc={doc} id={page} /> : (() => { const component = Object.values(doc.shared).find((c) => c.root === root); return component ? <Sources key={component.id} doc={doc} id={component.id} /> : null; })()}
         <Tokens doc={doc} own={ownTokens} onError={setNotice} />
@@ -807,7 +809,6 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       })()}
       {also.length > 0 && <div className="notice">{also.length + 1} layers selected: style changes apply to all of them. Shift-click one to leave it out.</div>}
       {notice && <div className="notice">{notice}</div>}
-      <Sources key={node.id} doc={doc} id={source?.root === node.id ? source.id : node.id} inherited={node.kind === "instance" ? doc.shared[node.shared] : undefined} />
       {source && <ComponentVariants doc={doc} component={source.id} onOpen={onOpenComponent} onError={setNotice} />}
       {source && (
         <div className="notice component-note">
@@ -905,7 +906,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           </div>
         </Group>
       )}
-      <Group title="Size" summary={`${st.width ?? "Hug"} × ${st.height ?? "Hug"}`}>
+      <Group title="Size" empty={!st.width && !st.height && !st.maxWidth && !st.minHeight} summary={`${st.width ?? "Hug"} × ${st.height ?? "Hug"}`}>
         <div className="prow">
           <Num prefix="W" title="Width: a size, 100% to fill, empty to hug" value={st.width ?? ""} placeholder="Hug" onSave={(v) => setStyle("width", v)} />
           <Num prefix="H" title="Height: a size, empty to hug" value={st.height ?? ""} placeholder="Hug" onSave={(v) => setStyle("height", v)} />
@@ -915,7 +916,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           <Num prefix="Min H" title="Minimum height" value={st.minHeight ?? ""} onSave={(v) => setStyle("minHeight", v)} />
         </div>
       </Group>
-      <Group title="Fill and shape" summary={[short(st.background ?? st.backgroundColor), st.borderRadius && `◜ ${st.borderRadius}`].filter(Boolean).join(" · ") || "None"}>
+      <Group title="Fill and shape" summary={[short(st.background ?? st.backgroundColor), st.borderRadius && `◜ ${st.borderRadius}`].filter(Boolean).join(" · ") || "None"} empty={!st.background && !st.backgroundColor && !st.borderRadius && !st.opacity && !st.border && !st.boxShadow}>
         <div className="prow"><ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} /></div>
         <div className="prow">
           <Num prefix="◜" title="Corner radius" value={st.borderRadius ?? ""} onSave={(v) => setStyle("borderRadius", v)} />
@@ -930,6 +931,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       <DataSection doc={doc} node={node} onError={setNotice} />
       <MotionSection node={node} onError={setNotice} />
       <Comments doc={doc} node={node} onError={setNotice} />
+      <Sources key={node.id} doc={doc} id={source?.root === node.id ? source.id : node.id} inherited={node.kind === "instance" ? doc.shared[node.shared] : undefined} />
       <section className="group">
         <button type="button" className="group-title toggle" onClick={() => setAdvanced((a) => !a)}>
           {advanced ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Advanced CSS{extra.length ? ` · ${extra.length}` : ""}

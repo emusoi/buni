@@ -57,8 +57,7 @@ export function Sources({ doc, id, inherited }: { doc: Doc; id: string; inherite
     setError(undefined); setEditing(undefined);
   };
   return <section className="source-links" aria-label="Implementation sources">
-    <header><b><Code2 size={13} /> Source files</b><button type="button" className="link-btn" onClick={() => setEditing(sources.length)}><Plus size={12} /> Add source</button></header>
-    {!sources.length && editing === undefined && <p>Link the file and symbol that implement this design. Any language or file type.</p>}
+    <header><b><Code2 size={13} /> Source files</b><button type="button" className="link-btn" title="Link the file and symbol that implement this design; any language or file type" onClick={() => setEditing(sources.length)}><Plus size={12} /> Add</button></header>
     {sources.map((source, i) => <div className="source-item" key={i}>
       <button type="button" className="source-path" title="Edit source link" onClick={() => setEditing(i)}>{sourceLabel(source)}</button>
       <button type="button" className="icon" aria-label={`Remove source ${source.file ?? source.url}`} onClick={() => void save(sources.filter((_, at) => at !== i)).catch((e: Error) => setError(e.message))}><Trash2 size={12} /></button>
