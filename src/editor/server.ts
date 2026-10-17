@@ -112,6 +112,19 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   });
 
   /** Coding agents edit the file through MCP here; their edits reach every tab like the person's own. */
+  /**
+   * The design as it was when an agent started a stretch of work, kept as a version: Versions can take back a whole
+   * session at once. A stretch ends after ten quiet minutes; the buni command's calls, each a session of its own,
+   * count as one stretch.
+   */
+  const lastEdit = new Map<string, number>();
+  function keepBefore(o: Open, author: string, before: Doc): void {
+    const key = `${o.ws.path} ${author}`, now = Date.now(), last = lastEdit.get(key) ?? 0;
+    lastEdit.set(key, now);
+    if (now - last < 10 * 60_000) return;
+    void saveVersion(store, o.ws, `Before ${author}'s changes`, author, before).then(() => o.listeners.forEach((fn) => fn()), () => undefined);
+  }
+
   async function mcp(file: string, req: Request): Promise<Response> {
     const o = await load(file);
     const body: unknown = req.method === "POST" ? await req.json() : undefined;
@@ -121,7 +134,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     const tell = () => o.listeners.forEach((fn) => fn());
     if (!t && req.method === "POST" && isInitializeRequest(body)) {
       // Screenshots use the browser available to this host.
-      const server = createMcpServer(o.ws, { screenshot: (page) => renderAway(o, page) });
+      const server = createMcpServer(o.ws, { screenshot: (page) => renderAway(o, page), edited: (author, before) => keepBefore(o, author, before) });
       const made = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID(), onsessioninitialized: (id) => void o.mcp.set(id, { transport: made, server, seen: Date.now() }) });
       made.onclose = () => {
         if (made.sessionId) o.mcp.delete(made.sessionId);

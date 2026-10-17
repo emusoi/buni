@@ -2,6 +2,7 @@
 // The newest is also written beside the file as .version, the baseline Review compares against.
 import { dirname, join } from "node:path";
 import type { VersionInfo } from "./protocol.ts";
+import type { Doc } from "../format/doc.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { parseDoc } from "../format/parse.ts";
 import type { CallResult, Store, Workspace } from "./workspace.ts";
@@ -23,11 +24,12 @@ export async function versionsOf(store: Store, path: string): Promise<VersionInf
   });
 }
 
-export async function saveVersion(store: Store, ws: Workspace, name: unknown): Promise<VersionInfo> {
-  const text = serializeDoc(ws.view());
+/** Keeps the design as it is now, or as `doc` says it was (before an agent's session), by `by`. */
+export async function saveVersion(store: Store, ws: Workspace, name: unknown, by = "you", doc: Doc = ws.view()): Promise<VersionInfo> {
+  const text = serializeDoc(doc);
   await store.write(`${ws.path}.version`, text);
   const at = new Date().toISOString();
-  const version: VersionInfo = { id: at.replace(/[:.]/g, "-"), name: typeof name === "string" ? name.trim().slice(0, 80) : "", at, by: "you" };
+  const version: VersionInfo = { id: at.replace(/[:.]/g, "-"), name: typeof name === "string" ? name.trim().slice(0, 80) : "", at, by };
   await store.write(versionPath(ws.path, version.id), text);
   await store.write(indexPath(ws.path), JSON.stringify([version, ...(await versionsOf(store, ws.path))], null, 2));
   return version;

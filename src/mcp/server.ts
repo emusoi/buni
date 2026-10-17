@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loadSkills, readSkill, skillList } from "../skills/skills.ts";
 import { toolNames, tools } from "../tools/tools.ts";
+import type { Doc } from "../format/doc.ts";
 import type { Workspace } from "../tools/workspace.ts";
 import { VERSION } from "../version.ts";
 
@@ -27,6 +28,8 @@ export interface HostTools {
   screenAsText?: (pageId: string) => Promise<string>;
   /** Loads a live website and returns a PNG (base64) and a short summary of its look. */
   lookAtUrl?: (url: string) => Promise<{ png: string; summary: string }>;
+  /** An agent changed the design; `before` is how it was. The host can keep it as a point to go back to. */
+  edited?: (author: string, before: Doc) => void;
 }
 
 export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer {
@@ -38,7 +41,9 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
     server.registerTool(name, { description: tool.description, inputSchema: tool.input }, async (args) => {
       // An imported core may have been edited where this server doesn't see (straight to disk): read it again first.
       await ws.refreshImports();
+      const before = ws.view();
       const r = await ws.call(author(), name, args);
+      if (ws.view() !== before) host.edited?.(author(), before);
       return { content: [{ type: "text", text: r.reply }], isError: !r.ok };
     });
   }

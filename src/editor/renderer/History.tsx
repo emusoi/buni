@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { History as HistoryIcon, RotateCcw } from "lucide-react";
 import type { VersionInfo } from "../api.ts";
 import { useDismiss } from "./useDismiss.ts";
+import { agentColor } from "./Connect.tsx";
 
 const when = (at: string) => {
   const d = new Date(at);
@@ -53,8 +54,8 @@ export function History({ onToast }: { onToast: (m: string) => void }) {
           {list?.length === 0 && <p className="hint">No versions yet. Save one before a big change; you can come back to it.</p>}
           {list?.map((v) => (
             <div key={v.id} className="history-row">
-              <span className="menu-name">{v.name || when(v.at)}</span>
-              <span className="menu-state">{v.name ? when(v.at) : v.by}</span>
+              <span className="menu-name">{v.by !== "you" && <span className="history-by" style={{ background: agentColor(v.by) }} />}{v.name || when(v.at)}</span>
+              <span className="menu-state">{v.name ? `${v.by === "you" ? "You" : v.by} · ${when(v.at)}` : v.by}</span>
               <button type="button" className="link-btn" title="Make the design match this version; ⌘Z undoes it" onClick={() => void restore(v)}><RotateCcw size={12} /> Restore</button>
             </div>
           ))}

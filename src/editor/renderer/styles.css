@@ -2071,3 +2071,4 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .toast.agent-note .presence-dot { border-color: transparent; }
 .toast.agent-note button { height: 26px; padding: 0 12px; border: 0; border-radius: 13px; background: rgba(255, 255, 255, 0.16); color: #fff; font-weight: 600; }
 .presence:not(:has(.presence-dot)) { padding-left: 10px; }
+.history-by { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 4px; vertical-align: 1px; }
