@@ -842,10 +842,6 @@ function PartContracts({ doc, part, onSelect, onToast }: { doc: Doc; part: Part;
   const events = Object.values(doc.events).filter((e) => e.queue === part.id);
   const links = Object.values(doc.links).filter((l) => l.from === part.id || l.to === part.id);
   const style = part.api ?? "rest";
-  const copy = () => {
-    const r = contextText(doc, { part: part.id });
-    if (r.ok) { void navigator.clipboard.writeText(r.text).then(() => onToast(`Copied the brief for ${part.name}; paste it to any agent.`)); }
-  };
   return (
     <div className="sys-contracts">
       <div className="sys-group">
@@ -881,11 +877,6 @@ function PartContracts({ doc, part, onSelect, onToast }: { doc: Doc; part: Part;
           {events.map((e) => <button key={e.id} type="button" className="sys-mini" onClick={() => onSelect({ kind: "event", id: e.id })}><code>{e.name}</code></button>)}
         </div>
       )}
-      <div className="sys-handoff">
-        <b>Hand it off</b>
-        <p>The brief has its links, contracts, shapes, the pages that use it and the traces through it.</p>
-        <button type="button" className="btn" onClick={copy}><Copy size={13} /> Copy brief</button>
-      </div>
     </div>
   );
 }

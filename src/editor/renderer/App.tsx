@@ -7,7 +7,7 @@ import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
 import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
-import { HandOff } from "./HandOff.tsx";
+import { Export } from "./Export.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
 import { Shortcuts } from "./Shortcuts.tsx";
@@ -746,12 +746,9 @@ export function App({ snap }: { snap: Snapshot }) {
             <PlayIcon size={16} strokeWidth={1.75} />
           </button>
         )}
-        <HandOff
+        <Export
           system={snap.system}
           path={snap.path}
-          page={system ? undefined : activePage}
-          flow={shownJourney ?? (activePage ? Object.values(doc.flows).sort((a, b) => (a.index < b.index ? -1 : 1)).find((f) => walkFlow(doc, f.start).pages.includes(activePage))?.id : undefined)}
-          part={sysSel?.kind === "part" ? sysSel.id : undefined}
           onToast={setToast}
         >
           {window.buni.downloadFile && (
@@ -776,7 +773,7 @@ export function App({ snap }: { snap: Snapshot }) {
               <span className="menu-state">{detail}</span>
             </button>
           ))}
-        </HandOff>
+        </Export>
         <SidebarToggle side="right" open={panelOpen} onToggle={togglePanel} hint="⌘\\ hides or shows both panels" />
         </div>
       </header>

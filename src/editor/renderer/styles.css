@@ -1219,12 +1219,9 @@ svg { flex-shrink: 0; }
 .sys-lenses .n { font: 11px var(--mono); color: var(--label); font-weight: 400; }
 
 .bar-btn.pill { border-radius: 999px; padding: 0 12px; }
-.handoff-menu { width: 300px; }
-.handoff-menu .menu-name { flex: none; }
-.handoff-menu .menu-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.handoff-targets { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 8px 6px; }
-.handoff-targets button { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border: 0; border-radius: 12px; background: var(--hover); font-size: 12px; color: var(--ink-2); }
-.handoff-targets button.on { background: var(--accent); color: var(--on-ink); }
+.export-menu { width: 300px; }
+.export-menu .menu-name { flex: none; }
+.export-menu .menu-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The canvas toolbar: add a layer where the selection is. */
 .canvas-wrap { position: relative; min-width: 0; min-height: 0; display: grid; }
@@ -1390,8 +1387,6 @@ button.insert-where:hover { color: var(--ink); }
 .modes-bar button { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--ink-2); font-size: 12px; font-weight: 500; }
 .modes-bar button:hover { color: var(--ink); }
 .modes-bar button.on { background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink); font-weight: 600; }
-.bar-btn.handoff { height: 28px; margin: 0 2px; border-radius: 7px; background: var(--accent); color: var(--on-ink); box-shadow: 0 1px 2px rgba(0, 122, 255, 0.3); }
-.bar-btn.handoff:hover { opacity: 0.9; }
 .agent-cards { display: flex; flex-direction: column; gap: 8px; }
 .agent-card { display: flex; gap: 12px; padding: 12px; border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-1); }
 .agent-card > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 12px; color: var(--ink-2); line-height: 1.45; }
