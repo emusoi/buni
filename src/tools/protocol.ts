@@ -10,7 +10,7 @@ import type { Edit } from "./workspace.ts";
 export type SnapshotUpdate =
   | { kind: "whole"; snap: Snapshot | undefined }
   /** `system` is left out when the system is the view itself: the file imports nothing. */
-  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[] };
+  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[] };
 
 export interface Snapshot {
   path: string;
@@ -29,6 +29,18 @@ export interface Snapshot {
   connected?: string[];
   /** The latest edits, newest last: what agents just did, to show as it lands. */
   edits?: readonly Edit[];
+  /** Questions agents are waiting on the person to answer, oldest first. */
+  asking?: Asking[];
+}
+
+/** An agent's question to the person watching, about a layer or the design. */
+export interface Asking {
+  id: string;
+  author: string;
+  question: string;
+  /** Short answers to pick from; the person can also write their own. */
+  options: string[];
+  node?: Id;
 }
 
 /**

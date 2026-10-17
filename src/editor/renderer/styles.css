@@ -2072,3 +2072,15 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .toast.agent-note button { height: 26px; padding: 0 12px; border: 0; border-radius: 13px; background: rgba(255, 255, 255, 0.16); color: #fff; font-weight: 600; }
 .presence:not(:has(.presence-dot)) { padding-left: 10px; }
 .history-by { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 4px; vertical-align: 1px; }
+/* An agent's question, floating under the toolbar until it's answered. */
+.ask-card { position: absolute; z-index: 9; top: 62px; left: 50%; transform: translateX(-50%); width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--menu); -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 18px 48px rgb(0 0 0 / 0.24); animation: tag-in 160ms ease-out; }
+.ask-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.ask-head .presence-dot { border-color: transparent; }
+.ask-layer { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 0; border-radius: 11px; background: var(--chip); color: var(--ink-2); font-size: 11px; }
+.ask-more { font-size: 11px; color: var(--label); }
+.ask-head .icon-btn { margin-left: auto; }
+.ask-question { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.ask-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.ask-options .btn { height: 28px; padding: 0 12px; border-radius: 7px; }
+.ask-reply { display: flex; align-items: center; gap: 6px; }
+.ask-reply .field { flex: 1; }

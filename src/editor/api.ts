@@ -66,6 +66,8 @@ export interface BuniApi {
   assetBase?: string;
   /** Keeps the file as it is now as the version systemChanges compares with; where files aren't in git (the web). */
   saveVersion?(name?: string): Promise<VersionInfo>;
+  /** Answers an agent's question; no text dismisses it. */
+  answer?(id: string, text: string | undefined): Promise<void>;
   /** Keeps an image in the design's folder and attaches it; resolves to its attachment id, for <img src="asset:ID">. */
   uploadImage?(name: string, base64: string, mime: string): Promise<string>;
   /** Saved versions, newest first. */

@@ -244,6 +244,7 @@ const api: BuniApi = {
   },
   systemChanges: () => call("systemChanges"),
   saveVersion: (name) => call("saveVersion", name),
+  answer: (id, text) => call("answer", id, text),
   versions: () => call("versions"),
   uploadImage: (name, base64, mime) => call("uploadImage", name, base64, mime),
   restoreVersion: (id) => call("restoreVersion", id),

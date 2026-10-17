@@ -15,6 +15,7 @@ The system behind the pages has its own tools: set_part and link_parts, set_endp
 Multi-screen work: link screens with connect, name the path with set_flow, and describe the experience step by step with set_journey. read_flows shows what exists.
 Icons: <buni-icon name="search" size="16" style="color:…"> in write_html draws a Lucide icon; find_icons searches names.
 Reuse: make_component turns a layer into a component (nav bars, cards, footers); place_component uses it elsewhere; override changes one use's text. Edit the component itself to change every use.
+When a choice is the person's to make (copy, a direction, a trade-off), ask_person asks them in the editor and waits for the answer; don't ask about each step.
 If an edit is refused, the reply says which reference or rule it broke; fix the call and retry.`;
 
 /**
@@ -28,6 +29,8 @@ export interface HostTools {
   screenAsText?: (pageId: string) => Promise<string>;
   /** Loads a live website and returns a PNG (base64) and a short summary of its look. */
   lookAtUrl?: (url: string) => Promise<{ png: string; summary: string }>;
+  /** Puts a question to the person watching in the editor; the answer, or undefined when none came in time. */
+  ask?: (author: string, q: { question: string; options: string[]; node?: string }) => Promise<string | undefined>;
   /** An agent changed the design; `before` is how it was. The host can keep it as a point to go back to. */
   edited?: (author: string, before: Doc) => void;
 }
@@ -60,6 +63,21 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
         : { content: [{ type: "text", text: `No skill "${name}"; list_skills shows what exists.` }], isError: true };
     },
   );
+  const { ask } = host;
+  if (ask) {
+    server.registerTool(
+      "ask_person",
+      {
+        description: "Ask the person watching in the editor and wait for their answer (up to ten minutes). Use it for a choice that is theirs to make, not to check each step. Give two to four short options; they can also write their own. Name a layer with node to ask about it in place.",
+        inputSchema: { question: z.string(), options: z.array(z.string()).max(4).optional(), node: z.string().optional() },
+      },
+      async ({ question, options, node }) => {
+        if (node && !ws.view().nodes[node]) return { content: [{ type: "text", text: `layer "${node}" does not exist` }], isError: true };
+        const answer = await ask(author(), { question, options: options ?? [], ...(node ? { node } : {}) });
+        return { content: [{ type: "text", text: answer === undefined ? "No answer in ten minutes. Go with your best judgement, and say what you chose and why." : `They answered: ${answer}` }] };
+      },
+    );
+  }
   const { screenshot } = host;
   if (screenshot) {
     server.registerTool(

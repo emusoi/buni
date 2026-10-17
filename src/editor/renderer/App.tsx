@@ -9,6 +9,7 @@ import { DocPanel } from "./DocPanel.tsx";
 import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
 import { Export } from "./Export.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
+import { AskCard } from "./AskCard.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -1046,6 +1047,11 @@ export function App({ snap }: { snap: Snapshot }) {
         />
       )}
       {inserting && <QuickInsert doc={doc} dir={snap.dir} where={insertWhere} onInsert={(id, mode) => void insert(id, mode)} onClose={() => setInserting(false)} />}
+      {snap.asking?.[0] && (() => {
+        const q = snap.asking[0];
+        const n = q.node ? doc.nodes[q.node] : undefined;
+        return <AskCard key={q.id} q={q} more={snap.asking.length - 1} layer={n ? n.name : undefined} onShow={() => { const p = q.node ? pageOfNode(doc, q.node) : undefined; if (p && q.node) { openPage(p, q.node); setReveal({ page: p, at: Date.now() }); } }} />;
+      })()}
       {menu && selected && doc.nodes[selected] && (
         <ContextMenu doc={doc} node={selected} page={activePage} at={menu} onRun={runEdit} onComment={() => setCommenting(selected)} onClose={() => setMenu(undefined)} />
       )}

@@ -28,3 +28,16 @@ test("read_screen is offered where the host can read a terminal screen, and pass
   expect(asked).toEqual(["bee81065"]);
   expect((await client.callTool({ name: "read_screen", arguments: { page: "nope" } })).isError).toBe(true);
 });
+
+test("ask_person hands the question to the host and the person's answer back; no answer says to carry on", async () => {
+  const asked: { author: string; question: string; options: string[] }[] = [];
+  const client = await connect({ ask: async (author, q) => (asked.push({ author, ...q }), "Keep one week") });
+  const r = await client.callTool({ name: "ask_person", arguments: { question: "Promise a day count?", options: ["Say 5 days", "Keep one week"] } });
+  expect(r.content).toEqual([{ type: "text", text: "They answered: Keep one week" }]);
+  expect(asked).toEqual([{ author: "test", question: "Promise a day count?", options: ["Say 5 days", "Keep one week"] }]);
+
+  const silent = await connect({ ask: async () => undefined });
+  const none = await silent.callTool({ name: "ask_person", arguments: { question: "Anyone?" } });
+  expect(JSON.stringify(none.content)).toContain("best judgement");
+  expect((await silent.callTool({ name: "ask_person", arguments: { question: "This?", node: "nope" } })).isError).toBe(true);
+});

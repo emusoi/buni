@@ -8,7 +8,7 @@ import { Home } from "./Home.tsx";
 /** `prev` with an edit's changes; a patch that comes before the first snapshot is covered by that snapshot. */
 function patched(prev: Snapshot, u: Extract<SnapshotUpdate, { kind: "patch" }>): Snapshot {
   const view = applyPatch(prev.view, u.view);
-  return { ...prev, view, system: u.system ? applyPatch(prev.system, u.system) : view, owners: u.owners, recent: u.recent, ...(u.connected ? { connected: u.connected } : {}), ...(u.edits ? { edits: u.edits } : {}) };
+  return { ...prev, view, system: u.system ? applyPatch(prev.system, u.system) : view, owners: u.owners, recent: u.recent, ...(u.connected ? { connected: u.connected } : {}), ...(u.edits ? { edits: u.edits } : {}), ...(u.asking ? { asking: u.asking } : {}) };
 }
 
 /** The designs a tab switched away from, as last drawn, newest last: switching back shows one at once. */

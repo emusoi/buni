@@ -20,6 +20,7 @@ import { systemChanges } from "buni/tools/changes.ts";
 import { Workspace } from "buni/tools/workspace.ts";
 import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
+import type { Asking } from "buni/tools/protocol.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createMcpServer } from "buni/mcp/server.ts";
@@ -65,6 +66,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     mcp: Map<string, { transport: WebStandardStreamableHTTPServerTransport; server: ReturnType<typeof createMcpServer>; seen: number }>;
     /** The mock API for this design, remembering writes until the server stops. */
     mock: MockStore;
+    /** Agents' questions waiting on the person, each with how to hand back the answer. */
+    asking: Map<string, Asking & { answer: (text: string | undefined) => void }>;
   }
   /** This run of the server: a tab that reconnects to a different one reloads, so it never runs yesterday's code. */
   const BUILD = Date.now().toString(36);
@@ -79,7 +82,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     let o = opened.get(path);
     if (!o) {
       o = Workspace.open(path, within(store, dirname(dirname(path)), loopback && store.localImports === true)).then(async (ws) => {
-        const file: Open = { ws, listeners: new Set(), mcp: new Map(), mock: new MockStore() };
+        const file: Open = { ws, listeners: new Set(), mcp: new Map(), mock: new MockStore(), asking: new Map() };
         if (disk) {
           // On disk, buni open shows who is editing, and the buni command and coding agents send their edits here
           // (through <file>.live) so this editor stays the one writer of the file.
@@ -103,7 +106,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   }
 
   const mcpUrl = (path: string) => `${origin}/mcp?file=${encodeURIComponent(path)}`;
-  const snapshot = ({ ws, mcp }: Open): Snapshot => ({
+  const snapshot = ({ ws, mcp, asking }: Open): Snapshot => ({
+    asking: [...asking.values()].map(({ answer: _answer, ...q }) => q),
     path: ws.path, dir: dirname(ws.path), view: ws.view(), system: ws.system(), owners: ws.owners(), recent: ws.recent(), mcpUrl: mcpUrl(ws.path),
     // An agent that quits or crashes rarely says so: one heard from in the last ten minutes counts as here.
     // ponytail: "gone" shows on the next change after that, not the moment it lapses
@@ -117,6 +121,23 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
    * session at once. A stretch ends after ten quiet minutes; the buni command's calls, each a session of its own,
    * count as one stretch.
    */
+  /** An agent's question, shown in every tab of the design until someone answers it or ten minutes pass. */
+  function askPerson(o: Open, author: string, q: { question: string; options: string[]; node?: string }): Promise<string | undefined> {
+    const id = crypto.randomUUID();
+    const tell = () => o.listeners.forEach((fn) => fn());
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => answer(undefined), 10 * 60_000);
+      const answer = (text: string | undefined) => {
+        clearTimeout(timer);
+        if (!o.asking.delete(id)) return;
+        tell();
+        resolve(text);
+      };
+      o.asking.set(id, { id, author, ...q, answer });
+      tell();
+    });
+  }
+
   const lastEdit = new Map<string, number>();
   function keepBefore(o: Open, author: string, before: Doc): void {
     const key = `${o.ws.path} ${author}`, now = Date.now(), last = lastEdit.get(key) ?? 0;
@@ -134,7 +155,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     const tell = () => o.listeners.forEach((fn) => fn());
     if (!t && req.method === "POST" && isInitializeRequest(body)) {
       // Screenshots use the browser available to this host.
-      const server = createMcpServer(o.ws, { screenshot: (page) => renderAway(o, page), edited: (author, before) => keepBefore(o, author, before) });
+      const server = createMcpServer(o.ws, { screenshot: (page) => renderAway(o, page), edited: (author, before) => keepBefore(o, author, before), ask: (author, q) => askPerson(o, author, q) });
       const made = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID(), onsessioninitialized: (id) => void o.mcp.set(id, { transport: made, server, seen: Date.now() }) });
       made.onclose = () => {
         if (made.sessionId) o.mcp.delete(made.sessionId);
@@ -376,6 +397,11 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     saveVersion: async (file, name) => saveVersion(store, await need(file), name),
     versions: async (file) => versionsOf(store, (await need(file)).path),
     restoreVersion: async (file, id) => restoreVersion(store, await need(file), id),
+    /** The person's answer to an agent's question; an empty one dismisses it. */
+    answer: async (file, id, text) => {
+      if (!file || typeof id !== "string") throw new Error("answer expects a question id");
+      (await load(file)).asking.get(id)?.answer(typeof text === "string" && text.trim() ? text.trim() : undefined);
+    },
     // An image from the person's computer or clipboard, kept in the design's assets/ folder and attached.
     readImportResource: async (file, url, pageUrl) => { await need(file); return readImportResource(str(url, "URL"), str(pageUrl, "Page URL"), loopback); },
     uploadImage: async (file, name, base64, mime) => {
@@ -448,7 +474,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         c.enqueue(": open\n\n");
         const changed = () => {
           const s = snapshot(o);
-          send({ kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}) });
+          send({ kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}), ...(s.asking ? { asking: s.asking } : {}) });
           sent = s;
         };
         o.listeners.add(changed);
