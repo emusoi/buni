@@ -881,6 +881,23 @@ export function Canvas(props: Props) {
     }
     setTags(found);
   }, [props.focus, loads, saved]);
+  // A pin on each layer people or agents are talking about: how many posts, and who spoke last.
+  const [pins, setPins] = useState<{ x: number; y: number; node: Id; n: number; by: string }[]>([]);
+  useLayoutEffect(() => {
+    const found: { x: number; y: number; node: Id; n: number; by: string }[] = [];
+    for (const c of Object.values(props.doc.comments)) {
+      if (c.state === "resolved") continue;
+      for (const [board, { frame, iframe }] of boards.current) {
+        const el = iframe?.contentDocument?.querySelector(`.b-${CSS.escape(c.node)}`);
+        const at = saved.get(board);
+        if (!el || !at) continue;
+        const r = el.getBoundingClientRect();
+        found.push({ x: at.x + frame.offsetLeft + r.right, y: at.y + frame.offsetTop + r.top, node: c.node, n: c.posts.length, by: c.posts.at(-1)?.author ?? "" });
+        break;
+      }
+    }
+    setPins(found);
+  }, [props.doc.comments, loads, saved]);
 
   const at = useMemo(() => {
     if (!dragging) return saved;
@@ -1208,6 +1225,11 @@ export function Canvas(props: Props) {
             onSelectNode={props.onSelectNode}
             onMenu={props.onMenu}
           />
+        ))}
+        {pins.map((p) => (
+          <button type="button" key={p.node} className="comment-pin" title={`${p.n} ${p.n === 1 ? "comment" : "comments"} · open to read`} style={{ left: p.x, top: p.y, transform: `translate(-50%, -50%) scale(${1 / view.zoom})` }} onPointerDown={(e) => e.stopPropagation()} onClick={() => { props.onSelectNode(p.node); setTimeout(() => document.querySelector(".inspector .comments")?.scrollIntoView({ block: "center", behavior: "smooth" }), 60); }}>
+            <span className="comment-pin-face">{(p.by[0] ?? "?").toUpperCase()}</span>{p.n > 1 && <span className="comment-pin-n">{p.n}</span>}
+          </button>
         ))}
         {tags.map((t) => (
           <div key={t.spot.agent} className="agent-tag" style={{ left: t.x, top: t.y, background: t.spot.color, transform: `translateY(-100%) scale(${1 / view.zoom})` }}>

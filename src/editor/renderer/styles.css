@@ -2063,3 +2063,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .context-sub { position: relative; }
 .context-chevron { position: absolute; right: 10px; top: 8px; color: var(--label); pointer-events: none; }
 .context-menu.submenu { position: absolute; left: calc(100% - 4px); top: -5px; max-height: 60vh; overflow: auto; }
+/* A comment's pin on its layer: who spoke last, and how many posts. */
+.comment-pin { position: absolute; z-index: 4; display: inline-flex; align-items: center; gap: 3px; padding: 2px; border: 0; border-radius: 13px 13px 13px 3px; background: var(--surface); box-shadow: 0 2px 8px rgb(0 0 0 / 0.22), 0 0 0 0.5px rgb(0 0 0 / 0.12); transform-origin: 50% 50%; cursor: pointer; }
+.comment-pin-face { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; }
+.comment-pin-n { padding-right: 5px; font-size: 11px; font-weight: 600; color: var(--ink); }
