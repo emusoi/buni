@@ -95,3 +95,9 @@ export interface VersionInfo {
   at: string;
   by: string;
 }
+
+/** The design folder in git: its branch and what changed in it since the last commit. */
+export interface GitStatus {
+  branch: string;
+  changes: { path: string; state: "modified" | "added" | "deleted" | "renamed" | "new" }[];
+}

@@ -10,6 +10,7 @@ import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
 import { Export } from "./Export.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
 import { AskCard } from "./AskCard.tsx";
+import { Changes } from "./Changes.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -762,6 +763,7 @@ export function App({ snap }: { snap: Snapshot }) {
       <header className="tabs topbar">
         <div className="bar-lead">
           <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
+          <Changes version={snap.view} onToast={setToast} />
         </div>
         <FileTabs />
         <div className="modes-bar" role="tablist" aria-label="Mode">

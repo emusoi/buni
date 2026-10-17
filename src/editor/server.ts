@@ -21,6 +21,7 @@ import { Workspace } from "buni/tools/workspace.ts";
 import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
 import type { Asking } from "buni/tools/protocol.ts";
+import { gitCommit, gitStatus } from "./git.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createMcpServer } from "buni/mcp/server.ts";
@@ -397,6 +398,12 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     saveVersion: async (file, name) => saveVersion(store, await need(file), name),
     versions: async (file) => versionsOf(store, (await need(file)).path),
     restoreVersion: async (file, id) => restoreVersion(store, await need(file), id),
+    /** The design folder in git, on this machine only. */
+    changes: async (file) => (disk && file ? gitStatus(dirname(disk.real(file))) : undefined),
+    commit: async (file, message, push) => {
+      if (!disk || !file) throw new Error("Commit from the desktop app or buni open on your machine.");
+      return gitCommit(dirname(disk.real(file)), typeof message === "string" ? message : "", push === true);
+    },
     /** The person's answer to an agent's question; an empty one dismisses it. */
     answer: async (file, id, text) => {
       if (!file || typeof id !== "string") throw new Error("answer expects a question id");

@@ -7,8 +7,8 @@ import type { FormatError } from "buni/format/parse.ts";
 
 /** Everything the window needs to draw: the live document and the work waiting on it. */
 export type { Edit };
-export type { AgentInfo, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
-import type { AgentInfo, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+export type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+import type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
 
 export interface SkillInfo {
   name: string;
@@ -66,6 +66,10 @@ export interface BuniApi {
   assetBase?: string;
   /** Keeps the file as it is now as the version systemChanges compares with; where files aren't in git (the web). */
   saveVersion?(name?: string): Promise<VersionInfo>;
+  /** The design folder's branch and changes, where the host can see git (designs on this machine). */
+  changes?(): Promise<GitStatus | undefined>;
+  /** Commits the folder's changes, and pushes them if asked. */
+  commit?(message: string, push: boolean): Promise<{ ok: boolean; reply: string }>;
   /** Answers an agent's question; no text dismisses it. */
   answer?(id: string, text: string | undefined): Promise<void>;
   /** Keeps an image in the design's folder and attaches it; resolves to its attachment id, for <img src="asset:ID">. */
