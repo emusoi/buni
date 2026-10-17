@@ -28,7 +28,7 @@ import { Play } from "./Play.tsx";
 import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
-import { useProject } from "./projectStore.ts";
+import { loadProject, useProject } from "./projectStore.ts";
 
 declare global {
   interface Window {
@@ -424,8 +424,23 @@ export function App({ snap }: { snap: Snapshot }) {
   const crossing = play !== undefined || journey !== undefined;
   useEffect(() => {
     if (!crossing || project.length < 2) return;
-    const paths = project.filter((f) => f.path !== snap.path).map((f) => f.path);
-    void (window.buni.documents ? window.buni.documents(paths).then((d) => Object.values(d)) : window.buni.home().then((all) => all.filter((f) => paths.includes(f.path)).map((f) => f.doc))).then(setOthers);
+    // An agent may be editing another design while you play: the summaries say when one changed, cheaply, and
+    // only then are the designs read again.
+    let seen = "", live = true;
+    const read = async (fresh: boolean) => {
+      const files = fresh ? siblings(await loadProject(true), snap.path) : project;
+      const others = files.filter((f) => f.path !== snap.path);
+      const stamp = others.map((f) => `${f.path}@${f.modified}`).join();
+      if (!live || stamp === seen) return;
+      seen = stamp;
+      const paths = others.map((f) => f.path);
+      const docs = await (window.buni.documents ? window.buni.documents(paths).then((d) => Object.values(d)) : window.buni.home().then((all) => all.filter((f) => paths.includes(f.path)).map((f) => f.doc)));
+      if (live) setOthers(docs);
+    };
+    void read(false);
+    // ponytail: polls every 2s while Play or a flow is open; a pushed change per file would replace it.
+    const t = setInterval(() => void read(true), 2000);
+    return () => { live = false; clearInterval(t); };
   }, [crossing, project, snap.path]);
   const app = useMemo(() => withProject(doc, others), [doc, others]);
   const fileOfPage = useMemo(() => new Map(project.flatMap((f) => f.pages.filter((p) => !snap.view.pages[p.id]).map((p) => [p.id, f.path] as const))), [project, snap.view.pages]);
