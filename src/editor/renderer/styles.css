@@ -2044,3 +2044,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* System and Plan sit on the canvas itself: no second frame inside the window. */
 .app.editor .sys-screen, .app.editor .sys-view { background: none; }
 .app.editor .sys-flow { border: 0; border-radius: 0; background: none; }
+/* The canvas's own controls float like the toolbar: frosted capsules at its foot. */
+.app.editor .zoom, .app.editor .insert-bar {
+  height: 40px; padding: 0 6px; border-radius: 20px; background: var(--glass); box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+}
+.app.editor .zoom button { height: 28px; border-radius: 14px; }
+.app.editor .zoom button:hover, .app.editor .insert-bar .add-btn:hover { background: var(--hover); }
+.app.editor .insert-bar .add-btn { border-radius: 14px; }
+.app.editor .insert-bar .add-component { border-radius: 14px; }
