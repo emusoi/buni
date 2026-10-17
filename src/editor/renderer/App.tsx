@@ -414,6 +414,23 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
   }, [selected, also, doc, page]);
   const [toast, setToast] = useState<string>();
+  // An agent's edit on a page you aren't looking at: said once, with a way there.
+  const [agentNote, setAgentNote] = useState<{ author: string; label: string; page: Id; node: Id | undefined }>();
+  const lastNoted = useRef(edits.at(-1)?.at ?? "");
+  useEffect(() => {
+    const e = edits.at(-1);
+    if (!e || e.at === lastNoted.current) return;
+    lastNoted.current = e.at;
+    const node = e.nodes[0];
+    const where = node ? pageOfNode(doc, node) : undefined;
+    if (e.author === "you" || !where || where === activePage) return;
+    setAgentNote({ author: e.author, label: e.label, page: where, node });
+  }, [edits, doc, activePage]);
+  useEffect(() => {
+    if (!agentNote) return;
+    const t = setTimeout(() => setAgentNote(undefined), 6000);
+    return () => clearTimeout(t);
+  }, [agentNote]);
   // A layer's right-click menu, and the comment it can start.
   const [menu, setMenu] = useState<{ x: number; y: number }>();
   const [commenting, setCommenting] = useState<Id>();
@@ -1010,6 +1027,13 @@ export function App({ snap }: { snap: Snapshot }) {
         </div>
       </main>
       {toast && <div className="toast" role="status">{toast}</div>}
+      {agentNote && !toast && (
+        <div className="toast agent-note" role="status">
+          <span className="presence-dot" style={{ background: agentColor(agentNote.author) }}>{agentInitials(agentNote.author)}</span>
+          <span>{agentNote.label} · {doc.pages[agentNote.page]?.name}</span>
+          <button type="button" onClick={() => { openPage(agentNote.page, agentNote.node); setReveal({ page: agentNote.page, at: Date.now() }); setAgentNote(undefined); }}>Show</button>
+        </div>
+      )}
       {health && (
         <LibraryHealth
           doc={doc}
