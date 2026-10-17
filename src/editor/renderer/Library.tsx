@@ -119,7 +119,9 @@ export function LibraryPanel({ doc, path, dir, page, open, onOpen, onInsert, onH
         {FILTERS.map((f) => (
           <button type="button" key={f.id} className={filter === f.id ? "on" : ""} onClick={() => setFilter(f.id)}>{f.label}</button>
         ))}
-        <button type="button" className="library-insert" title="Insert a component (⌘I)" onClick={onInsert}><Plus size={13} /> ⌘I</button>
+      </div>
+      <div className="library-actions">
+        <button type="button" className="library-insert" title="Insert a component where you're working (⌘I)" onClick={onInsert}><Plus size={13} /> Insert <span className="kbd">⌘I</span></button>
         {newButton}
       </div>
       {dialog}
