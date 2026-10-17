@@ -742,6 +742,19 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "redo", title: "Redo", keys: "⇧⌘Z", icon: Redo2, run: () => void window.buni.redo().then((r) => setToast(r.reply)) },
   ];
 
+  // A window too narrow for both panels shows the inspector alone; the sidebar comes back from the menu or ⌘\.
+  const bothOpen = useRef(false);
+  bothOpen.current = sidebarOpen && panelOpen;
+  const hideSidebar = useRef(toggleSidebar);
+  hideSidebar.current = toggleSidebar;
+  useEffect(() => {
+    // Only on becoming narrow (and on opening narrow): reopening the sidebar afterwards is the person's call.
+    const narrow = window.matchMedia("(max-width: 900px)");
+    const fit = () => { if (narrow.matches && bothOpen.current) hideSidebar.current(false); };
+    fit();
+    narrow.addEventListener("change", fit);
+    return () => narrow.removeEventListener("change", fit);
+  }, []);
   // The side panels float over the canvas; what they cover, for fitting pages and laying out the views beneath.
   const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (

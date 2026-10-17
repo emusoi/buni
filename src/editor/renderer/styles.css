@@ -1482,7 +1482,7 @@ button.insert-where:hover { color: var(--ink); }
 /* On a narrow canvas the insert bar takes the bottom middle, so zoom and the canvas tools move to the top corners. */
 .canvas { container-type: size; }
 @container (max-width: 760px) {
-  .zoom { bottom: auto; top: 12px; }
+  .zoom { bottom: auto; top: 56px; }
 }
 /* What an agent did last, newest first; each a way to its layer. */
 .agent-edits { display: flex; flex-direction: column; gap: 1px; margin: 6px 0 0; padding: 0; list-style: none; }
@@ -1928,8 +1928,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* Finding a page in a long list. */
 .rail-filter { width: calc(100% - 16px); margin: 0 8px 6px; height: 28px; font-size: 12px; }
 
-/* Where the insert bar adds: readable, not a whisper at the bar's end. */
-.insert-where { box-shadow: none; margin-left: 6px; padding: 3px 9px; border-radius: 99px; background: var(--chip); color: var(--ink) !important; font-size: 11px !important; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 
 /* Implementation context stays with the selected item, across all design modes. */
 .source-links { padding: 14px 12px; border-top: 1px solid var(--rule); font-size: 12px; }
@@ -2157,3 +2155,23 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .bar-btn.ghost { background: none; box-shadow: none; color: var(--ink-2); }
 .bar-btn.ghost:hover { background: var(--hover); color: var(--ink); }
 .app:not(.editor) .rail-card { background: none; box-shadow: none; border: 0; padding: 8px 10px; }
+/* Tabs are words: the one you're on in ink, the others quiet; no pill around them. */
+.app .panel-tabs .segmented, .app.editor .segmented, .app.editor .side-tabs { flex: none; justify-content: flex-start; gap: 16px; padding: 0; background: none; }
+.app .panel-tabs .segmented button, .app.editor .segmented button, .app.editor .side-tabs button { flex: none; height: 28px; padding: 0; border-radius: 0; background: none; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--label); }
+.app .panel-tabs .segmented button.on, .app.editor .segmented button.on, .app.editor .side-tabs button.on { background: none; box-shadow: none; color: var(--ink); font-weight: 600; }
+.app.editor .side-tabs { margin: 8px 14px 4px; }
+.app .panel-tabs { padding: 0 16px; height: 44px; }
+/* The insert bar: icons, and where things land as plain words. */
+.app.editor .insert-bar .insert-where { background: none; box-shadow: none; padding: 0 6px; color: var(--label); font-size: 12px; }
+.app.editor .insert-bar .add-component { background: none; color: var(--ink-2); }
+/* A narrow window: the title drops its project, the modes stop pinning to the centre, and panels fit the window. */
+@media (max-width: 900px) {
+  .app.editor .project-switch .title small { display: none; }
+  .app.editor .modes-bar { position: static; transform: none; margin: 0 auto; gap: 2px; }
+  .app.editor > .sidebar { width: min(250px, calc(100vw - 16px)); }
+  .app.editor .inspector-panel { max-width: calc(100vw - 16px); }
+}
+@media (max-width: 560px) {
+  .app.editor .modes-bar button { padding: 0 5px; font-size: 12px; }
+  .app.editor .presence { display: none; }
+}
