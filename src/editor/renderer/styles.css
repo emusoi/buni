@@ -1409,20 +1409,25 @@ button.insert-where:hover { color: var(--ink); }
 
 /* Editor: one top bar across the window, the outline and the work below it. */
 /* The editor window: a 52px toolbar, then the canvas edge to edge, with the side panels floating over it as glass. */
-.app.editor { position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); --float-left: 268px; }
+.app.editor { position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); --float-left: 268px; }
 .app.editor.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); --float-left: 0px; }
-.app.editor > .topbar { position: relative; grid-column: 1 / -1; gap: 4px; padding: 0 10px 0 84px; background: var(--sidebar); box-shadow: 0 0.5px 0 var(--rule); z-index: 7; }
-.app.editor.sidebar-collapsed .tabs { padding-left: 84px; }
+/* No bar: the toolbar is three frosted capsules floating over the canvas, which runs to the top of the window. */
+.app.editor > .topbar { position: absolute; z-index: 7; top: 10px; left: 10px; right: 10px; height: 40px; gap: 8px; padding: 0; background: none; box-shadow: none; }
+.app.editor > .topbar > .bar-lead, .app.editor > .topbar > .bar-trail, .app.editor > .topbar > .modes-bar {
+  height: 40px; padding: 0 6px; border-radius: 20px; background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+}
+.app.editor > .topbar > .bar-lead { padding-left: 78px; }
+.app.editor > .topbar > .modes-bar { align-items: center; padding: 0 8px; }
 .app.editor > .sidebar, .app.editor .inspector-panel {
   position: absolute; z-index: 6; top: 10px; bottom: 10px; border-radius: 18px; overflow: hidden;
   background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
 }
 .app.editor > .sidebar { left: 10px; top: 62px; width: 248px; padding-top: 6px; }
-.app.editor .inspector-panel { right: 10px; border-left: 0; }
-.app.editor > .main { grid-column: 1; grid-row: 2; grid-template-rows: minmax(0, 1fr); box-shadow: none; background: var(--canvas); }
+.app.editor .inspector-panel { top: 62px; right: 10px; border-left: 0; }
+.app.editor > .main { grid-column: 1; grid-row: 1; grid-template-rows: minmax(0, 1fr); box-shadow: none; background: var(--canvas); }
 .app.editor .workspace { position: relative; grid-template-columns: minmax(0, 1fr); border-top: 0; }
 /* Views that aren't the canvas keep clear of the panels. */
-.app.editor .workspace > .sys-screen, .app.editor .workspace > .journey { margin-left: var(--float-left); margin-right: var(--float-right); }
+.app.editor .workspace > .sys-screen, .app.editor .workspace > .journey { margin: 60px var(--float-right) 0 var(--float-left); }
 .app.editor .zoom { left: calc(var(--float-left) + 16px); }
 .app.editor .zoom.canvas-tools { left: auto; right: calc(var(--float-right) + 16px); }
 .app.editor .insert-bar { left: calc(50% + (var(--float-left) - var(--float-right)) / 2); }
@@ -1439,7 +1444,7 @@ button.insert-where:hover { color: var(--ink); }
 .presence-dot { border-color: var(--sidebar); }
 .presence-text { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 /* The web has no window buttons to clear. */
-[data-host="web"] .app.editor > .topbar, [data-host="web"] .app.editor.sidebar-collapsed .tabs { padding-left: 10px; }
+[data-host="web"] .app.editor > .topbar > .bar-lead { padding-left: 6px; }
 [data-host="web"] .sidebar-top { padding-left: 16px; }
 
 /* Canvas zoom sits bottom-left, out of the way of the boards and the insert bar. */
@@ -2035,3 +2040,4 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .side-rail .icon-btn { position: relative; width: 36px; height: 36px; border-radius: 9px; }
 .side-rail .icon-btn.busy::after { content: ""; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 4px; background: var(--purple); box-shadow: 0 0 0 1.5px var(--surface); }
 .side-rail .grow { flex: 1; }
+.app.editor > .agents-view { grid-row: 1; padding-top: 60px; }
