@@ -127,7 +127,6 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           <Wordmark height={18} />
           <SidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
         </div>
-        <button type="button" className="rail-primary" onClick={create}><Plus size={15} /> New design</button>
         <div className="search">
           <label>
             <Search size={15} strokeWidth={1.75} />
@@ -182,9 +181,12 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           {files && files.length > 0 && <header className="home-head">
             <div>
               <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : "Designs"}</h1>
-              <p>{onlyAgents ? "Designs a coding agent is editing right now." : "Screens and the system behind them. Agents edit these live while you watch."}</p>
+              {onlyAgents && <p>Designs a coding agent is editing right now.</p>}
             </div>
-            <button type="button" className="bar-btn" onClick={() => void run(window.buni.open())}><Upload size={14} /> {window.buni.renameFile ? "Import .buni" : "Open…"}</button>
+            <div className="home-actions">
+              <button type="button" className="bar-btn ghost" onClick={() => void run(window.buni.open())}><Upload size={14} /> {window.buni.renameFile ? "Import" : "Open…"}</button>
+              <button type="button" className="bar-btn primary" onClick={create}><Plus size={14} /> New design</button>
+            </div>
           </header>}
           {error && <div className="notice dismissable" role="alert">{error}<button type="button" className="icon-btn small" aria-label="Dismiss" onClick={() => setError(undefined)}><X size={13} /></button></div>}
           {files && files.length === 0 && (
