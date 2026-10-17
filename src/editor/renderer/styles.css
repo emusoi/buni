@@ -1977,3 +1977,23 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .html-import-options .btn { flex: none; min-height: 32px; }
 
 .html-import > footer .btn { flex: none; min-width: 140px; }
+
+/* Home, as Finder: a glass sidebar floating in the window, designs as thumbnails with their names beneath. */
+.app:not(.editor) { grid-template-columns: 274px minmax(0, 1fr); background: var(--sidebar); }
+.app:not(.editor) > .sidebar {
+  margin: 10px 0 10px 10px; border-radius: 18px; overflow: hidden;
+  background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+}
+.app:not(.editor) > .main { background: var(--sidebar); box-shadow: none; }
+.app:not(.editor) .home { border-top: 0; padding: 28px 40px 64px; }
+.home-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+.home-head p { font-size: 13px; }
+.cards { grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 28px 28px; }
+.card { gap: 2px; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.card:hover { box-shadow: none; }
+.card-thumb { height: 160px; margin-bottom: 8px; border-radius: 10px; background: var(--canvas); box-shadow: 0 0 0 0.5px var(--rule), 0 2px 6px rgb(var(--shade) / 0.06); transition: box-shadow 120ms; }
+.card:hover .card-thumb { background: var(--canvas); box-shadow: 0 0 0 0.5px var(--rule), 0 8px 22px rgb(var(--shade) / 0.12); }
+.card:focus-visible .card-thumb { box-shadow: 0 0 0 3px var(--accent); }
+.card-name { padding: 0; font-size: 13px; font-weight: 500; }
+.card-meta { font-size: 11px; color: var(--ink-2); }
+.card-actions { top: 8px; right: 8px; }
