@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { withImports } from "../format/doc.ts";
 import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
-import { splitPart } from "./split.ts";
+import { splitCore, splitPart } from "./split.ts";
 
 const parsed = parseDoc(readFileSync(new URL("../../examples/portal.buni", import.meta.url), "utf8"));
 if (!parsed.ok) throw new Error("example is invalid");
@@ -38,4 +38,13 @@ test("an id in two files is refused; references into the other file resolve", ()
 
 test("splitting a part that doesn't exist says so", () => {
   expect(splitPart(doc, "ghost", "a.buni", "b.buni")).toBe('part "ghost" does not exist');
+});
+
+test("a section's override on a layer its core has since removed is left alone, not an error", () => {
+  const r = splitCore(doc, "core.buni");
+  if (typeof r === "string") throw new Error(r);
+  const use = Object.values(r.rest.nodes).find((n) => n.kind === "instance");
+  if (use?.kind !== "instance") throw new Error("portal has no component use");
+  use.overrides["gone-layer"] = { text: "x" };
+  expect(validateDoc(r.rest, r.moved)).toEqual([]);
 });

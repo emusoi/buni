@@ -9,7 +9,7 @@ import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { tmpdir } from "node:os";
 import { allowedCall, allowedOrigin, isDesignFile, isDesignPath, localOrigins, mockOrigin } from "./guard.ts";
 import { rmSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { renderHeadless } from "buni/term/render.ts";
 import { basename, dirname, join, resolve } from "node:path";
 import { emptyDoc, pagesInOrder, type Doc } from "buni/format/doc.ts";
@@ -247,9 +247,13 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   async function drawAway(o: Open, page: string): Promise<string> {
     const dir = await mkdtemp(join(tmpdir(), "buni-draw-"));
     try {
-      const file = join(dir, "design.buni");
+      // Laid out as on disk, the imports beside it, so its relative imports resolve in the copy.
+      const file = join(dir, o.ws.path);
       const out = join(dir, "page.png");
-      await writeFile(file, serializeDoc(o.ws.view()), "utf8");
+      for (const f of [{ path: o.ws.path, doc: o.ws.view() }, ...o.ws.imports()]) {
+        await mkdir(dirname(join(dir, f.path)), { recursive: true });
+        await writeFile(join(dir, f.path), serializeDoc(f.doc), "utf8");
+      }
       // The agent reads layout and type at 1×; 2× sends four times the pixels for nothing it can use.
       const r = await renderHeadless({ file, page, out, format: "png", scale: 1 }, undefined);
       if (!r.ok) throw new Error(r.text);

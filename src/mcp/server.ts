@@ -36,6 +36,8 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
   for (const name of toolNames) {
     const tool = tools[name];
     server.registerTool(name, { description: tool.description, inputSchema: tool.input }, async (args) => {
+      // An imported core may have been edited where this server doesn't see (straight to disk): read it again first.
+      await ws.refreshImports();
       const r = await ws.call(author(), name, args);
       return { content: [{ type: "text", text: r.reply }], isError: !r.ok };
     });

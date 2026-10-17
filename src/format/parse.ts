@@ -1741,7 +1741,13 @@ export function validateDoc(given: Doc, givenContext?: Doc): FormatError[] {
     const id = path.slice(c.length + 1).split(/[.[]/)[0] ?? "";
     return doc[c][id] !== undefined;
   };
-  const errors = r.errors.filter((e) => own(e.path));
+  // An override on a layer an imported component no longer has draws nothing; a core's edit never breaks its sections.
+  const goneFromImport = (path: string) => {
+    const use = /^nodes\.([^.]+)\.overrides\./.exec(path)?.[1];
+    const n = use === undefined ? undefined : doc.nodes[use];
+    return n?.kind === "instance" && !doc.shared[n.shared] && context.shared[n.shared] !== undefined;
+  };
+  const errors = r.errors.filter((e) => own(e.path) && !goneFromImport(e.path));
   for (const c of collections) {
     for (const id of Object.keys(doc[c])) if (theirs(c)[id] !== undefined) errors.push({ path: `${c}.${id}`, message: `"${id}" is also in an imported file; ids are unique across files` });
   }
