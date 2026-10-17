@@ -2041,3 +2041,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .side-rail .icon-btn.busy::after { content: ""; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 4px; background: var(--purple); box-shadow: 0 0 0 1.5px var(--surface); }
 .side-rail .grow { flex: 1; }
 .app.editor > .agents-view { grid-row: 1; padding-top: 60px; }
+/* System and Plan sit on the canvas itself: no second frame inside the window. */
+.app.editor .sys-screen, .app.editor .sys-view { background: none; }
+.app.editor .sys-flow { border: 0; border-radius: 0; background: none; }
