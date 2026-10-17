@@ -2015,3 +2015,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .play-bar { border-bottom: 0.5px solid rgba(255, 255, 255, 0.1); }
 :root { --menu: rgba(246, 246, 248, 0.88); }
 @media (prefers-color-scheme: dark) { :root { --menu: rgba(44, 44, 46, 0.88); } }
+
+/* The sidebar folded to a strip of icons, floating where it was. */
+.app.editor.sidebar-collapsed { --float-left: 72px; }
+.side-rail {
+  position: absolute; z-index: 6; left: 10px; top: 62px; bottom: 10px; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0;
+  border-radius: 18px; background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: var(--glass-shadow);
+}
+.side-rail .icon-btn { position: relative; width: 36px; height: 36px; border-radius: 9px; }
+.side-rail .icon-btn.busy::after { content: ""; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 4px; background: var(--purple); box-shadow: 0 0 0 1.5px var(--surface); }
+.side-rail .grow { flex: 1; }

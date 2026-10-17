@@ -44,7 +44,7 @@ export function SidebarToggle({ open, onToggle, side = "left", hint = "⌘\\" }:
       aria-label={`${open ? "Hide" : "Show"} ${what}`}
       aria-expanded={open}
       title={`${open ? "Hide" : "Show"} ${what} (${hint})`}
-      onClick={onToggle}
+      onClick={() => onToggle()}
     >
       <Icon size={16} strokeWidth={1.75} />
     </button>

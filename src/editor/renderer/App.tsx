@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Bot, FileInput, FolderOpen, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { Bot, FileInput, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -766,6 +766,22 @@ export function App({ snap }: { snap: Snapshot }) {
         </div>
       </header>
       {mode === "agents" && <Agents doc={doc} />}
+      {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
+      {!sidebarOpen && mode !== "agents" && (
+        <nav className="side-rail" aria-label="Sidebar">
+          <button type="button" className="icon-btn" title="Find anything (⌘K)" aria-label="Find anything" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
+          <button type="button" className="icon-btn" title="Other designs in this project (⌘P)" aria-label="Other designs" onClick={() => setSwitching(true)}><FolderTree size={17} strokeWidth={1.75} /></button>
+          {mode === "screens" && ([["pages", FileText, "Pages"], ["layers", LayersIcon, "Layers"], ["library", Library, "Components"]] as const).map(([at, Icon, label]) => (
+            <button type="button" key={at} className={`icon-btn${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} onClick={() => {
+              if (at === "library") setSideTab("library");
+              else { setSideTab("pages"); setOutline(at); }
+              toggleSidebar(true);
+            }}><Icon size={17} strokeWidth={1.75} /></button>
+          ))}
+          <span className="grow" />
+          <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeftOpen size={17} strokeWidth={1.75} /></button>
+        </nav>
+      )}
       <aside className="sidebar">
         {mode !== "screens" && system ? (
           <OwnersContext.Provider value={snap.owners}>
