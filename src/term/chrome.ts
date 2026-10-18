@@ -6,6 +6,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { z } from "zod";
 
 const KNOWN = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -50,6 +51,24 @@ function within<T>(ms: number, what: string, work: Promise<T>): Promise<T> {
 /** The page drawn as a PNG or a one-page PDF, at the page's full height (up to 8000 CSS px). */
 export function drawWithBrowser(browser: string, d: Drawing): Promise<Uint8Array> {
   return inBrowser(browser, d, (cdp, url) => draw(cdp, url, d));
+}
+
+const target = z.object({ id: z.string(), x: z.number(), y: z.number(), width: z.number(), height: z.number() });
+export type CaptureTarget = z.infer<typeof target>;
+
+/** Pixels and hit bounds from the same laid-out document, for native viewers. */
+export function captureWithBrowser(browser: string, sheet: Sheet): Promise<{ png: Uint8Array; height: number; targets: CaptureTarget[] }> {
+  return inBrowser(browser, sheet, async (cdp, url) => {
+    const height = await load(cdp, url, sheet.width, 1);
+    const png = bytesOf(await cdp.call("Page.captureScreenshot", { format: "png" }));
+    const raw = await cdp.call("Runtime.evaluate", {
+      expression: `JSON.stringify(Array.from(document.querySelectorAll('[class]')).flatMap(el => { const r = el.getBoundingClientRect(); return r.width && r.height ? Array.from(el.classList).filter(c => c.startsWith('b-')).map(c => ({id:c.slice(2),x:r.x,y:r.y,width:r.width,height:r.height})) : []; }))`,
+      returnByValue: true,
+    });
+    const result = z.object({ result: z.object({ value: z.string() }) }).parse(raw);
+    const parsed: unknown = JSON.parse(result.result.value);
+    return { png, height, targets: z.array(target).parse(parsed) };
+  });
 }
 
 /** The page as PNGs, one per pixel density, all from one browser: an icon set's sizes. */

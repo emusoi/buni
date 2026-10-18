@@ -18,7 +18,9 @@ buni new design.buni
 buni open design.buni
 ```
 
-Edit in your browser; changes save to the file. Run `buni --help` for all commands.
+Watch saved agent changes in the native `buni-tui` renderer (install it separately). Run `buni open` without
+a file to wait for an agent to attach a design. Use `buni open design.buni --web` for the browser editor.
+Run `buni --help` for all commands.
 
 ## Coding agents
 
