@@ -37,6 +37,9 @@ test("the local editor saves, undoes and streams CLI edits through its live MCP 
     expect(asset.headers.get("cache-control")).toContain("immutable");
     expect((await fetch(`${url.origin}/fonts/manrope.woff2`)).headers.get("content-type")).toBe("font/woff2");
     expect((await fetch(`${url.origin}/files/designs/design/assets/steel-rack.jpg`)).status).toBe(200);
+    const head = await fetch(`${url.origin}/files/designs/design/assets/steel-rack.jpg`, { method: "HEAD" });
+    expect(head.status).toBe(200);
+    expect(Number(head.headers.get("content-length"))).toBeGreaterThan(1000);
     expect((await fetch(`${url.origin}/files/designs/other/x`)).status).toBe(404);
     expect((await fetch(url, { headers: { host: "evil.example" } })).status).toBe(403);
     expect((await fetch(`${url.origin}/rpc/undo${url.search}`, { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example" }, body: "[]" })).status).toBe(403);

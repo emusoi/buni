@@ -516,13 +516,14 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     if (url.pathname === "/signin") return new Response(null, { status: 303, headers: { location: "/" } });
     // A file in the URL is one of the caller's own designs, or it isn't found.
     if (file !== undefined && !isDesignPath(file, dir)) return Response.json({ error: "No such design" }, { status: 404 });
-    if (url.pathname.startsWith("/files/") && req.method === "GET") {
+    if (url.pathname.startsWith("/files/") && (req.method === "GET" || req.method === "HEAD")) {
       const path = decodeURIComponent(url.pathname.slice("/files".length));
       if (!isDesignFile(path, dir)) return new Response("not found", { status: 404 });
       const bytes = await store.readBytes(path).catch(() => undefined);
       if (!bytes) return new Response("not found", { status: 404 });
       // Uploaded files are shown, never run: an SVG or HTML among them gets no scripts and no access to this origin.
-      return new Response(bytes, { headers: { "content-type": Bun.file(path).type, "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } });
+      // HEAD answers with the size alone (an image's picker shows it without fetching the file again).
+      return new Response(req.method === "HEAD" ? null : bytes, { headers: { "content-type": Bun.file(path).type, "content-length": String(bytes.length), "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } });
     }
     try {
       if (url.pathname === "/events" && file) return await events(file);
