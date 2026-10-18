@@ -32,9 +32,8 @@ usage: buni <command> [args] [--as <name>] [--json]
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
-  open [file.buni]                 watch an agent design live in buni-tui; no file waits for attachment
-  open <file.buni|folder> --web     edit in your browser; a folder opens its newest
-      [--port N] [--no-open]          its port; print the address instead (also selects the web editor)
+  open <file.buni|folder>           edit in your browser; a folder opens its newest
+      [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id] [--target fw]   brief to build from: doc + system slice (part:, page:, flow:, endpoint:, table:);
                                     --target picks one build of a terminal client, e.g. ratatui
@@ -96,7 +95,7 @@ Rules that save retries:
 - If a call is refused, the reply says which rule it broke; fix the arguments and call again.
 
 Pass --as YOUR_NAME on every call so the person sees who is working where.
-For a terminal viewer, the person runs "buni open". Find it with "buni-tui sessions --json", then
+For a terminal viewer, the person runs "buni-tui open". Find it with "buni-tui sessions --json", then
 "buni-tui attach SESSION FILE.buni --as YOUR_NAME". Keep designing through buni; saved changes appear live.
 "buni-tui context SESSION --json" returns the exact displayed revision and selected reference. A pinned view
 stays where the person left it; an agent can keep working without forcing it to follow.
@@ -374,8 +373,7 @@ function needsAgent(cmd: string): number {
 
 export async function main(argv: string[], ext?: Extension): Promise<number> {
   const flags = parseFlags(argv);
-  const web = flags.rest[0] === "open" && flags.rest.includes("--web");
-  if (web) flags.rest = flags.rest.filter((a) => a !== "--web");
+  if (flags.rest[0] === "open") flags.rest = flags.rest.filter((a) => a !== "--web");
   const { as, json, remote, server, scale, rest } = flags;
   const [cmd, file, ...args] = rest;
   const handled = await ext?.run(cmd, file, args, flags);
@@ -478,11 +476,6 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     }
   }
 
-  if (cmd === "open" && !remote && !web && !rest.includes("--no-open") && !rest.includes("--port")) {
-    const { openTerminal } = await import("./term/native.ts");
-    return openTerminal(rest.slice(1));
-  }
-
   if (!file) {
     console.error(usage(ext));
     return 2;
@@ -496,7 +489,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const { openUrl } = await import("./term/open.ts");
       // A folder (a project) opens its newest design; an empty one starts a design named for it.
       const target = await designIn(file);
-      if (target !== file) return main(["open", target, "--web", ...args], ext);
+      if (target !== file) return main(["open", target, ...args], ext);
       const live = await liveApp(file);
       if (live) {
         const at = new URL(live);
