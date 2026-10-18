@@ -25,7 +25,7 @@ test("the local editor saves, undoes and streams CLI edits through its live MCP 
   try {
     const first = await output.read();
     const url = new URL(new TextDecoder().decode(first.value).trim());
-    const call = (name: string, args: (string | { parent: string | undefined; html: string })[] = []) => fetch(`${url.origin}/rpc/${name}${url.search}`, {
+    const call = (name: string, args: unknown[] = []) => fetch(`${url.origin}/rpc/${name}${url.search}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(args),
     });
     const html = await (await fetch(url)).text();
@@ -41,6 +41,11 @@ test("the local editor saves, undoes and streams CLI edits through its live MCP 
     expect(head.status).toBe(200);
     expect(Number(head.headers.get("content-length"))).toBeGreaterThan(1000);
     expect((await fetch(`${url.origin}/files/designs/other/x`)).status).toBe(404);
+    // A new design from Home joins the chosen project and builds on the design named as its core.
+    const made: { value: string } = await (await call("create", ["Checkout", { beside: "/designs/design/portal.buni", core: "/designs/design/portal.buni" }])).json();
+    expect(made.value).toBe("/designs/design/Checkout.buni");
+    const madeDoc = parseDoc(await readFile(join(dir, "design/Checkout.buni"), "utf8"), { refs: false });
+    expect(madeDoc.ok && madeDoc.doc.imports).toEqual(["portal.buni"]);
     expect((await fetch(url, { headers: { host: "evil.example" } })).status).toBe(403);
     expect((await fetch(`${url.origin}/rpc/undo${url.search}`, { method: "POST", headers: { "content-type": "application/json", origin: "https://evil.example" }, body: "[]" })).status).toBe(403);
     const snapshot: { value: Snapshot } = await (await call("snapshot")).json();

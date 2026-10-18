@@ -2247,3 +2247,12 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .doc-skills-row b { font-weight: 600; color: var(--ink); }
 /* The canvas runs under the toolbar: its top-centre chips start below it. */
 .app.editor .agent-jumps { top: 56px; }
+/* New design: labelled rows, then what building on a core means. */
+.dialog.new-design { width: 440px; display: flex; flex-direction: column; gap: 12px; }
+.dialog.new-design h2 { margin: 0 0 4px; }
+.new-row { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; font-size: 13px; color: var(--ink-2); }
+.new-row .field { width: 100%; }
+.dialog.new-design .hint { margin: 0; font-size: 12px; line-height: 1.45; }
+.dialog.new-design .dialog-actions { justify-content: flex-end; margin-top: 4px; }
+.app:not(.editor).sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
+.app:not(.editor).sidebar-collapsed > .main { grid-column: 1; }

@@ -337,9 +337,14 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         return b64 === undefined ? undefined : Uint8Array.fromBase64(b64);
       }, dir);
     },
-    create: async (file, name) => {
-      const path = await freePath(str(name, "create"), dir, file);
+    create: async (file, name, options) => {
+      // From Home: beside a design of the chosen project, building on the design it names as its core.
+      const opts = typeof options === "object" && options !== null ? options : {};
+      const beside = "beside" in opts && typeof opts.beside === "string" && isDesignFile(opts.beside, dir) ? opts.beside : undefined;
+      const core = "core" in opts && typeof opts.core === "string" && isDesignFile(opts.core, dir) ? opts.core : undefined;
+      const path = await freePath(str(name, "create"), dir, beside ?? file);
       const doc = emptyDoc();
+      if (core && dirname(core) === dirname(path)) doc.imports = [basename(core)];
       // A new section of a project builds on what the open design does: its imports, and the design itself when it
       // has components (a core, maybe with a page showing them off); so it starts with the project's tokens and components.
       const from = typeof file === "string" && isDesignFile(file, dir) ? await opened.get(file)?.then((o) => o.ws.view(), () => undefined) : undefined;

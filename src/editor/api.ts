@@ -51,7 +51,8 @@ export interface BuniApi {
   /** Opens a file; without a path, asks for one. */
   open(path?: string): Promise<void>;
   /** A new, empty file, opened: named `name` where the host names files itself (the web), else saved where the person picks. */
-  create(name?: string): Promise<void>;
+  /** A new design, beside `beside` (in its project) and building on `core` there, when given. */
+  create(name?: string, options?: { beside?: string; core?: string }): Promise<void>;
   /** Back to the home screen. */
   close(): Promise<void>;
   /** Renames a file on the home screen; only where files have no Finder of their own (the web). Returns its new path. */

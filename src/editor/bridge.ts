@@ -188,7 +188,7 @@ const api: BuniApi = {
   project: () => call("project"),
   documents: (paths) => call("documents", paths),
   open: async (path) => (path === undefined ? pickFile() : go(path)),
-  create: async (name) => go(await call<string>("create", name ?? "Untitled")),
+  create: async (name, options) => go(await call<string>("create", name ?? "Untitled", options)),
   close: async () => go(undefined),
   renameFile: (path, name) => call("renameFile", path, name),
   removeFile: (path) => call("removeFile", path),

@@ -8,6 +8,7 @@ import { SidebarToggle, useSidebar } from "./SidebarToggle.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { Profile, ThemeSwitch } from "./Profile.tsx";
 import { widthOf } from "./layout.ts";
+import { NewDesign } from "./NewDesign.tsx";
 
 const THUMB_W = 200;
 
@@ -225,7 +226,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         </div>
       </main>
       {asking?.kind === "new" && (
-        <NameDialog title="New design" label="Name" initial="Untitled" action="Create" onClose={() => setAsking(undefined)} onSubmit={(name) => { setAsking(undefined); void run(window.buni.create(name)); }} />
+        <NewDesign files={files ?? []} folder={folder} onClose={() => setAsking(undefined)} onCreate={(name, options) => { setAsking(undefined); void run(window.buni.create(name, options)); }} />
       )}
       {asking?.kind === "rename" && (
         <NameDialog title={`Rename ${asking.file.name}`} label="New name" initial={asking.file.name} action="Rename" onClose={() => setAsking(undefined)} onSubmit={(name) => {
