@@ -13,6 +13,7 @@ import { AskCard } from "./AskCard.tsx";
 import { Changes } from "./Changes.tsx";
 import { Breakpoints } from "./Breakpoints.tsx";
 import { Guides } from "./Guides.tsx";
+import { ARRIVE, isArrival } from "./arrive.ts";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -47,10 +48,8 @@ const tilde = (path: string) => path.replace(/^\/Users\/[^/]+/, "~");
 
 /** What the Export menu offers for a page: pictures and PDF always; SVG and an icon set when the page is fit for them. */
 type Mode = "screens" | "system" | "plan" | "agents";
-const ARRIVE = "buni.arrive";
 /** How long after its last edit an agent still counts as working here. */
 const WORKING_MS = 60_000;
-const isArrival = (v: unknown): v is { page: Id; play: boolean } => typeof v === "object" && v !== null && "page" in v && typeof v.page === "string" && "play" in v && typeof v.play === "boolean";
 
 /** A path written relative to the file at `from`, as the file's own path. */
 export const besideFile = (from: string, rel: string): string => decodeURIComponent(new URL(rel, `file://${from}`).pathname);
@@ -341,7 +340,7 @@ export function App({ snap }: { snap: Snapshot }) {
     if (!isArrival(arrive)) return;
     if (snap.view.shared[arrive.page]) { openComponent(arrive.page); setReveal({ page: arrive.page, at: Date.now() }); }
     else if (!snap.view.pages[arrive.page]) return;
-    else if (arrive.play) setPlay({ page: arrive.page });
+    else if (arrive.play) setPlay({ page: arrive.page, ...(arrive.flow ? { flow: arrive.flow } : {}) });
     else openPage(arrive.page);
   }, []);
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and

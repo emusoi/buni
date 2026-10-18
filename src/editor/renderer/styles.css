@@ -2256,3 +2256,10 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .dialog.new-design .dialog-actions { justify-content: flex-end; margin-top: 4px; }
 .app:not(.editor).sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
 .app:not(.editor).sidebar-collapsed > .main { grid-column: 1; }
+/* Home's flows: the paths through the designs, each one click from playing. */
+.home-flows { display: flex; flex-direction: column; margin-top: 36px; max-width: 760px; }
+.home-flows h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.home-flow { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 4px 0 2px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); }
+.home-flow b { font-weight: 500; color: var(--ink); }
+.home-flow span { flex: 1; color: var(--label); }
+.home-flow > svg { color: var(--label); }
