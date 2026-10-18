@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Bot, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { Bot, BookOpen, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -12,6 +12,7 @@ import { ContextMenu } from "./ContextMenu.tsx";
 import { AskCard } from "./AskCard.tsx";
 import { Changes } from "./Changes.tsx";
 import { Breakpoints } from "./Breakpoints.tsx";
+import { Guides } from "./Guides.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -419,6 +420,7 @@ export function App({ snap }: { snap: Snapshot }) {
   const [toast, setToast] = useState<string>();
   // The open page at every width side by side, in place of the canvas.
   const [comparing, setComparing] = useState(false);
+  const [guides, setGuides] = useState(false);
   useEffect(() => {
     // ⇧3 beside the canvas's ⇧1 (every page) and ⇧2 (this page): this page at every width. Esc goes back.
     const onKey = (e: KeyboardEvent) => {
@@ -743,6 +745,7 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "page", title: "New page", icon: FilePlus, run: () => void addPage() },
     { id: "ask", title: "Connect a coding agent…", detail: "Claude Code or Codex", icon: Sparkles, run: () => setPanel("agent") },
     { id: "keys", title: "Keyboard shortcuts", icon: Keyboard, run: () => setKeysShown(true) },
+    { id: "guides", title: "Design guides", icon: BookOpen, run: () => setGuides(true) },
     ...(activePage ? [{ id: "play", title: `Play from ${doc.pages[activePage]?.name ?? "this page"}`, icon: PlayIcon, run: () => setPlay({ page: activePage }) }] : []),
     { id: "screens", title: "Go to Screens", keys: "⌘1", icon: LayoutTemplate, run: () => goMode("screens") },
     { id: "system", title: "Go to System", keys: "⌘2", icon: Network, run: () => goMode("system") },
@@ -846,6 +849,7 @@ export function App({ snap }: { snap: Snapshot }) {
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => togglePanel()}><span className="menu-name">{panelOpen ? "Hide" : "Show"} inspector</span><span className="menu-state">⌘\ both</span></button>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setKeysShown(true)}><span className="menu-name">Keyboard shortcuts</span><span className="menu-state">?</span></button>
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setGuides(true)}><span className="menu-name">Design guides</span><span className="menu-state">what agents read</span></button>
               <div className="menu-rule" />
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => void window.buni.close()}><span className="menu-name">All designs</span><span className="menu-state" /></button>
             </div>
@@ -1134,6 +1138,7 @@ export function App({ snap }: { snap: Snapshot }) {
       )}
       {importingHtml && <ImportHtml at={selNode?.kind === "frame" ? { parent: selNode.id } : selNode?.parent ? { parent: selNode.parent, after: selNode.id } : frame ? { parent: frame.id } : undefined} onClose={() => setImportingHtml(false)} onImported={(page, node, message) => { setImportingHtml(false); if (page) openPage(page); if (node) setSelected(node); setToast(message); }} />}
       {keysShown && <Shortcuts onClose={() => setKeysShown(false)} />}
+      {guides && <Guides onClose={() => setGuides(false)} />}
     </div>
   );
 }

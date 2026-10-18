@@ -2228,3 +2228,20 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .image-choice img { width: 100%; height: 64px; object-fit: cover; border-radius: 4px; background: var(--canvas); }
 .image-choice-name { font-size: 11.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .image-choice.upload { align-items: center; justify-content: center; min-height: 96px; box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+/* Design guides: the list and its search on the left, the guide on the right. */
+.guides { position: relative; display: grid; grid-template-columns: 220px minmax(0, 1fr); width: min(900px, calc(100vw - 48px)); height: min(640px, calc(100vh - 96px)); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-2); overflow: hidden; }
+.guides-list { display: flex; flex-direction: column; gap: 1px; padding: 10px 8px; overflow: auto; box-shadow: inset -1px 0 0 var(--rule); }
+.guides-search { display: flex; align-items: center; gap: 6px; height: 30px; margin-bottom: 6px; padding: 0 8px; border-radius: var(--radius); background: var(--chip); color: var(--label); }
+.guides-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; color: var(--ink); }
+.guides-row { display: flex; align-items: center; justify-content: space-between; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: none; text-align: left; font-size: 13px; color: var(--ink); }
+.guides-row b { font-weight: 400; }
+.guides-row.on { background: var(--accent-tint); }
+.guides-row.on b { font-weight: 600; }
+.guides-row em { font-style: normal; font-size: 11px; color: var(--label); }
+.guides-body { overflow: auto; padding: 22px 28px 28px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.guides-close { position: absolute; top: 10px; right: 10px; }
+.guides-about { margin: 0 0 14px; color: var(--ink-2); }
+.guides-body h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
+.guides-body h3 { margin: 18px 0 6px; font-size: 14px; font-weight: 600; }
+.doc-skills-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.doc-skills-row b { font-weight: 600; color: var(--ink); }

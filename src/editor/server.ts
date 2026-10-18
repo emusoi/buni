@@ -22,6 +22,7 @@ import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
 import type { Asking } from "buni/tools/protocol.ts";
 import { gitCommit, gitStatus } from "./git.ts";
+import { loadSkills, readSkill } from "buni/skills/skills.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createMcpServer } from "buni/mcp/server.ts";
@@ -398,6 +399,9 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     saveVersion: async (file, name) => saveVersion(store, await need(file), name),
     versions: async (file) => versionsOf(store, (await need(file)).path),
     restoreVersion: async (file, id) => restoreVersion(store, await need(file), id),
+    /** buni's design guides and the person's own, by name; then one guide's text. */
+    skills: async () => (await loadSkills()).map(({ name, description, source }) => ({ name, description, source })),
+    skill: async (_file, name) => (typeof name === "string" ? (await readSkill(name))?.body : undefined),
     /** The design folder in git, on this machine only. */
     changes: async (file) => (disk && file ? gitStatus(dirname(disk.real(file))) : undefined),
     commit: async (file, message, push) => {

@@ -9,4 +9,5 @@ test("doc markdown reads as paragraphs and lists", () => {
     { kind: "ol", items: ["Exchanges", "Other platforms"] },
   ]);
   expect(blocks("One line\nand the next\n\n\nA new paragraph")).toEqual([{ kind: "p", lines: ["One line", "and the next"] }, { kind: "p", lines: ["A new paragraph"] }]);
+  expect(blocks("# Colour\n\n## Roles\nOne accent.")).toEqual([{ kind: "h", level: 1, text: "Colour" }, { kind: "h", level: 2, text: "Roles" }, { kind: "p", lines: ["One accent."] }]);
 });

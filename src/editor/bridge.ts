@@ -273,7 +273,8 @@ const api: BuniApi = {
       // Storage blocked: the choice holds until the tab closes.
     }
   },
-  skills: async () => [],
+  skills: () => call("skills"),
+  skill: (name) => call("skill", name),
 };
 window.buni = api;
 

@@ -114,6 +114,8 @@ export interface BuniApi {
   onUndoKey(fn: (which: "undo" | "redo") => void): () => void;
   /** Design skills every agent can read, bundled and the person's own; bodies left out. */
   skills(): Promise<SkillInfo[]>;
+  /** One guide's text, by name. */
+  skill?(name: string): Promise<string | undefined>;
 }
 
 export const CHANNELS = { snapshot: "buni:snapshot", changed: "buni:changed", home: "buni:home", open: "buni:open", create: "buni:create", close: "buni:close", movePage: "buni:move-page", reorderPage: "buni:reorder-page", edit: "buni:edit", undo: "buni:undo", redo: "buni:redo", undoKey: "buni:undo-key", skills: "buni:skills", exportSite: "buni:export-site", exportSystem: "buni:export-system", openExample: "buni:open-example", account: "buni:account", accountChanged: "buni:account-changed", signIn: "buni:sign-in", cancelSignIn: "buni:cancel-sign-in", openSignIn: "buni:open-sign-in", signOut: "buni:sign-out", openAccountPage: "buni:open-account-page", theme: "buni:theme", setTheme: "buni:set-theme", systemChanges: "buni:system-changes", exportPage: "buni:export-page", saveVersion: "buni:save-version", versions: "buni:versions", restoreVersion: "buni:restore-version", uploadImage: "buni:upload-image" } as const;

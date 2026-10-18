@@ -11,7 +11,7 @@ function inline(text: string): ReactNode[] {
   });
 }
 
-type Block = { kind: "p"; lines: string[] } | { kind: "ul" | "ol"; items: string[] };
+type Block = { kind: "p"; lines: string[] } | { kind: "ul" | "ol"; items: string[] } | { kind: "h"; level: number; text: string };
 
 /** Lines into blocks: a run of "- " or "1. " lines is a list, anything else a paragraph; blank lines separate. */
 export function blocks(text: string): Block[] {
@@ -20,8 +20,10 @@ export function blocks(text: string): Block[] {
     const line = raw.trimEnd();
     const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
     const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     const last = out.at(-1);
-    if (bullet || numbered) {
+    if (heading) out.push({ kind: "h", level: heading[1]?.length ?? 2, text: heading[2] ?? "" });
+    else if (bullet || numbered) {
       const kind = bullet ? "ul" : "ol";
       const item = (bullet ?? numbered)?.[1] ?? "";
       if (last && last.kind === kind) last.items.push(item);
@@ -38,6 +40,7 @@ export function Prose({ text }: { text: string }) {
   return (
     <div className="prose">
       {blocks(text).map((b, i) => {
+        if (b.kind === "h") return b.level <= 1 ? <h2 key={i}>{inline(b.text)}</h2> : <h3 key={i}>{inline(b.text)}</h3>;
         if (b.kind === "p") return <p key={i}>{b.lines.map((l, j) => <span key={j}>{j > 0 && <br />}{inline(l)}</span>)}</p>;
         const List = b.kind;
         return <List key={i}>{b.items.map((item, j) => <li key={j}>{inline(item)}</li>)}</List>;

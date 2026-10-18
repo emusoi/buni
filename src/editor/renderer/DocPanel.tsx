@@ -3,6 +3,7 @@ import { Plus, X } from "lucide-react";
 import type { Doc, Id } from "buni/format/doc.ts";
 import type { SkillInfo } from "../api.ts";
 import { Prose } from "./Prose.tsx";
+import { Guides } from "./Guides.tsx";
 
 function byIndex<T extends { index: string; id: Id }>(a: T, b: T): number {
   return a.index < b.index ? -1 : a.index > b.index ? 1 : a.id < b.id ? -1 : 1;
@@ -45,6 +46,7 @@ export function DocPanel({ doc, fileName }: { doc: Doc; fileName: string }) {
   const [decision, setDecision] = useState("");
   const [notice, setNotice] = useState<string>();
   const [skills, setSkills] = useState<SkillInfo[]>([]);
+  const [reading, setReading] = useState(false);
   useEffect(() => {
     void window.buni.skills().then(setSkills);
   }, []);
@@ -96,15 +98,12 @@ export function DocPanel({ doc, fileName }: { doc: Doc; fileName: string }) {
       </section>
 
       <section className="doc-skills">
-        <div className="group-title">Skills agents follow</div>
-        {skills.map((s) => (
-          <div key={s.name} className="skill" title={s.description}>
-            <span className="skill-name">{s.name}</span>
-            {s.source === "yours" && <span className="skill-mine">yours</span>}
-            <span className="skill-desc">{s.description}</span>
-          </div>
-        ))}
-        <p className="hint">Add your own as ~/.buni/skills/NAME.md; agents read them like these.</p>
+        <div className="doc-skills-row">
+          <span><b>{skills.length} guides</b> agents follow{skills.some((s) => s.source === "yours") ? `, ${skills.filter((s) => s.source === "yours").length} of them yours` : ""}</span>
+          <button type="button" className="link-btn" onClick={() => setReading(true)}>Read</button>
+        </div>
+        <p className="hint">Add your own as ~/.buni/skills/NAME.md.</p>
+        {reading && <Guides onClose={() => setReading(false)} />}
       </section>
     </div>
   );
