@@ -19633,7 +19633,9 @@
       "id": "a4f9c558",
       "index": "a0",
       "name": "Viewer · Canvas",
-      "route": "/"
+      "route": "/",
+      "x": 450,
+      "y": 100
     },
     "c6ca8c4f": {
       "frame": "971dc6b6",
