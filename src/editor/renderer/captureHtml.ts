@@ -61,7 +61,9 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     }
     for (const prop of INHERITED) if (root || cs.getPropertyValue(prop) !== parent?.getPropertyValue(prop)) result.set(prop, cs.getPropertyValue(prop));
     const positioned = cs.position === "absolute" || cs.position === "fixed";
-    if (pseudo || root || el.localName === "img" || positioned || (parent?.display.includes("flex") && cs.flexGrow === "0")) result.set("width", cs.width);
+    // A flex item that is only text sizes to it: a width measured in the page's font clips it in Buni's.
+    const onlyText = el.childNodes.length > 0 && [...el.childNodes].every((n) => n.nodeType === 3);
+    if (pseudo || root || el.localName === "img" || positioned || (parent?.display.includes("flex") && cs.flexGrow === "0" && !onlyText)) result.set("width", cs.width);
     if (pseudo || el.localName === "img" || positioned || !el.childNodes.length) result.set("height", cs.height);
     return [...result].filter(([, v]) => v && v !== "auto").map(([k, v]) => `${k}: ${v}`).join("; ");
   };

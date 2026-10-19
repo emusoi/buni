@@ -121,3 +121,14 @@ test.skipIf(!browser)("URL imports use guarded static resources without scripts 
     expect(serializeDoc(ws.view())).toBe(before);
   } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
+
+test.skipIf(!browser)("a flex item holding only text sizes to its text; a box with children keeps its measured width", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = '<div style="display:flex;gap:8px"><b id="label" style="overflow:hidden;white-space:nowrap">98 questions from Lido</b><div id="box" style="width:120px"><span>Box</span></div></div>';
+    expect((await ws.call("agent", "import_html_page", { html, page: { name: "Row" } })).ok).toBe(true);
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.find((n) => n.name === "label")!.style.width).toBeUndefined();
+    expect(nodes.find((n) => n.name === "box")!.style.width).toBe("120px");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
