@@ -20,7 +20,7 @@ Before designing anything, answer these. If the brief doesn't say, propose an an
   - Variance: 1 symmetrical and predictable, 10 asymmetric and surprising.
   - Motion: 1 still, 10 cinematic. Operate surfaces stay low.
   - Density: 1 airy like a gallery, 10 packed like a trading screen.
-- What already exists: the design doc's decisions, tokens and components. Refining keeps the product's identity and improves its execution; redesigning replaces the visual world but keeps the content, function and conventions people rely on. Say which this is.
+- What already exists: the design doc's decisions, tokens and components. Refining keeps the product's identity and improves its execution; redesigning replaces the visual world but keeps the content, function and conventions people rely on. Say which this is. If the product already ships, snapshot it first and improve from the snapshot (critique skill).
 - The brief always wins. If it pins a look, era, font or palette, follow it exactly, even where this skill would choose differently.
 
 ## Asking well

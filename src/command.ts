@@ -73,6 +73,9 @@ Build with HTML:    buni call FILE write_html '{"parent":"FRAME_ID","html":"<sec
 Long HTML:          buni call FILE write_html - < part.json
 Import a page:      buni call FILE import_html_page '{"url":"http://localhost:3000","selector":"#hero","page":{"name":"Hero","width":1440}}'
                     Also accepts html or a file inside the design folder; omit selector for the whole page.
+                    A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
+Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
+                    duplicate_page "<Screen> · Next". Read buni skills critique first.
 Check your work:    buni shot FILE PAGE out.png      (then look at out.png; also .pdf, .svg, --scale 2; needs a Chrome,
                     Chromium or Edge, or BUNI_CHROME pointing at one)
 

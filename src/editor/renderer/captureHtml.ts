@@ -47,6 +47,8 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     // Native controls have browser defaults that the design's CSS reset does not clear.
     if (["button", "input", "textarea", "select"].includes(el.localName)) {
       for (const prop of ["padding", "border", "border-radius", "background-color"]) result.set(prop, cs.getPropertyValue(prop));
+      // Sides that differ leave the border shorthand empty; clear it so a side the design left bare isn't the browser's outset.
+      if (!cs.border) result.set("border", "0px none");
     }
     for (const prop of PROPERTIES) {
       let value = cs.getPropertyValue(prop);

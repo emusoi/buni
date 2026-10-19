@@ -1,6 +1,6 @@
 ---
 name: critique
-description: Reviewing and refining a design — a shared vocabulary of lenses (critique, audit, polish, distill, bolder, quieter, typeset, layout, colorize, animate, harden, onboard, clarify, delight, adapt), what each looks for and fixes, and a bounded review loop with screenshots. Read before reviewing a design, when the person asks for one of these by name, or before calling work done.
+description: Reviewing and refining a design — a shared vocabulary of lenses (critique, audit, polish, distill, bolder, quieter, typeset, layout, colorize, animate, harden, onboard, clarify, delight, adapt), what each looks for and fixes, a bounded review loop with screenshots, and snapshot-then-improve for a page that already ships. Read before reviewing a design, before improving an existing product, when the person asks for one of these by name, or before calling work done.
 ---
 # Critique: review with names, fix in rounds
 
@@ -12,6 +12,14 @@ A shared vocabulary makes feedback precise. When the person says "make it quiete
 3. Fix: fix everything you found in one round.
 4. Check: screenshot again, once. Fix only what's still wrong.
 5. Stop. Endless self-review costs more than it finds; report what you changed and what's left for the person to decide.
+
+## Improving a real product: snapshot, then improve
+When the work is to improve something that already ships, start from the thing itself, not from memory or a description. Every change then answers a problem you can point at.
+1. Snapshot: import_html_page the live page (url, or file for a local build), at each width it ships, onto a page with no route named "<Screen> · Now" (a board: site export skips it). Add source_file and symbol when you know them, so findings lead back to the code. Leave the snapshot untouched; it is the evidence.
+2. Look and find: buni shot it, then run the loop's Find step on the snapshot. Pin each finding to the layer it is about with comment {node, body}: what is wrong, the principle it breaks, the fix.
+3. Improve: duplicate_page {page, name: "<Screen> · Next", route} and make the fixes there, worst first. Change what the findings name; keep the content, function and conventions people rely on (direction skill: refining, not redesigning, unless the person asked for one).
+4. Show before and after: screenshot both, mark each comment addressed, and tell the person which findings each change answers and which are theirs to decide.
+Skip the snapshot only when the page doesn't exist yet. A JavaScript-rendered app (most products) needs live: true, which runs its scripts and captures it once it settles; a signed-in page also needs cookies (the Cookie header from a signed-in session, as "name=value; …") and wait_for set to something only the real page shows, so a login screen fails loudly instead of being imported. Don't write a capture script of your own. Snapshot every screen in scope before improving any, so the fixes stay consistent across them.
 
 ## The lenses
 - critique: a design review of hierarchy, clarity, flow and feel. Can someone tell what the screen is for in three seconds? Does the most important thing win? Does it feel like this product (direction) or like a template (tells)? Score each screen and name the top three problems.

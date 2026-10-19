@@ -122,6 +122,45 @@ test.skipIf(!browser)("URL imports use guarded static resources without scripts 
   } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
 
+test.skipIf(!browser)("live URL imports run the page's scripts, sign in with cookies and wait for it to settle; hosted storage refuses them", async () => {
+  const { dir, file, ws } = await design();
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch(req) {
+    if (new URL(req.url).pathname === "/style.css") return new Response('.card{color:rgb(12,34,56)}', { headers: { "content-type": "text/css" } });
+    const signedIn = req.headers.get("cookie")?.includes("session=owner") === true;
+    return new Response(`<link rel="stylesheet" href="style.css"><main id="app"></main><script>setTimeout(() => {
+      document.getElementById("app").innerHTML = ${JSON.stringify(signedIn ? '<section id="card" class="card"><h1>Documents</h1></section>' : '<h1>Sign in</h1>')};
+    }, 300)</script>`, { headers: { "content-type": "text/html" } });
+  } });
+  const url = `http://localhost:${server.port}/`;
+  try {
+    const result = await ws.call("agent", "import_html_page", { url, live: true, cookies: "session=owner; theme=dark", wait_for: "#card", selector: "#card", page: { name: "Live" } });
+    expect(result.ok).toBe(true);
+    expect(Object.values(ws.view().nodes).find((n) => n.name === "card")?.style.color).toBe("rgb(12, 34, 56)");
+    expect(Object.values(ws.view().nodes).filter((n) => n.kind === "text").map((n) => n.text)).toEqual(["Documents"]);
+    expect(Object.values(ws.view().pages)[0]!.sources).toEqual([{ url, selector: "#card" }]);
+    const before = serializeDoc(ws.view());
+    expect((await ws.call("agent", "import_html_page", { url, live: true, wait_for: "#card", page: { name: "Signed out" } })).reply).toContain("never showed #card");
+    expect((await ws.call("agent", "import_html_page", { url, cookies: "session=owner", page: { name: "Bad" } })).ok).toBe(false);
+    const hosted = await Workspace.open(file, within(diskStore, dir, false));
+    expect((await hosted.call("agent", "import_html_page", { url, live: true, page: { name: "Blocked" } })).reply).toContain("local Buni");
+    expect(serializeDoc(ws.view())).toBe(before);
+  } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
+}, 90_000);
+
+test.skipIf(!browser)("a native button with a border on one side imports without the browser's outset border on the others", async () => {
+  const { dir, ws } = await design();
+  try {
+    const result = await ws.call("agent", "import_html_page", {
+      html: '<style>.tab{border:0;border-bottom:2px solid rgb(10, 20, 30);background:none;padding:8px}</style><nav id="tabs"><button class="tab">Requests</button></nav>',
+      selector: "#tabs", page: { name: "Tabs" },
+    });
+    expect(result.ok).toBe(true);
+    const tab = Object.values(ws.view().nodes).find((n) => n.kind === "text" && n.text === "Requests")!;
+    expect(tab.style.border).toBe("0px none");
+    expect(tab.style.borderBottom).toBe("2px solid rgb(10, 20, 30)");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
 test.skipIf(!browser)("a flex item holding only text sizes to its text; a box with children keeps its measured width", async () => {
   const { dir, ws } = await design();
   try {

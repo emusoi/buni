@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- `import_html_page {url, live: true}` snapshots a JavaScript app as a person sees it: the page's scripts run, it is
+  captured once it settles, `cookies` signs it in and `wait_for` fails loudly on a login screen. Local Buni only.
+  The critique skill now says how to improve a product that ships: snapshot it, pin findings to its layers, fix them
+  on a copy beside it.
 - Pages can be renamed and moved: double-click a page in the sidebar (a new page starts there, named first), edit
   the route in the inspector, or `rename_page {page, name?, route?}`; a screen's states move with it.
 - The library starts a component on its own board ("New"), so a core file of components needs no page.

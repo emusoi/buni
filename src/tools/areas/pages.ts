@@ -165,7 +165,7 @@ export const pagesTools = {
   }),
 
   import_html_page: tool({
-    description: "Convert a static HTML page or selected section into editable Buni layers, with resolved CSS, images and source context. Give exactly one of html, url or file, and either a new page or a parent frame. selector picks one element; width resolves responsive styles. Needs Chrome/Chromium/Edge on the host. Scripts and cookies are excluded; for JavaScript-only or signed-in pages, supply their rendered HTML. The design import is one undoable edit.",
+    description: "Convert a static HTML page or selected section into editable Buni layers, with resolved CSS, images and source context. Give exactly one of html, url or file, and either a new page or a parent frame. selector picks one element; width resolves responsive styles. Needs Chrome/Chromium/Edge on the host. Scripts and cookies are excluded unless live is set: live opens the url with its scripts running (local Buni only), cookies signs it in, wait_for waits for what must show. The design import is one undoable edit.",
     input: {
       ...htmlPageInput, parent: z.string().optional(), after: z.string().optional(),
       page: z.object({ name: z.string().min(1), width: z.number().int().min(240).max(3840).optional(), route: z.string().optional() }).optional(),

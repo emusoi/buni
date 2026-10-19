@@ -94,19 +94,75 @@ export function printWithBrowser(browser: string, sheet: Sheet): Promise<Uint8Ar
 export function evaluateWithBrowser(browser: string, sheet: Sheet, expression: string): Promise<string> {
   return inBrowser(browser, sheet, async (cdp, url) => {
     await load(cdp, url, sheet.width, 1);
-    const r = await cdp.call("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
-    const value = typeof r === "object" && r !== null && "result" in r && typeof r.result === "object" && r.result !== null && "value" in r.result ? r.result.value : undefined;
-    if (typeof value !== "string") throw new Error("the page read back nothing");
-    return value;
+    return readBack(cdp, expression);
   });
+}
+
+export interface LivePage {
+  url: string;
+  width: number;
+  /** A Cookie header, "name=value; name2=value2", set for the page's URL before it opens: how a signed-in page is reached. */
+  cookies?: string;
+  /** A CSS selector the page must show before it counts as ready. */
+  waitFor?: string;
+}
+
+/**
+ * What `expression` evaluates to on a live page: opened at its own URL with its scripts running, then given time to
+ * settle (no DOM changes for 600ms, and `waitFor` present), as a person would see it. Only for pages the person trusts.
+ */
+export function evaluateLiveWithBrowser(browser: string, live: LivePage, expression: string): Promise<string> {
+  return withBrowser(browser, async (cdp) => {
+    const cookies = (live.cookies ?? "").split(";").map((c) => c.trim()).filter((c) => c.indexOf("=") > 0)
+      .map((c) => ({ name: c.slice(0, c.indexOf("=")), value: c.slice(c.indexOf("=") + 1), url: live.url }));
+    if (cookies.length) await cdp.call("Network.setCookies", { cookies });
+    await load(cdp, live.url, live.width, 1);
+    await readBack(cdp, `new Promise((resolve, reject) => {
+      const selector = ${JSON.stringify(live.waitFor ?? "")}, until = Date.now() + 15000;
+      let changed = Date.now();
+      new MutationObserver(() => { changed = Date.now(); }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+      const tick = () => {
+        const shown = !selector || document.querySelector(selector) !== null;
+        if (shown && Date.now() - changed > 600) resolve("settled");
+        // A page that never stops animating is captured as it stands; a missing selector is an error.
+        else if (Date.now() > until) shown ? resolve("settled") : reject(new Error("The page never showed " + selector + " (now at " + location.href + ")."));
+        else setTimeout(tick, 100);
+      };
+      tick();
+    })`);
+    // The settled page may be taller than when it first loaded.
+    await fit(cdp, live.width, 1);
+    return readBack(cdp, expression);
+  });
+}
+
+/** Evaluates `expression` on the page and returns its string value. */
+async function readBack(cdp: Cdp, expression: string): Promise<string> {
+  const r = await cdp.call("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+  const thrown = typeof r === "object" && r !== null && "exceptionDetails" in r && typeof r.exceptionDetails === "object" && r.exceptionDetails !== null && "exception" in r.exceptionDetails
+    && typeof r.exceptionDetails.exception === "object" && r.exceptionDetails.exception !== null && "description" in r.exceptionDetails.exception ? String(r.exceptionDetails.exception.description) : undefined;
+  if (thrown) throw new Error(thrown.split("\n")[0]!.replace(/^Error: /, ""));
+  const value = typeof r === "object" && r !== null && "result" in r && typeof r.result === "object" && r.result !== null && "value" in r.result ? r.result.value : undefined;
+  if (typeof value !== "string") throw new Error("the page read back nothing");
+  return value;
 }
 
 /** A headless browser with `sheet` written beside a throwaway profile, for `work` to load and use. */
 async function inBrowser<T>(browser: string, sheet: Sheet, work: (cdp: Cdp, url: string) => Promise<T>): Promise<T> {
-  const scratch = await mkdtemp(join(tmpdir(), "buni-draw-"));
+  const scratch = await mkdtemp(join(tmpdir(), "buni-page-"));
   const page = join(scratch, "page.html");
   // The page lives in the scratch folder; <base> points its images at the design's folder.
   await writeFile(page, sheet.html.replace("<head>", `<head><base href="${pathToFileURL(`${sheet.dir}/`).href}">`));
+  try {
+    return await withBrowser(browser, (cdp) => work(cdp, pathToFileURL(page).href));
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+/** A headless browser on a throwaway profile, for `work` to drive. */
+async function withBrowser<T>(browser: string, work: (cdp: Cdp) => Promise<T>): Promise<T> {
+  const scratch = await mkdtemp(join(tmpdir(), "buni-draw-"));
   let endpoint: string | undefined;
   const proc = Bun.spawn([browser, "--headless=new", "--remote-debugging-port=0", `--user-data-dir=${join(scratch, "profile")}`, "--no-first-run", "--no-default-browser-check", "--disable-extensions", "--hide-scrollbars", "--mute-audio", "about:blank"], { stdout: "ignore", stderr: "pipe" });
   try {
@@ -117,7 +173,7 @@ async function inBrowser<T>(browser: string, sheet: Sheet, work: (cdp: Cdp, url:
     if (!target) throw new Error("the browser opened no page to draw in");
     const cdp = await connect(target.webSocketDebuggerUrl);
     try {
-      return await within(30_000, "Drawing the page", work(cdp, pathToFileURL(page).href));
+      return await within(45_000, "Drawing the page", work(cdp));
     } finally {
       cdp.close();
     }
@@ -144,17 +200,21 @@ async function quit(proc: Bun.Subprocess, endpoint: string | undefined): Promise
 
 /** Loads the page at `width` and sizes the window to the page's height (up to 8000 CSS px), which it returns. */
 async function load(cdp: Cdp, url: string, width: number, scale: number): Promise<number> {
-  const metrics = (height: number) => cdp.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: scale, mobile: false });
-  await metrics(900);
+  await cdp.call("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: scale, mobile: false });
   await cdp.call("Page.enable");
   const loaded = cdp.once("Page.loadEventFired");
   await cdp.call("Page.navigate", { url });
   await loaded;
+  return fit(cdp, width, scale);
+}
+
+/** Sizes the window to the loaded page's height (up to 8000 CSS px), which it returns. */
+async function fit(cdp: Cdp, width: number, scale: number): Promise<number> {
   // The body, not the document: the document is never shorter than the window, which would pad a 512px logo.
   const measured = await cdp.call("Runtime.evaluate", { expression: "document.fonts.ready.then(() => document.body.scrollHeight)", awaitPromise: true, returnByValue: true });
   const value = typeof measured === "object" && measured !== null && "result" in measured && typeof measured.result === "object" && measured.result !== null && "value" in measured.result ? measured.result.value : undefined;
   const height = Math.min(Math.max(typeof value === "number" ? value : 900, 1), 8000);
-  await metrics(height);
+  await cdp.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: scale, mobile: false });
   return height;
 }
 
