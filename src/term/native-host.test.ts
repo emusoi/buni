@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDoc } from "../format/parse.ts";
-import { slug } from "./native-host.ts";
+import { answer, slug } from "./native-host.ts";
 
 /** Talks to `buni native-host` the way Chrome does: each message JSON behind its 4-byte little-endian length. */
 async function host(home: string, messages: unknown[]): Promise<unknown[]> {
@@ -88,3 +88,10 @@ test("a snap's brief is kept on its page, and buni snaps lists it newest first",
     expect(snaps).toEqual([expect.objectContaining({ page: "Plans · Now", url: "https://example.com/plans", brief: "Make the plans easier to compare", file: join(home, "buni/scratch/example-plans/example-plans.buni") })]);
   } finally { await rm(home, { recursive: true, force: true }); }
 }, 60_000);
+
+test("opening a design that's already open answers its editor, on the page asked for, not its MCP address", async () => {
+  const tools = { run: async () => ({ ok: true, text: "" }), liveApp: async () => "http://localhost:4100/mcp?file=%2Fdesigns%2Fx%2Fx.buni" };
+  expect(await answer({ type: "open", file: "/tmp/x/x.buni", page: "p1" }, tools)).toEqual({ ok: true, url: "http://localhost:4100/?file=%2Fdesigns%2Fx%2Fx.buni&page=p1" });
+  const headless = { ...tools, liveApp: async () => "http://localhost:4100/mcp" };
+  expect(await answer({ type: "open", file: "/tmp/x/x.buni" }, headless)).toMatchObject({ ok: false });
+});

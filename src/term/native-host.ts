@@ -69,8 +69,14 @@ async function newScratch(name: string): Promise<string> {
 
 /** Opens the editor on a file (or finds the one already open) and answers its address. */
 async function openEditor(file: string, tools: HostTools): Promise<string> {
+  // An open editor leaves its MCP address in <file>.live; the editor itself is at the same origin, on that design.
   const live = await tools.liveApp(file);
-  if (live) return live;
+  if (live) {
+    const at = new URL(live);
+    const design = at.searchParams.get("file");
+    if (!design) throw new Error("An MCP server is editing this design without an editor; stop it, then open it here.");
+    return `${at.origin}/?file=${encodeURIComponent(design)}`;
+  }
   // The same buni that is running now: a linked checkout runs its cli.ts with bun, a built one is the binary itself.
   const self = process.argv[1]?.endsWith(".ts") ? [process.execPath, process.argv[1]] : [process.execPath];
   const child = spawn(self[0]!, [...self.slice(1), "open", file, "--no-open"], { detached: true, stdio: ["ignore", "pipe", "ignore"] });
