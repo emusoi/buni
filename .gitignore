@@ -8,3 +8,5 @@ dist
 *.buni.chats/
 designs/
 /extension/
+/inspiration/*
+!/inspiration/README.md
