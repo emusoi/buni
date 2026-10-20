@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // The buni command line: the design tools for any coding agent that can run a shell.
 import { readFileSync, rmSync } from "node:fs";
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { homedir, hostname, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -34,6 +34,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
+  adopt <scratch.buni> <folder>     move a scratch design (a snap) into a project folder, with its assets and history
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
@@ -78,7 +79,8 @@ Import a page:      buni call FILE import_html_page '{"url":"http://localhost:30
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
 Snap from Chrome:   buni extension writes a Chrome extension; with it the person snaps the page they're on (signed in),
                     or a part of it, as "<title> · Now" in a scratch design, ~/buni/scratch/<name>/<name>.buni, or one
-                    snapped into before. Asked to work on a snap, read that file with buni tree.
+                    snapped into before. Asked to work on a snap, read that file with buni tree; to keep it,
+                    buni adopt SCRATCH.buni PROJECT_FOLDER moves it into a project.
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
 Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
@@ -685,6 +687,22 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const files = await (await Workspace.open(file)).exportSite(dir);
       console.log(`Wrote ${files.length} files to ${dir}.`);
       return 0;
+    }
+    case "adopt": {
+      // A scratch design is a folder of its own (~/buni/scratch/<name>/): it moves whole, so its assets and history
+      // come along, into the project as a section folder.
+      const [to] = args;
+      if (!file?.endsWith(".buni") || !to) {
+        console.error("usage: buni adopt <scratch.buni> <project folder>");
+        return 2;
+      }
+      const from = dirname(resolve(file));
+      const dest = join(resolve(to), basename(from));
+      if (await liveApp(resolve(file))) return out({ ok: false, text: `${basename(file)} is open in an editor; close it (ctrl+c where buni open runs), then adopt it.` });
+      if (await stat(dest).catch(() => undefined)) return out({ ok: false, text: `${dest} already exists; adopt into another folder, or rename one.` });
+      await mkdir(resolve(to), { recursive: true });
+      await rename(from, dest);
+      return out({ ok: true, text: `Moved to ${join(dest, basename(file))}. It is part of ${resolve(to)} now: import_file links it to the project's core.` });
     }
     case "split": {
       const [focus, to] = args;

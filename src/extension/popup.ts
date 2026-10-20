@@ -11,7 +11,8 @@ const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "
 /** What to paste into an agent so it picks the design up where the snap left it. */
 const prompt = (last: LastSnap) =>
   `I snapped ${last.url || "a page"} into the buni design ${tilde(last.file ?? "")} as the page "${last.page}". ` +
-  `Use the buni skill: read it with buni tree ${tilde(last.file ?? "")}, then improve it from the snapshot (buni skills critique).`;
+  `Use the buni skill: read it with buni tree ${tilde(last.file ?? "")}, then improve it from the snapshot (buni skills critique). ` +
+  `If I say to keep it, buni adopt ${tilde(last.file ?? "")} <project folder> moves it into the project.`;
 
 function show(last: LastSnap | undefined): void {
   const box = $<HTMLElement>("result");

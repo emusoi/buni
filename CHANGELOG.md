@@ -5,6 +5,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- `buni adopt <scratch.buni> <folder>` moves a scratch design (a snap) into a project folder, assets and history
+  with it.
 - A Chrome extension snaps the page you're on into a design, as you see it, signed in: `buni extension [dir]`
   writes it to load unpacked, and lets Chrome-family browsers start buni for it (native messaging), so no editor
   has to be running. A snap of the whole page, or of a part you point at, becomes "<title> · Now" in a new scratch
