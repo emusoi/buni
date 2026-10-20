@@ -15,14 +15,17 @@ export async function extensionFiles(): Promise<Record<string, string>> {
   const manifest = {
     manifest_version: 3, name: "buni snap", version: VERSION.replace(/[^0-9.]/g, "") || "0.1.0", key: KEY,
     description: "Snap the page you're on into a buni design as editable layers, to redesign it.",
-    permissions: ["activeTab", "scripting", "storage", "nativeMessaging"],
-    action: { default_popup: "popup.html", default_title: "Snap into buni" },
+    permissions: ["activeTab", "scripting", "storage", "nativeMessaging", "sidePanel"],
+    // Asked for in the side panel the first time something is captured: it reads pages without a click on the icon.
+    optional_host_permissions: ["<all_urls>"],
+    action: { default_title: "Open buni beside this page" },
+    side_panel: { default_path: "panel.html" },
     background: { service_worker: "background.js", type: "module" },
   };
   return {
     "manifest.json": JSON.stringify(manifest, null, 2),
-    "popup.html": await Bun.file(join(dir, "popup.html")).text(),
-    "popup.js": await bundle("popup.ts", "esm"),
+    "panel.html": await Bun.file(join(dir, "panel.html")).text(),
+    "panel.js": await bundle("panel.ts", "esm"),
     "background.js": await bundle("background.ts", "esm"),
     "content.js": await bundle("content.ts", "iife"),
   };

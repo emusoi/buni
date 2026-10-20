@@ -524,7 +524,12 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     if (asset) return serveAsset(asset, req);
     const font = Object.hasOwn(FONTS, url.pathname) ? FONTS[url.pathname] : undefined;
     if (font) return new Response(Buffer.from(embeddedFont(font).split(",")[1] ?? "", "base64"), { headers: { "content-type": "font/woff2", "cache-control": "public, max-age=604800" } });
-    if (url.pathname === "/") return page(editorHtml, assets());
+    if (url.pathname === "/") {
+      // Shown in buni's own Chrome side panel; no other page may frame the editor.
+      const shown = page(editorHtml, assets());
+      shown.headers.set("content-security-policy", `frame-ancestors 'self' ${EXTENSION_ORIGIN}`);
+      return shown;
+    }
     if (url.pathname === "/signin") return new Response(null, { status: 303, headers: { location: "/" } });
     // A file in the URL is one of the caller's own designs, or it isn't found.
     if (file !== undefined && !isDesignPath(file, dir)) return Response.json({ error: "No such design" }, { status: 404 });

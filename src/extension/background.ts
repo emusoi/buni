@@ -7,7 +7,7 @@ import type { Snapped } from "./content.ts";
  * redesign: into a design, "scratch" for a new scratch one or a design file snapped into before. inspiration: kept
  * in the person's inspiration library, with when to use it.
  */
-export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string } & ({ intent: "redesign"; into: string; brief: string } | { intent: "inspiration"; use: string });
+export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string; /** Answer when done, even for a pick: the side panel stays open. */ wait?: boolean } & ({ intent: "redesign"; into: string; brief: string } | { intent: "inspiration"; use: string });
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
 /** The boxes the capture couldn't read, cut from what the tab shows now; one outside the window can't be drawn. */
@@ -80,7 +80,12 @@ chrome.runtime.onMessage.addListener((message: SnapRequest, _sender, respond: (a
   const done = snap(message).catch(failed);
   // A pick waits for the person to click the page, long after the popup closed: say at once it started, so the popup
   // can close knowing the request arrived. Its result shows on the icon and in the popup next time.
-  if (message.mode === "pick") { respond({ ok: true, reply: "Picking" }); void done; return false; }
+  if (message.mode === "pick" && !message.wait) { respond({ ok: true, reply: "Picking" }); void done; return false; }
   void done.then(respond);
   return true;
 });
+
+// The icon opens buni in the side panel, beside the page.
+const sidePanel = () => void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => undefined);
+chrome.runtime.onInstalled.addListener(sidePanel);
+chrome.runtime.onStartup.addListener(sidePanel);

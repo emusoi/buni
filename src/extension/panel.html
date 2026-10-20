@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buni</title>
+<style>
+  :root { color-scheme: dark; --bg: #18181b; --raised: #1f1f23; --field: #26262b; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #b4b4bd; --blue: #4069e6; --green: #6ec896; --red: #ff9a90; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  header .brand { font-weight: 800; font-size: 15px; margin-right: 8px; }
+  .tab { padding: 6px 10px; border-radius: 8px; border: 0; background: transparent; color: var(--mute); font: inherit; font-weight: 600; cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--field); color: var(--ink); }
+  section.view { display: none; flex: 1; flex-direction: column; gap: 12px; padding: 14px 12px; overflow: auto; }
+  section.view.on { display: flex; }
+  p { margin: 0; color: var(--mute); }
+  .intents { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .intent { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .intent b { font-size: 13px; }
+  .intent span { font-size: 12px; color: var(--mute); }
+  .intent[aria-pressed="true"] { border-color: var(--blue); background: rgba(64,105,230,.14); }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
+  label[hidden] { display: none; }
+  input, select, textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
+  textarea { resize: vertical; min-height: 52px; }
+  .row { display: flex; gap: 8px; }
+  button.act { flex: 1; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+  button.act.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  button.act:disabled { opacity: .5; cursor: default; }
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); }
+  .card b { font-size: 13px; }
+  .card .meta { font-size: 12px; color: var(--mute); }
+  .card .brief { font-size: 12px; color: var(--ink); }
+  .card code { font: 12px "JetBrains Mono", ui-monospace, monospace; word-break: break-all; color: var(--mute); }
+  .ok { color: var(--green); }
+  #status, .status { min-height: 18px; }
+  .error { color: var(--red); }
+  .empty { padding: 24px 4px; text-align: center; }
+  /* The editor, inside the panel. */
+  #editor { display: none; flex: 1; flex-direction: column; }
+  #editor.on { display: flex; }
+  #editor .bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  #editor .bar b { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #editor iframe { flex: 1; border: 0; width: 100%; background: #111; }
+  .icon { padding: 6px 8px; border-radius: 6px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<header role="tablist" aria-label="buni">
+  <span class="brand">buni</span>
+  <button class="tab" role="tab" id="tab-capture" aria-selected="true">Capture</button>
+  <button class="tab" role="tab" id="tab-snaps" aria-selected="false">Snaps</button>
+  <button class="tab" role="tab" id="tab-inspiration" aria-selected="false">Inspiration</button>
+</header>
+
+<section class="view on" id="view-capture" role="tabpanel">
+  <div class="intents" role="group" aria-label="What it's for">
+    <button type="button" class="intent" id="redesign" aria-pressed="true"><b>Redesign it</b><span>Into a design, to improve</span></button>
+    <button type="button" class="intent" id="inspire" aria-pressed="false"><b>Keep as inspiration</b><span>Into your library</span></button>
+  </div>
+  <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
+  <label>Name <input id="name" placeholder="This page’s title"></label>
+  <label id="brief-field">What should change? <textarea id="brief" rows="2" placeholder="Make the plans easier to compare; the CTA gets lost"></textarea></label>
+  <label id="use-field" hidden>Use it for <input id="use" placeholder="When is this the right pattern?"></label>
+  <div class="row">
+    <button id="pick" type="button" class="act">Pick a part</button>
+    <button id="page" type="button" class="act primary">Capture page</button>
+  </div>
+  <p id="status" role="status"></p>
+  <div id="result"></div>
+</section>
+
+<section class="view" id="view-snaps" role="tabpanel">
+  <div id="snaps"></div>
+</section>
+
+<section class="view" id="view-inspiration" role="tabpanel">
+  <input id="find" type="search" placeholder="Find a pattern: settings, pricing, empty state…" aria-label="Find a pattern">
+  <div id="patterns"></div>
+</section>
+
+<div id="editor">
+  <div class="bar">
+    <button class="icon" id="back" type="button" aria-label="Back">←</button>
+    <b id="editor-title"></b>
+    <button class="icon" id="pop-out" type="button" title="Open in a tab">↗</button>
+  </div>
+  <iframe id="frame" title="buni editor"></iframe>
+</div>
+<script src="panel.js" type="module"></script>
+</body>
+</html>

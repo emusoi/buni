@@ -10,13 +10,15 @@ import { z } from "zod";
 import { emptyDoc, pagesInOrder } from "../format/doc.ts";
 import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
-import { personalLibrary, writePattern } from "../tools/inspiration.ts";
+import { allPatterns, personalLibrary, writePattern } from "../tools/inspiration.ts";
 
 export const HOST_NAME = "com.buni.snap";
 export const SCRATCH = join(homedir(), "buni", "scratch");
 
 const request = z.discriminatedUnion("type", [
   z.object({ type: z.literal("list") }),
+  z.object({ type: z.literal("snaps") }),
+  z.object({ type: z.literal("patterns") }),
   z.object({
     type: z.literal("snap"),
     /** A new scratch design named after this, or a design file snapped into before. */
@@ -94,6 +96,8 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
   const r = parsed.data;
   try {
     if (r.type === "list") return { ok: true, scratch: await scratchDesigns(), folder: SCRATCH };
+    if (r.type === "snaps") return { ok: true, snaps: (await recentSnaps()).slice(0, 30) };
+    if (r.type === "patterns") return { ok: true, patterns: (await allPatterns()).map(({ name, library, use, tags, file }) => ({ name, library, use, tags, file })) };
     if (r.type === "open") {
       const url = new URL(await openEditor(r.file, tools));
       if (r.page) url.searchParams.set("page", r.page);

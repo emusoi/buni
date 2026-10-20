@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- buni opens in Chrome's side panel, beside the page you're working on: the extension's icon opens it. Capture
+  (redesign it, or keep as inspiration) stays open while you pick a part; Snaps lists your captures with their briefs
+  and opens any in the buni editor right in the panel (or in a tab), or copies the prompt for Claude; Inspiration
+  searches your libraries. The panel asks once to read pages. The editor may only be framed by itself and the
+  extension.
 - Capture to redesign, end to end: the extension asks "What should change?" and keeps the answer as a brief on the
   captured page (`import_snapshot {brief}`), which also remembers the page's URL. `buni snaps` lists captures newest
   first with their briefs, so "work on my latest snap" is enough for an agent. "Copy for Claude" now carries the
