@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Import keeps the sizes a page set: a box keeps its width or height whenever laying it out at auto would change it
+  (a 44px row, a progress fill at 62%, a full-width table), instead of guessing from what it holds. Tables keep
+  `border-collapse`, `border-spacing` and `table-layout`; a fieldset and legend lose the browser's border when the
+  page did; an open `<details>` comes in as it shows, its content and all.
 - Inspiration libraries: folders of finished UI and UX patterns, one self-contained HTML file each, opening with
   what it is and when to use it (`inspiration/README.md`). buni ships its own; `buni inspiration add <folder>` adds
   yours (kept in `~/.buni/settings.json`), and `buni inspiration [find <words>]` lists them. Agents search with

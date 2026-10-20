@@ -3,8 +3,8 @@ import { sourceRefs, type SourceRef } from "buni/format/sources.ts";
 import { elementMotion, pageMotion } from "./motionRead.ts";
 
 const INHERITED = ["color", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing", "text-align", "text-transform", "white-space", "word-break"];
-const PROPERTIES = ["display", "position", "top", "right", "bottom", "left", "z-index", "box-sizing", "min-width", "max-width", "min-height", "max-height", "padding", "border", "border-radius", "border-top", "border-right", "border-bottom", "border-left", "background-color", "background-image", "background-size", "background-position", "background-repeat", "box-shadow", "opacity", "overflow-x", "overflow-y", "gap", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "align-items", "align-self", "justify-content", "justify-items", "justify-self", "order", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "object-fit", "object-position", "transform", "transform-origin", "text-decoration", "text-shadow", "vertical-align", "list-style-type"];
-const DEFAULTS: Record<string, string> = { position: "static", "z-index": "auto", "box-sizing": "border-box", "min-width": "0px", "max-width": "none", "min-height": "0px", "max-height": "none", padding: "0px", border: "0px none rgb(0, 0, 0)", "border-radius": "0px", "background-color": "rgba(0, 0, 0, 0)", "background-image": "none", "background-size": "auto", "background-position": "0% 0%", "background-repeat": "repeat", "box-shadow": "none", opacity: "1", "overflow-x": "visible", "overflow-y": "visible", gap: "normal", "flex-direction": "row", "flex-wrap": "nowrap", "flex-grow": "0", "flex-shrink": "1", "flex-basis": "auto", "align-items": "normal", "align-self": "auto", "justify-content": "normal", "justify-items": "normal", "justify-self": "auto", order: "0", "grid-template-columns": "none", "grid-template-rows": "none", "grid-column": "auto", "grid-row": "auto", "object-fit": "fill", "object-position": "50% 50%", transform: "none", "text-shadow": "none", "vertical-align": "baseline", "list-style-type": "disc" };
+const PROPERTIES = ["display", "position", "top", "right", "bottom", "left", "z-index", "box-sizing", "min-width", "max-width", "min-height", "max-height", "padding", "border", "border-radius", "border-top", "border-right", "border-bottom", "border-left", "background-color", "background-image", "background-size", "background-position", "background-repeat", "box-shadow", "opacity", "overflow-x", "overflow-y", "gap", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "align-items", "align-self", "justify-content", "justify-items", "justify-self", "order", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "object-fit", "object-position", "transform", "transform-origin", "text-decoration", "text-shadow", "vertical-align", "list-style-type", "border-collapse", "border-spacing", "table-layout"];
+const DEFAULTS: Record<string, string> = { position: "static", "z-index": "auto", "box-sizing": "border-box", "min-width": "0px", "max-width": "none", "min-height": "0px", "max-height": "none", padding: "0px", border: "0px none rgb(0, 0, 0)", "border-radius": "0px", "background-color": "rgba(0, 0, 0, 0)", "background-image": "none", "background-size": "auto", "background-position": "0% 0%", "background-repeat": "repeat", "box-shadow": "none", opacity: "1", "overflow-x": "visible", "overflow-y": "visible", gap: "normal", "flex-direction": "row", "flex-wrap": "nowrap", "flex-grow": "0", "flex-shrink": "1", "flex-basis": "auto", "align-items": "normal", "align-self": "auto", "justify-content": "normal", "justify-items": "normal", "justify-self": "auto", order: "0", "grid-template-columns": "none", "grid-template-rows": "none", "grid-column": "auto", "grid-row": "auto", "object-fit": "fill", "object-position": "50% 50%", transform: "none", "text-shadow": "none", "vertical-align": "baseline", "list-style-type": "disc", "border-collapse": "separate", "border-spacing": "2px", "table-layout": "auto" };
 const SKIP = new Set(["script", "style", "link", "meta", "template", "noscript", "source"]);
 /** Elements whose content is a picture, not layers: imported as an image of what they show. */
 const PICTURES = new Set(["img", "canvas", "video", "iframe", "embed", "object"]);
@@ -33,6 +33,21 @@ function sizedByContent(el: Element, view: Window & typeof globalThis): boolean 
   const natural = el.getBoundingClientRect().width;
   style.setProperty("width", value, priority);
   return Math.abs(natural - laidOut) < 0.5;
+}
+
+/**
+ * Whether the element's own width or height shapes it: laid out for a moment with it set to auto, its box changes (a
+ * 44px row, a progress fill at 62%, a full-width table). One sized by what it holds, or stretched by its parent, isn't.
+ */
+function sizeMatters(el: Element, prop: "width" | "height", view: Window & typeof globalThis): boolean {
+  if (!(el instanceof view.HTMLElement || el instanceof view.SVGElement)) return false;
+  const style = el.style;
+  const before = el.getBoundingClientRect()[prop];
+  const [value, priority] = [style.getPropertyValue(prop), style.getPropertyPriority(prop)];
+  style.setProperty(prop, "auto", "important");
+  const after = el.getBoundingClientRect()[prop];
+  style.setProperty(prop, value, priority);
+  return Math.abs(after - before) > 0.5;
 }
 
 /** Capture only the selected subtree. Class styles become compact, editable inline styles. */
@@ -83,7 +98,7 @@ export async function captureHtml(selected: Element, options: {
     // Lists too: a list reset to no padding would get the browser's 40px indent back.
     if (["ul", "ol", "menu"].includes(el.localName)) result.set("padding", cs.padding);
     // Native controls have browser defaults that the design's CSS reset does not clear.
-    if (["button", "input", "textarea", "select"].includes(el.localName)) {
+    if (["button", "input", "textarea", "select", "fieldset", "legend"].includes(el.localName)) {
       for (const prop of ["padding", "border", "border-radius", "background-color"]) result.set(prop, cs.getPropertyValue(prop));
       // Sides that differ leave the border shorthand empty; clear it so a side the design left bare isn't the browser's outset.
       if (!cs.border) result.set("border", "0px none");
@@ -124,7 +139,9 @@ export async function captureHtml(selected: Element, options: {
     const textBox = ownWidth && el.childNodes.length > 0 && [...el.childNodes].every((n) => n.nodeType === 3);
     // A drawing is sized like a picture: its shapes don't size it.
     const drawn = PICTURES.has(el.localName) || el.localName === "svg";
-    if (pseudo || root || drawn || positioned || ownWidth) result.set("width", cs.width);
+    // Inline boxes take no size; a box with none of its own says so at once.
+    const boxed = !pseudo && !root && cs.display !== "inline" && cs.display !== "contents";
+    if (pseudo || root || drawn || positioned || ownWidth || (boxed && !flexItem && sizeMatters(el, "width", view))) result.set("width", cs.width);
     // A drawing never shrinks below its size in a row; a box in Buni would, squeezed by its neighbours.
     if (drawn && parent?.display.includes("flex")) result.set("flex-shrink", "0");
     // A box that scrolls or clips what overflows it keeps its height, or a long list inside spills out at full length.
@@ -133,7 +150,7 @@ export async function captureHtml(selected: Element, options: {
     // it a height, so without its own it collapses.
     const overlaid = !pseudo && el.children.length > 0 && [...el.childNodes].every((n) => n instanceof view.Element
       ? ["absolute", "fixed"].includes(view.getComputedStyle(n).position) : !n.textContent?.trim());
-    if (pseudo || drawn || positioned || !el.childNodes.length || clips || textBox || overlaid) result.set("height", cs.height);
+    if (pseudo || drawn || positioned || !el.childNodes.length || clips || textBox || overlaid || (boxed && sizeMatters(el, "height", view))) result.set("height", cs.height);
     // auto is the default for sizes, but a box that scrolls says so with it.
     return [...result].filter(([k, v]) => v && (v !== "auto" || k.startsWith("overflow"))).map(([k, v]) => `${k}: ${v}`).join("; ");
   };
@@ -176,7 +193,8 @@ export async function captureHtml(selected: Element, options: {
     if (PICTURES.has(el.localName) && !el.getClientRects()[0]?.width) return undefined;
     const asset = PICTURES.has(el.localName) ? await picture(el) : undefined;
     if (PICTURES.has(el.localName) && !asset) warnings.add(`An unreadable ${el.localName} was left as an empty frame.`);
-    const tag = PICTURES.has(el.localName) ? (asset ? "img" : "div") : el.localName === "body" ? "section" : el.localName;
+    // An open <details> is drawn as it shows now: Buni keeps no open state, and closed it would hide what was showing.
+    const tag = PICTURES.has(el.localName) ? (asset ? "img" : "div") : el.localName === "body" ? "section" : el.localName === "details" || el.localName === "summary" ? "div" : el.localName;
     const copy = tag === "svg" ? out.importNode(el, true) : out.createElement(tag);
     if (tag === "svg") {
       const originals = [el, ...el.querySelectorAll("*")];

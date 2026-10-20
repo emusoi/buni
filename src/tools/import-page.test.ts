@@ -297,3 +297,24 @@ test.skipIf(!browser)("motion comes along: an entrance and a hover lift become t
     expect(comments[0]!.posts[0]!.body).toContain("animation: spin 1s linear 0s infinite");
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
+
+test.skipIf(!browser)("sizes the page set come along, and so do open details, tables and a fieldset without its default border", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = `<main id="page" style="font:14px Arial">
+      <div id="row" style="display:flex;align-items:center;height:44px;gap:8px"><b>Name</b><span>Ada</span></div>
+      <div id="track" style="width:300px;height:8px;background:#eee"><div id="fill" style="width:62%;height:8px;background:#36c"></div></div>
+      <table id="grid" style="width:100%;border-collapse:collapse"><tr><td id="cell" style="border:1px solid #ccc">One</td><td>Two</td></tr></table>
+      <details id="faq" open><summary>How long?</summary><p id="answer">Six days.</p></details>
+      <fieldset id="group" style="border:0;padding:0;margin:0"><legend>Plan</legend><label>Team</label></fieldset>
+    </main>`;
+    expect((await ws.call("agent", "import_html_page", { html, page: { name: "Sizes", width: 800 } })).ok).toBe(true);
+    const named = (name: string) => Object.values(ws.view().nodes).find((n) => n.name === name)!;
+    expect(named("row").style.height).toBe("44px");
+    expect(named("fill").style.width).toBe("186px");
+    expect(named("grid").style).toMatchObject({ width: "784px", borderCollapse: "collapse" });
+    expect(Object.values(ws.view().nodes).some((n) => n.kind === "text" && n.text === "Six days.")).toBe(true);
+    expect(named("faq").tag).toBe("div");
+    expect(named("group").style.border).toMatch(/^0px none/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
