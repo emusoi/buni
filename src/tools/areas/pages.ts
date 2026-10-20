@@ -1,7 +1,8 @@
 import { captureHtmlPage, htmlPageInput } from "../import-page.ts";
 import { pinTag, reviewPage, reviewText } from "../review.ts";
 import { findNodes, replaceIn } from "../find.ts";
-import type { ToolOutput } from "../kit.ts";
+import type { ToolContext, ToolOutput } from "../kit.ts";
+import type { CapturedHtml } from "../../editor/renderer/capture-agent.ts";
 import { sourceRefs } from "../../format/sources.ts";
 // Pages and layers: creating pages, writing HTML into them, styles, text, motion, tokens, comments and the canvas. One
 // area of buni's design tools (agent/areas.ts); tools.ts gathers them.
@@ -38,6 +39,49 @@ function copyPage(doc: Doc, from: Page, ids: Ids, as: { name: string; index: str
     ops.push({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: pageId, node: id(c.node) } });
   }
   return { ops, page: pageId, frame: id(from.frame), layers: nodes.length };
+}
+
+/** Where an import goes, checked: a new page or a frame, and the width it is captured at. */
+function placeFor(doc: Doc, a: { parent?: string | undefined; after?: string | undefined; width?: number | undefined; page?: { width?: number | undefined } | undefined }): number {
+  if (Boolean(a.parent) === Boolean(a.page)) throw new ToolError("Choose a parent frame or a new page.");
+  if (a.parent && node(doc, a.parent).kind !== "frame") throw new ToolError("Import into a frame.");
+  if (a.parent && a.after !== undefined) indexAt(doc, a.parent, a.after);
+  return a.width ?? a.page?.width ?? 1440;
+}
+
+/** A captured page as layers: its images become attachments, then its HTML is imported where `a` says. */
+async function importCaptured(doc: Doc, result: CapturedHtml, width: number, a: { parent?: string | undefined; after?: string | undefined; page?: { name: string; route?: string | undefined } | undefined }, ctx: ToolContext): Promise<ToolOutput> {
+  const ids = new Ids(doc, ctx);
+  const attachments = { ...doc.attachments };
+  const ops: Op[] = [];
+  const replacements = new Map<string, string>();
+  for (const image of result.images) {
+    const path = await ctx.saveImportImage(image.base64, image.mime);
+    let attachment = Object.values(attachments).find((item) => item.path === path);
+    if (!attachment) {
+      attachment = { id: ids.next(), path, mime: image.mime };
+      attachments[attachment.id] = attachment;
+      ops.push({ kind: "put", collection: "attachments", value: attachment });
+    }
+    replacements.set(image.id, attachment.id);
+  }
+  const tree = parseFragment(result.html);
+  const resolveImages = (parent: P.ParentNode) => {
+    for (const child of parent.childNodes) if ("tagName" in child) {
+      for (const attr of child.attrs) {
+        if (attr.name === "src" && replacements.has(attr.value.slice(6))) attr.value = `asset:${replacements.get(attr.value.slice(6))}`;
+        if (attr.name === "style") attr.value = attr.value.replace(/url\(asset:(buni-import-image-\d+-asset)\)/g,
+          (all, id: string) => replacements.has(id) ? `url(asset:${replacements.get(id)})` : all);
+      }
+      resolveImages(child);
+    }
+  };
+  resolveImages(tree);
+  const html = serialize(tree);
+  const imported = await pagesTools.import_html.run({ ...doc, attachments }, { html,
+    ...(a.page ? { page: { ...a.page, width } } : { parent: a.parent, after: a.after }) }, ctx);
+  return { ...imported, ops: [...ops, ...imported.ops], reply: [imported.reply, `Captured ${result.count} elements at ${width}px.`,
+    ...result.warnings.map((warning) => `Warning: ${warning}`)].join("\n") };
 }
 
 export const pagesTools = {
@@ -276,42 +320,28 @@ export const pagesTools = {
       page: z.object({ name: z.string().min(1), width: z.number().int().min(240).max(3840).optional(), route: z.string().optional() }).optional(),
     },
     run: async (doc, a, ctx): Promise<ToolOutput> => {
-      if (Boolean(a.parent) === Boolean(a.page)) throw new ToolError("Choose a parent frame or a new page.");
-      if (a.parent && node(doc, a.parent).kind !== "frame") throw new ToolError("Import into a frame.");
-      if (a.parent && a.after !== undefined) indexAt(doc, a.parent, a.after);
-      const width = a.width ?? a.page?.width ?? 1440;
-      const result = await captureHtmlPage(a, width, ctx);
-      const ids = new Ids(doc, ctx);
-      const attachments = { ...doc.attachments };
-      const ops: Op[] = [];
-      const replacements = new Map<string, string>();
-      for (const image of result.images) {
-        const path = await ctx.saveImportImage(image.base64, image.mime);
-        let attachment = Object.values(attachments).find((item) => item.path === path);
-        if (!attachment) {
-          attachment = { id: ids.next(), path, mime: image.mime };
-          attachments[attachment.id] = attachment;
-          ops.push({ kind: "put", collection: "attachments", value: attachment });
-        }
-        replacements.set(image.id, attachment.id);
-      }
-      const tree = parseFragment(result.html);
-      const resolveImages = (parent: P.ParentNode) => {
-        for (const child of parent.childNodes) if ("tagName" in child) {
-          for (const attr of child.attrs) {
-            if (attr.name === "src" && replacements.has(attr.value.slice(6))) attr.value = `asset:${replacements.get(attr.value.slice(6))}`;
-            if (attr.name === "style") attr.value = attr.value.replace(/url\(asset:(buni-import-image-\d+-asset)\)/g,
-              (all, id: string) => replacements.has(id) ? `url(asset:${replacements.get(id)})` : all);
-          }
-          resolveImages(child);
-        }
-      };
-      resolveImages(tree);
-      const html = serialize(tree);
-      const imported = await pagesTools.import_html.run({ ...doc, attachments }, { html,
-        ...(a.page ? { page: { ...a.page, width } } : { parent: a.parent, after: a.after }) }, ctx);
-      return { ...imported, ops: [...ops, ...imported.ops], reply: [imported.reply, `Captured ${result.count} elements at ${width}px.`,
-        ...result.warnings.map((warning) => `Warning: ${warning}`)].join("\n") };
+      const width = placeFor(doc, a);
+      return importCaptured(doc, await captureHtmlPage(a, width, ctx), width, a, ctx);
+    },
+  }),
+
+  import_snapshot: tool({
+    description:
+      "Import a page someone already captured in their own browser (buni's Chrome extension, or a saved snapshot file) as editable layers, " +
+      "onto a new page or into a parent frame, in one undoable edit. snapshot is the capture as the extension sends it: html, images and where it came from.",
+    input: {
+      snapshot: z.object({
+        html: z.string().min(1).max(16 * 1024 * 1024), count: z.number().int().positive(), warnings: z.array(z.string()).default([]),
+        images: z.array(z.object({ id: z.string().regex(/^buni-import-(image|shot)-\d+-asset$/), base64: z.string(), mime: z.string() })).default([]),
+        url: z.string().url().optional(), width: z.number().int().min(240).max(3840),
+      }),
+      parent: z.string().optional(), after: z.string().optional(),
+      page: z.object({ name: z.string().min(1), route: z.string().optional() }).optional(),
+    },
+    run: async (doc, a, ctx): Promise<ToolOutput> => {
+      const where = { ...(a.parent ? { parent: a.parent } : {}), ...(a.after !== undefined ? { after: a.after } : {}), ...(a.page ? { page: { ...a.page, width: a.snapshot.width } } : {}) };
+      const width = placeFor(doc, where);
+      return importCaptured(doc, { ...a.snapshot, shots: [] }, width, where, ctx);
     },
   }),
 

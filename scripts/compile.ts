@@ -10,6 +10,8 @@ const target = TARGETS.find((t) => t === given);
 if (given && !target) throw new Error(`unknown target "${given}"; one of ${TARGETS.join(", ")}`);
 
 const capture = await captureSource();
+const { extensionFiles } = await import("../src/term/extension-build.ts");
+const extension = await extensionFiles();
 const reviewer = await reviewSource();
 const sources = await editorSources();
 const embedded = JSON.stringify({ ...sources, files: sources.files.map(({ body, ...file }) => ({ ...file, body: Buffer.from(body).toString("base64") })) });
@@ -23,6 +25,9 @@ const r = await Bun.build({
     setup(build) {
       build.onLoad({ filter: /[/\\]term[/\\]capture-build\.ts$/ }, () => ({
         contents: `export async function captureSource() { return ${JSON.stringify(capture)}; }\nexport async function reviewSource() { return ${JSON.stringify(reviewer)}; }`, loader: "js",
+      }));
+      build.onLoad({ filter: /[/\\]term[/\\]extension-build\.ts$/ }, () => ({
+        contents: `export async function extensionFiles() { return ${JSON.stringify(extension)}; }`, loader: "js",
       }));
       build.onLoad({ filter: /[/\\]editor[/\\]build\.ts$/ }, () => ({
         contents: `export async function editorSources() { const source = ${embedded}; return { ...source, files: source.files.map(file => ({ ...file, body: Uint8Array.fromBase64(file.body) })) }; }`,

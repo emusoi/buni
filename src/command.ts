@@ -2,7 +2,7 @@
 // The buni command line: the design tools for any coding agent that can run a shell.
 import { readFileSync, rmSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
-import { hostname, tmpdir } from "node:os";
+import { homedir, hostname, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -30,6 +30,7 @@ usage: buni <command> [args] [--as <name>] [--json]
 
   help                              how to design with buni (read this first)
   skill                             the same guide as a SKILL.md for coding agents
+  extension [dir]                   write buni's Chrome extension (snap the page you're on into a design) to load unpacked
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
@@ -75,6 +76,8 @@ Long HTML:          buni call FILE write_html - < part.json
 Import a page:      buni call FILE import_html_page '{"url":"http://localhost:3000","selector":"#hero","page":{"name":"Hero","width":1440}}'
                     Also accepts html or a file inside the design folder; omit selector for the whole page.
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
+Snap from Chrome:   buni extension writes a Chrome extension; with it the person snaps the page they're on (signed in)
+                    into a design as "<title> · Now", or a part of it. import_snapshot takes such a snapshot from a file.
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
 Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
@@ -434,6 +437,15 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     case "skill":
       process.stdout.write(SKILL);
       return 0;
+    case "extension": {
+      // Written fresh each time, so loading the folder again picks up a new buni's capture.
+      const { extensionFiles } = await import("./term/extension-build.ts");
+      const dir = resolve(file ?? join(homedir(), ".buni", "chrome-extension"));
+      await mkdir(dir, { recursive: true });
+      for (const [name, text] of Object.entries(await extensionFiles())) await writeFile(join(dir, name), text);
+      console.log(`Wrote buni's Chrome extension to ${dir}.\nIn Chrome: chrome://extensions, turn on Developer mode, Load unpacked, choose that folder (or press reload on it after an update).\nThen on any page: the buni icon, paste the link buni open printed, Snap page or Pick a part.`);
+      return 0;
+    }
     case "skills": {
       if (file) {
         const skill = await readSkill(file);

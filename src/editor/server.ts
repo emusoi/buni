@@ -7,7 +7,7 @@ import { checkImage } from "buni/tools/assets.ts";
 import { fontSlug } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { tmpdir } from "node:os";
-import { allowedCall, allowedOrigin, isDesignFile, isDesignPath, localOrigins, mockOrigin } from "./guard.ts";
+import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins, mockOrigin } from "./guard.ts";
 import { rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { renderHeadless } from "buni/term/render.ts";
@@ -535,6 +535,17 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       return new Response(req.method === "HEAD" ? null : bytes, { headers: { "content-type": Bun.file(path).type, "content-length": String(bytes.length), "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } });
     }
     try {
+      // The Chrome extension: which designs it can snap into, and the snap itself, imported as the person sees it.
+      if (url.pathname === "/snap") {
+        const snappers = new Set([...OWN, EXTENSION_ORIGIN]);
+        if (req.method === "GET" && allowedOrigin(req, snappers)) return Response.json((await home(dir)).map((f) => ({ path: f.path, name: f.name, folder: f.folder })));
+        if (req.method === "POST" && file && allowedCall(req, snappers)) {
+          const r = await (await need(file)).call("chrome extension", "import_snapshot", await req.json());
+          const page = r.reply.match(/^Created page (\S+)\./)?.[1];
+          return Response.json({ ok: r.ok, reply: r.reply, ...(page ? { page } : {}), open: `${origin}/?file=${encodeURIComponent(file)}` }, { status: r.ok ? 200 : 400 });
+        }
+        return Response.json({ error: "forbidden" }, { status: 403 });
+      }
       if (url.pathname === "/events" && file) return await events(file);
       if (url.pathname === "/mcp" && file) {
         if (!allowedOrigin(req, OWN)) return new Response("forbidden origin", { status: 403 });

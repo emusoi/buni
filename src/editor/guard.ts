@@ -38,3 +38,9 @@ export function isDesignPath(path: unknown, dir = "/designs"): path is string {
 export function isDesignFile(path: string, dir = "/designs"): boolean {
   return below(path, dir) && /^[^/]+\/.+/.test(path.slice(dir.length + 1));
 }
+
+/**
+ * buni's Chrome extension, by the fixed id its manifest key gives it. It may snap a page into a design (/snap) and
+ * nothing else; a web page can't claim this origin.
+ */
+export const EXTENSION_ORIGIN = "chrome-extension://bkhiglepcjfeaodpigknhjacabagimbf";
