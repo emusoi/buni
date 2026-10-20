@@ -144,9 +144,6 @@ async function loadTargets(): Promise<void> {
 }
 
 async function capture(mode: "page" | "pick"): Promise<void> {
-  // Asked once, inside the click: the panel reads the page itself, so it needs the person's say-so for pages.
-  const allowed = await chrome.permissions.request({ origins: ["<all_urls>"], permissions: ["debugger"] }).catch(() => false);
-  if (!allowed) return say("buni needs to read the page to capture it. Allow it and try again.", true);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   const request: SnapRequest = intent === "inspiration"
