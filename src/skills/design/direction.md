@@ -21,6 +21,7 @@ Before designing anything, answer these. If the brief doesn't say, propose an an
   - Motion: 1 still, 10 cinematic. Operate surfaces stay low.
   - Density: 1 airy like a gallery, 10 packed like a trading screen.
 - What already exists: the design doc's decisions, tokens and components. Refining keeps the product's identity and improves its execution; redesigning replaces the visual world but keeps the content, function and conventions people rely on. Say which this is. If the product already ships, snapshot it first and improve from the snapshot (critique skill).
+- Before designing a familiar pattern (a settings page, a data table, onboarding, pricing), find_inspiration: the libraries hold finished versions, the person's own among them. Take structure and behaviour from them, never their look wholesale.
 - The brief always wins. If it pins a look, era, font or palette, follow it exactly, even where this skill would choose differently.
 
 ## Asking well
@@ -63,4 +64,3 @@ Lasting conventions (a radius, the accent's only uses, the spacing base) become 
 
 ## 6. Explain each design
 When you finish, tell the person in a few lines what you made and why: the direction in a sentence, the bold thing, and what to look at. When you change a design later, say what changed and the reason, and update the Direction section if the reasoning moved.
-- Before designing a familiar pattern (a settings page, a data table, onboarding, pricing), find_inspiration: the libraries hold finished versions, the person's own among them. Take structure and behaviour from them, never their look wholesale.
