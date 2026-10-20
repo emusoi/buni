@@ -5,6 +5,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- `buni shot FILE PAGE out.png --frames 6` draws a page's motion as moments side by side, each labelled with its
+  time, from the start to when the last entrance ends: an image an agent can read to check order and pace.
 - An agent's edits come back with quick checks on the layers they changed, over MCP and `buni call`: contrast,
   tiny text, small targets, text spilling out, content left invisible. Nothing is added when they pass, there is
   no browser, or the edit changed nothing visible yet; `BUNI_EDIT_CHECKS=0` turns them off.

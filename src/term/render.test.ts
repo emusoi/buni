@@ -88,3 +88,21 @@ test.skipIf(!findBrowser())("an icon set draws each size sharp on a see-through 
   expect((await renderHeadless({ file: portal, out: pdf, format: "system" })).ok).toBe(true);
   expect((await readFile(pdf)).subarray(0, 4).toString()).toBe("%PDF");
 }, 60_000);
+
+test.skipIf(!findBrowser())("--frames draws a page's motion as moments side by side, and says so when nothing moves", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-frames-"));
+  const file = join(dir, "m.buni");
+  await writeFile(file, serializeDoc(emptyDoc()));
+  const ws = await Workspace.open(file);
+  await ws.call("agent", "create_page", { name: "Home" });
+  const page = Object.values(ws.view().pages)[0]!;
+  await ws.call("agent", "update_styles", { nodes: [page.frame], style: { width: "400px" } });
+  await ws.call("agent", "write_html", { parent: page.frame, html: `<h1 layer-name="Hello">Hello</h1>` });
+  const out = join(dir, "strip.png");
+  expect((await renderHeadless({ file, page: "Home", out, format: "png", frames: 3 }, undefined)).text).toContain("Nothing moves on Home");
+  const hello = Object.values(ws.view().nodes).find((n) => n.name === "Hello")!;
+  await ws.call("agent", "set_motion", { node: hello.id, motion: [{ trigger: "load", effect: "fade", durationMs: 400, delayMs: 100 }] });
+  expect(await renderHeadless({ file, page: "Home", out, format: "png", frames: 3 }, undefined)).toEqual({ ok: true, text: `Saved ${out}: 3 moments, 0, 250, 500ms.` });
+  const bytes = await readFile(out);
+  expect(bytes.readUInt32BE(16)).toBe(3 * (400 + 16) + 16); // three 400px moments with their gaps
+}, 60_000);

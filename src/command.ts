@@ -39,7 +39,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   context <file.buni> [kind:id] [--target fw]   brief to build from: doc + system slice (part:, page:, flow:, endpoint:, table:);
                                     --target picks one build of a terminal client, e.g. ratatui
   call <file.buni> <tool> [json|-]  run one tool; "-" reads the JSON from stdin
-  shot <file.buni> <page> <out>     draw a page (id, name or route) to .png (--scale 2), .pdf, or .svg (a graphic
+  shot <file.buni> <page> <out>     draw a page (id, name or route) to .png (--scale 2; --frames 6 for its motion), .pdf, or .svg (a graphic
                                     that is one svg), with the Chrome, Chromium or Edge on this machine; a terminal
                                     screen also to .txt, its characters, or .ans, the same in colour for cat
   icons <file.buni> <page> <dir>    an app icon set from a square graphic: PNGs 16-1024, favicon.ico, AppIcon.icns
@@ -79,7 +79,7 @@ Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", f
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
 Review a page:      buni call FILE review_page '{"page":"PAGE"}'   (score and issues worst first, on their layers;
                     "pin":true leaves them as comments, "against":"NOW_PAGE" says what a Next page fixed)
-Check your work:    buni shot FILE PAGE out.png      (then look at out.png; also .pdf, .svg, --scale 2; needs a Chrome,
+Check your work:    buni shot FILE PAGE out.png      (then look at out.png; also .pdf, .svg, --scale 2, --frames 6 to see motion; needs a Chrome,
                     Chromium or Edge, or BUNI_CHROME pointing at one)
 
 Rules that save retries:
@@ -166,6 +166,8 @@ export interface Flags {
   server: string | undefined;
   /** Pixel density for a PNG: 1 is the page's own size, 2 is retina. */
   scale: number | undefined;
+  /** --frames N: shot draws the page's motion as N moments side by side. */
+  frames: number | undefined;
   rest: string[];
 }
 
@@ -176,11 +178,15 @@ function parseFlags(argv: string[]): Flags {
   let remote = false;
   let server: string | undefined;
   let scale: number | undefined;
+  let frames: number | undefined;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] ?? "";
     if (a === "--scale") {
       const n = Number(argv[++i]);
       if (Number.isFinite(n) && n > 0 && n <= 8) scale = n;
+    } else if (a === "--frames") {
+      const n = Number(argv[++i]);
+      if (Number.isInteger(n) && n >= 2 && n <= 12) frames = n;
     } else if (a === "--as") as = argv[++i] ?? as;
     else if (a.startsWith("--as=")) as = a.slice(5);
     else if (a === "--json") json = true;
@@ -189,7 +195,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a.startsWith("--server=")) server = a.slice(9);
     else rest.push(a);
   }
-  return { as, json, remote, server, scale, rest };
+  return { as, json, remote, server, scale, frames, rest };
 }
 
 /** All of standard input, piped or redirected from a file. Read straight from fd 0: a stream over it came back empty for a redirected file. */
@@ -385,7 +391,7 @@ function needsAgent(cmd: string): number {
 export async function main(argv: string[], ext?: Extension): Promise<number> {
   const flags = parseFlags(argv);
   if (flags.rest[0] === "open") flags.rest = flags.rest.filter((a) => a !== "--web");
-  const { as, json, remote, server, scale, rest } = flags;
+  const { as, json, remote, server, scale, frames, rest } = flags;
   const [cmd, file, ...args] = rest;
   const handled = await ext?.run(cmd, file, args, flags);
   if (handled !== undefined) return handled;
@@ -550,7 +556,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const [page, target] = args;
       const format = target?.toLowerCase().match(/\.(png|pdf|svg|txt|ans)$/)?.[1];
       if (!page || !target || (format !== "png" && format !== "pdf" && format !== "svg" && format !== "txt" && format !== "ans")) {
-        console.error("usage: buni shot <file.buni> <page> <out.png|out.pdf|out.svg|out.txt|out.ans> [--scale 2]");
+        console.error("usage: buni shot <file.buni> <page> <out.png|out.pdf|out.svg|out.txt|out.ans> [--scale 2] [--frames 6]");
         return 2;
       }
       if (format === "svg") {
@@ -560,13 +566,13 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         return out({ ok: true, text: `Saved ${target}.` });
       }
       // The open app draws a plain screenshot; anything else, or no app, renders here.
-      if (format === "png" && scale === undefined && (await liveApp(file))) {
+      if (format === "png" && scale === undefined && frames === undefined && (await liveApp(file))) {
         const r = await run(file, as, "screenshot", { page });
         if (!r.ok || !r.png) return out(r);
         await writeFile(target, r.png);
         return out({ ok: true, text: `Saved ${target}.` });
       }
-      return out(await renderHeadless({ file: resolve(file), page, out: resolve(target), format, ...(scale ? { scale } : {}) }));
+      return out(await renderHeadless({ file: resolve(file), page, out: resolve(target), format, ...(scale ? { scale } : {}), ...(frames ? { frames } : {}) }));
     }
     case "capture": {
       const [page, target] = args;

@@ -489,13 +489,14 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
  * finished state. Pure CSS, so it runs in sandboxed frames: scroll entrances follow the scroll (a view timeline,
  * their duration read as how far), and all of it is skipped for people who ask for reduced motion.
  */
-export function motionCss(doc: Doc): string {
+export function motionCss(doc: Doc, opts: { scrollByTime?: boolean } = {}): string {
   const used = new Set<string>();
   let rules = "";
   const enter = (sel: string, m: Motion, i: number) => {
     used.add(m.effect);
     const delay = (m.delayMs ?? 0) + i * (m.staggerMs ?? 0);
-    rules += m.trigger === "load"
+    // A filmstrip has no scroll to follow: scroll entrances play by the clock there, like load ones.
+    rules += m.trigger === "load" || opts.scrollByTime
       ? `${sel} { animation: buni-${m.effect} ${m.durationMs}ms ${m.curve ?? EASE[m.easing]} ${delay}ms backwards; }\n`
       : `${sel} { animation: buni-${m.effect} linear backwards; animation-timing-function: ${m.curve ?? EASE[m.easing]}; animation-timeline: view(); animation-range: entry ${clamp(Math.round(delay / 10), 0, 90)}% cover ${clamp(Math.round((delay + m.durationMs) / 20), 10, 60)}%; }\n`;
   };

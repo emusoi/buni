@@ -8,12 +8,12 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { pagesInOrder, type Doc, type Id, type Page } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
-import { fontFaces, renderPage } from "../tools/html.ts";
+import { fontFaces, motionCss, renderPage } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
 import { systemReport } from "../tools/report.ts";
-import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, printWithBrowser, type Sheet } from "./chrome.ts";
+import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, framesWithBrowser, printWithBrowser, type Sheet } from "./chrome.ts";
 import { icnsFile, icoFile, ICON_SIZES } from "./iconset.ts";
 
 export interface Reply {
@@ -29,6 +29,8 @@ export interface RenderJob {
   /** txt and ans: a terminal screen as its characters, plain or coloured. */
   format: "png" | "pdf" | "icons" | "system" | "txt" | "ans";
   scale?: number;
+  /** A PNG of the page's motion: this many moments side by side, from the start to when the last entrance ends. */
+  frames?: number;
 }
 
 const NEEDS = "Drawing pages needs Chrome, Chromium or Edge (or set BUNI_CHROME to one), or the buni desktop app. Everything else works without them.";
@@ -61,10 +63,12 @@ export async function renderHeadless(job: RenderJob, app: AppRenderer | undefine
       return { ok: true, text: `Saved ${job.out}.` };
     }
     // The app is handed the page by id, whichever way it was named here.
-    if (app) return await renderInApp(app, { ...job, page: page.id });
+    // A filmstrip is drawn here: the app draws pages at rest.
+    if (app && !job.frames) return await renderInApp(app, { ...job, page: page.id });
     const browser = findBrowser();
     if (!browser) return { ok: false, text: NEEDS };
     if (job.format === "icons") return await writeIconSet(browser, doc, page, dirname(job.file), job.out);
+    if (job.frames && job.format === "png") return await writeFilmstrip(browser, doc, page, dirname(job.file), job.out, job.frames);
     const bytes = await drawWithBrowser(browser, { ...sheet(doc, page.id, dirname(job.file)), format: job.format, ...(job.scale ? { scale: job.scale } : {}) });
     await writeFile(job.out, bytes);
     return { ok: true, text: `Saved ${job.out}.` };
@@ -90,11 +94,27 @@ async function writeIconSet(browser: string, doc: Doc, page: Page, dir: string, 
   return { ok: true, text: `Wrote ${files.length} files to ${outDir}: ${files.map(([n]) => n).join(", ")}.` };
 }
 
-/** A page as one HTML document at its own width, ready for a browser. */
-function sheet(doc: Doc, pageId: Id, dir: string): Sheet {
+/** A page as one HTML document at its own width, ready for a browser; `motion` adds its motion CSS. */
+function sheet(doc: Doc, pageId: Id, dir: string, motion = ""): Sheet {
   const { html, css } = renderPage(doc, pageId);
   const width = Number.parseInt(doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style.width ?? "", 10) || 1440;
-  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${fontFaces(doc, embeddedFont)}${css}</style></head><body>${html}</body></html>`, dir, width };
+  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${fontFaces(doc, embeddedFont)}${css}${motion}</style></head><body>${html}</body></html>`, dir, width };
+}
+
+/**
+ * The page's motion as one image an agent can read: `count` moments side by side, each labelled with its time, so
+ * timing and order can be checked without watching it. Scroll entrances play by the clock here.
+ */
+async function writeFilmstrip(browser: string, doc: Doc, page: Page, dir: string, out: string, count: number): Promise<Reply> {
+  const motion = motionCss(doc, { scrollByTime: true });
+  if (!motion) return { ok: false, text: `Nothing moves on ${page.name}; set_motion adds motion, and buni shot without --frames draws the page.` };
+  const s = sheet(doc, page.id, dir, motion);
+  const { pngs, times } = await framesWithBrowser(browser, s, count);
+  const each = Math.min(480, s.width);
+  const cells = pngs.map((png, i) => `<figure><img src="data:image/png;base64,${Buffer.from(png).toString("base64")}"><figcaption>${times[i]}ms</figcaption></figure>`).join("");
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#e9e9ec;font:600 14px/1 system-ui,sans-serif;color:#333}main{display:flex;gap:16px;padding:16px;align-items:flex-start}figure{margin:0;display:flex;flex-direction:column;gap:8px}img{width:${each}px;display:block;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}</style></head><body><main>${cells}</main></body></html>`;
+  await writeFile(out, await drawWithBrowser(browser, { html, dir, width: pngs.length * (each + 16) + 16, format: "png" }));
+  return { ok: true, text: `Saved ${out}: ${pngs.length} moments, ${times.join(", ")}ms.` };
 }
 
 /** A page of the design in `file` drawn as a PNG (base64): an MCP client's or an agent's screenshot. */

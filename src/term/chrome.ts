@@ -90,6 +90,26 @@ export function printWithBrowser(browser: string, sheet: Sheet): Promise<Uint8Ar
   });
 }
 
+/**
+ * The page's motion held still at `count` moments from its start to when the last entrance ends, one PNG each, with
+ * each moment in ms. A loop is caught wherever it is at that moment.
+ */
+export function framesWithBrowser(browser: string, sheet: Sheet, count: number, scale = 1): Promise<{ pngs: Uint8Array[]; times: number[] }> {
+  return inBrowser(browser, sheet, async (cdp, url) => {
+    await load(cdp, url, sheet.width, scale);
+    const end = Number(await readBack(cdp, "String(Math.max(0, ...document.getAnimations().map((a) => { a.pause(); return Number(a.effect?.getComputedTiming().endTime); }).filter(Number.isFinite)))"));
+    const pngs: Uint8Array[] = [], times: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const t = Math.round(count === 1 ? end : (end * i) / (count - 1));
+      // Two frames later the held moment is what the screen shows.
+      await readBack(cdp, `(() => { for (const a of document.getAnimations()) a.currentTime = ${t}; return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done("ok")))); })()`);
+      pngs.push(bytesOf(await cdp.call("Page.captureScreenshot", { format: "png" })));
+      times.push(t);
+    }
+    return { pngs, times };
+  });
+}
+
 /** What `expression` evaluates to on the loaded page, as a string (the page's script returns JSON). */
 export function evaluateWithBrowser(browser: string, sheet: Sheet, expression: string): Promise<string> {
   return inBrowser(browser, sheet, async (cdp, url) => {
