@@ -5,6 +5,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- `review_page {page, pin?}` reviews a page as it renders in Chrome, motion included, and answers with a score out
+  of 100 and each issue worst first (P1 to P3) on the layers it is on. The first rules are motion: overshooting
+  (bounce) curves, transitions that lay the page out, `transition: all`, ease-in, slow feedback, endless loops,
+  entrances on many separate parts of a page, one duration for everything, long staggers, no reduced-motion
+  alternative, and text left invisible once the page settles. `pin: true` leaves each issue as a comment on its layer
+  once.
 - An imported page keeps its motion. Keyframe entrances and hover or press responses that set_motion can express
   become the layer's motion, with the page's exact timing curve kept as `curve` (a format addition: a motion may
   carry its own `cubic-bezier`). Loops and custom keyframes Buni can't hold are left as one comment per kind on the

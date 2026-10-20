@@ -1,4 +1,5 @@
 import { captureHtmlPage, htmlPageInput } from "../import-page.ts";
+import { pinTag, reviewPage, reviewText } from "../review.ts";
 import type { ToolOutput } from "../kit.ts";
 import { sourceRefs } from "../../format/sources.ts";
 // Pages and layers: creating pages, writing HTML into them, styles, text, motion, tokens, comments and the canvas. One
@@ -649,6 +650,31 @@ export const pagesTools = {
       if (!a.set) return { label: "Read tokens", ops: [], reply: JSON.stringify(doc.tokens, null, 2) };
       const ops: Op[] = Object.entries(a.set).map(([name, value]) => (value === "" ? { kind: "token", name } : { kind: "token", name, value }));
       return { label: `Set ${ops.length} token${ops.length === 1 ? "" : "s"}`, ops, reply: "Tokens updated." };
+    },
+  }),
+
+  review_page: tool({
+    description:
+      "Review a page as it renders, motion included: rules a careful reviewer flags every time (bouncy or slow motion, transitions that lay the page out, " +
+      "motion on everything, content left invisible, …), worst first, with the layers each is on and a score out of 100 that rises as they are fixed. " +
+      "pin: true puts each issue as a comment on its first layer (not twice). It catches the mechanical part; judge the design itself with read_skill critique.",
+    input: { page: z.string(), pin: z.boolean().optional() },
+    run: async (doc, a, ctx) => {
+      const p = page(doc, a.page);
+      let review;
+      try { review = await reviewPage(doc, p.id); } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
+      const reply = reviewText(doc, p.name, review);
+      if (!a.pin) return { label: "Review", ops: [], reply };
+      const ids = new Ids(doc, ctx);
+      const ops: Op[] = [];
+      for (const issue of review.issues) {
+        const at = issue.nodes[0] ?? p.frame;
+        const pinned = Object.values(doc.comments).some((c) => c.node === at && c.state !== "resolved" && c.posts[0]?.body.startsWith(pinTag(issue.rule)));
+        if (pinned) continue;
+        const body = `${pinTag(issue.rule)} ${issue.severity.toUpperCase()} ${issue.messages[0]}${issue.messages.length > 1 ? ` (${issue.messages.length} places${issue.nodes.length > 1 ? `, also ${issue.nodes.slice(1, 6).join(", ")}` : ""})` : ""}`;
+        ops.push({ kind: "put", collection: "comments", value: { id: ids.next(), node: at, state: "open", posts: [{ author: ctx.author, body, at: ctx.now() }] } });
+      }
+      return { label: "Pin review", ops, reply: ops.length ? `${reply}\nPinned ${ops.length} as comments.` : review.issues.length ? `${reply}\nAlready pinned.` : reply };
     },
   }),
 
