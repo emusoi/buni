@@ -58,11 +58,27 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   return { ok, reply };
 }
 
+/** Why a snap failed, in words the person can act on. */
+function why(e: unknown): string {
+  const text = e instanceof Error ? e.message : String(e);
+  if (/native messaging host/i.test(text)) return "buni isn't set up for Chrome yet: run  buni extension  once, then try again.";
+  if (/cannot be scripted|chrome:\/\/|extensions gallery|Cannot access/i.test(text)) return "Chrome doesn't let extensions read this page (its own pages and the Web Store). Try another page.";
+  return text;
+}
+
+async function failed(e: unknown): Promise<SnapAnswer> {
+  const reply = why(e);
+  await chrome.storage.local.set({ last: { ok: false, reply, page: "", url: "", at: Date.now() } satisfies LastSnap });
+  await chrome.action.setBadgeText({ text: "!" });
+  await chrome.action.setBadgeBackgroundColor({ color: "#c0392b" });
+  return { ok: false, reply };
+}
+
 chrome.runtime.onMessage.addListener((message: SnapRequest, _sender, respond: (a: SnapAnswer) => void) => {
-  snap(message).then(respond, (e: unknown) => {
-    const reply = /native messaging host/i.test(String(e)) ? "buni isn't set up for Chrome yet: run  buni extension  once, then try again." : e instanceof Error ? e.message : String(e);
-    void chrome.storage.local.set({ last: { ok: false, reply, page: "", url: "", at: Date.now() } satisfies LastSnap });
-    respond({ ok: false, reply });
-  });
+  const done = snap(message).catch(failed);
+  // A pick waits for the person to click the page, long after the popup closed: say at once it started, so the popup
+  // can close knowing the request arrived. Its result shows on the icon and in the popup next time.
+  if (message.mode === "pick") { respond({ ok: true, reply: "Picking" }); void done; return false; }
+  void done.then(respond);
   return true;
 });

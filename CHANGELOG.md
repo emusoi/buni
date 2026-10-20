@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Fixed: Pick a part in the Chrome extension. The popup now closes only once the request has arrived, the page's
+  own mouse and pointer handlers don't fire while picking (a card inside a link no longer navigates), and a pick that
+  fails shows a red badge and its reason when the popup opens again. While picking, ↑ takes the part around the one
+  under the pointer and ↓ goes back; Enter captures.
 - Import keeps the sizes a page set: a box keeps its width or height whenever laying it out at auto would change it
   (a 44px row, a progress fill at 62%, a full-width table), instead of guessing from what it holds. Tables keep
   `border-collapse`, `border-spacing` and `table-layout`; a fieldset and legend lose the browser's border when the
