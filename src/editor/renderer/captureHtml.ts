@@ -1,5 +1,6 @@
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { sourceRefs, type SourceRef } from "buni/format/sources.ts";
+import { elementMotion, pageMotion } from "./motionRead.ts";
 
 const INHERITED = ["color", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing", "text-align", "text-transform", "white-space", "word-break"];
 const PROPERTIES = ["display", "position", "top", "right", "bottom", "left", "z-index", "box-sizing", "min-width", "max-width", "min-height", "max-height", "padding", "border", "border-radius", "border-top", "border-right", "border-bottom", "border-left", "background-color", "background-image", "background-size", "background-position", "background-repeat", "box-shadow", "opacity", "overflow-x", "overflow-y", "gap", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "align-items", "align-self", "justify-content", "justify-items", "justify-self", "order", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "object-fit", "object-position", "transform", "transform-origin", "text-decoration", "text-shadow", "vertical-align", "list-style-type"];
@@ -47,6 +48,10 @@ export async function captureHtml(selected: Element, options: {
   const warnings = new Set<string>();
   const assets = new Map<string, Promise<string>>();
   let count = 0;
+  const motions = pageMotion(selected.ownerDocument, view);
+  // Motion Buni can't hold, once per kind (a skeleton row's shimmer, thirty times over): the first layer, and how many.
+  const unkept = new Map<string, { copy: Element; count: number }>();
+  let moving = 0;
   const saveImage = async (url: string): Promise<string> => {
     let result = assets.get(url);
     if (!result) {
@@ -185,6 +190,12 @@ export async function captureHtml(selected: Element, options: {
       });
     }
     copy.setAttribute("style", await style(cs, parent, root, el));
+    const moves = elementMotion(el, cs, motions, view);
+    if (moves.motion.length) { copy.setAttribute("data-buni-motion", JSON.stringify(moves.motion)); moving++; }
+    for (const css of moves.unkept) {
+      const seen = unkept.get(css);
+      if (seen) seen.count++; else unkept.set(css, { copy, count: 1 });
+    }
     const name = el.getAttribute("layer-name") || el.getAttribute("aria-label") || el.id || (root ? options.symbol || el.querySelector("h1,h2,h3")?.textContent?.trim().slice(0, 60) || "Imported section" : undefined);
     if (name) copy.setAttribute("layer-name", name);
     const refs = source(el, root);
@@ -219,5 +230,11 @@ export async function captureHtml(selected: Element, options: {
   };
   const root = await visit(selected, undefined, true);
   if (!root) throw new Error("This element is hidden. Choose a visible section.");
+  for (const [css, { copy, count: many }] of unkept) {
+    const notes = [copy.getAttribute("data-buni-note"), `On the page this moves in a way Buni's motion can't hold${many > 1 ? ` (and so do ${many - 1} more layers like it)` : ""}: ${css}`];
+    copy.setAttribute("data-buni-note", notes.filter(Boolean).join("\n"));
+  }
+  if (moving) warnings.add(`${moving} layer${moving === 1 ? " moves" : "s move"} as on the page (set_motion changes it).`);
+  if (unkept.size) warnings.add(`${unkept.size} kind${unkept.size === 1 ? "" : "s"} of motion Buni can't hold ${unkept.size === 1 ? "is" : "are"} noted as comments on the layers.`);
   return { html: root.outerHTML, count, warnings: [...warnings] };
 }

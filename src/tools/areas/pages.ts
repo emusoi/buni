@@ -160,6 +160,12 @@ export const pagesTools = {
       if (!parent) throw new ToolError("No destination frame.");
       const created: Id[] = [];
       ops.push(...draftOps(ids, drafts, parent, madePage ? "a0" : indexAt(doc, parent, a.after), created, madePage ? null : nextIndex(doc, parent, a.after)));
+      // What a layer did that it can't do here (an import's loops and custom keyframes), as a comment on it. Drafts
+      // were created in this same order, each before its children.
+      const all = (ds: Draft[]): Draft[] => ds.flatMap((d) => [d, ...(d.kind === "frame" ? all(d.children) : [])]);
+      all(drafts).forEach((d, i) => {
+        for (const body of d.notes ?? []) ops.push({ kind: "put", collection: "comments", value: { id: ids.next(), node: created[i]!, state: "open", posts: [{ author: ctx.author, body, at: ctx.now() }] } });
+      });
       return { label: "Import HTML", ops, reply: `${madePage ? `Created page ${madePage}.\n` : ""}Created ${created.length} nodes: ${created.join(", ")}.\n${warnings.map((w) => `Warning: ${w}`).join("\n")}` };
     },
   }),

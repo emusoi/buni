@@ -47,6 +47,8 @@ export const RESPONSES = ["lift", "grow", "shrink", "dim"] as const;
 export const EASINGS = ["out", "in-out", "dramatic", "linear"] as const;
 export type MotionEffect = (typeof ENTRANCES)[number] | (typeof RESPONSES)[number];
 export type Easing = (typeof EASINGS)[number];
+/** A motion's own curve: a cubic-bezier of four plain numbers, nothing else that could reach the CSS. */
+export const CURVE = /^cubic-bezier\(\s*-?\d*\.?\d+\s*(?:,\s*-?\d*\.?\d+\s*){3}\)$/;
 
 export interface Motion {
   trigger: MotionTrigger;
@@ -55,6 +57,8 @@ export interface Motion {
   durationMs: number;
   delayMs?: number;
   easing: Easing;
+  /** The exact timing curve, "cubic-bezier(…)", when it is none of the easings': kept from a page a design was imported from. */
+  curve?: string;
   /** Load and scroll only: the layer's children enter one after another, this far apart, instead of the layer as one. */
   staggerMs?: number;
 }
@@ -519,7 +523,7 @@ export function outline(doc: Doc, n: Node, depth: number, lines: string[]): void
     : n.kind === "instance" ? ` → component "${doc.shared[n.shared]?.name ?? n.shared}" (${n.shared})`
     : n.kind === "image" ? ` asset "${n.asset}"`
     : "";
-  const moves = n.motion?.length ? ` moves: ${n.motion.map((m) => `${m.trigger} ${m.effect} ${m.durationMs}ms`).join(", ")}` : "";
+  const moves = n.motion?.length ? ` moves: ${n.motion.map((m) => `${m.trigger} ${m.effect} ${m.durationMs}ms${m.curve ? ` ${m.curve}` : ""}`).join(", ")}` : "";
   lines.push(`${"  ".repeat(depth)}${n.kind}${n.tag ? `<${n.tag}>` : ""} ${n.id} "${n.name}"${detail}${moves}`);
   const sources = n.sources ?? (n.kind === "instance" ? doc.shared[n.shared]?.sources : undefined);
   for (const source of sources ?? []) lines.push(`${"  ".repeat(depth + 1)}source: ${sourceLabel(source)}`);

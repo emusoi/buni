@@ -59,4 +59,5 @@ Scale with the size of the change and the distance travelled; routine interactio
   - Easing: out for nearly everything, in-out for movement between places, dramatic for the one hero reveal.
 - Choose the one orchestrated moment first (usually the load sequence of a persuade page's hero: headline, then supporting line, then the product, 100–250ms apart), then add scroll entrances only where a section's arrival tells the story, and press responses on the main actions.
 - Reduced motion is handled for you: every set_motion is skipped for people who ask for less.
+- An imported page keeps its motion: entrances and hover or press responses become the layer's motion with the page's exact curve (read_tree shows it), and what Buni can't hold (loops, custom keyframes) is a comment on the layer. set_motion replaces an imported motion with Buni's easings.
 - What set_motion can't express (a cross-fade between product colours, a shared-element move between pages) goes in the journey (set_journey) or a comment on the layer (comment): what moves, from where, how long, which easing. A builder can't infer it from a still frame.

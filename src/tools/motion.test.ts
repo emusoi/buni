@@ -26,3 +26,16 @@ test("motion becomes CSS for Play and export, behind reduced motion, and nothing
   expect(css).not.toContain(".b-list {");
   expect(exportSite(doc, embeddedFont).get("styles/shared.css")).toContain("buni-rise");
 });
+
+test("an imported curve is drawn as it was, survives the file, and nothing but a cubic-bezier passes as one", async () => {
+  const { serializeDoc } = await import("../format/serialize.ts");
+  const { parseDoc } = await import("../format/parse.ts");
+  const doc: Doc = { ...emptyDoc(), nodes: {} };
+  doc.pages.p = { id: "p", name: "Home", route: "/", frame: "root", index: "a0" } as Doc["pages"][string];
+  doc.nodes.root = frame("root", undefined, "a", { motion: [{ trigger: "load", effect: "rise", durationMs: 500, easing: "out", curve: "cubic-bezier(0.34, 1.56, 0.64, 1)" }] });
+  expect(motionCss(doc)).toContain("animation: buni-rise 500ms cubic-bezier(0.34, 1.56, 0.64, 1) 0ms backwards");
+  const back = parseDoc(serializeDoc(doc));
+  expect(back.ok && back.doc.nodes.root!.motion?.[0]?.curve).toBe("cubic-bezier(0.34, 1.56, 0.64, 1)");
+  const bad = serializeDoc(doc).replace("cubic-bezier(0.34, 1.56, 0.64, 1)", "cubic-bezier(0,0,1,1); background: url(x)");
+  expect(parseDoc(bad).ok).toBe(false);
+});

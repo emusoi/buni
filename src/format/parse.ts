@@ -6,6 +6,7 @@ import {
   FORMAT_VERSION,
   overrideTarget,
   MOTION_TRIGGERS,
+  CURVE,
   RESPONSES,
   emptyDoc,
   entersOn,
@@ -370,7 +371,7 @@ class Reader {
   }
 
   motion(v: unknown, path: string): Motion {
-    const o = this.obj(v, path, ["trigger", "effect", "durationMs", "delayMs", "easing", "staggerMs"]);
+    const o = this.obj(v, path, ["trigger", "effect", "durationMs", "delayMs", "easing", "curve", "staggerMs"]);
     const trigger = this.oneOf(o.trigger, join(path, "trigger"), MOTION_TRIGGERS);
     const effect = entersOn(trigger) ? this.oneOf(o.effect, join(path, "effect"), ENTRANCES) : this.oneOf(o.effect, join(path, "effect"), RESPONSES);
     const ms = (k: "durationMs" | "delayMs" | "staggerMs") => {
@@ -381,9 +382,17 @@ class Reader {
     if (o.staggerMs !== undefined && !entersOn(trigger)) this.fail(join(path, "staggerMs"), "only load and scroll stagger their children");
     return {
       trigger, effect, durationMs: ms("durationMs"), easing: this.oneOf(o.easing, join(path, "easing"), EASINGS),
+      ...(o.curve !== undefined ? { curve: this.curve(o.curve, join(path, "curve")) } : {}),
       ...(o.delayMs !== undefined ? { delayMs: ms("delayMs") } : {}),
       ...(o.staggerMs !== undefined ? { staggerMs: ms("staggerMs") } : {}),
     };
+  }
+
+  /** Only a cubic-bezier of four numbers: it goes into CSS as it is. */
+  curve(v: unknown, path: string): string {
+    const s = this.str(v, path);
+    if (!CURVE.test(s)) this.fail(path, "expected cubic-bezier(x1, y1, x2, y2)");
+    return s;
   }
 
   bind(v: unknown, path: string): Bind {

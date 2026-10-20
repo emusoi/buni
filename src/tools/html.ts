@@ -4,14 +4,15 @@ import { findIcons, iconSvg } from "./icons.ts";
 import { paletteVars } from "./terminal.ts";
 import { FONT_FAMILIES } from "./fonts.gen.ts";
 import { UNSAFE_TAGS } from "../format/parse.ts";
-import { CELL, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
+import { z } from "zod";
+import { CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
 
 // ---------------------------------------------------------------------------
 // HTML in: agent markup to node drafts
 // ---------------------------------------------------------------------------
 
-/** A node before it has an id, parent and index in a document. */
-export type Draft = SourceOwner & (
+/** A node before it has an id, parent and index in a document; notes become comments on it (an import's what-it-lost). */
+export type Draft = SourceOwner & { motion?: Motion[]; notes?: string[] } & (
   | { kind: "frame"; name: string; tag?: string; style: Style; children: Draft[] }
   | { kind: "text"; name: string; tag?: string; style: Style; text: string; filled?: true }
   | { kind: "image"; name: string; style: Style; asset: Id; alt: string }
@@ -24,7 +25,7 @@ export interface ParsedHtml {
   warnings: string[];
 }
 
-const KNOWN_ATTRS = new Set(["data-buni-sources", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
+const KNOWN_ATTRS = new Set(["data-buni-sources", "data-buni-motion", "data-buni-note", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
 
 /** Form fields whose text is their placeholder: kept as text layers with this tag, drawn as real fields. */
 const FIELD_TAGS = new Set(["input", "textarea"]);
@@ -179,10 +180,29 @@ function bareDraft(el: P.Element, warnings: string[], keep: boolean): Draft | un
   return { kind: "frame", name: layer ?? tag, tag, style, children: childDrafts(kids, warnings, keep, spaces) };
 }
 
+const millis = z.number().int().min(0).max(10_000);
+/** Motion an import read off a page, as set_motion would have set it. */
+const draftMotion = z.array(z.object({
+  trigger: z.enum(MOTION_TRIGGERS), effect: z.enum([...ENTRANCES, ...RESPONSES]), durationMs: millis, delayMs: millis.optional(),
+  easing: z.enum(EASINGS), curve: z.string().regex(CURVE).optional(), staggerMs: millis.optional(),
+}).strict().refine((m) => entersOn(m.trigger) === (ENTRANCES as readonly string[]).includes(m.effect), "an entrance for load and scroll, a response for hover and press"))
+  .refine((list) => new Set(list.map((m) => m.trigger)).size === list.length, "one motion per trigger");
+
 function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | undefined {
   const draft = bareDraft(el, warnings, keep);
+  if (!draft) return draft;
+  const motion = attr(el, "data-buni-motion");
+  if (motion !== undefined) {
+    try {
+      const parsed = draftMotion.safeParse(JSON.parse(motion));
+      if (!parsed.success) throw new Error(parsed.error.issues.map((e) => e.message).join("; "));
+      if (parsed.data.length) draft.motion = parsed.data.map(({ delayMs, curve, staggerMs, ...m }) => ({ ...m, ...(delayMs !== undefined ? { delayMs } : {}), ...(curve !== undefined ? { curve } : {}), ...(staggerMs !== undefined ? { staggerMs } : {}) }));
+    } catch (error) { warnings.push(`Motion was dropped: ${error instanceof Error ? error.message : String(error)}`); }
+  }
+  const note = attr(el, "data-buni-note");
+  if (note) draft.notes = [note];
   const raw = attr(el, "data-buni-sources");
-  if (!draft || raw === undefined) return draft;
+  if (raw === undefined) return draft;
   try {
     const parsed = sourceRefs.safeParse(JSON.parse(raw));
     if (!parsed.success) throw new Error(parsed.error.issues.map((e) => e.message).join("; "));
@@ -476,8 +496,8 @@ export function motionCss(doc: Doc): string {
     used.add(m.effect);
     const delay = (m.delayMs ?? 0) + i * (m.staggerMs ?? 0);
     rules += m.trigger === "load"
-      ? `${sel} { animation: buni-${m.effect} ${m.durationMs}ms ${EASE[m.easing]} ${delay}ms backwards; }\n`
-      : `${sel} { animation: buni-${m.effect} linear backwards; animation-timing-function: ${EASE[m.easing]}; animation-timeline: view(); animation-range: entry ${clamp(Math.round(delay / 10), 0, 90)}% cover ${clamp(Math.round((delay + m.durationMs) / 20), 10, 60)}%; }\n`;
+      ? `${sel} { animation: buni-${m.effect} ${m.durationMs}ms ${m.curve ?? EASE[m.easing]} ${delay}ms backwards; }\n`
+      : `${sel} { animation: buni-${m.effect} linear backwards; animation-timing-function: ${m.curve ?? EASE[m.easing]}; animation-timeline: view(); animation-range: entry ${clamp(Math.round(delay / 10), 0, 90)}% cover ${clamp(Math.round((delay + m.durationMs) / 20), 10, 60)}%; }\n`;
   };
   for (const n of Object.values(doc.nodes)) {
     if (!n.motion?.length) continue;
@@ -490,7 +510,7 @@ export function motionCss(doc: Doc): string {
     const responses = n.motion.filter((x) => !entersOn(x.trigger));
     if (!responses.length) continue;
     const ms = Math.max(...responses.map((m) => m.durationMs));
-    const ease = EASE[responses[0]?.easing ?? "out"];
+    const ease = responses[0]?.curve ?? EASE[responses[0]?.easing ?? "out"];
     rules += `${sel} { transition: transform ${ms}ms ${ease}, opacity ${ms}ms ${ease}; }\n`;
     for (const m of responses) rules += `${sel}:${m.trigger === "hover" ? "hover" : "active"} { ${RESPOND[m.effect]}; }\n`;
   }

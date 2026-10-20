@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- An imported page keeps its motion. Keyframe entrances and hover or press responses that set_motion can express
+  become the layer's motion, with the page's exact timing curve kept as `curve` (a format addition: a motion may
+  carry its own `cubic-bezier`). Loops and custom keyframes Buni can't hold are left as one comment per kind on the
+  first layer that has them, with the CSS.
 - `import_html_page {url, live: true}` snapshots a JavaScript app as a person sees it: the page's scripts run, it is
   captured once it settles, `cookies` signs it in and `wait_for` fails loudly on a login screen. Local Buni only.
   What a live page shows as pixels comes in as images: canvases (a PDF reader's pages), video frames, images by URL

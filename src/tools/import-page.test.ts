@@ -274,3 +274,26 @@ test.skipIf(!browser)("a tag reset to look like its parent keeps the reset: ital
     expect(nodes.find((n) => n.kind === "svg")!.style).toMatchObject({ width: "14px", height: "14px", flexShrink: "0" });
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
+
+test.skipIf(!browser)("motion comes along: an entrance and a hover lift become the layer's motion, its own curve kept, and a loop Buni can't hold is a comment on the layer", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = `<style>
+      @keyframes up { from { opacity: 0; transform: translateY(20px) } }
+      @keyframes spin { to { transform: rotate(360deg) } }
+      .hero { animation: up 500ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms both }
+      .card { transition: transform 150ms ease-out } .card:hover { transform: translateY(-2px) }
+      .spinner { width: 12px; height: 12px; animation: spin 1s linear infinite }
+    </style><main id="page"><h1 id="hero" class="hero">Hello</h1><div id="card" class="card">Card</div><i id="one" class="spinner"></i><i id="two" class="spinner"></i></main>`;
+    const result = await ws.call("agent", "import_html_page", { html, page: { name: "Moving" } });
+    expect(result.ok).toBe(true);
+    const doc = ws.view();
+    const named = (name: string) => Object.values(doc.nodes).find((n) => n.name === name)!;
+    expect(named("hero").motion).toEqual([{ trigger: "load", effect: "rise", durationMs: 500, delayMs: 100, easing: "out", curve: "cubic-bezier(0.34, 1.56, 0.64, 1)" }]);
+    expect(named("card").motion).toEqual([{ trigger: "hover", effect: "lift", durationMs: 150, easing: "out", curve: "cubic-bezier(0, 0, 0.58, 1)" }]);
+    const comments = Object.values(doc.comments);
+    expect(comments.map((c) => c.node)).toEqual([named("one").id]);
+    expect(comments[0]!.posts[0]!.body).toContain("and so do 1 more layers like it");
+    expect(comments[0]!.posts[0]!.body).toContain("animation: spin 1s linear 0s infinite");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
