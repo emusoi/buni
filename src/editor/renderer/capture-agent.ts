@@ -5,9 +5,12 @@ export interface CaptureOptions {
   url?: string;
   file?: string;
   symbol?: string;
+  /** Draw what can't be read from the page (frames, embedded PDFs, cross-origin pixels) from the screen. */
+  shots?: boolean;
 }
 export interface CapturedImage { id: string; base64: string; mime: string }
-export interface CapturedHtml { html: string; count: number; warnings: string[]; images: CapturedImage[] }
+export interface Shot { id: string; x: number; y: number; width: number; height: number }
+export interface CapturedHtml { html: string; count: number; warnings: string[]; images: CapturedImage[]; shots: Shot[] }
 
 declare global {
   interface Window { buniCaptureHtml(options: CaptureOptions): Promise<string> }
@@ -20,12 +23,18 @@ window.buniCaptureHtml = async (options) => {
     const selected = matches[0];
     if (!selected) throw new Error("No HTML body was found.");
     const images: CapturedImage[] = [];
-    const result = await captureHtml(selected, { ...options, upload: async (_name, base64, mime) => {
+    const shots: Shot[] = [];
+    const { shots: drawn, ...rest } = options;
+    const result = await captureHtml(selected, { ...rest, upload: async (_name, base64, mime) => {
       const id = `buni-import-image-${images.length + 1}-asset`;
       images.push({ id, base64, mime });
       return id;
-    } });
-    return JSON.stringify({ ...result, images } satisfies CapturedHtml);
+    }, ...(drawn ? { shot: (box: Omit<Shot, "id">) => {
+      const id = `buni-import-shot-${shots.length + 1}-asset`;
+      shots.push({ id, ...box });
+      return id;
+    } } : {}) });
+    return JSON.stringify({ ...result, images, shots } satisfies CapturedHtml);
   } catch (e) {
     return JSON.stringify({ error: e instanceof Error ? e.message : String(e) });
   }

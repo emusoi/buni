@@ -161,13 +161,116 @@ test.skipIf(!browser)("a native button with a border on one side imports without
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
 
-test.skipIf(!browser)("a flex item holding only text sizes to its text; a box with children keeps its measured width", async () => {
+test.skipIf(!browser)("a flex item holding only text sizes to its text; a box with children, or text drawn in a box, keeps its measured size", async () => {
   const { dir, ws } = await design();
   try {
-    const html = '<div style="display:flex;gap:8px"><b id="label" style="overflow:hidden;white-space:nowrap">98 questions from Lido</b><div id="box" style="width:120px"><span>Box</span></div></div>';
+    const html = '<div style="display:flex;gap:8px"><b id="label" style="overflow:hidden;white-space:nowrap">98 questions from Lido</b><div id="box" style="width:120px"><span>Box</span></div><span id="avatar" style="width:24px;height:24px;background:green;display:flex;align-items:center;justify-content:center">R</span></div>';
     expect((await ws.call("agent", "import_html_page", { html, page: { name: "Row" } })).ok).toBe(true);
     const nodes = Object.values(ws.view().nodes);
     expect(nodes.find((n) => n.name === "label")!.style.width).toBeUndefined();
     expect(nodes.find((n) => n.name === "box")!.style.width).toBe("120px");
+    expect(nodes.find((n) => n.name === "avatar")!.style).toMatchObject({ width: "24px", height: "24px" });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("live imports keep a PDF reader's pictures: canvas pages, images by URL and frames become images, pdf.js text layers are left out, scrolling panes keep their height", async () => {
+  const { dir, ws } = await design();
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch(req) {
+    if (new URL(req.url).pathname === "/pixel.png") return new Response(Buffer.from(png, "base64"), { headers: { "content-type": "image/png" } });
+    return new Response(`<body style="margin:0"><div id="app" style="height:100dvh;display:flex;overflow:hidden">
+      <aside style="flex:0 0 300px;overflow:auto"><div style="height:4070px"><img src="/pixel.png" alt="Thumb" style="width:40px;height:40px"></div></aside>
+      <main style="flex:1;overflow:auto"><div style="height:36192px;position:relative">
+        <canvas id="page" width="200" height="100" style="width:200px;height:100px"></canvas>
+        <div class="textLayer" style="position:absolute;inset:0;color:transparent"><span>Invoice 4471</span></div>
+        <iframe srcdoc="<p>Framed</p>" style="width:300px;height:150px;border:0"></iframe>
+      </div></main></div>
+      <script>const c = document.getElementById("page").getContext("2d"); c.fillStyle = "red"; c.fillRect(0, 0, 200, 100);</script></body>`, { headers: { "content-type": "text/html" } });
+  } });
+  try {
+    const result = await ws.call("agent", "import_html_page", { url: `http://localhost:${server.port}/`, live: true, wait_for: "#page", page: { name: "Reader" } });
+    expect(result.ok).toBe(true);
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.filter((n) => n.kind === "text").map((n) => n.text)).not.toContain("Invoice 4471");
+    const pictures = nodes.filter((n) => n.kind === "image");
+    expect(pictures).toHaveLength(3);
+    expect(Object.keys(ws.view().attachments)).toHaveLength(3);
+    expect(pictures.find((n) => n.style.width === "300px")?.style.height).toBe("150px");
+    const panes = nodes.filter((n) => n.style.overflowY === "auto");
+    expect(panes.map((n) => n.style.height)).toEqual(["900px", "900px"]);
+  } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
+}, 90_000);
+
+test.skipIf(!browser)("a live layout that fills the window is captured in a desktop window, not grown to what it first seemed to need", async () => {
+  const { dir, ws } = await design();
+  // Its pane overflows in a desktop window but fits any window grown to show it: the height follows the window.
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response(`<body style="margin:0"><div style="height:100dvh;display:grid;grid-template-rows:56px 1fr">
+    <header>Files</header><main style="overflow:auto"><div id="reader" style="height:calc(9000px - 100dvh)">Page 1</div></main></div></body>`, { headers: { "content-type": "text/html" } }) });
+  try {
+    expect((await ws.call("agent", "import_html_page", { url: `http://localhost:${server.port}/`, live: true, page: { name: "Reader" } })).ok).toBe(true);
+    expect(Object.values(ws.view().nodes).find((n) => n.name === "main")?.style.height).toBe("844px");
+  } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
+}, 90_000);
+
+test.skipIf(!browser)("a live canvas drawn after the DOM settles, as a PDF page is, is captured once it is drawn", async () => {
+  const { dir, ws } = await design();
+  // The canvas is in place at once and drawn a second later, with no DOM change in between.
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response(`<body style="margin:0"><canvas id="page" width="200" height="100"></canvas>
+    <script>setTimeout(() => { const c = document.getElementById("page").getContext("2d"); c.fillStyle = "red"; c.fillRect(0, 0, 200, 100); }, 1200)</script></body>`, { headers: { "content-type": "text/html" } }) });
+  try {
+    expect((await ws.call("agent", "import_html_page", { url: `http://localhost:${server.port}/`, live: true, wait_for: "#page", page: { name: "Drawn" } })).ok).toBe(true);
+    expect((await ws.call("agent", "import_html_page", { html: '<canvas width="200" height="100"></canvas>', page: { name: "Blank" } })).ok).toBe(true);
+    const files = Object.values(ws.view().attachments).map((a) => a.path);
+    expect(new Set(files).size).toBe(2);
+  } finally { server.stop(true); await rm(dir, { recursive: true, force: true }); }
+}, 90_000);
+
+test.skipIf(!browser)("a grid keeps how it places its items, and a controlled field keeps its placeholder", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = '<div id="grid" style="display:grid;grid-template-columns:300px;justify-items:start"><span id="pill" style="display:inline-flex;padding:3px 8px;background:green">Accepted</span></div><input id="search" value="" placeholder="Search 15 documents">';
+    expect((await ws.call("agent", "import_html_page", { html, page: { name: "Request" } })).ok).toBe(true);
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.find((n) => n.name === "grid")!.style.justifyItems).toBe("start");
+    const search = nodes.find((n) => n.name === "search")!;
+    expect(search.kind === "text" && search.text).toBe("Search 15 documents");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("a flex item as wide as its mixed content sizes to it, so a wider font in Buni doesn't wrap it", async () => {
+  const { dir, ws } = await design();
+  try {
+    const li = (n: string, words: string) => `<li style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;background:green"></i><b>${n}</b> ${words}</li>`;
+    const html = `<ul id="legend" style="display:flex;gap:6px 18px;margin:0;padding:0;list-style:none">${li("12", "accepted")}${li("3", "waiting on Sam")}</ul>`;
+    expect((await ws.call("agent", "import_html_page", { html, page: { name: "Legend" } })).ok).toBe(true);
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.filter((n) => n.name === "li").map((n) => n.style.width)).toEqual([undefined, undefined]);
+    expect(nodes.filter((n) => n.name === "i").map((n) => n.style.width)).toEqual(["8px", "8px"]);
+    expect(nodes.find((n) => n.name === "legend")!.style.padding).toBe("0px");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("a PDF page box holding only its overlaid canvas keeps its height, and an empty canvas is left out", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = `<div id="page" style="position:relative;overflow:hidden;width:200px;height:260px;background:white"><div style="position:absolute;inset:0"><canvas width="200" height="260" style="width:200px;height:260px"></canvas></div></div><canvas id="unused" width="0" height="0"></canvas>`;
+    const result = await ws.call("agent", "import_html_page", { html, page: { name: "PDF page" } });
+    expect(result.ok).toBe(true);
+    expect(result.reply).not.toContain("unreadable");
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.find((n) => n.name === "page")!.style.height).toBe("260px");
+    expect(nodes.find((n) => n.name === "unused")).toBeUndefined();
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("a tag reset to look like its parent keeps the reset: italic, heading size and field font aren't the browser's; an icon keeps its size", async () => {
+  const { dir, ws } = await design();
+  try {
+    const html = `<style>textarea { font: inherit }</style><div id="card" style="font:13px Arial"><i id="label" style="font-style:normal">Choose files</i><h2 id="heading" style="font:inherit">A quick question</h2><textarea id="composer" placeholder="Ask Lido"></textarea><label style="display:flex;gap:8px"><svg id="search" width="14" height="14" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/></svg><input placeholder="Search conversations"></label></div>`;
+    expect((await ws.call("agent", "import_html_page", { html, page: { name: "Portal" } })).ok).toBe(true);
+    const nodes = Object.values(ws.view().nodes);
+    expect(nodes.find((n) => n.name === "label")!.style.fontStyle).toBe("normal");
+    expect(nodes.find((n) => n.name === "heading")!.style).toMatchObject({ fontSize: "13px", fontWeight: "400" });
+    expect(nodes.find((n) => n.name === "composer")!.style.fontFamily).toBe("Arial");
+    expect(nodes.find((n) => n.kind === "svg")!.style).toMatchObject({ width: "14px", height: "14px", flexShrink: "0" });
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);

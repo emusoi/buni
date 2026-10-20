@@ -23,6 +23,7 @@ export const htmlPageInput = {
 const captured = z.object({
   html: z.string(), count: z.number().int().positive(), warnings: z.array(z.string()),
   images: z.array(z.object({ id: z.string(), base64: z.string(), mime: z.string() })),
+  shots: z.array(z.object({ id: z.string(), x: z.number(), y: z.number(), width: z.number(), height: z.number() })).default([]),
 });
 
 export async function captureHtmlPage(input: z.infer<z.ZodObject<typeof htmlPageInput>>, width: number, ctx: ToolContext): Promise<CapturedHtml> {
@@ -37,9 +38,12 @@ export async function captureHtmlPage(input: z.infer<z.ZodObject<typeof htmlPage
     const sources = { ...(input.source_file || input.file ? { file: input.source_file ?? input.file } : {}), ...(input.symbol ? { symbol: input.symbol } : {}) };
     if (input.live && input.url) {
       const url = importUrl(input.url).href;
-      const options = { ...(input.selector ? { selector: input.selector } : {}), url, ...sources };
-      return parseCapture(await evaluateLiveWithBrowser(browser, { url, width, ...(input.cookies ? { cookies: input.cookies } : {}), ...(input.wait_for ? { waitFor: input.wait_for } : {}) },
-        `${await captureSource()};window.buniCaptureHtml(${JSON.stringify(options)})`), []);
+      const options = { ...(input.selector ? { selector: input.selector } : {}), url, ...sources, shots: true };
+      // Frames, embedded PDFs and cross-origin pixels can't be read from the page; they're drawn from the screen.
+      const { value, pngs } = await evaluateLiveWithBrowser(browser, { url, width, ...(input.cookies ? { cookies: input.cookies } : {}), ...(input.wait_for ? { waitFor: input.wait_for } : {}) },
+        `${await captureSource()};window.buniCaptureHtml(${JSON.stringify(options)})`, (json) => parseCapture(json, []).shots);
+      const result = parseCapture(value, []);
+      return { ...result, images: [...result.images, ...result.shots.map((shot, i) => ({ id: shot.id, base64: pngs[i]!, mime: "image/png" }))] };
     }
     let html = input.html ?? "";
     let base = input.base_url ? importUrl(input.base_url).href : undefined;

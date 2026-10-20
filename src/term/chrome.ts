@@ -107,32 +107,84 @@ export interface LivePage {
   waitFor?: string;
 }
 
+/** A box of the page in CSS px from the document's top-left. */
+export interface Clip { x: number; y: number; width: number; height: number }
+
 /**
  * What `expression` evaluates to on a live page: opened at its own URL with its scripts running, then given time to
  * settle (no DOM changes for 600ms, and `waitFor` present), as a person would see it. Only for pages the person trusts.
+ * `clips` reads boxes to draw out of the value; each comes back as a PNG (base64) at twice CSS resolution, in order.
  */
-export function evaluateLiveWithBrowser(browser: string, live: LivePage, expression: string): Promise<string> {
+export function evaluateLiveWithBrowser(browser: string, live: LivePage, expression: string, clips: (value: string) => readonly Clip[] = () => []): Promise<{ value: string; pngs: string[] }> {
   return withBrowser(browser, async (cdp) => {
     const cookies = (live.cookies ?? "").split(";").map((c) => c.trim()).filter((c) => c.indexOf("=") > 0)
       .map((c) => ({ name: c.slice(0, c.indexOf("=")), value: c.slice(c.indexOf("=") + 1), url: live.url }));
     if (cookies.length) await cdp.call("Network.setCookies", { cookies });
-    await load(cdp, live.url, live.width, 1);
+    // A desktop window while the app renders: fitting to the page now would size it to an empty shell, and an app laid
+    // out in 100vh would then render at that height.
+    await cdp.call("Emulation.setDeviceMetricsOverride", { width: live.width, height: 900, deviceScaleFactor: 1, mobile: false });
+    await cdp.call("Page.enable");
+    const loaded = cdp.once("Page.loadEventFired");
+    await cdp.call("Page.navigate", { url: live.url });
+    await loaded;
     await readBack(cdp, `new Promise((resolve, reject) => {
       const selector = ${JSON.stringify(live.waitFor ?? "")}, until = Date.now() + 15000;
-      let changed = Date.now();
+      let changed = Date.now(), pixels = "";
       new MutationObserver(() => { changed = Date.now(); }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+      // Drawing on a canvas (a PDF page, a chart) changes no DOM: each visible canvas is sampled at 16×16, a change
+      // counts as one, and a canvas that is still blank isn't drawn yet. A cross-origin canvas can't be read; it's skipped.
+      const sample = document.createElement("canvas");
+      sample.width = sample.height = 16;
+      const pen = sample.getContext("2d", { willReadFrequently: true });
+      const painted = () => {
+        let blank = false, seen = "";
+        for (const canvas of document.querySelectorAll("canvas")) {
+          if (!canvas.width || !canvas.height || !canvas.getClientRects().length) continue;
+          try {
+            pen.clearRect(0, 0, 16, 16);
+            pen.drawImage(canvas, 0, 0, 16, 16);
+            const data = pen.getImageData(0, 0, 16, 16).data;
+            if (data.every((v) => v === 0)) blank = true;
+            seen += data.join(",") + ";";
+          } catch {}
+        }
+        if (seen !== pixels) { pixels = seen; changed = Date.now(); }
+        return !blank;
+      };
       const tick = () => {
         const shown = !selector || document.querySelector(selector) !== null;
-        if (shown && Date.now() - changed > 600) resolve("settled");
+        if (painted() && shown && Date.now() - changed > 600) resolve("settled");
         // A page that never stops animating is captured as it stands; a missing selector is an error.
         else if (Date.now() > until) shown ? resolve("settled") : reject(new Error("The page never showed " + selector + " (now at " + location.href + ")."));
         else setTimeout(tick, 100);
       };
       tick();
     })`);
-    // The settled page may be taller than when it first loaded.
-    await fit(cdp, live.width, 1);
-    return readBack(cdp, expression);
+    // The settled page may be taller than the window, and an app shell laid out in 100vh scrolls its <main> inside
+    // itself: the window grows once to show that page whole.
+    const needed = async () => Number(await readBack(cdp, `String(Math.max(document.body.scrollHeight, ...[...document.querySelectorAll("main")]
+      .filter((el) => el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY))
+      .map((el) => el.getBoundingClientRect().top + window.scrollY + el.scrollHeight
+        + (window.innerHeight - el.getBoundingClientRect().bottom))))`)) || 900;
+    const size = async (height: number) => {
+      await cdp.call("Emulation.setDeviceMetricsOverride", { width: live.width, height: Math.min(Math.max(height, 1), 8000), deviceScaleFactor: 1, mobile: false });
+      await readBack(cdp, `new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r("laid out"))))`);
+    };
+    // A page too tall to show whole stays in a desktop window, scrolling as a person sees it. A document needs the same
+    // height in any window; a layout that fills the window (a reader, panes that scroll themselves) measures whatever
+    // it is given, so a changed answer means it goes back to a desktop window too.
+    const first = await needed();
+    if (first > 900 && first <= 8000) {
+      await size(first);
+      if (Math.abs((await needed()) - first) > 1) await size(900);
+    }
+    const value = await readBack(cdp, expression);
+    const pngs: string[] = [];
+    for (const clip of clips(value)) {
+      const shot = await cdp.call("Page.captureScreenshot", { format: "png", clip: { ...clip, scale: 2 }, captureBeyondViewport: true });
+      pngs.push(Buffer.from(bytesOf(shot)).toString("base64"));
+    }
+    return { value, pngs };
   });
 }
 

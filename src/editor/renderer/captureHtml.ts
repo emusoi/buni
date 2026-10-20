@@ -2,9 +2,13 @@ import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { sourceRefs, type SourceRef } from "buni/format/sources.ts";
 
 const INHERITED = ["color", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing", "text-align", "text-transform", "white-space", "word-break"];
-const PROPERTIES = ["display", "position", "top", "right", "bottom", "left", "z-index", "box-sizing", "min-width", "max-width", "min-height", "max-height", "padding", "border", "border-radius", "border-top", "border-right", "border-bottom", "border-left", "background-color", "background-image", "background-size", "background-position", "background-repeat", "box-shadow", "opacity", "overflow-x", "overflow-y", "gap", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "align-items", "align-self", "justify-content", "order", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "object-fit", "object-position", "transform", "transform-origin", "text-decoration", "text-shadow", "vertical-align", "list-style-type"];
-const DEFAULTS: Record<string, string> = { position: "static", "z-index": "auto", "box-sizing": "border-box", "min-width": "0px", "max-width": "none", "min-height": "0px", "max-height": "none", padding: "0px", border: "0px none rgb(0, 0, 0)", "border-radius": "0px", "background-color": "rgba(0, 0, 0, 0)", "background-image": "none", "background-size": "auto", "background-position": "0% 0%", "background-repeat": "repeat", "box-shadow": "none", opacity: "1", "overflow-x": "visible", "overflow-y": "visible", gap: "normal", "flex-direction": "row", "flex-wrap": "nowrap", "flex-grow": "0", "flex-shrink": "1", "flex-basis": "auto", "align-items": "normal", "align-self": "auto", "justify-content": "normal", order: "0", "grid-template-columns": "none", "grid-template-rows": "none", "grid-column": "auto", "grid-row": "auto", "object-fit": "fill", "object-position": "50% 50%", transform: "none", "text-shadow": "none", "vertical-align": "baseline", "list-style-type": "disc" };
-const SKIP = new Set(["script", "style", "link", "meta", "template", "noscript", "source", "iframe", "object", "embed"]);
+const PROPERTIES = ["display", "position", "top", "right", "bottom", "left", "z-index", "box-sizing", "min-width", "max-width", "min-height", "max-height", "padding", "border", "border-radius", "border-top", "border-right", "border-bottom", "border-left", "background-color", "background-image", "background-size", "background-position", "background-repeat", "box-shadow", "opacity", "overflow-x", "overflow-y", "gap", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "align-items", "align-self", "justify-content", "justify-items", "justify-self", "order", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "object-fit", "object-position", "transform", "transform-origin", "text-decoration", "text-shadow", "vertical-align", "list-style-type"];
+const DEFAULTS: Record<string, string> = { position: "static", "z-index": "auto", "box-sizing": "border-box", "min-width": "0px", "max-width": "none", "min-height": "0px", "max-height": "none", padding: "0px", border: "0px none rgb(0, 0, 0)", "border-radius": "0px", "background-color": "rgba(0, 0, 0, 0)", "background-image": "none", "background-size": "auto", "background-position": "0% 0%", "background-repeat": "repeat", "box-shadow": "none", opacity: "1", "overflow-x": "visible", "overflow-y": "visible", gap: "normal", "flex-direction": "row", "flex-wrap": "nowrap", "flex-grow": "0", "flex-shrink": "1", "flex-basis": "auto", "align-items": "normal", "align-self": "auto", "justify-content": "normal", "justify-items": "normal", "justify-self": "auto", order: "0", "grid-template-columns": "none", "grid-template-rows": "none", "grid-column": "auto", "grid-row": "auto", "object-fit": "fill", "object-position": "50% 50%", transform: "none", "text-shadow": "none", "vertical-align": "baseline", "list-style-type": "disc" };
+const SKIP = new Set(["script", "style", "link", "meta", "template", "noscript", "source"]);
+/** Elements whose content is a picture, not layers: imported as an image of what they show. */
+const PICTURES = new Set(["img", "canvas", "video", "iframe", "embed", "object"]);
+// pdf.js (and react-pdf) lays invisible text and link boxes over each page's canvas; the canvas is the picture.
+const OVERLAYS = ".textLayer, .annotationLayer";
 const VOID = new Set(["img", "input", "br", "hr"]);
 
 /** A reproducible locator for context, not an assertion about the implementation's filename. */
@@ -18,8 +22,24 @@ export function sourceSelector(el: Element): string {
   return parts.join(" > ");
 }
 
+/** Whether the element is exactly as wide as its content, measured by laying it out at max-content for a moment. */
+function sizedByContent(el: Element, view: Window & typeof globalThis): boolean {
+  if (!(el instanceof view.HTMLElement || el instanceof view.SVGElement)) return false;
+  const style = el.style;
+  const laidOut = el.getBoundingClientRect().width;
+  const [value, priority] = [style.getPropertyValue("width"), style.getPropertyPriority("width")];
+  style.setProperty("width", "max-content", "important");
+  const natural = el.getBoundingClientRect().width;
+  style.setProperty("width", value, priority);
+  return Math.abs(natural - laidOut) < 0.5;
+}
+
 /** Capture only the selected subtree. Class styles become compact, editable inline styles. */
-export async function captureHtml(selected: Element, options: { url?: string; file?: string; symbol?: string; upload: (name: string, base64: string, mime: string) => Promise<string> }): Promise<{ html: string; count: number; warnings: string[] }> {
+export async function captureHtml(selected: Element, options: {
+  url?: string; file?: string; symbol?: string; upload: (name: string, base64: string, mime: string) => Promise<string>;
+  /** Asks the host to draw this box of the page (CSS px from the document's top-left) as an image; returns its asset id. */
+  shot?: (box: { x: number; y: number; width: number; height: number }) => string;
+}): Promise<{ html: string; count: number; warnings: string[] }> {
   const view = selected.ownerDocument.defaultView;
   if (!view) throw new Error("The preview is not ready.");
   if (selected.querySelectorAll("*").length > 10_000) throw new Error("Choose a section with fewer than 10,000 elements.");
@@ -31,6 +51,17 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     let result = assets.get(url);
     if (!result) {
       result = (async () => {
+        // A live page's images are still URLs; fetched from the page itself, they come with its sign-in.
+        if (!url.startsWith("data:")) url = await fetch(url, { credentials: "include" }).then(async (response) => {
+          if (!response.ok) throw new Error(`An image answered ${response.status}.`);
+          const blob = await response.blob();
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(reader.error ?? new Error("An image could not be read."));
+            reader.readAsDataURL(blob);
+          });
+        });
         const match = url.match(/^data:(image\/[a-z0-9.+-]+)(;base64)?,([\s\S]*)$/i);
         if (!match) throw new Error("An image did not finish loading. Preview the page again.");
         const data = match[2] ? match[3]! : btoa(unescape(encodeURIComponent(decodeURIComponent(match[3]!))));
@@ -44,6 +75,8 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     const result = new Map<string, string>();
     // Zero margin matters too: Buni keeps real heading/paragraph tags with their browser defaults.
     result.set("margin", root ? "0px" : cs.margin);
+    // Lists too: a list reset to no padding would get the browser's 40px indent back.
+    if (["ul", "ol", "menu"].includes(el.localName)) result.set("padding", cs.padding);
     // Native controls have browser defaults that the design's CSS reset does not clear.
     if (["button", "input", "textarea", "select"].includes(el.localName)) {
       for (const prop of ["padding", "border", "border-radius", "background-color"]) result.set(prop, cs.getPropertyValue(prop));
@@ -58,16 +91,46 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
       if (prop.startsWith("border") && prop !== "border-radius" && /(?:^| )none(?: |$)/.test(value)) continue;
       if (prop === "text-decoration" && value.startsWith("none")) continue;
       if (root && prop === "position") value = "relative";
-      if (prop === "background-image") for (const match of [...value.matchAll(/url\(["']?(data:[^"')]+)["']?\)/g)]) value = value.replace(match[0], `url(asset:${await saveImage(match[1]!)})`);
+      if (prop === "background-image") for (const match of [...value.matchAll(/url\(["']?([^"')]+)["']?\)/g)]) {
+        try { value = value.replace(match[0], `url(asset:${await saveImage(match[1]!)})`); } catch { warnings.add("A background image could not be loaded; it keeps its URL."); }
+      }
       result.set(prop, value);
     }
-    for (const prop of INHERITED) if (root || cs.getPropertyValue(prop) !== parent?.getPropertyValue(prop)) result.set(prop, cs.getPropertyValue(prop));
+    // Buni keeps the real tag, with the browser's defaults for it (<i> italic, <h2> large, <textarea> monospace): a
+    // value is written when it differs from what that tag shows here unstyled. A bare twin finds that for a moment,
+    // in a shadow root so the page's own resets (textarea { font: inherit }) don't reach it; only inheritance does.
+    const unstyled = pseudo || ["div", "span"].includes(el.localName) || !el.parentElement ? parent : (() => {
+      const host = el.ownerDocument.createElement("buni-twin");
+      const twin = el.ownerDocument.createElement(el.localName);
+      host.attachShadow({ mode: "open" }).append(twin);
+      el.parentElement.append(host);
+      const seen = view.getComputedStyle(twin);
+      const values = new Map(INHERITED.map((prop) => [prop, seen.getPropertyValue(prop)]));
+      host.remove();
+      return { getPropertyValue: (prop: string) => values.get(prop) ?? "" };
+    })();
+    for (const prop of INHERITED) if (root || cs.getPropertyValue(prop) !== unstyled?.getPropertyValue(prop)) result.set(prop, cs.getPropertyValue(prop));
     const positioned = cs.position === "absolute" || cs.position === "fixed";
-    // A flex item that is only text sizes to it: a width measured in the page's font clips it in Buni's.
-    const onlyText = el.childNodes.length > 0 && [...el.childNodes].every((n) => n.nodeType === 3);
-    if (pseudo || root || el.localName === "img" || positioned || (parent?.display.includes("flex") && cs.flexGrow === "0" && !onlyText)) result.set("width", cs.width);
-    if (pseudo || el.localName === "img" || positioned || !el.childNodes.length) result.set("height", cs.height);
-    return [...result].filter(([, v]) => v && v !== "auto").map(([k, v]) => `${k}: ${v}`).join("; ");
+    // A flex item as wide as its content sizes to it: a width measured in the page's font wraps or clips its words in
+    // Buni's. One given its own width (an avatar, a fixed column) or squeezed narrower keeps it.
+    const flexItem = !pseudo && parent?.display.includes("flex") === true && cs.flexGrow === "0";
+    const ownWidth = flexItem && !sizedByContent(el, view);
+    // Text drawn in a box of its own size (an avatar's letter) keeps the box's height too.
+    const textBox = ownWidth && el.childNodes.length > 0 && [...el.childNodes].every((n) => n.nodeType === 3);
+    // A drawing is sized like a picture: its shapes don't size it.
+    const drawn = PICTURES.has(el.localName) || el.localName === "svg";
+    if (pseudo || root || drawn || positioned || ownWidth) result.set("width", cs.width);
+    // A drawing never shrinks below its size in a row; a box in Buni would, squeezed by its neighbours.
+    if (drawn && parent?.display.includes("flex")) result.set("flex-shrink", "0");
+    // A box that scrolls or clips what overflows it keeps its height, or a long list inside spills out at full length.
+    const clips = /(auto|scroll|hidden|clip)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1;
+    // So does a box whose children are all laid over it (a PDF page holding its canvas at inset 0): nothing in it gives
+    // it a height, so without its own it collapses.
+    const overlaid = !pseudo && el.children.length > 0 && [...el.childNodes].every((n) => n instanceof view.Element
+      ? ["absolute", "fixed"].includes(view.getComputedStyle(n).position) : !n.textContent?.trim());
+    if (pseudo || drawn || positioned || !el.childNodes.length || clips || textBox || overlaid) result.set("height", cs.height);
+    // auto is the default for sizes, but a box that scrolls says so with it.
+    return [...result].filter(([k, v]) => v && (v !== "auto" || k.startsWith("overflow"))).map(([k, v]) => `${k}: ${v}`).join("; ");
   };
   const source = (el: Element, root: boolean): SourceRef[] => {
     let refs: SourceRef[] = [];
@@ -79,16 +142,36 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     if (file || url) refs.push({ ...(file ? { file } : {}), ...(symbol ? { symbol } : {}), ...(url ? { url } : {}), selector: sourceSelector(el) });
     return refs;
   };
+  /** What a picture element shows, as an asset id: read from the page where it can be, else drawn from the screen. */
+  const picture = async (el: Element): Promise<string | undefined> => {
+    try {
+      if (el instanceof view.HTMLCanvasElement) return await saveImage(el.toDataURL("image/png"));
+      if (el instanceof view.HTMLVideoElement && el.videoWidth) {
+        const frame = el.ownerDocument.createElement("canvas");
+        frame.width = el.videoWidth; frame.height = el.videoHeight;
+        frame.getContext("2d")?.drawImage(el, 0, 0);
+        return await saveImage(frame.toDataURL("image/png"));
+      }
+      if (el instanceof view.HTMLImageElement && el.currentSrc) return await saveImage(el.currentSrc);
+      if (el instanceof view.HTMLVideoElement && el.poster) return await saveImage(el.poster);
+    } catch {
+      // Cross-origin pixels, or a URL that won't load: the screen still shows them.
+    }
+    const box = el.getBoundingClientRect();
+    return options.shot && box.width && box.height ? options.shot({ x: box.x + view.scrollX, y: box.y + view.scrollY, width: box.width, height: box.height }) : undefined;
+  };
   const visit = async (el: Element, parent?: CSSStyleDeclaration, root = false): Promise<Element | undefined> => {
-    if (SKIP.has(el.localName)) return undefined;
+    if (SKIP.has(el.localName) || (!root && el.matches(OVERLAYS))) return undefined;
     const cs = view.getComputedStyle(el);
     const family = cs.fontFamily.split(",")[0]?.trim().replace(/^["']|["']$/g, "");
     if (family && !FONT_FAMILIES.some((f) => f.toLowerCase() === family.toLowerCase()) && !/^(system-ui|-apple-system|BlinkMacSystemFont|Arial|Helvetica|Times New Roman|Georgia|Verdana|Tahoma|Courier New|monospace|sans-serif|serif)$/i.test(family)) warnings.add(`Font "${family}" needs to be available on this computer; the layers keep its family name.`);
     if (cs.display === "none" || cs.visibility === "hidden") return undefined;
     if (++count % 100 === 0) await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    const missingImage = el.localName === "img" && !el.getAttribute("src");
-    if (missingImage) warnings.add("An unavailable image was left as an empty frame.");
-    const tag = missingImage ? "div" : el.localName === "body" ? "section" : el.localName;
+    // A picture with no size (a canvas not drawn into yet, an image with nothing loaded) shows nothing.
+    if (PICTURES.has(el.localName) && !el.getClientRects()[0]?.width) return undefined;
+    const asset = PICTURES.has(el.localName) ? await picture(el) : undefined;
+    if (PICTURES.has(el.localName) && !asset) warnings.add(`An unreadable ${el.localName} was left as an empty frame.`);
+    const tag = PICTURES.has(el.localName) ? (asset ? "img" : "div") : el.localName === "body" ? "section" : el.localName;
     const copy = tag === "svg" ? out.importNode(el, true) : out.createElement(tag);
     if (tag === "svg") {
       const originals = [el, ...el.querySelectorAll("*")];
@@ -107,12 +190,14 @@ export async function captureHtml(selected: Element, options: { url?: string; fi
     const refs = source(el, root);
     if (refs.length) copy.setAttribute("data-buni-sources", JSON.stringify(refs));
     if (tag === "img") {
-      copy.setAttribute("src", `asset:${await saveImage(el.getAttribute("src") ?? "")}`);
-      copy.setAttribute("alt", el.getAttribute("alt") ?? "");
-    } else if (tag === "input" || tag === "textarea") {
-      const value = el.getAttribute("value") ?? el.getAttribute("placeholder") ?? (tag === "textarea" ? el.textContent : "") ?? "";
-      copy.setAttribute(el.hasAttribute("value") || tag === "textarea" ? "value" : "placeholder", value);
-    } else if (tag !== "svg" && !VOID.has(tag)) {
+      copy.setAttribute("src", `asset:${asset}`);
+      copy.setAttribute("alt", el.getAttribute("alt") ?? el.getAttribute("aria-label") ?? el.getAttribute("title") ?? "");
+    } else if (el instanceof view.HTMLInputElement || el instanceof view.HTMLTextAreaElement) {
+      // What the field shows, not its attribute: a controlled field keeps value="" there whatever was typed. The
+      // placeholder comes too, for when nothing was.
+      if (el.value && !(el instanceof view.HTMLInputElement && ["checkbox", "radio", "range", "color"].includes(el.type))) copy.setAttribute("value", el.value);
+      if (el.placeholder) copy.setAttribute("placeholder", el.placeholder);
+    } else if (tag !== "svg" && !VOID.has(tag) && !PICTURES.has(el.localName)) {
       const pseudo = async (which: "::before" | "::after") => {
         const p = view.getComputedStyle(el, which);
         if (!p.content || ["none", "normal"].includes(p.content)) return;

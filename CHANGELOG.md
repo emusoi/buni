@@ -7,6 +7,14 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 - `import_html_page {url, live: true}` snapshots a JavaScript app as a person sees it: the page's scripts run, it is
   captured once it settles, `cookies` signs it in and `wait_for` fails loudly on a login screen. Local Buni only.
+  What a live page shows as pixels comes in as images: canvases (a PDF reader's pages), video frames, images by URL
+  (fetched with the page's sign-in), and frames, embedded PDFs and cross-origin pixels drawn from the screen at 2×;
+  pdf.js text layers are left out. A live page counts as settled only once its canvases are drawn, and a page laid
+  out against the window is captured in a desktop window. A scrolling pane keeps `overflow: auto`, a grid keeps
+  `justify-items`/`justify-self`, a controlled field keeps its placeholder, and a flex item as wide as its content
+  no longer gets a fixed width that wraps its words in Buni's fonts. A tag reset to look like its parent (an upright
+  `<i>`, a small `<h2>`, a `<textarea>` in the page's font, a list with no indent) keeps the reset, icons keep their
+  size in a row, and a box whose children are all laid over it (a PDF page) keeps its height.
   The critique skill now says how to improve a product that ships: snapshot it, pin findings to its layers, fix them
   on a copy beside it.
 - Pages can be renamed and moved: double-click a page in the sidebar (a new page starts there, named first), edit
