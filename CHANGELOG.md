@@ -5,6 +5,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Fixed: a live page's frames could be imported blank when the app reloaded them while it was being measured (the
+  buni editor's own page previews did). Frames are drawn once they have loaded and painted again.
 - `find_nodes {style?, text?, page?, root?, replace_with?}` finds layers by style, token or words. A colour matches
   however it is written, inside longer values such as a border, and through tokens set to it; `replace_with` swaps
   what matched on every layer in one edit (every `#999` for `var(--muted)`), at every width.

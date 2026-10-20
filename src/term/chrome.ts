@@ -199,8 +199,17 @@ export function evaluateLiveWithBrowser(browser: string, live: LivePage, express
       if (Math.abs((await needed()) - first) > 1) await size(900);
     }
     const value = await readBack(cdp, expression);
+    const boxes = clips(value);
+    // Capturing measures the page by resizing things for a moment, and an app can answer by reloading its frames (an
+    // editor's page previews): before drawing them, let every frame finish loading and paint.
+    if (boxes.length) await readBack(cdp, `new Promise((resolve) => {
+      const until = Date.now() + 5000;
+      const ready = () => [...document.querySelectorAll("iframe")].every((f) => { try { return f.contentDocument?.readyState === "complete"; } catch { return true; } });
+      const tick = () => ready() || Date.now() > until ? setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve("painted"))), 300) : setTimeout(tick, 50);
+      tick();
+    })`);
     const pngs: string[] = [];
-    for (const clip of clips(value)) {
+    for (const clip of boxes) {
       const shot = await cdp.call("Page.captureScreenshot", { format: "png", clip: { ...clip, scale: 2 }, captureBeyondViewport: true });
       pngs.push(Buffer.from(bytesOf(shot)).toString("base64"));
     }
