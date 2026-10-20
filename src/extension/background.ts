@@ -1,8 +1,10 @@
 // Drives a snap: runs the capture in the tab, draws what can't be read (frames, cross-origin pixels) from the screen,
-// and sends it to the buni editor the person chose, which opens with the new page.
+// and hands it to buni on this machine (native messaging: no editor needs to be running), which saves it as a
+// scratch design or into one snapped into before.
 import type { Snapped } from "./content.ts";
 
-export interface SnapRequest { tabId: number; mode: "page" | "pick"; server: string; file: string; name: string }
+/** into: "scratch" for a new scratch design, or a design file snapped into before. */
+export interface SnapRequest { tabId: number; mode: "page" | "pick"; into: string; name: string }
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
 /** The boxes the capture couldn't read, cut from what the tab shows now; one outside the window can't be drawn. */
@@ -25,6 +27,9 @@ async function drawShots(snap: Snapped, windowId: number): Promise<{ images: Sna
   return { images, missed };
 }
 
+/** The last snap, for the popup to show when it opens again (a pick closes it before the snap ends). */
+export interface LastSnap { ok: boolean; reply: string; file?: string; name?: string; page: string; url: string; at: number }
+
 async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const tab = await chrome.tabs.get(req.tabId);
   await chrome.scripting.executeScript({ target: { tabId: req.tabId }, files: ["content.js"] });
@@ -33,19 +38,28 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   if (!snapped) return { ok: false, reply: "Nothing was snapped." };
   const drawn = await drawShots(snapped, tab.windowId);
   const warnings = [...snapped.warnings, ...(drawn.missed ? [`${drawn.missed} frame${drawn.missed === 1 ? " was" : "s were"} outside the window and left empty; scroll to it and snap again.`] : [])];
-  const body = {
+  const title = req.name || snapped.title || new URL(snapped.url).hostname;
+  const page = `${title} · Now`;
+  const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", {
+    type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page },
     snapshot: { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width },
-    page: { name: req.name || `${snapped.title || new URL(snapped.url).hostname} · Now` },
-  };
-  const response = await fetch(`${req.server}/snap?file=${encodeURIComponent(req.file)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const answer: unknown = await response.json().catch(() => ({}));
-  const reply = typeof answer === "object" && answer !== null && "reply" in answer && typeof answer.reply === "string" ? answer.reply : `buni answered ${response.status}`;
-  const open = typeof answer === "object" && answer !== null && "open" in answer && typeof answer.open === "string" ? answer.open : undefined;
-  if (response.ok && open) await chrome.tabs.create({ url: open });
-  return { ok: response.ok, reply };
+  });
+  const field = (k: string) => (typeof answer === "object" && answer !== null && k in answer ? (answer as Record<string, unknown>)[k] : undefined);
+  const ok = field("ok") === true, reply = typeof field("reply") === "string" ? String(field("reply")) : "buni didn't answer.";
+  const file = typeof field("file") === "string" ? String(field("file")) : undefined;
+  const name = typeof field("name") === "string" ? String(field("name")) : undefined;
+  const last: LastSnap = { ok, reply, page, url: snapped.url, at: Date.now(), ...(file ? { file } : {}), ...(name ? { name } : {}) };
+  await chrome.storage.local.set({ last, ...(file ? { into: file } : {}) });
+  await chrome.action.setBadgeText({ text: ok ? "✓" : "!" });
+  await chrome.action.setBadgeBackgroundColor({ color: ok ? "#2f8a5b" : "#c0392b" });
+  return { ok, reply };
 }
 
 chrome.runtime.onMessage.addListener((message: SnapRequest, _sender, respond: (a: SnapAnswer) => void) => {
-  snap(message).then(respond, (e: unknown) => respond({ ok: false, reply: e instanceof Error ? e.message : String(e) }));
+  snap(message).then(respond, (e: unknown) => {
+    const reply = /native messaging host/i.test(String(e)) ? "buni isn't set up for Chrome yet: run  buni extension  once, then try again." : e instanceof Error ? e.message : String(e);
+    void chrome.storage.local.set({ last: { ok: false, reply, page: "", url: "", at: Date.now() } satisfies LastSnap });
+    respond({ ok: false, reply });
+  });
   return true;
 });

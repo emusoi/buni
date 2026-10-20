@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <title>buni snap</title>
 <style>
-  :root { color-scheme: dark; --bg: #18181b; --field: #232327; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #a9a9b3; --blue: #4069e6; }
-  body { margin: 0; width: 320px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; }
+  :root { color-scheme: dark; --bg: #18181b; --field: #232327; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #b4b4bd; --blue: #4069e6; --green: #6ec896; }
+  body { margin: 0; width: 330px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; }
   main { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
   h1 { margin: 0; font-size: 15px; font-weight: 700; }
   p { margin: 0; color: var(--mute); }
@@ -15,21 +15,32 @@
   button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 600 13px inherit; cursor: pointer; }
   button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
   button:disabled { opacity: .5; cursor: default; }
+  #result { display: none; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--field); }
+  #result.shown { display: flex; }
+  #result b { color: var(--green); font-size: 13px; }
+  #result code { font: 12px "JetBrains Mono", ui-monospace, monospace; color: var(--ink); word-break: break-all; }
   #status { min-height: 18px; }
-  #status.error { color: #ff8a80; }
+  #status.error { color: #ff9a90; }
 </style>
 </head>
 <body>
 <main>
   <h1>Snap into buni</h1>
-  <p>Brings this page into a design as editable layers, as you see it, signed in and all.</p>
-  <label>buni editor <input id="server" placeholder="Paste the link buni open printed" spellcheck="false"></label>
-  <label>Design <select id="file" disabled><option>Connect to an editor first</option></select></label>
-  <label>Page name <input id="name" placeholder="This page’s title · Now"></label>
+  <p>Brings this page, as you see it, into a design as editable layers.</p>
+  <label>Save to <select id="into"><option value="scratch">New scratch design</option></select></label>
+  <label>Name <input id="name" placeholder="This page’s title"></label>
   <div class="row">
     <button id="pick" type="button">Pick a part</button>
     <button id="page" type="button" class="primary">Snap page</button>
   </div>
+  <section id="result" aria-live="polite">
+    <b id="result-title">Snapped</b>
+    <code id="result-file"></code>
+    <div class="row">
+      <button id="copy" type="button">Copy for Claude</button>
+      <button id="open" type="button">Open in buni</button>
+    </div>
+  </section>
   <p id="status" role="status"></p>
 </main>
 <script src="popup.js" type="module"></script>

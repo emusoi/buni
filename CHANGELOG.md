@@ -6,10 +6,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 ## Unreleased
 
 - A Chrome extension snaps the page you're on into a design, as you see it, signed in: `buni extension [dir]`
-  writes it to load unpacked. Its popup connects to a running editor (paste the link `buni open` printed), picks a
-  design, and snaps the whole page or a part you point at; frames and pixels the page can't read are cut from the
-  visible tab. The editor imports it as "<title> · Now" and opens. The editor accepts snaps (`/snap`) only from its
-  own page and from this extension, by its fixed id. `import_snapshot` imports such a snapshot from MCP or the CLI.
+  writes it to load unpacked, and lets Chrome-family browsers start buni for it (native messaging), so no editor
+  has to be running. A snap of the whole page, or of a part you point at, becomes "<title> · Now" in a new scratch
+  design (`~/buni/scratch/<name>/<name>.buni`) or one snapped into before; frames and pixels the page can't read
+  are cut from the visible tab. The popup then copies a prompt for Claude or opens the design in buni.
+  `import_snapshot` imports such a snapshot from MCP or the CLI, and an open editor takes one at `/snap`, only from
+  its own page and from this extension, by its fixed id.
 - Options: try other takes on a page and keep the best. `explore_page {page, options: [{name, idea}]}` makes each
   a copy of the page that changes on its own (a new format field, `Page.option = {of, idea}`; an option has no route
   while it is one). `compare_options {page}` reviews the page and its options side by side, best first, with each

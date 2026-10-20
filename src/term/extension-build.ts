@@ -15,8 +15,7 @@ export async function extensionFiles(): Promise<Record<string, string>> {
   const manifest = {
     manifest_version: 3, name: "buni snap", version: VERSION.replace(/[^0-9.]/g, "") || "0.1.0", key: KEY,
     description: "Snap the page you're on into a buni design as editable layers, to redesign it.",
-    permissions: ["activeTab", "scripting", "storage"],
-    host_permissions: ["http://localhost/*", "http://127.0.0.1/*"],
+    permissions: ["activeTab", "scripting", "storage", "nativeMessaging"],
     action: { default_popup: "popup.html", default_title: "Snap into buni" },
     background: { service_worker: "background.js", type: "module" },
   };

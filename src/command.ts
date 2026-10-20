@@ -30,7 +30,7 @@ usage: buni <command> [args] [--as <name>] [--json]
 
   help                              how to design with buni (read this first)
   skill                             the same guide as a SKILL.md for coding agents
-  extension [dir]                   write buni's Chrome extension (snap the page you're on into a design) to load unpacked
+  extension [dir]                   write buni's Chrome extension (snap the page you're on into a scratch design) to load unpacked
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
@@ -76,8 +76,9 @@ Long HTML:          buni call FILE write_html - < part.json
 Import a page:      buni call FILE import_html_page '{"url":"http://localhost:3000","selector":"#hero","page":{"name":"Hero","width":1440}}'
                     Also accepts html or a file inside the design folder; omit selector for the whole page.
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
-Snap from Chrome:   buni extension writes a Chrome extension; with it the person snaps the page they're on (signed in)
-                    into a design as "<title> · Now", or a part of it. import_snapshot takes such a snapshot from a file.
+Snap from Chrome:   buni extension writes a Chrome extension; with it the person snaps the page they're on (signed in),
+                    or a part of it, as "<title> · Now" in a scratch design, ~/buni/scratch/<name>/<name>.buni, or one
+                    snapped into before. Asked to work on a snap, read that file with buni tree.
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
 Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
@@ -440,10 +441,25 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     case "extension": {
       // Written fresh each time, so loading the folder again picks up a new buni's capture.
       const { extensionFiles } = await import("./term/extension-build.ts");
+      const { HOST_NAME, hostManifestDirs, SCRATCH } = await import("./term/native-host.ts");
+      const { EXTENSION_ORIGIN } = await import("./editor/guard.ts");
       const dir = resolve(file ?? join(homedir(), ".buni", "chrome-extension"));
       await mkdir(dir, { recursive: true });
       for (const [name, text] of Object.entries(await extensionFiles())) await writeFile(join(dir, name), text);
-      console.log(`Wrote buni's Chrome extension to ${dir}.\nIn Chrome: chrome://extensions, turn on Developer mode, Load unpacked, choose that folder (or press reload on it after an update).\nThen on any page: the buni icon, paste the link buni open printed, Snap page or Pick a part.`);
+      // Chrome starts this to hand it a snap: the buni running now, without the slower checks an agent's edit gets.
+      const self = process.argv[1]?.endsWith(".ts") ? [process.execPath, process.argv[1]] : [process.execPath];
+      const host = join(homedir(), ".buni", "native-host");
+      await mkdir(dirname(host), { recursive: true });
+      await writeFile(host, `#!/bin/sh\nBUNI_EDIT_CHECKS=0 exec ${self.map((a) => JSON.stringify(a)).join(" ")} native-host "$@"\n`, { mode: 0o755 });
+      const manifest = JSON.stringify({ name: HOST_NAME, description: "buni: snaps from the Chrome extension", path: host, type: "stdio", allowed_origins: [`${EXTENSION_ORIGIN}/`] }, null, 2);
+      const browsers = hostManifestDirs();
+      for (const d of browsers) { await mkdir(d, { recursive: true }); await writeFile(join(d, `${HOST_NAME}.json`), manifest); }
+      console.log(`Wrote buni's Chrome extension to ${dir}, and let ${browsers.length} browser${browsers.length === 1 ? "" : "s"} here start buni for it.\nIn Chrome: chrome://extensions, turn on Developer mode, Load unpacked, choose that folder (or press reload on it after an update).\nThen on any page: the buni icon, Snap page or Pick a part. Snaps go to ${SCRATCH.replace(homedir(), "~")} unless you pick a design.`);
+      return 0;
+    }
+    case "native-host": {
+      const { runNativeHost } = await import("./term/native-host.ts");
+      await runNativeHost({ run: (f, name, a) => run(f, "chrome extension", name, a), liveApp });
       return 0;
     }
     case "skills": {

@@ -1,52 +1,62 @@
-// The popup: which buni editor and design to snap into, then the whole page or a part the person picks.
-import type { SnapAnswer, SnapRequest } from "./background.ts";
+// The popup: where a snap goes (a new scratch design, or one snapped into before), then the whole page or a part.
+// After a snap it hands the design on: a prompt to paste into Claude or any agent, or the buni editor.
+import type { LastSnap, SnapAnswer, SnapRequest } from "./background.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T; // ponytail: the ids are in popup.html
-const server = $<HTMLInputElement>("server"), file = $<HTMLSelectElement>("file"), name = $<HTMLInputElement>("name"), status = $<HTMLParagraphElement>("status");
+const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), status = $<HTMLParagraphElement>("status");
 const say = (text: string, error = false) => { status.textContent = text; status.className = error ? "error" : ""; };
+const HOST = "com.buni.snap";
+const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "~");
 
-/** The editor's address from what was pasted (its link, with the design it had open), or undefined. */
-function editor(text: string): { origin: string; file?: string } | undefined {
-  try {
-    const u = new URL(text.trim());
-    if (!["localhost", "127.0.0.1"].includes(u.hostname)) return undefined;
-    const open = u.searchParams.get("file");
-    return { origin: u.origin, ...(open ? { file: open } : {}) };
-  } catch { return undefined; }
+/** What to paste into an agent so it picks the design up where the snap left it. */
+const prompt = (last: LastSnap) =>
+  `I snapped ${last.url || "a page"} into the buni design ${tilde(last.file ?? "")} as the page "${last.page}". ` +
+  `Use the buni skill: read it with buni tree ${tilde(last.file ?? "")}, then improve it from the snapshot (buni skills critique).`;
+
+function show(last: LastSnap | undefined): void {
+  const box = $<HTMLElement>("result");
+  if (!last || Date.now() - last.at > 30 * 60_000) { box.className = ""; return; }
+  if (!last.ok || !last.file) { box.className = ""; say(last.reply, true); return; }
+  box.className = "shown";
+  $<HTMLElement>("result-title").textContent = `Snapped “${last.page}”`;
+  $<HTMLElement>("result-file").textContent = tilde(last.file);
+  $<HTMLButtonElement>("copy").onclick = () => void navigator.clipboard.writeText(prompt(last)).then(() => say("Copied. Paste it into Claude."));
+  $<HTMLButtonElement>("open").onclick = async () => {
+    say("Opening buni…");
+    const r: unknown = await chrome.runtime.sendNativeMessage(HOST, { type: "open", file: last.file });
+    const url = typeof r === "object" && r !== null && "url" in r && typeof r.url === "string" ? r.url : undefined;
+    if (url) { await chrome.tabs.create({ url }); window.close(); } else say("buni couldn't open the editor.", true);
+  };
 }
 
-async function connect(): Promise<void> {
-  const at = editor(server.value);
-  file.disabled = true;
-  if (!at) { file.innerHTML = "<option>Paste the editor’s link, http://localhost:…</option>"; return; }
+async function load(): Promise<void> {
+  void chrome.action.setBadgeText({ text: "" });
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  name.placeholder = tab?.title || "This page’s title";
+  const saved = await chrome.storage.local.get(["last", "into"]);
+  show(saved.last as LastSnap | undefined);
   try {
-    const list: unknown = await (await fetch(`${at.origin}/snap`)).json();
-    if (!Array.isArray(list)) throw new Error("not a buni editor");
-    const saved = (await chrome.storage.local.get("file")).file;
-    file.replaceChildren(...list.flatMap((d: unknown) => {
-      if (typeof d !== "object" || d === null || !("path" in d) || typeof d.path !== "string") return [];
+    const r: unknown = await chrome.runtime.sendNativeMessage(HOST, { type: "list" });
+    const list = typeof r === "object" && r !== null && "scratch" in r && Array.isArray(r.scratch) ? r.scratch : [];
+    for (const d of list) {
+      if (typeof d !== "object" || d === null || !("file" in d) || typeof d.file !== "string") continue;
       const o = document.createElement("option");
-      o.value = d.path;
-      o.textContent = "name" in d && typeof d.name === "string" ? d.name : d.path;
-      o.selected = d.path === (at.file ?? saved);
-      return [o];
-    }));
-    file.disabled = file.options.length === 0;
-    await chrome.storage.local.set({ server: server.value.trim() });
-    say(file.disabled ? "That editor has no designs yet." : "");
+      o.value = d.file;
+      o.textContent = `Add to ${"name" in d && typeof d.name === "string" ? d.name : d.file}`;
+      o.selected = d.file === saved.into;
+      into.append(o);
+    }
   } catch {
-    say("No buni editor answers there. Is buni open running?", true);
+    say("buni isn't set up for Chrome yet: run  buni extension  once, then reopen this.", true);
   }
 }
 
 async function snap(mode: "page" | "pick"): Promise<void> {
-  const at = editor(server.value);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!at || file.disabled || !tab?.id) return say("Connect to a buni editor first.", true);
-  await chrome.storage.local.set({ file: file.value });
-  const request: SnapRequest = { tabId: tab.id, mode, server: at.origin, file: file.value, name: name.value.trim() };
+  if (!tab?.id) return;
+  const request: SnapRequest = { tabId: tab.id, mode, into: into.value, name: name.value.trim() };
   if (mode === "pick") {
-    // The popup closes as the person clicks the page; the background finishes and opens buni.
+    // The popup closes as the person clicks the page; the background finishes, and the icon shows ✓ when it's saved.
     void chrome.runtime.sendMessage(request);
     window.close();
     return;
@@ -55,10 +65,11 @@ async function snap(mode: "page" | "pick"): Promise<void> {
   $<HTMLButtonElement>("page").disabled = true;
   const answer: SnapAnswer = await chrome.runtime.sendMessage(request);
   $<HTMLButtonElement>("page").disabled = false;
-  say(answer.ok ? "Snapped. buni opened in a new tab." : answer.reply, !answer.ok);
+  if (!answer.ok) return say(answer.reply, true);
+  say("");
+  show((await chrome.storage.local.get("last")).last as LastSnap | undefined);
 }
 
-server.addEventListener("change", () => void connect());
 $<HTMLButtonElement>("page").addEventListener("click", () => void snap("page"));
 $<HTMLButtonElement>("pick").addEventListener("click", () => void snap("pick"));
-void chrome.storage.local.get("server").then((s) => { if (typeof s.server === "string") { server.value = s.server; void connect(); } });
+void load();
