@@ -1,5 +1,6 @@
 import { captureHtmlPage, htmlPageInput } from "../import-page.ts";
 import { pinTag, reviewPage, reviewText } from "../review.ts";
+import { findNodes, replaceIn } from "../find.ts";
 import type { ToolOutput } from "../kit.ts";
 import { sourceRefs } from "../../format/sources.ts";
 // Pages and layers: creating pages, writing HTML into them, styles, text, motion, tokens, comments and the canvas. One
@@ -11,7 +12,7 @@ import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, ty
 import type { Op } from "../../oplog/oplog.ts";
 import { layerHtml, parseHtml, renderPage, snippet, type Draft } from "../html.ts";
 import { findIcons } from "../icons.ts";
-import { Ids, type Tool, ToolError, body, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
+import { Ids, type Tool, ToolError, pageOf, body, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
 
 export const pagesTools = {
   create_page: tool({
@@ -650,6 +651,38 @@ export const pagesTools = {
       if (!a.set) return { label: "Read tokens", ops: [], reply: JSON.stringify(doc.tokens, null, 2) };
       const ops: Op[] = Object.entries(a.set).map(([name, value]) => (value === "" ? { kind: "token", name } : { kind: "token", name, value }));
       return { label: `Set ${ops.length} token${ops.length === 1 ? "" : "s"}`, ops, reply: "Tokens updated." };
+    },
+  }),
+
+  find_nodes: tool({
+    description:
+      "Find layers by style, token or words, on every page or under page/root. style: [{prop, value}], all must match: prop in either case with * wildcards (\"border*\"), " +
+      "value a literal (\"#ccc\", \"16px\"), a token (\"--muted\") or * wildcards. A colour matches however it is written and inside longer values (a border), and also finds tokens set to it. " +
+      "text matches words in text layers. replace_with swaps what one style query matched, on every match, in one edit: e.g. every #999 for var(--muted).",
+    input: {
+      style: z.array(z.object({ prop: z.string().optional(), value: z.string().optional() })).optional(),
+      text: z.string().optional(),
+      page: z.string().optional(), root: z.string().optional(),
+      replace_with: z.string().optional().describe("Replaces the matched value (or the part of it that matched) on every layer found"),
+    },
+    run: async (doc, a) => {
+      if (!a.style?.length && a.text === undefined) throw new ToolError("give style, text or both");
+      if (a.replace_with !== undefined && (a.style?.length !== 1 || a.text !== undefined)) throw new ToolError("replace_with takes exactly one style query and no text");
+      const roots = a.root ? [node(doc, a.root).id] : a.page ? [page(doc, a.page).frame] : undefined;
+      const found = findNodes(doc, { ...(a.style ? { styles: a.style } : {}), ...(a.text !== undefined ? { text: a.text } : {}), ...(roots ? { roots } : {}) });
+      const where = (id: Id) => { try { return pageOf(doc, id).name; } catch { return "a component"; } };
+      const list = found.slice(0, 60).map((m) => `${doc.nodes[m.node]!.name} (${m.node}) on ${where(m.node)}: ${m.matched.slice(0, 3).join("; ")}`).join("\n");
+      const more = found.length > 60 ? `\n…and ${found.length - 60} more` : "";
+      if (a.replace_with === undefined) return { label: "Find", ops: [], reply: found.length ? `${found.length} layer${found.length === 1 ? "" : "s"}:\n${list}${more}` : "Nothing matches." };
+      const want = a.style![0]!, by = a.replace_with;
+      const ops: Op[] = found.flatMap((m) => {
+        const n = doc.nodes[m.node]!;
+        const style = replaceIn(doc, n.style, want, by);
+        const at = n.at && Object.fromEntries(Object.entries(n.at).map(([w, st]) => [w, replaceIn(doc, st, want, by)]));
+        const same = style === n.style && (!n.at || Object.entries(n.at).every(([w, st]) => at?.[w] === st));
+        return same ? [] : [{ kind: "put" as const, collection: "nodes" as const, value: { ...n, style, ...(at ? { at } : {}) } }];
+      });
+      return { label: `Replace on ${ops.length} layers`, ops, reply: ops.length ? `Replaced on ${ops.length} layer${ops.length === 1 ? "" : "s"}:\n${list}${more}` : "Nothing matches." };
     },
   }),
 

@@ -9,7 +9,7 @@ A shared vocabulary makes feedback precise. When the person says "make it quiete
 ## The loop
 1. Look: screenshot every screen in scope (and each important state, at each promised width). A picture shows what the tree hides.
 2. Find: review against the direction, the principles and the tells in one batched pass. Write the findings down, worst first, each with where it is and what's wrong. Then run review_page: it checks the rendered page for what a careful reviewer flags every time (motion, contrast, type, targets, overflow, tells) and scores it out of 100. Judge first, check second, so the checks don't narrow what you look for; merge both lists.
-3. Fix: fix everything you found in one round.
+3. Fix: fix everything you found in one round. A problem repeated across layers (one grey on 60 timestamps) is one find_nodes {style, replace_with} edit, ideally to a token.
 4. Check: screenshot again and run review_page again, once. Fix only what's still wrong.
 5. Stop. Endless self-review costs more than it finds; report what you changed and what's left for the person to decide.
 

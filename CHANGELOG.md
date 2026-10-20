@@ -5,6 +5,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- `find_nodes {style?, text?, page?, root?, replace_with?}` finds layers by style, token or words. A colour matches
+  however it is written, inside longer values such as a border, and through tokens set to it; `replace_with` swaps
+  what matched on every layer in one edit (every `#999` for `var(--muted)`), at every width.
 - `buni shot FILE PAGE out.png --frames 6` draws a page's motion as moments side by side, each labelled with its
   time, from the start to when the last entrance ends: an image an agent can read to check order and pace.
 - An agent's edits come back with quick checks on the layers they changed, over MCP and `buni call`: contrast,
