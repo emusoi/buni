@@ -9,7 +9,13 @@ import { embeddedFont } from "./fontdata.ts";
 import { fontFaces, motionCss, renderPage } from "./html.ts";
 
 /** Every occurrence of one rule on the page, with the layers it is on. */
-export interface Issue { rule: string; severity: Severity; category: Category; messages: string[]; nodes: Id[] }
+export interface Issue {
+  rule: string; severity: Severity; category: Category;
+  /** Each place it was found: what is wrong there, and the layer, when it is on one. */
+  messages: string[]; at: (Id | undefined)[];
+  /** The layers, each once. */
+  nodes: Id[];
+}
 export interface Review { score: number; issues: Issue[] }
 
 const found = z.array(z.object({ rule: z.string(), message: z.string(), nodes: z.array(z.string()), selector: z.string() }));
@@ -37,8 +43,9 @@ export async function reviewPage(doc: Doc, pageId: Id, opts: { edit?: boolean } 
   for (const f of found.parse(raw)) {
     const rule = RULES.find((r) => r.id === f.rule);
     if (!rule) continue;
-    const issue = issues.get(rule.id) ?? { rule: rule.id, severity: rule.severity, category: rule.category, messages: [], nodes: [] };
+    const issue = issues.get(rule.id) ?? { rule: rule.id, severity: rule.severity, category: rule.category, messages: [], at: [], nodes: [] };
     issue.messages.push(f.message);
+    issue.at.push(f.nodes.find((n) => doc.nodes[n]));
     for (const n of f.nodes) if (doc.nodes[n] && !issue.nodes.includes(n)) issue.nodes.push(n);
     issues.set(rule.id, issue);
   }
@@ -56,3 +63,40 @@ export function reviewText(doc: Doc, pageName: string, r: Review): string {
 
 /** How a pinned finding starts, so a second review doesn't pin it again. */
 export const pinTag = (rule: string) => `[review: ${rule}]`;
+
+/**
+ * The quick checks after an edit (low contrast, tiny text, small targets, overflow, hidden content) on the layers it
+ * changed, as a note for the reply; "" when they pass, there's no browser, or they take too long.
+ */
+export async function editChecks(before: Doc, after: Doc): Promise<string> {
+  if (process.env.BUNI_EDIT_CHECKS === "0" || !findBrowser()) return "";
+  const changed = new Set(Object.keys(after.nodes).filter((id) => after.nodes[id] !== before.nodes[id]));
+  // Nothing to see yet (a new page's empty frame): no browser for it.
+  const visible = [...changed].some((id) => {
+    const n = after.nodes[id]!, was = before.nodes[id];
+    return n.kind !== "frame" || (was !== undefined && JSON.stringify(was.style) !== JSON.stringify(n.style));
+  });
+  if (!visible) return "";
+  const frames = new Map(Object.values(after.pages).map((p) => [p.frame, p.id]));
+  const pages = new Set<Id>();
+  for (const id of changed) {
+    let at: Id | undefined = id;
+    while (at && !frames.has(at)) at = after.nodes[at]?.parent;
+    if (at) pages.add(frames.get(at)!);
+  }
+  const lines: string[] = [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<void>((resolve) => { timer = setTimeout(resolve, 15_000); });
+  const work = (async () => {
+    for (const pageId of [...pages].slice(0, 2)) {
+      const r = await reviewPage(after, pageId, { edit: true });
+      for (const issue of r.issues) {
+        const i = issue.at.findIndex((n) => n !== undefined && changed.has(n));
+        const here = issue.nodes.filter((n) => changed.has(n));
+        if (i >= 0) lines.push(`- ${issue.severity.toUpperCase()} ${issue.rule}: ${issue.messages[i]} On ${here.slice(0, 4).map((n) => `${after.nodes[n]?.name ?? n} (${n})`).join(", ")}.`);
+      }
+    }
+  })().catch(() => undefined);
+  await Promise.race([work, late]).finally(() => clearTimeout(timer));
+  return lines.length ? `Checks on what changed:\n${lines.join("\n")}` : "";
+}

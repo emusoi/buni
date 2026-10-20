@@ -9,7 +9,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { emptyDoc } from "./format/doc.ts";
+import { emptyDoc, type Doc } from "./format/doc.ts";
+import { editChecks } from "./tools/review.ts";
 import { serializeDoc } from "./format/serialize.ts";
 import { startMcpHttp } from "./mcp/http.ts";
 import { createMcpServer } from "./mcp/server.ts";
@@ -275,13 +276,18 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
       await delay(25);
     }
   }
+  let before: Doc, after: Doc, r: { ok: boolean; reply: string };
   try {
     const ws = await Workspace.open(file);
-    const r = await ws.call(as, name, args);
-    return { ok: r.ok, text: r.reply };
+    before = ws.view();
+    r = await ws.call(as, name, args);
+    after = ws.view();
   } finally {
     await rmdir(lock);
   }
+  // Checked once the file is free again: the browser takes a moment.
+  const checks = r.ok && after !== before ? await editChecks(before, after) : "";
+  return { ok: r.ok, text: checks ? `${r.reply}\n${checks}` : r.reply };
 }
 
 /** `context` arguments: what to focus on, and --target ratatui for one build of a terminal client designed several ways. */

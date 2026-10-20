@@ -5,6 +5,7 @@ import { toolNames, tools } from "../tools/tools.ts";
 import type { Doc } from "../format/doc.ts";
 import type { Workspace } from "../tools/workspace.ts";
 import { VERSION } from "../version.ts";
+import { editChecks } from "../tools/review.ts";
 
 const INSTRUCTIONS = `buni is a design tool. You edit one .buni document through these tools only.
 Every edit is written to the file at once, so make each one leave the design in a good state (keep the file in git to go back).
@@ -47,8 +48,10 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
       await ws.refreshImports();
       const before = ws.view();
       const r = await ws.call(author(), name, args);
-      if (ws.view() !== before) host.edited?.(author(), before);
-      return { content: [{ type: "text", text: r.reply }], isError: !r.ok };
+      const after = ws.view();
+      if (after !== before) host.edited?.(author(), before);
+      const checks = r.ok && after !== before ? await editChecks(before, after) : "";
+      return { content: [{ type: "text", text: checks ? `${r.reply}\n${checks}` : r.reply }], isError: !r.ok };
     });
   }
   server.registerTool("list_skills", { description: "List the design skills: what each covers and when to read it.", inputSchema: {} }, async () => ({

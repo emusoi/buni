@@ -5,6 +5,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- An agent's edits come back with quick checks on the layers they changed, over MCP and `buni call`: contrast,
+  tiny text, small targets, text spilling out, content left invisible. Nothing is added when they pass, there is
+  no browser, or the edit changed nothing visible yet; `BUNI_EDIT_CHECKS=0` turns them off.
 - `review_page {page, pin?}` reviews a page as it renders in Chrome, motion included, and answers with a score out
   of 100 and each issue worst first (P1 to P3) on the layers it is on. The first rules are motion: overshooting
   (bounce) curves, transitions that lay the page out, `transition: all`, ease-in, slow feedback, endless loops,

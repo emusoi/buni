@@ -6,6 +6,9 @@ import { emptyDoc } from "../format/doc.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { findBrowser } from "../term/chrome.ts";
 import { Workspace } from "./workspace.ts";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { createMcpServer } from "../mcp/server.ts";
 
 const browser = findBrowser();
 async function design() {
@@ -148,4 +151,31 @@ test.skipIf(!browser)("a page reviewed against the snapshot it improves on says 
     expect(r.reply).toContain("Still there: low-contrast.");
     expect(r.reply).toContain("New: all-caps-text.");
   } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("an agent's edit comes back with the quick checks on the layers it changed, and none when they pass", async () => {
+  const { dir, ws } = await design();
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: "agent", version: "1" });
+  try {
+    await createMcpServer(ws).connect(a); await client.connect(b);
+    expect((await ws.call("agent", "create_page", { name: "Home" })).ok).toBe(true);
+    const page = Object.values(ws.view().pages)[0]!;
+    await ws.call("agent", "write_html", { parent: page.frame, html: `<p layer-name="Old" style="color:#ccc">Already faint</p>` });
+    const text = async (args: Record<string, unknown>) => {
+      const r = await client.callTool({ name: "write_html", arguments: args });
+      return (r.content as { text: string }[])[0]!.text;
+    };
+    const faint = await text({ parent: page.frame, html: `<p layer-name="Faint" style="color:#ccc;font-size:10px">Faint words</p>` });
+    expect(faint).toContain("Checks on what changed:");
+    expect(faint).toContain("P1 low-contrast: \"Faint words\"");
+    expect(faint).toContain("P2 tiny-text");
+    // Only what this edit changed: the faint paragraph that was already there isn't repeated.
+    expect(faint).not.toContain("Already faint");
+    const fine = await text({ parent: page.frame, html: `<p style="color:#222">Clear words</p>` });
+    expect(fine).not.toContain("Checks");
+  } finally {
+    await client.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 }, 60_000);
