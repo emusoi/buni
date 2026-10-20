@@ -1,6 +1,8 @@
 import { captureHtmlPage, htmlPageInput } from "../import-page.ts";
 import { pinTag, reviewPage, reviewText } from "../review.ts";
 import { findNodes, replaceIn } from "../find.ts";
+import { allPatterns, patternFor, personalLibrary, searchPatterns, shortPath, writePattern } from "../inspiration.ts";
+import { readFile } from "node:fs/promises";
 import type { ToolContext, ToolOutput } from "../kit.ts";
 import type { CapturedHtml } from "../../editor/renderer/capture-agent.ts";
 import { sourceRefs } from "../../format/sources.ts";
@@ -11,7 +13,8 @@ import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
 import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type PageOption, type Post, type Thread, type Style } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
-import { layerHtml, parseHtml, renderPage, snippet, type Draft } from "../html.ts";
+import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
+import { embeddedFont } from "../fontdata.ts";
 import { findIcons } from "../icons.ts";
 import { Ids, type Tool, ToolError, pageOf, body, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
 
@@ -322,6 +325,72 @@ export const pagesTools = {
     run: async (doc, a, ctx): Promise<ToolOutput> => {
       const width = placeFor(doc, a);
       return importCaptured(doc, await captureHtmlPage(a, width, ctx), width, a, ctx);
+    },
+  }),
+
+  find_inspiration: tool({
+    description:
+      "Search the inspiration libraries: UI and UX patterns as finished HTML screens (command palette, data table with filters, pricing plans, " +
+      "onboarding checklist…), buni's own and any the person added (buni inspiration add). Each says when to use it and when not. " +
+      "Look before designing a familiar pattern, then use_inspiration brings one in as a reference page.",
+    input: { query: z.string().optional().describe("What you're designing: \"settings page\", \"empty state\", \"checkout\"; omit to list all") },
+    run: async (_doc, a) => {
+      const all = await allPatterns();
+      const found = a.query ? searchPatterns(all, a.query) : all;
+      if (!found.length) return { label: "Find inspiration", ops: [], reply: all.length ? `No pattern fits "${a.query}". ${all.length} in the libraries; find_inspiration with no query lists them.` : "No inspiration libraries yet." };
+      const lines = await Promise.all(found.slice(0, 12).map(async (p, i) => {
+        const more = i < 3 ? `${p.why ? `\n  why: ${p.why}` : ""}${p.avoid ? `\n  avoid: ${p.avoid}` : ""}${p.seenIn ? `\n  seen in: ${p.seenIn}` : ""}` : "";
+        return `${p.name} (${p.library}: ${await shortPath(p)}) [${p.tags.join(", ")}]\n  use: ${p.use}${more}`;
+      }));
+      return { label: "Find inspiration", ops: [], reply: `${found.length} pattern${found.length === 1 ? "" : "s"}${found.length > 12 ? ", the best 12" : ""}:\n${lines.join("\n")}` };
+    },
+  }),
+
+  use_inspiration: tool({
+    description:
+      "Bring a pattern from the inspiration libraries into the design as editable layers: onto a new page (\"Inspiration · <name>\", a board outside the site) " +
+      "or into a parent frame. pattern is its name or file from find_inspiration. Take its structure and behaviour, then make it this product's own: " +
+      "its tokens, content and voice (tells skill).",
+    input: {
+      pattern: z.string().min(1), parent: z.string().optional(), after: z.string().optional(),
+      page: z.object({ name: z.string().min(1) }).optional(),
+    },
+    run: async (doc, a, ctx): Promise<ToolOutput> => {
+      const p = await patternFor(a.pattern);
+      if (!p) throw new ToolError(`No pattern "${a.pattern}" in the inspiration libraries; find_inspiration lists them.`);
+      const html = await readFile(p.file, "utf8");
+      const where = a.parent ? { parent: a.parent, ...(a.after !== undefined ? { after: a.after } : {}) } : { page: { name: a.page?.name ?? `Inspiration · ${p.name}` } };
+      const out = await pagesTools.import_html_page.run(doc, { html, ...where }, ctx);
+      return { ...out, label: `Use ${p.name}`, reply: `${out.reply}\nFrom ${p.library}: ${p.name}. Use: ${p.use}${p.avoid ? `\nAvoid when: ${p.avoid}` : ""}\nTake its structure; make the look, content and words this product's own.` };
+    },
+  }),
+
+  save_inspiration: tool({
+    description:
+      "Keep a finished page, or one part of it, as a pattern in an inspiration library, to bring back in any design (use_inspiration) and to show agents what good looks like here. " +
+      "Say when to use it (use) and tag it; it goes to the person's own library unless library names another folder. Local buni only.",
+    input: {
+      page: z.string(), node: z.string().optional().describe("One layer of the page; omit for the whole page"),
+      name: z.string().min(1), use: z.string().min(1), tags: z.array(z.string().min(1)).optional(),
+      avoid: z.string().optional(), why: z.string().optional(),
+      library: z.string().optional().describe("A library folder; defaults to the person's own"),
+    },
+    run: async (doc, a, ctx) => {
+      if (ctx.localImports !== true) throw new ToolError("Inspiration libraries are folders on this machine; save one in local buni.");
+      const p = page(doc, a.page);
+      const out = a.node ? renderLayer(doc, p.id, node(doc, a.node).id) : renderPage(doc, p.id);
+      // Self-contained: the fonts it uses, and its images as data, so the file means the same anywhere.
+      let html = out.html, css = fontFaces(doc, embeddedFont) + out.css;
+      for (const att of Object.values(doc.attachments)) {
+        if (!html.includes(att.path) && !css.includes(att.path)) continue;
+        const bytes = await ctx.readAttachmentBytes?.(att.path).catch(() => undefined);
+        if (!bytes) continue;
+        const data = `data:${att.mime};base64,${Buffer.from(bytes).toString("base64")}`;
+        html = html.split(att.path).join(data); css = css.split(att.path).join(data);
+      }
+      const dir = a.library ?? await personalLibrary();
+      const file = await writePattern(dir, { name: a.name, use: a.use, ...(a.tags ? { tags: a.tags } : {}), ...(a.avoid ? { avoid: a.avoid } : {}), ...(a.why ? { why: a.why } : {}), seenIn: `${p.name}${a.node ? ` · ${doc.nodes[a.node]?.name}` : ""}` }, { html, css });
+      return { label: "Save inspiration", ops: [], reply: `Saved "${a.name}" to ${file}. find_inspiration finds it, use_inspiration brings it into any design.` };
     },
   }),
 

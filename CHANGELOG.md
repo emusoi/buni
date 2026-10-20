@@ -5,6 +5,13 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Inspiration libraries: folders of finished UI and UX patterns, one self-contained HTML file each, opening with
+  what it is and when to use it (`inspiration/README.md`). buni ships its own; `buni inspiration add <folder>` adds
+  yours (kept in `~/.buni/settings.json`), and `buni inspiration [find <words>]` lists them. Agents search with
+  `find_inspiration`, bring one in as a reference page with `use_inspiration`, and keep a finished page or part as
+  a pattern with `save_inspiration` (to `~/.buni/inspiration`, unless another library is named). The editor lists
+  the patterns under the component library: click one to bring it in, + to keep the page you're on. The Chrome
+  extension can save a snap straight into the library: open any site, Save to "My inspiration library".
 - `buni adopt <scratch.buni> <folder>` moves a scratch design (a snap) into a project folder, assets and history
   with it.
 - A Chrome extension snaps the page you're on into a design, as you see it, signed in: `buni extension [dir]`

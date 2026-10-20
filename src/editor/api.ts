@@ -22,7 +22,7 @@ export interface SettleResult {
 
 /** Tools a person can run from the window; everything else stays with agents. */
 export const EDIT_TOOLS = [
-  "import_html", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
+  "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
   "make_component", "create_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "decide", "drop_decision", "comment", "merge_components", "delete_component", "rename_component",
   "bind", "set_motion", "connect", "disconnect", "place_page", "set_flow", "set_screen",
@@ -117,7 +117,12 @@ export interface BuniApi {
   skills(): Promise<SkillInfo[]>;
   /** One guide's text, by name. */
   skill?(name: string): Promise<string | undefined>;
+  /** The inspiration libraries' patterns (buni's and the person's own), where the host can read them. */
+  inspiration?(): Promise<PatternInfo[]>;
 }
+
+/** A pattern in an inspiration library, as a list shows it; use_inspiration takes its file. */
+export interface PatternInfo { name: string; library: string; use: string; tags: string[]; file: string }
 
 export const CHANNELS = { snapshot: "buni:snapshot", changed: "buni:changed", home: "buni:home", open: "buni:open", create: "buni:create", close: "buni:close", movePage: "buni:move-page", reorderPage: "buni:reorder-page", edit: "buni:edit", undo: "buni:undo", redo: "buni:redo", undoKey: "buni:undo-key", skills: "buni:skills", exportSite: "buni:export-site", exportSystem: "buni:export-system", openExample: "buni:open-example", account: "buni:account", accountChanged: "buni:account-changed", signIn: "buni:sign-in", cancelSignIn: "buni:cancel-sign-in", openSignIn: "buni:open-sign-in", signOut: "buni:sign-out", openAccountPage: "buni:open-account-page", theme: "buni:theme", setTheme: "buni:set-theme", systemChanges: "buni:system-changes", exportPage: "buni:export-page", saveVersion: "buni:save-version", versions: "buni:versions", restoreVersion: "buni:restore-version", uploadImage: "buni:upload-image" } as const;
 

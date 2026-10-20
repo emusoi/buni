@@ -3,7 +3,7 @@
 // scratch design or into one snapped into before.
 import type { Snapped } from "./content.ts";
 
-/** into: "scratch" for a new scratch design, or a design file snapped into before. */
+/** into: "scratch" for a new scratch design, "inspiration" for the person's inspiration library, or a design file snapped into before. */
 export interface SnapRequest { tabId: number; mode: "page" | "pick"; into: string; name: string }
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
@@ -40,10 +40,10 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const warnings = [...snapped.warnings, ...(drawn.missed ? [`${drawn.missed} frame${drawn.missed === 1 ? " was" : "s were"} outside the window and left empty; scroll to it and snap again.`] : [])];
   const title = req.name || snapped.title || new URL(snapped.url).hostname;
   const page = `${title} · Now`;
-  const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", {
-    type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page },
-    snapshot: { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width },
-  });
+  const snapshot = { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width };
+  const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", req.into === "inspiration"
+    ? { type: "inspire", name: title, snapshot }
+    : { type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot });
   const field = (k: string) => (typeof answer === "object" && answer !== null && k in answer ? (answer as Record<string, unknown>)[k] : undefined);
   const ok = field("ok") === true, reply = typeof field("reply") === "string" ? String(field("reply")) : "buni didn't answer.";
   const file = typeof field("file") === "string" ? String(field("file")) : undefined;

@@ -35,6 +35,8 @@ usage: buni <command> [args] [--as <name>] [--json]
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
   adopt <scratch.buni> <folder>     move a scratch design (a snap) into a project folder, with its assets and history
+  inspiration [find <words> | add <folder> | remove <folder>]
+                                    the inspiration libraries agents design from: buni's own, and folders of yours
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
@@ -85,6 +87,8 @@ Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", f
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
 Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
                     then compare_options '{"page":"PAGE"}' and pick_option '{"option":"ID","why":"…"}'
+Inspiration:        buni call FILE find_inspiration '{"query":"settings page"}' finds finished UI patterns (buni's and the
+                    person's own); use_inspiration '{"pattern":"Settings sections"}' brings one in as a reference page.
 Find and replace:   buni call FILE find_nodes '{"style":[{"value":"#999"}],"replace_with":"var(--muted)"}'   (also text, page, root)
 Review a page:      buni call FILE review_page '{"page":"PAGE"}'   (score and issues worst first, on their layers;
                     "pin":true leaves them as comments, "against":"NOW_PAGE" says what a Next page fixed)
@@ -440,6 +444,21 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     case "skill":
       process.stdout.write(SKILL);
       return 0;
+    case "inspiration": {
+      const lib = await import("./tools/inspiration.ts");
+      if (file === "add" || file === "remove") {
+        const [dir] = args;
+        if (!dir) { console.error(`usage: buni inspiration ${file} <folder>`); return 2; }
+        if (file === "add" && !(await stat(resolve(dir)).catch(() => undefined))?.isDirectory()) return out({ ok: false, text: `${dir} isn't a folder.` });
+        const now = await lib.setLibrary(dir, file === "add");
+        return out({ ok: true, text: `${file === "add" ? "Added" : "Removed"} ${resolve(dir)}. Your libraries: ${now.length ? now.join(", ") : "none"} (plus buni's own).` });
+      }
+      const all = await lib.allPatterns();
+      const shown = file === "find" ? lib.searchPatterns(all, args.join(" ")) : all;
+      const libs = await lib.libraries();
+      const lines = await Promise.all(shown.map(async (p) => `  ${p.name.padEnd(28)} ${p.library}: ${await lib.shortPath(p)}`));
+      return out({ ok: true, text: `${libs.map((l) => `${l.name} (${l.dir})`).join("\n")}\n\n${shown.length} pattern${shown.length === 1 ? "" : "s"}:\n${lines.join("\n")}\n\nAdd your own: buni inspiration add <folder of .html patterns> (format: ${join(lib.BUILTIN, "README.md")}).` });
+    }
     case "extension": {
       // Written fresh each time, so loading the folder again picks up a new buni's capture.
       const { extensionFiles } = await import("./term/extension-build.ts");

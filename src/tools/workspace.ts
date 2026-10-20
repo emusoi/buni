@@ -347,6 +347,11 @@ export class Workspace {
       now: () => new Date().toISOString(),
       randomId: () => randomBytes(4).toString("hex"),
       readAttachment: (p) => this.readAttachment(p),
+      ...(this.store.readBytes ? { readAttachmentBytes: async (p: string) => {
+        const dir = dirname(this.path), target = resolve(dir, p);
+        if (!target.startsWith(dir + sep)) throw new ToolError(`attachment path "${p}" leaves the document's folder`);
+        return this.store.readBytes!(target);
+      } } : {}),
       localImports: this.store.localImports === true,
       readImportFile: async (path) => {
         const target = resolve(dirname(this.path), path);

@@ -59,3 +59,17 @@ test("the native host saves a snap as a new scratch design, lists it, and adds t
     expect(doc.ok && Object.values(doc.doc.pages).map((p) => p.name).sort()).toEqual(["Pricing · Now", "Pricing · Now, again"]);
   } finally { await rm(home, { recursive: true, force: true }); }
 }, 60_000);
+
+test("the native host keeps a snap as a pattern in the person's inspiration library, its images inside it", async () => {
+  const home = await mkdtemp(join(tmpdir(), "buni-host-"));
+  try {
+    const snapshot = { html: '<main><img src="asset:buni-import-image-1-asset" alt=""><h1>Pricing</h1></main>', url: "https://example.com/pricing", images: [{ id: "buni-import-image-1-asset", base64: "iVBORw0KGgo=", mime: "image/png" }] };
+    const [kept] = await host(home, [{ type: "inspire", name: "Example pricing", snapshot }]);
+    const file = join(home, ".buni/inspiration/example-pricing.html");
+    expect(kept).toMatchObject({ ok: true, file });
+    const text = await Bun.file(file).text();
+    expect(text).toContain("data:image/png;base64,iVBORw0KGgo=");
+    expect(text).toContain("seen in: https://example.com/pricing");
+    expect(JSON.parse(await Bun.file(join(home, ".buni/settings.json")).text()).inspiration).toEqual([join(home, ".buni/inspiration")]);
+  } finally { await rm(home, { recursive: true, force: true }); }
+}, 60_000);

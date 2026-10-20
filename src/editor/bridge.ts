@@ -275,6 +275,7 @@ const api: BuniApi = {
   },
   skills: () => call("skills"),
   skill: (name) => call("skill", name),
+  inspiration: () => call("inspiration"),
 };
 window.buni = api;
 

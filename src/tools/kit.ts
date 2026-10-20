@@ -25,6 +25,8 @@ export interface ToolContext {
   /** A candidate id; uniqueness is checked here, so it may be random. */
   randomId: () => Id;
   readAttachment: (path: string) => Promise<string>;
+  /** An attachment's bytes (an image), where the host can read them. */
+  readAttachmentBytes?: (path: string) => Promise<Uint8Array>;
   localImports?: boolean;
   readImportFile: (path: string) => Promise<import("../editor/import-resource.ts").ImportResource>;
   saveImportImage: (base64: string, mime: string) => Promise<string>;

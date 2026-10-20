@@ -63,3 +63,4 @@ Lasting conventions (a radius, the accent's only uses, the spacing base) become 
 
 ## 6. Explain each design
 When you finish, tell the person in a few lines what you made and why: the direction in a sentence, the bold thing, and what to look at. When you change a design later, say what changed and the reason, and update the Direction section if the reasoning moved.
+- Before designing a familiar pattern (a settings page, a data table, onboarding, pricing), find_inspiration: the libraries hold finished versions, the person's own among them. Take structure and behaviour from them, never their look wholesale.

@@ -5,7 +5,7 @@ import type { Doc, Id } from "buni/format/doc.ts";
 import { componentSrcdoc } from "./Canvas.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { loadProject, siblings } from "./projectStore.ts";
-import type { ProjectFile } from "../api.ts";
+import type { PatternInfo, ProjectFile } from "../api.ts";
 import { componentWidth } from "./layout.ts";
 import { libraryGroups, libraryItems, type LibraryFilter, type LibraryItem } from "./library.ts";
 
@@ -325,4 +325,42 @@ export function LibraryHealth({ doc, dir, onClose, onAsk }: { doc: Doc; dir: str
       </div>
     </div>
   );
+}
+
+/**
+ * The inspiration libraries' patterns (buni's own, and folders the person added with buni inspiration add): finished
+ * screens to borrow structure from. Use brings one in as a page of its own. Hidden where the host can't read them.
+ */
+export function Inspiration({ page, onUse, onSaved }: { page?: { id: string; name: string } | undefined; onUse: (file: string, name: string) => void; onSaved: (reply: string) => void }) {
+  const [patterns, setPatterns] = useState<PatternInfo[] | undefined>(undefined);
+  const [query, setQuery] = useState("");
+  // Saving asks two things in turn: what to call it, then when it is the right choice.
+  const [saving, setSaving] = useState<{ step: "name" } | { step: "use"; name: string } | undefined>(undefined);
+  const load = () => void window.buni.inspiration?.().then(setPatterns, () => setPatterns([]));
+  useEffect(load, []);
+  if (!window.buni.inspiration) return null;
+  const q = query.trim().toLowerCase();
+  const all = patterns ?? [];
+  const shown = q ? all.filter((p) => `${p.name} ${p.tags.join(" ")} ${p.use}`.toLowerCase().includes(q)) : all;
+  return <>
+    <div className="section-label with-action">
+      Inspiration <span className="n">{all.length || ""}</span>
+      {page && <button type="button" className="icon-btn small" title={`Keep ${page.name} as inspiration`} aria-label="Save this page as inspiration" onClick={() => setSaving({ step: "name" })}><Plus size={14} /></button>}
+    </div>
+    {all.length === 0 && <p className="rail-empty">Finished screens to borrow from. + keeps the page you're on; buni inspiration add brings a folder of yours.</p>}
+    {all.length > 8 && <input className="field rail-filter" type="search" placeholder="Find a pattern" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Find a pattern" />}
+    {shown.map((p) => (
+      <button type="button" key={p.file} className="row" title={`${p.use}\n(${p.library}) Click to bring it in as a page.`} onClick={() => onUse(p.file, p.name)}>
+        <Sparkles size={15} strokeWidth={1.75} className="dim" />
+        <span className="name">{p.name}</span>
+        <span className="meta">{p.library === "buni" ? p.tags[0] ?? "" : p.library}</span>
+      </button>
+    ))}
+    {saving?.step === "name" && page && <NameDialog title="Keep as inspiration" label="Name" initial={page.name} action="Next" onClose={() => setSaving(undefined)} onSubmit={(name) => setSaving({ step: "use", name })} />}
+    {saving?.step === "use" && page && <NameDialog title={`When is “${saving.name}” the right choice?`} label="Use it for" initial="" action="Save" onClose={() => setSaving(undefined)} onSubmit={(use) => {
+      const name = saving.name;
+      setSaving(undefined);
+      void window.buni.edit("save_inspiration", { page: page.id, name, use }).then((r) => { onSaved(r.reply); load(); });
+    }} />}
+  </>;
 }

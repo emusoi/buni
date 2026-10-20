@@ -9,7 +9,9 @@ const HOST = "com.buni.snap";
 const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "~");
 
 /** What to paste into an agent so it picks the design up where the snap left it. */
-const prompt = (last: LastSnap) =>
+const prompt = (last: LastSnap) => last.file?.endsWith(".html")
+  ? `I kept ${last.url || "a page"} as a pattern in my buni inspiration library: ${tilde(last.file)}. Use the buni skill: find_inspiration and use_inspiration bring it into a design.`
+  :
   `I snapped ${last.url || "a page"} into the buni design ${tilde(last.file ?? "")} as the page "${last.page}". ` +
   `Use the buni skill: read it with buni tree ${tilde(last.file ?? "")}, then improve it from the snapshot (buni skills critique). ` +
   `If I say to keep it, buni adopt ${tilde(last.file ?? "")} <project folder> moves it into the project.`;
@@ -19,7 +21,9 @@ function show(last: LastSnap | undefined): void {
   if (!last || Date.now() - last.at > 30 * 60_000) { box.className = ""; return; }
   if (!last.ok || !last.file) { box.className = ""; say(last.reply, true); return; }
   box.className = "shown";
-  $<HTMLElement>("result-title").textContent = `Snapped “${last.page}”`;
+  const kept = last.file.endsWith(".html");
+  $<HTMLElement>("result-title").textContent = kept ? "Kept as inspiration" : `Snapped “${last.page}”`;
+  $<HTMLButtonElement>("open").hidden = kept;
   $<HTMLElement>("result-file").textContent = tilde(last.file);
   $<HTMLButtonElement>("copy").onclick = () => void navigator.clipboard.writeText(prompt(last)).then(() => say("Copied. Paste it into Claude."));
   $<HTMLButtonElement>("open").onclick = async () => {

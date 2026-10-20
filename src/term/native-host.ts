@@ -9,6 +9,7 @@ import { basename, dirname, join } from "node:path";
 import { z } from "zod";
 import { emptyDoc } from "../format/doc.ts";
 import { serializeDoc } from "../format/serialize.ts";
+import { personalLibrary, writePattern } from "../tools/inspiration.ts";
 
 export const HOST_NAME = "com.buni.snap";
 export const SCRATCH = join(homedir(), "buni", "scratch");
@@ -23,6 +24,8 @@ const request = z.discriminatedUnion("type", [
     page: z.object({ name: z.string().min(1) }),
   }),
   z.object({ type: z.literal("open"), file: z.string().min(1) }),
+  /** Keep a snap as a pattern in the person's own inspiration library. */
+  z.object({ type: z.literal("inspire"), name: z.string().min(1), snapshot: z.object({ html: z.string(), url: z.string().optional(), images: z.array(z.object({ id: z.string(), base64: z.string(), mime: z.string() })).default([]) }) }),
 ]);
 export type HostRequest = z.infer<typeof request>;
 
@@ -90,6 +93,14 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
   try {
     if (r.type === "list") return { ok: true, scratch: await scratchDesigns(), folder: SCRATCH };
     if (r.type === "open") return { ok: true, url: await openEditor(r.file, tools) };
+    if (r.type === "inspire") {
+      // The snap's layers are inline-styled already; its images go in as data, so the pattern is one file.
+      let html = r.snapshot.html;
+      for (const img of r.snapshot.images) html = html.split(`asset:${img.id}`).join(`data:${img.mime};base64,${img.base64}`);
+      const host = r.snapshot.url ? new URL(r.snapshot.url).hostname : undefined;
+      const file = await writePattern(await personalLibrary(), { name: r.name, use: `Snapped${host ? ` from ${host}` : ""}; say when to use it`, tags: ["snapped"], ...(r.snapshot.url ? { seenIn: r.snapshot.url } : {}) }, { html, css: "body{margin:0}" });
+      return { ok: true, reply: `Kept as inspiration: ${file}`, file, name: r.name };
+    }
     const file = "scratch" in r.into ? await newScratch(r.into.scratch) : r.into.file;
     if (!file.endsWith(".buni") || !existsSync(file)) return { ok: false, reply: `There is no design at ${file}.` };
     const done = await tools.run(file, "import_snapshot", { snapshot: r.snapshot, page: r.page });

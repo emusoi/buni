@@ -32,7 +32,7 @@ import { PLAN_VIEWS, SystemRail } from "./SystemRail.tsx";
 import { OwnersContext } from "./SystemCanvas.tsx";
 import type { SystemSelection, SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
-import { LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
+import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
 import { loadProject, useProject } from "./projectStore.ts";
@@ -1001,6 +1001,8 @@ export function App({ snap }: { snap: Snapshot }) {
                 <span className="name">Pages</span>
               </button>
               <LibraryPanel doc={doc} imported={imported} path={snap.path} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
+              <Inspiration page={activePage && doc.pages[activePage] ? { id: activePage, name: doc.pages[activePage]!.name } : undefined} onSaved={setToast}
+                onUse={(file, name) => void window.buni.edit("use_inspiration", { pattern: file }).then((r) => setToast(r.ok ? `${name} is on a page of its own now: take its structure, make it yours.` : r.reply))} />
               {compRoot && (
                 <>
                   <div className="section-label">Layers of {doc.shared[component ?? ""]?.name}</div>

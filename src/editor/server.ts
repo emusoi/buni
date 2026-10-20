@@ -19,6 +19,7 @@ import { serializeDoc } from "buni/format/serialize.ts";
 import { systemChanges } from "buni/tools/changes.ts";
 import { Workspace } from "buni/tools/workspace.ts";
 import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
+import { allPatterns } from "../tools/inspiration.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
 import type { Asking } from "buni/tools/protocol.ts";
 import { gitCommit, gitStatus } from "./git.ts";
@@ -407,6 +408,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     /** buni's design guides and the person's own, by name; then one guide's text. */
     skills: async () => (await loadSkills()).map(({ name, description, source }) => ({ name, description, source })),
     skill: async (_file, name) => (typeof name === "string" ? (await readSkill(name))?.body : undefined),
+    /** The inspiration libraries' patterns, for the sidebar; use_inspiration brings one in. */
+    inspiration: async () => (await allPatterns()).map(({ name, library, use, tags, file }) => ({ name, library, use, tags, file })),
     /** The design folder in git, on this machine only. */
     changes: async (file) => (disk && file ? gitStatus(dirname(disk.real(file))) : undefined),
     commit: async (file, message, push) => {
