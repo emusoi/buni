@@ -122,3 +122,30 @@ test.skipIf(!browser)("type, colour, layout and the generated look are found on 
     expect((await ws.call("agent", "review_page", { page: calm.id })).reply).toContain("100/100");
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);
+
+test.skipIf(!browser)("a page reviewed against the snapshot it improves on says what was fixed, what is still there and what is new", async () => {
+  const { dir, ws } = await design();
+  try {
+    expect((await ws.call("agent", "create_page", { name: "Card · Now" })).ok).toBe(true);
+    const now = Object.values(ws.view().pages)[0]!;
+    const html = `<main style="padding:32px;background:#fff;color:#111"><p layer-name="Tiny" style="font-size:10px">Fine print</p><p layer-name="Faint" style="color:#bbb">Faint words</p></main>`;
+    expect((await ws.call("agent", "write_html", { parent: now.frame, html })).ok).toBe(true);
+    expect((await ws.call("agent", "duplicate_page", { page: now.id, name: "Card · Next" })).ok).toBe(true);
+    const doc = ws.view();
+    const next = Object.values(doc.pages).find((p) => p.name === "Card · Next")!;
+    const on = (pageFrame: string, name: string) => Object.values(ws.view().nodes).find((n) => {
+      if (n.name !== name) return false;
+      for (let at: string | undefined = n.parent; at; at = ws.view().nodes[at]?.parent) if (at === pageFrame) return true;
+      return false;
+    })!;
+    await ws.call("agent", "update_styles", { nodes: [on(next.frame, "Tiny").id], style: { fontSize: "13px" } });
+    await ws.call("agent", "update_styles", { nodes: [on(next.frame, "Faint").id], style: { textTransform: "uppercase" } });
+    await ws.call("agent", "set_text", { node: on(next.frame, "Faint").id, text: "Faint words that are now a whole sentence in capitals" });
+    const r = await ws.call("agent", "review_page", { page: next.id, against: now.id });
+    expect(r.ok).toBe(true);
+    expect(r.reply).toMatch(/^Card · Now \d+\/100 → Card · Next \d+\/100\./);
+    expect(r.reply).toContain("Fixed: tiny-text.");
+    expect(r.reply).toContain("Still there: low-contrast.");
+    expect(r.reply).toContain("New: all-caps-text.");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);

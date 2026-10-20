@@ -657,13 +657,23 @@ export const pagesTools = {
     description:
       "Review a page as it renders, motion included: rules a careful reviewer flags every time (bouncy or slow motion, transitions that lay the page out, " +
       "motion on everything, content left invisible, …), worst first, with the layers each is on and a score out of 100 that rises as they are fixed. " +
-      "pin: true puts each issue as a comment on its first layer (not twice). It catches the mechanical part; judge the design itself with read_skill critique.",
-    input: { page: z.string(), pin: z.boolean().optional() },
+      "pin: true puts each issue as a comment on its first layer (not twice). against: the page it improves on (its \"· Now\" snapshot): says which issues were fixed, which remain and which are new. " +
+      "It catches the mechanical part; judge the design itself with read_skill critique.",
+    input: { page: z.string(), pin: z.boolean().optional(), against: z.string().optional().describe("The page this one improves on, e.g. the snapshot it was duplicated from") },
     run: async (doc, a, ctx) => {
       const p = page(doc, a.page);
-      let review;
-      try { review = await reviewPage(doc, p.id); } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
-      const reply = reviewText(doc, p.name, review);
+      const was = a.against === undefined ? undefined : page(doc, a.against);
+      let review, before;
+      try {
+        review = await reviewPage(doc, p.id);
+        before = was && await reviewPage(doc, was.id);
+      } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
+      let reply = reviewText(doc, p.name, review);
+      if (was && before) {
+        const now = new Set(review.issues.map((i) => i.rule)), then = new Set(before.issues.map((i) => i.rule));
+        const fixed = [...then].filter((r) => !now.has(r)), kept = [...now].filter((r) => then.has(r)), added = [...now].filter((r) => !then.has(r));
+        reply = [`${was.name} ${before.score}/100 → ${p.name} ${review.score}/100.`, fixed.length ? `Fixed: ${fixed.join(", ")}.` : "", kept.length ? `Still there: ${kept.join(", ")}.` : "", added.length ? `New: ${added.join(", ")}.` : "", reply].filter(Boolean).join("\n");
+      }
       if (!a.pin) return { label: "Review", ops: [], reply };
       const ids = new Ids(doc, ctx);
       const ops: Op[] = [];

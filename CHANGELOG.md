@@ -14,7 +14,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   type scale, skipped heading levels, targets under 24px, text spilling out of its box, text pressed against its
   box's edge. And the generated look (tells skill): nested cards, a coloured side stripe, gradient text, glows,
   eyebrows over headings, buzzwords, an arrow on every link, em dashes everywhere. `pin: true` leaves each issue as
-  a comment on its layer once.
+  a comment on its layer once. `against` reviews the page a fixed copy came from too and says which issues were
+  fixed, which remain and which are new, with both scores. The critique skill now judges first, runs review_page
+  second, tags every finding P1 to P3, and ends snapshot-then-improve with that before-and-after.
 - An imported page keeps its motion. Keyframe entrances and hover or press responses that set_motion can express
   become the layer's motion, with the page's exact timing curve kept as `curve` (a format addition: a motion may
   carry its own `cubic-bezier`). Loops and custom keyframes Buni can't hold are left as one comment per kind on the

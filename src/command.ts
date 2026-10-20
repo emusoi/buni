@@ -76,6 +76,8 @@ Import a page:      buni call FILE import_html_page '{"url":"http://localhost:30
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
+Review a page:      buni call FILE review_page '{"page":"PAGE"}'   (score and issues worst first, on their layers;
+                    "pin":true leaves them as comments, "against":"NOW_PAGE" says what a Next page fixed)
 Check your work:    buni shot FILE PAGE out.png      (then look at out.png; also .pdf, .svg, --scale 2; needs a Chrome,
                     Chromium or Edge, or BUNI_CHROME pointing at one)
 
