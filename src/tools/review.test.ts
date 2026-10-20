@@ -21,7 +21,7 @@ test.skipIf(!browser)("a review finds motion a careful reviewer sends back, on i
     expect((await ws.call("agent", "create_page", { name: "Home" })).ok).toBe(true);
     const page = Object.values(ws.view().pages)[0]!;
     const html = `<main style="display:flex;flex-direction:column;gap:16px;padding:24px">
-      <button layer-name="Buy" style="transition: all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)">Buy</button>
+      <button layer-name="Buy" style="padding: 10px 16px; transition: all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)">Buy</button>
       <div layer-name="Panel" style="transition: height 200ms ease-in; height: 40px">Panel</div>
       <p layer-name="Body">Plain words that stay put.</p>
     </main>`;
@@ -66,5 +66,59 @@ test.skipIf(!browser)("motion on every section, and content left invisible are f
     const calm = await ws.call("agent", "review_page", { page: page.id });
     expect(calm.reply).not.toContain("motion-everywhere");
     expect(calm.reply).not.toContain("hidden-at-rest");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}, 60_000);
+
+test.skipIf(!browser)("type, colour, layout and the generated look are found on the layers that have them, and a careful page passes", async () => {
+  const { dir, ws } = await design();
+  try {
+    expect((await ws.call("agent", "create_page", { name: "Pricing" })).ok).toBe(true);
+    const page = Object.values(ws.view().pages)[0]!;
+    const long = "Words that run on across the whole width of a very wide column so that each line holds far too many characters to follow back. ".repeat(3);
+    const html = `<main style="padding:32px;font-size:16px;color:#1a1a1a;background:#ffffff">
+      <h1 layer-name="Top" style="font-size:16px">Plans</h1>
+      <span layer-name="Eyebrow" style="text-transform:uppercase;letter-spacing:2px;font-size:12px">New</span>
+      <h3 layer-name="Title" style="font-size:16px">Unlock seamless pricing</h3>
+      <p layer-name="Faint" style="color:#bbbbbb">Hard to read words</p>
+      <p layer-name="Tiny" style="font-size:10px">Fine print</p>
+      <p layer-name="Long" style="width:1200px;line-height:1.1">${long}</p>
+      <div layer-name="Outer" style="border-radius:12px;border:1px solid #ddd;background:#fff;padding:16px">
+        <div layer-name="Inner" style="border-radius:8px;box-shadow:0 0 24px rgb(140,60,255);background:#fff;padding:24px">Card</div>
+      </div>
+      <div layer-name="Banner" style="background:rgb(30,90,220);padding:12px"><p layer-name="Grey" style="color:#888888">Grey on blue</p></div>
+      <button layer-name="Close" style="width:16px;height:16px;padding:0">x</button>
+      <div layer-name="Narrow" style="width:40px;white-space:nowrap">A label far too wide</div>
+      <p layer-name="Shiny" style="background-image:linear-gradient(90deg,#f0f,#0ff);background-clip:text;color:transparent">Shiny words</p>
+    </main>`;
+    expect((await ws.call("agent", "write_html", { parent: page.frame, html })).ok).toBe(true);
+    const named = (name: string) => Object.values(ws.view().nodes).find((n) => n.name === name)!;
+    const r = await ws.call("agent", "review_page", { page: page.id });
+    const line = (rule: string) => r.reply.split("\n").find((l) => l.includes(` ${rule}`)) ?? "";
+    expect(line("low-contrast")).toContain(named("Faint").id);
+    expect(line("tiny-text")).toContain(named("Tiny").id);
+    expect(line("line-length")).toContain(named("Long").id);
+    expect(line("tight-leading")).toContain(named("Long").id);
+    expect(line("skipped-heading")).toContain(named("Title").id);
+    expect(line("flat-hierarchy")).toContain(named("Top").id);
+    expect(line("kicker")).toContain(named("Title").id);
+    expect(line("buzzwords")).toContain(named("Title").id);
+    expect(line("nested-cards")).toContain(named("Inner").id);
+    expect(line("glow")).toContain(named("Inner").id);
+    expect(line("gray-on-color")).toContain(named("Grey").id);
+    expect(line("small-target")).toContain(named("Close").id);
+    expect(line("text-overflow")).toContain(named("Narrow").id);
+    expect(line("gradient-text")).toContain(named("Shiny").id);
+    expect(r.reply.indexOf("P1 low-contrast")).toBeLessThan(r.reply.indexOf("P2"));
+
+    expect((await ws.call("agent", "create_page", { name: "Calm" })).ok).toBe(true);
+    const calm = Object.values(ws.view().pages).find((p) => p.name === "Calm")!;
+    const good = `<main style="padding:32px;font-size:16px;color:#1a1a1a;background:#fff">
+      <h1 style="font-size:40px">Pricing for small teams</h1>
+      <p style="max-width:60ch;line-height:1.5">${long}</p>
+      <h2 style="font-size:24px">Questions</h2>
+      <button style="padding:10px 16px;border:1px solid #ccc;border-radius:6px;background:#fff">Start a trial</button>
+    </main>`;
+    expect((await ws.call("agent", "write_html", { parent: calm.frame, html: good })).ok).toBe(true);
+    expect((await ws.call("agent", "review_page", { page: calm.id })).reply).toContain("100/100");
   } finally { await rm(dir, { recursive: true, force: true }); }
 }, 60_000);

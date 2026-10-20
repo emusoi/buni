@@ -9,8 +9,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   of 100 and each issue worst first (P1 to P3) on the layers it is on. The first rules are motion: overshooting
   (bounce) curves, transitions that lay the page out, `transition: all`, ease-in, slow feedback, endless loops,
   entrances on many separate parts of a page, one duration for everything, long staggers, no reduced-motion
-  alternative, and text left invisible once the page settles. `pin: true` leaves each issue as a comment on its layer
-  once.
+  alternative, and text left invisible once the page settles. Then type, colour and layout: contrast below WCAG AA
+  against what is really behind the text, tiny text, long lines, tight leading, capitals for sentences, a flat
+  type scale, skipped heading levels, targets under 24px, text spilling out of its box, text pressed against its
+  box's edge. And the generated look (tells skill): nested cards, a coloured side stripe, gradient text, glows,
+  eyebrows over headings, buzzwords, an arrow on every link, em dashes everywhere. `pin: true` leaves each issue as
+  a comment on its layer once.
 - An imported page keeps its motion. Keyframe entrances and hover or press responses that set_motion can express
   become the layer's motion, with the page's exact timing curve kept as `curve` (a format addition: a motion may
   carry its own `cubic-bezier`). Loops and custom keyframes Buni can't hold are left as one comment per kind on the
