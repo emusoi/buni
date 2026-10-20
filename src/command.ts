@@ -141,7 +141,19 @@ Workflow for a bigger design:
 4. After a few sections, buni shot the page and look at it; fix spacing and hierarchy before moving on.
 5. Repeated parts (nav, footer, cards): make_component once, place_component elsewhere; before finishing, find_repeats and componentize what was copied.
 6. Link pages with connect, name the path with set_flow, and write set_journey for the experience.
-7. Tell the person what you changed and what to look at.`;
+7. review_page each page and fix what it finds (a repeated problem is one find_nodes … replace_with edit); edits also
+   come back with quick checks on what they changed, so fix those as they appear.
+8. Tell the person what you changed and what to look at.
+
+Improving a product that already ships (read buni skills critique first):
+1. Snapshot it: import_html_page {url, live:true, cookies, wait_for} onto "<Screen> · Now". Don't write a capture script.
+2. Judge it yourself first, then review_page {page, pin:true}; pin your own findings with comment {node, body}.
+3. duplicate_page to "<Screen> · Next" and fix there, worst first; review_page {page: NEXT, against: NOW} says what changed.
+4. For a real choice of direction, explore_page {page, options:[{name, idea}]} makes 3 or 4 takes to build out fully;
+   compare_options reviews them side by side, ask_person when the choice is theirs, pick_option {option, why} makes one live.
+
+Motion: set_motion on the layer (read buni skills motion); buni shot FILE PAGE out.png --frames 6 shows it as moments
+side by side, so check order and pace there. Imported pages keep their motion.`;
 
 /** The guide in the SKILL.md shape shared by pi, Codex and Claude Code. */
 const SKILL = `---
@@ -149,8 +161,10 @@ name: buni
 description: >-
   Design desktop web pages, app flows and UX journeys, and the system behind them, in buni (.buni files)
   through the buni CLI: pages, components, links, flows, journeys, services, stores, queues, endpoints and tables.
-  Use when asked to design, mock up, lay out or restyle a screen, page, site or app flow, to design an API,
-  database or system architecture, to build from a design, or when a .buni file is involved.
+  Also snapshots a live app to improve it, reviews pages (motion, contrast, type, targets, generated-look tells),
+  and tries options of a page to compare and pick from. Use when asked to design, mock up, lay out or restyle a
+  screen, page, site or app flow, to improve or review an existing UI, to try alternatives of a page, to design an
+  API, database or system architecture, to build from a design, or when a .buni file is involved.
 ---
 
 ${GUIDE.replace("# Designing with buni", "# buni")}
