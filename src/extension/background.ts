@@ -3,8 +3,11 @@
 // scratch design or into one snapped into before.
 import type { Snapped } from "./content.ts";
 
-/** into: "scratch" for a new scratch design, "inspiration" for the person's inspiration library, or a design file snapped into before. */
-export interface SnapRequest { tabId: number; mode: "page" | "pick"; into: string; name: string }
+/**
+ * redesign: into a design, "scratch" for a new scratch one or a design file snapped into before. inspiration: kept
+ * in the person's inspiration library, with when to use it.
+ */
+export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string } & ({ intent: "redesign"; into: string } | { intent: "inspiration"; use: string });
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
 /** The boxes the capture couldn't read, cut from what the tab shows now; one outside the window can't be drawn. */
@@ -41,8 +44,8 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const title = req.name || snapped.title || new URL(snapped.url).hostname;
   const page = `${title} · Now`;
   const snapshot = { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width };
-  const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", req.into === "inspiration"
-    ? { type: "inspire", name: title, snapshot }
+  const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", req.intent === "inspiration"
+    ? { type: "inspire", name: title, snapshot, ...(req.use ? { use: req.use } : {}) }
     : { type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot });
   const field = (k: string) => (typeof answer === "object" && answer !== null && k in answer ? (answer as Record<string, unknown>)[k] : undefined);
   const ok = field("ok") === true, reply = typeof field("reply") === "string" ? String(field("reply")) : "buni didn't answer.";

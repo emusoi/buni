@@ -25,7 +25,7 @@ const request = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("open"), file: z.string().min(1) }),
   /** Keep a snap as a pattern in the person's own inspiration library. */
-  z.object({ type: z.literal("inspire"), name: z.string().min(1), snapshot: z.object({ html: z.string(), url: z.string().optional(), images: z.array(z.object({ id: z.string(), base64: z.string(), mime: z.string() })).default([]) }) }),
+  z.object({ type: z.literal("inspire"), name: z.string().min(1), use: z.string().optional(), snapshot: z.object({ html: z.string(), url: z.string().optional(), images: z.array(z.object({ id: z.string(), base64: z.string(), mime: z.string() })).default([]) }) }),
 ]);
 export type HostRequest = z.infer<typeof request>;
 
@@ -98,7 +98,7 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
       let html = r.snapshot.html;
       for (const img of r.snapshot.images) html = html.split(`asset:${img.id}`).join(`data:${img.mime};base64,${img.base64}`);
       const host = r.snapshot.url ? new URL(r.snapshot.url).hostname : undefined;
-      const file = await writePattern(await personalLibrary(), { name: r.name, use: `Snapped${host ? ` from ${host}` : ""}; say when to use it`, tags: ["snapped"], ...(r.snapshot.url ? { seenIn: r.snapshot.url } : {}) }, { html, css: "body{margin:0}" });
+      const file = await writePattern(await personalLibrary(), { name: r.name, use: r.use?.trim() || `Snapped${host ? ` from ${host}` : ""}; say when to use it`, tags: ["snapped"], ...(r.snapshot.url ? { seenIn: r.snapshot.url } : {}) }, { html, css: "body{margin:0}" });
       return { ok: true, reply: `Kept as inspiration: ${file}`, file, name: r.name };
     }
     const file = "scratch" in r.into ? await newScratch(r.into.scratch) : r.into.file;

@@ -5,16 +5,22 @@
 <title>buni snap</title>
 <style>
   :root { color-scheme: dark; --bg: #18181b; --field: #232327; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #b4b4bd; --blue: #4069e6; --green: #6ec896; }
-  body { margin: 0; width: 330px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; }
+  body { margin: 0; width: 340px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; }
   main { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
   h1 { margin: 0; font-size: 15px; font-weight: 700; }
   p { margin: 0; color: var(--mute); }
+  .intents { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .intent { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .intent b { font-size: 13px; }
+  .intent span { font-size: 12px; color: var(--mute); }
+  .intent[aria-pressed="true"] { border-color: var(--blue); background: rgba(64,105,230,.14); }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
+  label[hidden] { display: none; }
   input, select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
   .row { display: flex; gap: 8px; }
-  button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 600 13px inherit; cursor: pointer; }
-  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-  button:disabled { opacity: .5; cursor: default; }
+  .row button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+  .row button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .row button:disabled { opacity: .5; cursor: default; }
   #result { display: none; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--field); }
   #result.shown { display: flex; }
   #result b { color: var(--green); font-size: 13px; }
@@ -25,16 +31,20 @@
 </head>
 <body>
 <main>
-  <h1>Snap into buni</h1>
-  <p>Brings this page, as you see it, into a design as editable layers.</p>
-  <label>Save to <select id="into"><option value="scratch">New scratch design</option><option value="inspiration">My inspiration library</option></select></label>
+  <h1>Capture this page</h1>
+  <div class="intents" role="group" aria-label="What it's for">
+    <button type="button" class="intent" id="redesign" aria-pressed="true"><b>Redesign it</b><span>Into a design, to improve</span></button>
+    <button type="button" class="intent" id="inspire" aria-pressed="false"><b>Keep as inspiration</b><span>Into your library</span></button>
+  </div>
+  <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
   <label>Name <input id="name" placeholder="This page’s title"></label>
+  <label id="use-field" hidden>Use it for <input id="use" placeholder="When is this the right pattern?"></label>
   <div class="row">
     <button id="pick" type="button">Pick a part</button>
-    <button id="page" type="button" class="primary">Snap page</button>
+    <button id="page" type="button" class="primary">Capture page</button>
   </div>
   <section id="result" aria-live="polite">
-    <b id="result-title">Snapped</b>
+    <b id="result-title">Captured</b>
     <code id="result-file"></code>
     <div class="row">
       <button id="copy" type="button">Copy for Claude</button>
