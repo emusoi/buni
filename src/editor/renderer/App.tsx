@@ -172,7 +172,8 @@ function Layers({ doc, root, depth, selected, also = [], expanded, onToggle, onS
 
 /** The editor for one open file; remounted when another file opens. */
 export function App({ snap }: { snap: Snapshot }) {
-  const [page, setPage] = useState<Id>();
+  // A link can open the design on one page (?page=): the extension's "Open in buni" lands on what was captured.
+  const [page, setPage] = useState<Id | undefined>(() => new URLSearchParams(location.search).get("page") ?? undefined);
   const [selected, setSelected] = useState<Id>();
   const [panel, setPanel] = useState<"design" | "agent" | "doc">("design");
   /** Layers shown open in the sidebar; page and component roots start open, everything else closed. */
@@ -192,7 +193,7 @@ export function App({ snap }: { snap: Snapshot }) {
   /** The left sidebar shows pages and flows, or the component library. */
   const [sideTab, setSideTab] = useState<"pages" | "library">("pages");
   const [outline, setOutline] = useState<"pages" | "layers">("pages");
-  const [reveal, setReveal] = useState<{ page: Id; at: number }>();
+  const [reveal, setReveal] = useState<{ page: Id; at: number } | undefined>(() => { const p = new URLSearchParams(location.search).get("page"); return p ? { page: p, at: Date.now() } : undefined; });
   const [panelWidth, setPanelWidth] = useState(() => {
     try {
       return clampPanel(Number(localStorage.getItem("buni.panelWidth")) || PANEL_DEFAULT);

@@ -7,7 +7,8 @@ import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { z } from "zod";
-import { emptyDoc } from "../format/doc.ts";
+import { emptyDoc, pagesInOrder } from "../format/doc.ts";
+import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { personalLibrary, writePattern } from "../tools/inspiration.ts";
 
@@ -22,8 +23,9 @@ const request = z.discriminatedUnion("type", [
     into: z.union([z.object({ scratch: z.string().min(1) }), z.object({ file: z.string().min(1) })]),
     snapshot: z.record(z.string(), z.unknown()),
     page: z.object({ name: z.string().min(1) }),
+    brief: z.string().optional(),
   }),
-  z.object({ type: z.literal("open"), file: z.string().min(1) }),
+  z.object({ type: z.literal("open"), file: z.string().min(1), page: z.string().optional() }),
   /** Keep a snap as a pattern in the person's own inspiration library. */
   z.object({ type: z.literal("inspire"), name: z.string().min(1), use: z.string().optional(), snapshot: z.object({ html: z.string(), url: z.string().optional(), images: z.array(z.object({ id: z.string(), base64: z.string(), mime: z.string() })).default([]) }) }),
 ]);
@@ -92,7 +94,11 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
   const r = parsed.data;
   try {
     if (r.type === "list") return { ok: true, scratch: await scratchDesigns(), folder: SCRATCH };
-    if (r.type === "open") return { ok: true, url: await openEditor(r.file, tools) };
+    if (r.type === "open") {
+      const url = new URL(await openEditor(r.file, tools));
+      if (r.page) url.searchParams.set("page", r.page);
+      return { ok: true, url: url.href };
+    }
     if (r.type === "inspire") {
       // The snap's layers are inline-styled already; its images go in as data, so the pattern is one file.
       let html = r.snapshot.html;
@@ -103,7 +109,7 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
     }
     const file = "scratch" in r.into ? await newScratch(r.into.scratch) : r.into.file;
     if (!file.endsWith(".buni") || !existsSync(file)) return { ok: false, reply: `There is no design at ${file}.` };
-    const done = await tools.run(file, "import_snapshot", { snapshot: r.snapshot, page: r.page });
+    const done = await tools.run(file, "import_snapshot", { snapshot: r.snapshot, page: r.page, ...(r.brief?.trim() ? { brief: r.brief.trim() } : {}) });
     const page = done.text.match(/^Created page (\S+)\./)?.[1];
     return { ok: done.ok, reply: done.text, file, name: basename(file, ".buni"), ...(page ? { page } : {}) };
   } catch (e) {
@@ -138,4 +144,26 @@ export function hostManifestDirs(): string[] {
     ? ["Google/Chrome", "Google/Chrome Beta", "Google/Chrome Canary", "Google/Chrome for Testing", "Chromium", "BraveSoftware/Brave-Browser", "Microsoft Edge", "Arc/User Data"].map((b) => join(home, "Library/Application Support", b))
     : ["google-chrome", "google-chrome-beta", "chromium", "BraveSoftware/Brave-Browser", "microsoft-edge"].map((b) => join(home, ".config", b));
   return base.filter((d) => existsSync(d)).map((d) => join(d, "NativeMessagingHosts"));
+}
+
+/** A captured page in a scratch design: where it came from and what the person wants changed. */
+export interface Snap { file: string; page: string; pageId: string; url?: string; brief?: string; modified: string }
+
+/** Captured pages in the scratch designs, newest design first: what `buni snaps` lists and agents pick up. */
+export async function recentSnaps(): Promise<Snap[]> {
+  const out: Snap[] = [];
+  for (const d of await scratchDesigns()) {
+    const parsed = parseDoc(await Bun.file(d.file).text());
+    if (!parsed.ok) continue;
+    const doc = parsed.doc;
+    // Newest page first within a design: the last capture is what was just asked about.
+    for (const p of pagesInOrder(doc).reverse()) {
+      const url = p.sources?.find((s) => s.url)?.url ?? doc.nodes[p.frame]?.sources?.find((s) => s.url)?.url
+        ?? Object.values(doc.nodes).find((n) => n.parent === p.frame)?.sources?.find((s) => s.url)?.url;
+      if (!url && !p.name.endsWith("· Now")) continue;
+      const brief = Object.values(doc.comments).find((c) => c.node === p.frame && c.posts[0]?.body.startsWith("Brief: "))?.posts[0]?.body.slice(7);
+      out.push({ file: d.file, page: p.name, pageId: p.id, modified: d.modified, ...(url ? { url } : {}), ...(brief ? { brief } : {}) });
+    }
+  }
+  return out;
 }

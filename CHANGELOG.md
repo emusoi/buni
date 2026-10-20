@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Capture to redesign, end to end: the extension asks "What should change?" and keeps the answer as a brief on the
+  captured page (`import_snapshot {brief}`), which also remembers the page's URL. `buni snaps` lists captures newest
+  first with their briefs, so "work on my latest snap" is enough for an agent. "Copy for Claude" now carries the
+  whole loop (look, review, a "· Next" copy or options, before and after), and "Open in buni" lands on the captured
+  page: the editor opens on `?page=<id>`.
 - Fixed: Pick a part in the Chrome extension. The popup now closes only once the request has arrived, the page's
   own mouse and pointer handlers don't fire while picking (a card inside a link no longer navigates), and a pick that
   fails shows a red badge and its reason when the popup opens again. While picking, ↑ takes the part around the one

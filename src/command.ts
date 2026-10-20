@@ -34,6 +34,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   tools [name]                      every design tool and its arguments; with a name, that tool's in full
   skills [name]                     design skills: list them, or print one to follow
   new <file.buni>                   start an empty design
+  snaps [--all] [--json]            pages captured with the Chrome extension, newest first, with what to change
   adopt <scratch.buni> <folder>     move a scratch design (a snap) into a project folder, with its assets and history
   inspiration [find <words> | add <folder> | remove <folder>]
                                     the inspiration libraries agents design from: buni's own, and folders of yours
@@ -81,7 +82,8 @@ Import a page:      buni call FILE import_html_page '{"url":"http://localhost:30
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
 Snap from Chrome:   buni extension writes a Chrome extension; with it the person snaps the page they're on (signed in),
                     or a part of it, as "<title> · Now" in a scratch design, ~/buni/scratch/<name>/<name>.buni, or one
-                    snapped into before. Asked to work on a snap, read that file with buni tree; to keep it,
+                    snapped into before. "My latest snap": buni snaps lists them, newest first, with the person's
+                    brief; read the file with buni tree and redesign from the snapshot (critique skill). To keep it,
                     buni adopt SCRATCH.buni PROJECT_FOLDER moves it into a project.
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
@@ -444,6 +446,17 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     case "skill":
       process.stdout.write(SKILL);
       return 0;
+    case "snaps": {
+      // What the Chrome extension captured, newest first: "work on my latest snap" starts here.
+      const { recentSnaps } = await import("./term/native-host.ts");
+      const snaps = await recentSnaps();
+      if (json) { console.log(JSON.stringify(snaps)); return 0; }
+      if (!snaps.length) { console.log("No snaps yet. In Chrome: the buni icon, Redesign it, Capture page (set it up with buni extension)."); return 0; }
+      for (const s of snaps.slice(0, file === "--all" ? undefined : 10)) {
+        console.log(`${s.page} (${s.pageId})${s.url ? `  from ${s.url}` : ""}\n  ${s.file.replace(homedir(), "~")}  ${s.modified.slice(0, 16).replace("T", " ")}${s.brief ? `\n  Brief: ${s.brief}` : ""}`);
+      }
+      return 0;
+    }
     case "inspiration": {
       const lib = await import("./tools/inspiration.ts");
       if (file === "add" || file === "remove") {

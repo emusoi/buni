@@ -73,3 +73,15 @@ test("the native host keeps a snap as a pattern in the person's inspiration libr
     expect(JSON.parse(await Bun.file(join(home, ".buni/settings.json")).text()).inspiration).toEqual([join(home, ".buni/inspiration")]);
   } finally { await rm(home, { recursive: true, force: true }); }
 }, 60_000);
+
+test("a snap's brief is kept on its page, and buni snaps lists it newest first", async () => {
+  const home = await mkdtemp(join(tmpdir(), "buni-host-"));
+  try {
+    const snapshot = { html: "<main><h1>Plans</h1></main>", count: 2, warnings: [], images: [], url: "https://example.com/plans", width: 800 };
+    const [first] = await host(home, [{ type: "snap", into: { scratch: "Example plans" }, snapshot, page: { name: "Plans · Now" }, brief: "Make the plans easier to compare" }]);
+    expect(first).toMatchObject({ ok: true });
+    const list = Bun.spawn(["bun", join(import.meta.dir, "../cli.ts"), "snaps", "--json"], { env: { ...process.env, HOME: home }, stdout: "pipe" });
+    const snaps: unknown = JSON.parse(await new Response(list.stdout).text());
+    expect(snaps).toEqual([expect.objectContaining({ page: "Plans · Now", url: "https://example.com/plans", brief: "Make the plans easier to compare", file: join(home, "buni/scratch/example-plans/example-plans.buni") })]);
+  } finally { await rm(home, { recursive: true, force: true }); }
+}, 60_000);

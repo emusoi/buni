@@ -7,7 +7,7 @@ import type { Snapped } from "./content.ts";
  * redesign: into a design, "scratch" for a new scratch one or a design file snapped into before. inspiration: kept
  * in the person's inspiration library, with when to use it.
  */
-export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string } & ({ intent: "redesign"; into: string } | { intent: "inspiration"; use: string });
+export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string } & ({ intent: "redesign"; into: string; brief: string } | { intent: "inspiration"; use: string });
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
 /** The boxes the capture couldn't read, cut from what the tab shows now; one outside the window can't be drawn. */
@@ -31,7 +31,7 @@ async function drawShots(snap: Snapped, windowId: number): Promise<{ images: Sna
 }
 
 /** The last snap, for the popup to show when it opens again (a pick closes it before the snap ends). */
-export interface LastSnap { ok: boolean; reply: string; file?: string; name?: string; page: string; url: string; at: number }
+export interface LastSnap { ok: boolean; reply: string; file?: string; name?: string; page: string; pageId?: string; brief?: string; url: string; at: number }
 
 async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const tab = await chrome.tabs.get(req.tabId);
@@ -46,12 +46,14 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const snapshot = { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width };
   const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", req.intent === "inspiration"
     ? { type: "inspire", name: title, snapshot, ...(req.use ? { use: req.use } : {}) }
-    : { type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot });
+    : { type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot, ...(req.brief ? { brief: req.brief } : {}) });
   const field = (k: string) => (typeof answer === "object" && answer !== null && k in answer ? (answer as Record<string, unknown>)[k] : undefined);
   const ok = field("ok") === true, reply = typeof field("reply") === "string" ? String(field("reply")) : "buni didn't answer.";
   const file = typeof field("file") === "string" ? String(field("file")) : undefined;
   const name = typeof field("name") === "string" ? String(field("name")) : undefined;
-  const last: LastSnap = { ok, reply, page, url: snapped.url, at: Date.now(), ...(file ? { file } : {}), ...(name ? { name } : {}) };
+  const pageId = typeof field("page") === "string" ? String(field("page")) : undefined;
+  const brief = req.intent === "redesign" && req.brief ? req.brief : undefined;
+  const last: LastSnap = { ok, reply, page, url: snapped.url, at: Date.now(), ...(file ? { file } : {}), ...(name ? { name } : {}), ...(pageId ? { pageId } : {}), ...(brief ? { brief } : {}) };
   await chrome.storage.local.set({ last, ...(file ? { into: file } : {}) });
   await chrome.action.setBadgeText({ text: ok ? "✓" : "!" });
   await chrome.action.setBadgeBackgroundColor({ color: ok ? "#2f8a5b" : "#c0392b" });

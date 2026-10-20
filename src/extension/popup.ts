@@ -3,7 +3,7 @@
 import type { LastSnap, SnapAnswer, SnapRequest } from "./background.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T; // ponytail: the ids are in popup.html
-const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), use = $<HTMLInputElement>("use"), status = $<HTMLParagraphElement>("status");
+const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), use = $<HTMLInputElement>("use"), brief = $<HTMLTextAreaElement>("brief"), status = $<HTMLParagraphElement>("status");
 /** What the capture is for: a page to redesign, or a pattern to keep. Remembered between visits. */
 let intent: "redesign" | "inspiration" = "redesign";
 function choose(next: typeof intent): void {
@@ -11,6 +11,7 @@ function choose(next: typeof intent): void {
   $<HTMLButtonElement>("redesign").setAttribute("aria-pressed", String(next === "redesign"));
   $<HTMLButtonElement>("inspire").setAttribute("aria-pressed", String(next === "inspiration"));
   $<HTMLElement>("into-field").hidden = next !== "redesign";
+  $<HTMLElement>("brief-field").hidden = next !== "redesign";
   $<HTMLElement>("use-field").hidden = next !== "inspiration";
   void chrome.storage.local.set({ intent: next });
 }
@@ -19,12 +20,19 @@ const HOST = "com.buni.snap";
 const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "~");
 
 /** What to paste into an agent so it picks the design up where the snap left it. */
-const prompt = (last: LastSnap) => last.file?.endsWith(".html")
-  ? `I kept ${last.url || "a page"} as a pattern in my buni inspiration library: ${tilde(last.file)}. Use the buni skill: find_inspiration and use_inspiration bring it into a design.`
-  :
-  `I snapped ${last.url || "a page"} into the buni design ${tilde(last.file ?? "")} as the page "${last.page}". ` +
-  `Use the buni skill: read it with buni tree ${tilde(last.file ?? "")}, then improve it from the snapshot (buni skills critique). ` +
-  `If I say to keep it, buni adopt ${tilde(last.file ?? "")} <project folder> moves it into the project.`;
+const prompt = (last: LastSnap) => {
+  const file = tilde(last.file ?? "");
+  if (file.endsWith(".html")) return `I kept ${last.url || "a page"} as a pattern in my buni inspiration library: ${file}. Use the buni skill: find_inspiration and use_inspiration bring it into a design.`;
+  return [
+    `Redesign the page I captured with buni: "${last.page}"${last.pageId ? ` (page ${last.pageId})` : ""} in ${file}, from ${last.url || "the live site"}.`,
+    last.brief ? `What should change: ${last.brief}` : "Find what most needs to change.",
+    "Use the buni skill (read buni skills critique first):",
+    `1. buni tree ${file}, look at it (buni shot), judge it, then review_page {page, pin: true}.`,
+    "2. duplicate_page to \"<Screen> · Next\" and fix it there, worst first; if the direction isn't obvious, explore_page 3 options and compare_options.",
+    "3. review_page {page: Next, against: Now} and show me before and after.",
+    "Check find_inspiration for patterns that fit. If I say to keep it, buni adopt moves it into the project.",
+  ].join("\n");
+};
 
 function show(last: LastSnap | undefined): void {
   const box = $<HTMLElement>("result");
@@ -39,7 +47,7 @@ function show(last: LastSnap | undefined): void {
   $<HTMLButtonElement>("copy").onclick = () => void navigator.clipboard.writeText(prompt(last)).then(() => say("Copied. Paste it into Claude."));
   $<HTMLButtonElement>("open").onclick = async () => {
     say("Opening buni…");
-    const r: unknown = await chrome.runtime.sendNativeMessage(HOST, { type: "open", file: last.file });
+    const r: unknown = await chrome.runtime.sendNativeMessage(HOST, { type: "open", file: last.file, ...(last.pageId ? { page: last.pageId } : {}) });
     const url = typeof r === "object" && r !== null && "url" in r && typeof r.url === "string" ? r.url : undefined;
     if (url) { await chrome.tabs.create({ url }); window.close(); } else say("buni couldn't open the editor.", true);
   };
@@ -73,7 +81,7 @@ async function snap(mode: "page" | "pick"): Promise<void> {
   if (!tab?.id) return;
   const request: SnapRequest = intent === "inspiration"
     ? { tabId: tab.id, mode, name: name.value.trim(), intent, use: use.value.trim() }
-    : { tabId: tab.id, mode, name: name.value.trim(), intent, into: into.value };
+    : { tabId: tab.id, mode, name: name.value.trim(), intent, into: into.value, brief: brief.value.trim() };
   if (mode === "pick") {
     // Closed only once the background has the request; it finishes after the click, and the icon shows ✓ or !.
     await chrome.runtime.sendMessage(request);

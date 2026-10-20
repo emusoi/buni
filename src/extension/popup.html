@@ -16,7 +16,8 @@
   .intent[aria-pressed="true"] { border-color: var(--blue); background: rgba(64,105,230,.14); }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
   label[hidden] { display: none; }
-  input, select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
+  textarea { resize: vertical; min-height: 44px; }
+  input, select, textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
   .row { display: flex; gap: 8px; }
   .row button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
   .row button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -38,6 +39,7 @@
   </div>
   <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
   <label>Name <input id="name" placeholder="This page’s title"></label>
+  <label id="brief-field">What should change? <textarea id="brief" rows="2" placeholder="Make the plans easier to compare; the CTA gets lost"></textarea></label>
   <label id="use-field" hidden>Use it for <input id="use" placeholder="When is this the right pattern?"></label>
   <div class="row">
     <button id="pick" type="button">Pick a part</button>

@@ -545,7 +545,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         if (req.method === "POST" && file && allowedCall(req, snappers)) {
           const r = await (await need(file)).call("chrome extension", "import_snapshot", await req.json());
           const page = r.reply.match(/^Created page (\S+)\./)?.[1];
-          return Response.json({ ok: r.ok, reply: r.reply, ...(page ? { page } : {}), open: `${origin}/?file=${encodeURIComponent(file)}` }, { status: r.ok ? 200 : 400 });
+          return Response.json({ ok: r.ok, reply: r.reply, ...(page ? { page } : {}), open: `${origin}/?file=${encodeURIComponent(file)}${page ? `&page=${page}` : ""}` }, { status: r.ok ? 200 : 400 });
         }
         return Response.json({ error: "forbidden" }, { status: 403 });
       }

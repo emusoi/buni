@@ -406,11 +406,23 @@ export const pagesTools = {
       }),
       parent: z.string().optional(), after: z.string().optional(),
       page: z.object({ name: z.string().min(1), route: z.string().optional() }).optional(),
+      brief: z.string().optional().describe("What the person wants changed, kept as a comment on the new page for whoever redesigns it"),
     },
     run: async (doc, a, ctx): Promise<ToolOutput> => {
       const where = { ...(a.parent ? { parent: a.parent } : {}), ...(a.after !== undefined ? { after: a.after } : {}), ...(a.page ? { page: { ...a.page, width: a.snapshot.width } } : {}) };
       const width = placeFor(doc, where);
-      return importCaptured(doc, { ...a.snapshot, shots: [] }, width, where, ctx);
+      let out = await importCaptured(doc, { ...a.snapshot, shots: [] }, width, where, ctx);
+      // The page remembers where it was captured, when the layers didn't say.
+      const url = a.snapshot.url;
+      if (url) out = { ...out, ops: out.ops.map((o) => (o.kind === "put" && o.collection === "pages" && !o.value.sources?.length ? { ...o, value: { ...o.value, sources: [{ url }] } } : o)) };
+      const brief = a.brief?.trim();
+      if (!brief) return out;
+      // On the captured page's root, where buni tree and the editor show it beside the snapshot.
+      const made = out.ops.find((o) => o.kind === "put" && o.collection === "pages");
+      const node = made?.kind === "put" && made.collection === "pages" ? made.value.frame : a.parent;
+      if (!node) return out;
+      const comment = { id: new Ids(applied(doc, out.ops), ctx).next(), node, state: "open" as const, posts: [{ author: ctx.author, body: `Brief: ${brief}`, at: ctx.now() }] };
+      return { ...out, ops: [...out.ops, { kind: "put", collection: "comments", value: comment }], reply: `${out.reply}\nBrief kept as comment ${comment.id}.` };
     },
   }),
 

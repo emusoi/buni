@@ -37,7 +37,7 @@ test.skipIf(!browser)("the extension's capture snaps a page in the browser, and 
     expect(await list.json()).toEqual([expect.objectContaining({ path: "/designs/Shop/Shop.buni", name: "Shop" })]);
     const ok = await post(EXTENSION_ORIGIN);
     expect(ok.status).toBe(200);
-    expect(await ok.json()).toMatchObject({ ok: true, open: "http://localhost:4999/?file=%2Fdesigns%2FShop%2FShop.buni" });
+    expect(await ok.json()).toMatchObject({ ok: true, open: expect.stringMatching(/^http:\/\/localhost:4999\/\?file=%2Fdesigns%2FShop%2FShop\.buni&page=\w+$/) });
     const saved = parseDoc(await store.read("/designs/Shop/Shop.buni"));
     if (!saved.ok) throw new Error("the design didn't parse");
     const now = Object.values(saved.doc.pages).find((p) => p.name === "Quotes · Now")!;
