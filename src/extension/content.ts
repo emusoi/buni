@@ -5,7 +5,7 @@ import type { CapturedImage, Shot } from "../editor/renderer/capture-agent.ts";
 /** What the page sends back: the capture, plus boxes the extension draws from the screen and where the page sat. */
 export interface Snapped {
   html: string; count: number; warnings: string[]; images: CapturedImage[]; shots: Shot[];
-  url: string; title: string; width: number; scrollX: number; scrollY: number;
+  url: string; title: string; width: number; height: number; scrollX: number; scrollY: number;
 }
 
 declare global {
@@ -72,5 +72,5 @@ window.buniSnap = async (mode) => {
       return id;
     },
   });
-  return { ...result, images, shots, url: location.href, title: document.title, width: innerWidth, scrollX, scrollY };
+  return { ...result, images, shots, url: location.href, title: document.title, width: innerWidth, height: innerHeight, scrollX, scrollY };
 };

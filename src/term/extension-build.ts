@@ -13,11 +13,13 @@ export async function extensionFiles(): Promise<Record<string, string>> {
     return r.outputs[0]!.text();
   };
   const manifest = {
-    manifest_version: 3, name: "buni snap", version: VERSION.replace(/[^0-9.]/g, "") || "0.1.0", key: KEY,
+    manifest_version: 3, name: "buni", version: VERSION.replace(/[^0-9.]/g, "") || "0.1.0", key: KEY,
     description: "Snap the page you're on into a buni design as editable layers, to redesign it.",
     permissions: ["activeTab", "scripting", "storage", "nativeMessaging", "sidePanel"],
     // Asked for in the side panel the first time something is captured: it reads pages without a click on the icon.
     optional_host_permissions: ["<all_urls>"],
+    // Draws frames and pixels a page can't hand over, by Chrome's own screenshot of each box (asked for with page access).
+    optional_permissions: ["debugger"],
     action: { default_title: "Open buni beside this page" },
     side_panel: { default_path: "panel.html" },
     background: { service_worker: "background.js", type: "module" },

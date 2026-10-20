@@ -5,6 +5,15 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Fixed: a capture with frames or pictures the page can't hand over failed ("attachment … does not exist"). They are
+  now drawn by Chrome's own screenshot of each box, wherever it is on the page (the extension asks for the debugger
+  permission with page access; without it, it scrolls to each and cuts it from the screen), and one that still can't
+  be drawn comes in as an empty box instead of refusing the import.
+- The side panel fits narrow widths: the two intents are one switch, "What should change?" comes first, a long error
+  shows its first line with Details, and a capture to redesign opens its design right there. The editor, under
+  640px wide (or with `?compact=1`), starts with its panels folded, frames the page it was opened on, keeps a one-line
+  title and drops the insert tools; watching that way, it follows an agent to the page it is changing.
+- The extension is called buni now.
 - buni opens in Chrome's side panel, beside the page you're working on: the extension's icon opens it. Capture
   (redesign it, or keep as inspiration) stays open while you pick a part; Snaps lists your captures with their briefs
   and opens any in the buni editor right in the panel (or in a tab), or copies the prompt for Claude; Inspiration

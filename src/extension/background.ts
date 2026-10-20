@@ -10,24 +10,77 @@ import type { Snapped } from "./content.ts";
 export type SnapRequest = { tabId: number; mode: "page" | "pick"; name: string; /** Answer when done, even for a pick: the side panel stays open. */ wait?: boolean } & ({ intent: "redesign"; into: string; brief: string } | { intent: "inspiration"; use: string });
 export type SnapAnswer = { ok: true; reply: string } | { ok: false; reply: string };
 
-/** The boxes the capture couldn't read, cut from what the tab shows now; one outside the window can't be drawn. */
-async function drawShots(snap: Snapped, windowId: number): Promise<{ images: Snapped["images"]; missed: number }> {
+/** The page scrolled to `y` (as far as it goes), once it has painted there; answers where it got to. */
+async function scrollTo(tabId: number, y: number): Promise<number> {
+  const [r] = await chrome.scripting.executeScript({ target: { tabId }, args: [y], func: (to: number) => {
+    scrollTo(scrollX, to);
+    return new Promise<number>((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => done(scrollY), 150))));
+  } });
+  return typeof r?.result === "number" ? r.result : y;
+}
+
+/** PNG bytes as base64, in chunks a call can take. */
+function base64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
+/**
+ * The boxes the capture couldn't read (frames, cross-origin pixels), drawn by Chrome's own screenshot of each box of the
+ * page, wherever it is, at twice its size: what buni's live import does, here through the debugger. Undefined when the
+ * debugger can't attach (DevTools open on the tab, or the permission not given), for the screen-cutting way below.
+ */
+async function drawShotsDebugger(snap: Snapped, tabId: number): Promise<{ images: Snapped["images"]; missed: number } | undefined> {
   if (!snap.shots.length) return { images: [], missed: 0 };
-  const shown = await createImageBitmap(await (await fetch(await chrome.tabs.captureVisibleTab(windowId, { format: "png" }))).blob());
-  const scale = shown.width / snap.width;
+  const target = { tabId };
+  try { await chrome.debugger.attach(target, "1.3"); } catch { return undefined; }
   const images: Snapped["images"] = [];
   let missed = 0;
-  for (const s of snap.shots) {
-    const x = (s.x - snap.scrollX) * scale, y = (s.y - snap.scrollY) * scale, w = s.width * scale, h = s.height * scale;
-    if (x < 0 || y < 0 || x + w > shown.width || y + h > shown.height) { missed++; continue; }
-    const canvas = new OffscreenCanvas(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
-    canvas.getContext("2d")?.drawImage(shown, x, y, w, h, 0, 0, canvas.width, canvas.height);
-    const bytes = new Uint8Array(await (await canvas.convertToBlob({ type: "image/png" })).arrayBuffer());
-    let binary = "";
-    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    images.push({ id: s.id, base64: btoa(binary), mime: "image/png" });
+  try {
+    for (const s of snap.shots) {
+      try {
+        const r = await chrome.debugger.sendCommand(target, "Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: s.x, y: s.y, width: s.width, height: s.height, scale: 2 } });
+        const data = typeof r === "object" && r !== null && "data" in r && typeof r.data === "string" ? r.data : undefined;
+        if (data) images.push({ id: s.id, base64: data, mime: "image/png" }); else missed++;
+      } catch { missed++; }
+    }
+  } finally {
+    await chrome.debugger.detach(target).catch(() => undefined);
   }
   return { images, missed };
+}
+
+/**
+ * The same, cut from the screen: the page is scrolled to each
+ * stretch that holds some, one screenshot a stretch (Chrome allows two a second), and put back where it was.
+ */
+async function drawShots(snap: Snapped, tabId: number, windowId: number): Promise<{ images: Snapped["images"]; missed: number }> {
+  const images: Snapped["images"] = [];
+  let left = [...snap.shots].sort((a, b) => a.y - b.y);
+  let last = 0;
+  while (left.length) {
+    const at = await scrollTo(tabId, Math.max(0, left[0]!.y - 8));
+    await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - last))));
+    last = Date.now();
+    const shown = await createImageBitmap(await (await fetch(await chrome.tabs.captureVisibleTab(windowId, { format: "png" }))).blob());
+    const scale = shown.width / snap.width;
+    const keep: typeof left = [];
+    for (const s of left) {
+      const x = (s.x - snap.scrollX) * scale, y = (s.y - at) * scale, w = s.width * scale;
+      // A box taller than the window is drawn as far as the window shows it.
+      const h = Math.min(s.height * scale, shown.height - y);
+      if (x < 0 || y < 0 || x + w > shown.width + 1 || h <= 0) { keep.push(s); continue; }
+      const canvas = new OffscreenCanvas(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+      canvas.getContext("2d")?.drawImage(shown, x, y, w, h, 0, 0, canvas.width, canvas.height);
+      images.push({ id: s.id, base64: base64(new Uint8Array(await (await canvas.convertToBlob({ type: "image/png" })).arrayBuffer())), mime: "image/png" });
+    }
+    // Nothing more reachable from here (outside the page's width, or the page won't scroll that far): stop.
+    if (keep.length === left.length) break;
+    left = keep;
+  }
+  if (snap.shots.length) await scrollTo(tabId, snap.scrollY);
+  return { images, missed: left.length };
 }
 
 /** The last snap, for the popup to show when it opens again (a pick closes it before the snap ends). */
@@ -39,8 +92,8 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const [run] = await chrome.scripting.executeScript({ target: { tabId: req.tabId }, func: (mode: "page" | "pick") => window.buniSnap?.(mode), args: [req.mode] });
   const snapped = run?.result as Snapped | undefined;
   if (!snapped) return { ok: false, reply: "Nothing was snapped." };
-  const drawn = await drawShots(snapped, tab.windowId);
-  const warnings = [...snapped.warnings, ...(drawn.missed ? [`${drawn.missed} frame${drawn.missed === 1 ? " was" : "s were"} outside the window and left empty; scroll to it and snap again.`] : [])];
+  const drawn = (await drawShotsDebugger(snapped, req.tabId)) ?? (await drawShots(snapped, req.tabId, tab.windowId));
+  const warnings = [...snapped.warnings, ...(drawn.missed ? [`${drawn.missed} picture${drawn.missed === 1 ? "" : "s"} couldn't be drawn from the screen and stay as empty boxes.`] : [])];
   const title = req.name || snapped.title || new URL(snapped.url).hostname;
   const page = `${title} · Now`;
   const snapshot = { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width };

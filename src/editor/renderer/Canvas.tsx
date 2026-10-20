@@ -1107,7 +1107,10 @@ export function Canvas(props: Props) {
     }
     if (x0 === Infinity) return;
     // Room for the floating side panels, the insert bar below, and row titles in the margin on the left.
-    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length ? 240 : 48), floatOf("--float-right") + 48, 124, 72];
+    // A narrow canvas (Chrome's side panel) keeps thin margins: the page is what's being watched.
+    const narrow = r.width < 640;
+    // The folded sidebar's icon rail and the zoom pill still float there, so the page starts clear of them.
+    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length && !narrow ? 240 : narrow ? 76 : 48), floatOf("--float-right") + (narrow ? 12 : 48), narrow ? 112 : 124, narrow ? 24 : 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
     updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
@@ -1129,7 +1132,8 @@ export function Canvas(props: Props) {
   useEffect(() => {
     if (framed.current || pages.length === 0) return;
     framed.current = true;
-    requestAnimationFrame(() => fitPages.current());
+    // Opened to show one page (?page=), it frames that page, not everything.
+    requestAnimationFrame(() => (props.reveal ? fitTo([props.reveal.page]) : fitPages.current()));
   }, [pages.length]);
   const titles = useMemo(() => rowTitles(own, at), [own, at]);
   /** Top of the last row title drawn this render; closer ones are skipped. */

@@ -209,8 +209,11 @@ export function App({ snap }: { snap: Snapshot }) {
     }
   }, [panelWidth]);
   // Each side panel hides on its own; ⌘\ hides both for a focused view of the canvas, and brings both back.
-  const [sidebarOpen, toggleSidebar] = useSidebar("buni.sidebar", false);
-  const [panelOpen, togglePanel] = useSidebar("buni.panel", false);
+  // ?compact=1, or a window under 640px (Chrome's side panel): both panels start folded so the canvas has the room;
+  // ⌘\ brings them back, and what's remembered for wide windows is left alone.
+  const compact = new URLSearchParams(location.search).get("compact") === "1" || matchMedia("(max-width: 640px)").matches ? false : undefined;
+  const [sidebarOpen, toggleSidebar] = useSidebar("buni.sidebar", false, compact);
+  const [panelOpen, togglePanel] = useSidebar("buni.panel", false, compact);
   const anyOpen = sidebarOpen || panelOpen;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -447,8 +450,10 @@ export function App({ snap }: { snap: Snapshot }) {
     const node = e.nodes[0];
     const where = node ? pageOfNode(doc, node) : undefined;
     if (e.author === "you" || !where || where === activePage) return;
+    // Watching beside a page (compact), the canvas follows the agent to what it's changing, a new "· Next" page and all.
+    if (compact !== undefined) { setPage(where); setReveal({ page: where, at: Date.now() }); return; }
     setAgentNote({ author: e.author, label: e.label, page: where, node });
-  }, [edits, doc, activePage]);
+  }, [edits, doc, activePage, compact]);
   useEffect(() => {
     if (!agentNote) return;
     const t = setTimeout(() => setAgentNote(undefined), 6000);

@@ -6,8 +6,20 @@ import type { LastSnap, SnapAnswer, SnapRequest } from "./background.ts";
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T; // ponytail: the ids are in panel.html
 const HOST = "com.buni.snap";
 const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "~");
-const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), use = $<HTMLInputElement>("use"), brief = $<HTMLTextAreaElement>("brief"), status = $<HTMLParagraphElement>("status");
-const say = (text: string, error = false) => { status.textContent = text; status.className = error ? "error" : ""; };
+const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), use = $<HTMLTextAreaElement>("use"), brief = $<HTMLTextAreaElement>("brief"), status = $<HTMLDivElement>("status");
+/** A message under the buttons; a long one (a refused import) shows its first line, the rest behind Details. */
+function say(text: string, error = false): void {
+  status.className = error ? "error" : "";
+  const first = text.split(/(?<=[.:])\s|\n/)[0] ?? text;
+  if (text.length <= 160 || first.length >= text.length) { status.textContent = text; return; }
+  const more = document.createElement("details");
+  const head = document.createElement("summary");
+  head.textContent = first.length > 160 ? `${first.slice(0, 157)}…` : first;
+  const rest = document.createElement("p");
+  rest.textContent = text;
+  more.append(head, rest);
+  status.replaceChildren(more);
+}
 
 /** One request to buni on this machine; undefined when it isn't set up for Chrome. */
 async function native(message: object): Promise<Record<string, unknown> | undefined> {
@@ -44,7 +56,10 @@ async function openEditor(file: string, page: string | undefined, title: string,
   if (!here) { await chrome.tabs.create({ url }); return; }
   editorUrl = url;
   $<HTMLElement>("editor-title").textContent = title;
-  $<HTMLIFrameElement>("frame").src = url;
+  // Compact in the panel: the canvas gets the room, so the redesign shows as it happens.
+  const inPanel = new URL(url);
+  inPanel.searchParams.set("compact", "1");
+  $<HTMLIFrameElement>("frame").src = inPanel.href;
   for (const t of TABS) $<HTMLElement>(`view-${t}`).classList.remove("on");
   $<HTMLElement>("editor").classList.add("on");
 }
@@ -103,6 +118,7 @@ function choose(next: typeof intent): void {
   $<HTMLButtonElement>("redesign").setAttribute("aria-pressed", String(next === "redesign"));
   $<HTMLButtonElement>("inspire").setAttribute("aria-pressed", String(next === "inspiration"));
   $<HTMLElement>("into-field").hidden = next !== "redesign";
+  $<HTMLButtonElement>("page").textContent = next === "redesign" ? "Capture page" : "Keep page";
   $<HTMLElement>("brief-field").hidden = next !== "redesign";
   $<HTMLElement>("use-field").hidden = next !== "inspiration";
   void chrome.storage.local.set({ intent: next });
@@ -129,7 +145,7 @@ async function loadTargets(): Promise<void> {
 
 async function capture(mode: "page" | "pick"): Promise<void> {
   // Asked once, inside the click: the panel reads the page itself, so it needs the person's say-so for pages.
-  const allowed = await chrome.permissions.request({ origins: ["<all_urls>"] }).catch(() => false);
+  const allowed = await chrome.permissions.request({ origins: ["<all_urls>"], permissions: ["debugger"] }).catch(() => false);
   if (!allowed) return say("buni needs to read the page to capture it. Allow it and try again.", true);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
@@ -144,8 +160,11 @@ async function capture(mode: "page" | "pick"): Promise<void> {
   say("");
   brief.value = ""; name.value = "";
   void chrome.action.setBadgeText({ text: "" });
-  showLast((await chrome.storage.local.get("last")).last as LastSnap | undefined);
+  const last = (await chrome.storage.local.get("last")).last as LastSnap | undefined;
+  showLast(last);
   void loadTargets();
+  // A page to redesign opens in buni at once, beside the original, so the redesign shows as it happens.
+  if (last?.ok && last.file?.endsWith(".buni")) await openEditor(last.file, last.pageId, last.page, true);
 }
 
 // --- Snaps and inspiration ----------------------------------------------------------------------------------------------

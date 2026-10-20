@@ -2175,6 +2175,15 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   .app.editor .modes-bar button { padding: 0 5px; font-size: 12px; }
   .app.editor .presence { display: none; }
 }
+/* Beside a page (Chrome's side panel) or any window this narrow: the canvas gets the room. The title keeps one line,
+   the insert and canvas tools step aside (zoom stays), and below 520px the modes show only the one you're in. */
+@media (max-width: 640px) {
+  .app.editor .project-switch .title { display: block; max-width: 38vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app.editor .insert-bar, .app.editor .canvas-tools, .app.editor .changes-btn { display: none; }
+}
+@media (max-width: 520px) {
+  .app.editor .modes-bar button:not(.on) { display: none; }
+}
 /* Play in a narrow window: the key hints go, the capsule scrolls instead of spilling, the journey's columns pair up. */
 @media (max-width: 700px) {
   .play-keys { display: none; }

@@ -5,8 +5,10 @@ import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "
  * Whether a side panel is showing: remembered between launches under `key` and shared by every screen. With
  * `shortcut`, ⌘\ toggles it; the editor turns that off and uses ⌘\ for both panels at once.
  */
-export function useSidebar(key = "buni.sidebar", shortcut = true): [boolean, (open?: boolean) => void] {
+export function useSidebar(key = "buni.sidebar", shortcut = true, start?: boolean): [boolean, (open?: boolean) => void] {
   const [open, setOpen] = useState(() => {
+    // A view that sets how it starts (the editor in Chrome's side panel) neither reads nor changes what's remembered.
+    if (start !== undefined) return start;
     try {
       return localStorage.getItem(key) !== "closed";
     } catch {
@@ -14,12 +16,13 @@ export function useSidebar(key = "buni.sidebar", shortcut = true): [boolean, (op
     }
   });
   useEffect(() => {
+    if (start !== undefined) return;
     try {
       localStorage.setItem(key, open ? "open" : "closed");
     } catch {
       // Remembering it is a convenience; without storage the sidebar starts open.
     }
-  }, [open, key]);
+  }, [open, key, start]);
   useEffect(() => {
     if (!shortcut) return;
     const onKey = (e: KeyboardEvent) => {

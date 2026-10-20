@@ -69,8 +69,16 @@ async function importCaptured(doc: Doc, result: CapturedHtml, width: number, a: 
     replacements.set(image.id, attachment.id);
   }
   const tree = parseFragment(result.html);
+  let missing = 0;
   const resolveImages = (parent: P.ParentNode) => {
     for (const child of parent.childNodes) if ("tagName" in child) {
+      // A picture the capture couldn't draw (a frame out of reach) stays as the empty box it took up.
+      const src = child.attrs.find((at) => at.name === "src")?.value ?? "";
+      if (child.tagName === "img" && /^asset:buni-import-(image|shot)-\d+-asset$/.test(src) && !replacements.has(src.slice(6))) {
+        child.tagName = "div"; child.nodeName = "div";
+        child.attrs = child.attrs.filter((at) => at.name !== "src" && at.name !== "alt");
+        missing++;
+      }
       for (const attr of child.attrs) {
         if (attr.name === "src" && replacements.has(attr.value.slice(6))) attr.value = `asset:${replacements.get(attr.value.slice(6))}`;
         if (attr.name === "style") attr.value = attr.value.replace(/url\(asset:(buni-import-image-\d+-asset)\)/g,
@@ -84,7 +92,7 @@ async function importCaptured(doc: Doc, result: CapturedHtml, width: number, a: 
   const imported = await pagesTools.import_html.run({ ...doc, attachments }, { html,
     ...(a.page ? { page: { ...a.page, width } } : { parent: a.parent, after: a.after }) }, ctx);
   return { ...imported, ops: [...ops, ...imported.ops], reply: [imported.reply, `Captured ${result.count} elements at ${width}px.`,
-    ...result.warnings.map((warning) => `Warning: ${warning}`)].join("\n") };
+    ...result.warnings.map((warning) => `Warning: ${warning}`), ...(missing ? [`Warning: ${missing} picture${missing === 1 ? "" : "s"} couldn't be drawn and stay as empty boxes.`] : [])].join("\n") };
 }
 
 export const pagesTools = {

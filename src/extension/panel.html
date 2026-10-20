@@ -7,7 +7,7 @@
   :root { color-scheme: dark; --bg: #18181b; --raised: #1f1f23; --field: #26262b; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #b4b4bd; --blue: #4069e6; --green: #6ec896; --red: #ff9a90; }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; display: flex; flex-direction: column; }
+  body { margin: 0; min-width: 260px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; display: flex; flex-direction: column; }
   header { display: flex; align-items: center; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
   header .brand { font-weight: 800; font-size: 15px; margin-right: 8px; }
   .tab { padding: 6px 10px; border-radius: 8px; border: 0; background: transparent; color: var(--mute); font: inherit; font-weight: 600; cursor: pointer; }
@@ -15,11 +15,14 @@
   section.view { display: none; flex: 1; flex-direction: column; gap: 12px; padding: 14px 12px; overflow: auto; }
   section.view.on { display: flex; }
   p { margin: 0; color: var(--mute); }
-  .intents { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .intent { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-  .intent b { font-size: 13px; }
-  .intent span { font-size: 12px; color: var(--mute); }
-  .intent[aria-pressed="true"] { border-color: var(--blue); background: rgba(64,105,230,.14); }
+  /* Two intents as one switch: it fits a narrow panel and reads as a choice. */
+  .switch { display: flex; padding: 3px; border-radius: 10px; background: var(--field); }
+  .switch button { flex: 1; min-height: 32px; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--mute); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .switch button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+  /* Into and Name side by side when there is room, stacked when there isn't. */
+  .pair { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pair label { flex: 1 1 170px; min-width: 0; }
+  .pair select, .pair input { width: 100%; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
   label[hidden] { display: none; }
   input, select, textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
@@ -31,11 +34,20 @@
   .card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); }
   .card b { font-size: 13px; }
   .card .meta { font-size: 12px; color: var(--mute); }
-  .card .brief { font-size: 12px; color: var(--ink); }
+  .card .brief { font-size: 12px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .row button.act { flex: 0 0 auto; }
+  .card .row button.act[data-do="copy"] { flex: 1; background: var(--blue); border-color: var(--blue); color: #fff; }
   .card code { font: 12px "JetBrains Mono", ui-monospace, monospace; word-break: break-all; color: var(--mute); }
   .ok { color: var(--green); }
-  #status, .status { min-height: 18px; }
-  .error { color: var(--red); }
+  #status:empty { display: none; }
+  #status { font-size: 12px; color: var(--mute); }
+  #status.error { color: var(--red); }
+  /* A long error shows its first line; the rest is one click away. */
+  #status details summary { cursor: pointer; list-style: none; }
+  #status details summary::after { content: " Details"; color: var(--mute); text-decoration: underline; }
+  #status details[open] summary::after { content: " Hide"; }
+  #status details p { margin-top: 6px; max-height: 160px; overflow: auto; color: var(--mute); font: 12px/1.5 "JetBrains Mono", ui-monospace, monospace; word-break: break-word; }
+  .status { min-height: 0; font-size: 12px; color: var(--mute); }
   .empty { padding: 24px 4px; text-align: center; }
   /* The editor, inside the panel. */
   #editor { display: none; flex: 1; flex-direction: column; }
@@ -55,19 +67,21 @@
 </header>
 
 <section class="view on" id="view-capture" role="tabpanel">
-  <div class="intents" role="group" aria-label="What it's for">
-    <button type="button" class="intent" id="redesign" aria-pressed="true"><b>Redesign it</b><span>Into a design, to improve</span></button>
-    <button type="button" class="intent" id="inspire" aria-pressed="false"><b>Keep as inspiration</b><span>Into your library</span></button>
+  <div class="switch" role="group" aria-label="What it's for">
+    <button type="button" id="redesign" aria-pressed="true" title="Into a design, to improve it">Redesign it</button>
+    <button type="button" id="inspire" aria-pressed="false" title="Into your inspiration library">Keep as inspiration</button>
   </div>
-  <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
-  <label>Name <input id="name" placeholder="This page’s title"></label>
-  <label id="brief-field">What should change? <textarea id="brief" rows="2" placeholder="Make the plans easier to compare; the CTA gets lost"></textarea></label>
-  <label id="use-field" hidden>Use it for <input id="use" placeholder="When is this the right pattern?"></label>
+  <label id="brief-field">What should change? <textarea id="brief" rows="3" placeholder="Make the plans easier to compare; the CTA gets lost"></textarea></label>
+  <label id="use-field" hidden>Use it for <textarea id="use" rows="2" placeholder="When is this the right pattern?"></textarea></label>
+  <div class="pair">
+    <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
+    <label>Name <input id="name" placeholder="This page’s title"></label>
+  </div>
   <div class="row">
     <button id="pick" type="button" class="act">Pick a part</button>
     <button id="page" type="button" class="act primary">Capture page</button>
   </div>
-  <p id="status" role="status"></p>
+  <div id="status" role="status"></div>
   <div id="result"></div>
 </section>
 
