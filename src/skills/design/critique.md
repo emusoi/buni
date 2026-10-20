@@ -1,6 +1,6 @@
 ---
 name: critique
-description: Reviewing and refining a design — a shared vocabulary of lenses (critique, audit, polish, distill, bolder, quieter, typeset, layout, colorize, animate, harden, onboard, clarify, delight, adapt), what each looks for and fixes, a bounded review loop with screenshots, and snapshot-then-improve for a page that already ships. Read before reviewing a design, before improving an existing product, when the person asks for one of these by name, or before calling work done.
+description: Reviewing and refining a design — a shared vocabulary of lenses (critique, audit, polish, explore, distill, bolder, quieter, typeset, layout, colorize, animate, harden, onboard, clarify, delight, adapt), what each looks for and fixes, a bounded review loop with screenshots, and snapshot-then-improve for a page that already ships. Read before reviewing a design, before improving an existing product, when the person asks for one of these by name, or before calling work done.
 ---
 # Critique: review with names, fix in rounds
 
@@ -35,6 +35,7 @@ Skip the snapshot only when the page doesn't exist yet. A JavaScript-rendered ap
 - harden: make it survive real use. Error and empty states, loading without flicker, long and short content, translated strings, slow and failed requests, permissions, offline where it matters (interaction skill).
 - onboard: design the first run. The empty state as an invitation with one clear first action, progressive disclosure, sensible defaults, what a new person needs to know and nothing more.
 - clarify: fix the words. Labels in the person's language, actions that say what they do and keep their names through the flow, errors with the problem and the fix (ux-writing skill).
+- explore: try 3 or 4 real alternatives before settling. explore_page {page, options: [{name, idea}]} makes each a copy to change on its own; vary named axes (what comes first, density, layout, type, colour), keep the content, data and components fixed, and write each idea as a bet ("Proof first: buyers trust lead times before they ask for a price"). Build each fully, then compare_options reviews them side by side; judge the bets, ask_person when the choice is theirs, and pick_option {option, why} makes the winner live (the why is kept as a decision).
 - delight: add personality where it earns its place (an empty state, a success moment, a small detail tied to the subject), never at the cost of speed or clarity.
 - adapt: make it work on another size or device. Narrow and wide layouts, touch targets, safe areas, input methods, platform conventions (layout and mobile skills).
 

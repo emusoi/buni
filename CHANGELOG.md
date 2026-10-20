@@ -5,6 +5,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Options: try other takes on a page and keep the best. `explore_page {page, options: [{name, idea}]}` makes each
+  a copy of the page that changes on its own (a new format field, `Page.option = {of, idea}`; an option has no route
+  while it is one). `compare_options {page}` reviews the page and its options side by side, best first, with each
+  one's bet. `pick_option {option, why, others?}` makes one live: it takes the route, links and flows to the page now
+  reach it, the old page becomes one of its options, and the why is kept as a decision. The sidebar lists options
+  under their page; the critique skill gains an explore lens.
 - Fixed: a live page's frames could be imported blank when the app reloaded them while it was being measured (the
   buni editor's own page previews did). Frames are drawn once they have loaded and painted again.
 - `find_nodes {style?, text?, page?, root?, replace_with?}` finds layers by style, token or words. A colour matches

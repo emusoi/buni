@@ -1,7 +1,7 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Bot, BookOpen, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
-import { childrenOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
+import { Bot, BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
@@ -703,10 +703,10 @@ export function App({ snap }: { snap: Snapshot }) {
                 <button
                   type="button"
                   draggable
-                  className={`row${indent ? " indent" : ""}${open ? " active" : ""}${dropAt?.id === p.id ? (dropAt.before ? " drop-before" : " drop-after") : ""}`}
+                  className={`row${indent || p.option ? " indent" : ""}${open ? " active" : ""}${dropAt?.id === p.id ? (dropAt.before ? " drop-before" : " drop-after") : ""}`}
                   onClick={() => { openPage(p.id); setReveal({ page: p.id, at: Date.now() }); }}
                   onDoubleClick={() => setRenaming(p.id)}
-                  title="Double-click to rename"
+                  title={p.option ? `Option of ${doc.pages[p.option.of]?.name ?? "a page"}: ${p.option.idea}. Double-click to rename` : "Double-click to rename"}
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = "move";
                     setDragPage(p.id);
@@ -727,14 +727,18 @@ export function App({ snap }: { snap: Snapshot }) {
                     setDropAt(undefined);
                   }}
                 >
-                  <FileText size={16} strokeWidth={1.75} />
+                  {p.option ? <GitBranch size={16} strokeWidth={1.75} className="dim" /> : <FileText size={16} strokeWidth={1.75} />}
                   <span className="name">{p.name}</span>
                   {(() => {
                     // An agent working on this page shows here too, in its colour.
                     const here = spots.find((sp) => sp.nodes[0] !== undefined && pageOfNode(doc, sp.nodes[0]) === p.id);
                     return here && <span className="page-agent" style={{ background: here.color }} title={`${here.agent} is working here`} />;
                   })()}
-                  <span className="meta">{pageLabel(doc, p)}</span>
+                  <span className="meta">{p.option ? "option" : (() => {
+                    // Other takes on this page wait under it (explore_page); pick_option makes one live.
+                    const n = optionsOf(doc, p.id).length;
+                    return n ? `${pageLabel(doc, p)} · ${n} option${n === 1 ? "" : "s"}` : pageLabel(doc, p);
+                  })()}</span>
                 </button>
               </Fragment>
             );

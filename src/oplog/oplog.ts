@@ -74,6 +74,13 @@ function applyOp(doc: Doc, op: Op): void {
 
 export type ApplyResult = { ok: true; doc: Doc } | { ok: false; errors: FormatError[] };
 
+/** `doc` with `ops` applied, unchecked: for a tool that builds on its own earlier ops before they are written. */
+export function applyOps(doc: Doc, ops: readonly Op[]): Doc {
+  const next = copyFor(doc, ops);
+  for (const op of ops) applyOp(next, op);
+  return next;
+}
+
 /**
  * A copy of `doc` that `ops` can be applied to: only the collections they touch are copied, and
  * shallowly. Documents are never edited in place once read, so untouched entities are shared.

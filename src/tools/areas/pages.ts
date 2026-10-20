@@ -8,11 +8,37 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type Post, type Thread, type Style } from "../../format/doc.ts";
-import type { Op } from "../../oplog/oplog.ts";
+import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type PageOption, type Post, type Thread, type Style } from "../../format/doc.ts";
+import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { layerHtml, parseHtml, renderPage, snippet, type Draft } from "../html.ts";
 import { findIcons } from "../icons.ts";
 import { Ids, type Tool, ToolError, pageOf, body, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
+
+/**
+ * A copy of a page as a new page: every layer with a new id, and its links from the copied layers. `twins` keeps each
+ * layer pointing at the one it copies (a state, which follows its screen's styles); otherwise the copy is its own.
+ */
+function copyPage(doc: Doc, from: Page, ids: Ids, as: { name: string; index: string; twins: boolean; route?: string; state?: string; option?: PageOption }): { ops: Op[]; page: Id; frame: Id; layers: number } {
+  const nodes = subtree(doc, from.frame);
+  const fresh = new Map(nodes.map((n) => [n.id, ids.next()]));
+  const id = (old: Id) => fresh.get(old) ?? old;
+  const ops: Op[] = nodes.map((n) => {
+    const { twin, ...copy } = structuredClone(n);
+    return { kind: "put", collection: "nodes", value: { ...copy, id: id(n.id), ...(n.parent !== undefined ? { parent: id(n.parent) } : {}), ...(as.twins ? { twin: twin ?? n.id } : {}) } };
+  });
+  const pageId = ids.next();
+  const { x: _x, y: _y, state: _s, route: _r, option: _o, ...rest } = from;
+  ops.push({
+    kind: "put", collection: "pages",
+    value: { ...rest, id: pageId, name: as.name, frame: id(from.frame), index: as.index, ...(as.option ? { option: as.option } : as.route !== undefined ? { route: as.route } : from.route !== undefined ? { route: from.route } : {}), ...(as.state ? { state: as.state } : {}) },
+  });
+  // Its links go where the original's go, from the copied layers.
+  for (const c of Object.values(doc.connections)) {
+    if (c.page !== from.id || !fresh.has(c.node) || isUseLink(c.id)) continue;
+    ops.push({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: pageId, node: id(c.node) } });
+  }
+  return { ops, page: pageId, frame: id(from.frame), layers: nodes.length };
+}
 
 export const pagesTools = {
   create_page: tool({
@@ -90,30 +116,101 @@ export const pagesTools = {
     },
     run: async (doc, a, ctx) => {
       const from = page(doc, a.page);
-      const ids = new Ids(doc, ctx);
-      // Every layer gets a new id; parents follow, so the copy is its own tree.
-      const nodes = subtree(doc, from.frame);
-      const fresh = new Map(nodes.map((n) => [n.id, ids.next()]));
-      const id = (old: Id) => fresh.get(old) ?? old;
-      // A state's layers remember the screen's layer they copy, so style changes there reach them; a new page is its own.
-      const ops: Op[] = nodes.map((n) => {
-        const { twin, ...copy } = structuredClone(n);
-        return { kind: "put", collection: "nodes", value: { ...copy, id: id(n.id), ...(n.parent !== undefined ? { parent: id(n.parent) } : {}), ...(a.state ? { twin: twin ?? n.id } : {}) } };
-      });
-      const pageId = ids.next();
       const next = pagesInOrder(doc)[pagesInOrder(doc).findIndex((p) => p.id === from.id) + 1];
       const name = a.name ?? (a.state ? `${from.name}, ${a.state.charAt(0).toLowerCase()}${a.state.slice(1)}` : `${from.name} copy`);
-      const { x: _x, y: _y, state: _s, ...rest } = from;
-      ops.push({
-        kind: "put", collection: "pages",
-        value: { ...rest, id: pageId, name, frame: id(from.frame), index: generateKeyBetween(from.index, next?.index ?? null), ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state ? { state: a.state } : {}) },
+      const copy = copyPage(doc, from, new Ids(doc, ctx), {
+        name, index: generateKeyBetween(from.index, next?.index ?? null), twins: a.state !== undefined,
+        ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state ? { state: a.state } : {}),
       });
-      // Its links go where the original's go, from the copied layers.
-      for (const c of Object.values(doc.connections)) {
-        if (c.page !== from.id || !fresh.has(c.node) || isUseLink(c.id)) continue;
-        ops.push({ kind: "put", collection: "connections", value: { ...c, id: ids.next(), page: pageId, node: id(c.node) } });
+      return { label: `Duplicate ${from.name}`, ops: copy.ops, reply: `Created page ${copy.page} (${name}) with root frame ${copy.frame}; ${copy.layers} layers copied.` };
+    },
+  }),
+
+  explore_page: tool({
+    description:
+      "Try other takes on a page: each option is a copy of it, not linked to it, to change on its own (layout, what comes first, density). " +
+      "Name each and say in one line what it bets on (idea). Options have no route while they are options, so Play and export keep showing the page. " +
+      "Then compare_options reviews them side by side and pick_option makes one live. Read the critique skill's explore lens first.",
+    input: {
+      page: z.string(),
+      options: z.array(z.object({ name: z.string().min(1), idea: z.string().min(1) })).min(1).max(6),
+    },
+    run: async (doc, a, ctx) => {
+      const from = page(doc, a.page);
+      if (from.option) throw new ToolError(`"${from.name}" is itself an option of ${doc.pages[from.option.of]?.name ?? from.option.of}; explore that page instead`);
+      if (from.state) throw new ToolError(`"${from.name}" is a state; explore the screen it is a state of`);
+      const ids = new Ids(doc, ctx);
+      const order = pagesInOrder(doc);
+      // After the page and the options it already has.
+      const last = [from, ...optionsOf(doc, from.id)].at(-1)!;
+      const hi = order[order.findIndex((p) => p.id === last.id) + 1]?.index ?? null;
+      let lo = last.index;
+      const ops: Op[] = [];
+      const made: string[] = [];
+      for (const o of a.options) {
+        const index = generateKeyBetween(lo, hi);
+        lo = index;
+        const copy = copyPage(doc, from, ids, { name: `${from.name} · ${o.name}`, index, twins: false, option: { of: from.id, idea: o.idea } });
+        ops.push(...copy.ops);
+        made.push(`${from.name} · ${o.name}: page ${copy.page}, root frame ${copy.frame}`);
       }
-      return { label: `Duplicate ${from.name}`, ops, reply: `Created page ${pageId} (${name}) with root frame ${id(from.frame)}; ${nodes.length} layers copied.` };
+      return { label: `Explore ${a.options.length} option${a.options.length === 1 ? "" : "s"} of ${from.name}`, ops, reply: `Options of ${from.name}, each a copy to change:\n${made.join("\n")}` };
+    },
+  }),
+
+  compare_options: tool({
+    description: "Review a page and its options side by side as they render: each one's idea, score out of 100 and issues, best first. Give the page or any of its options.",
+    input: { page: z.string() },
+    run: async (doc, a) => {
+      const given = page(doc, a.page);
+      const live = given.option ? page(doc, given.option.of) : given;
+      const all = [live, ...optionsOf(doc, live.id)];
+      if (all.length === 1) throw new ToolError(`${live.name} has no options yet; explore_page makes some`);
+      let reviews;
+      try { reviews = await Promise.all(all.map(async (p) => ({ p, r: await reviewPage(doc, p.id) }))); } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
+      const lines = reviews.sort((x, y) => y.r.score - x.r.score).map(({ p, r }) => {
+        const count = (sev: string) => r.issues.filter((i) => i.severity === sev).length;
+        const worst = r.issues.slice(0, 3).map((i) => `${i.severity.toUpperCase()} ${i.rule}`).join(", ");
+        return `${p.id === live.id ? "LIVE " : ""}${p.name} (${p.id}): ${r.score}/100, ${count("p1")} P1, ${count("p2")} P2, ${count("p3")} P3${worst ? ` — ${worst}` : ""}${p.option ? `\n  bets on: ${p.option.idea}` : ""}`;
+      });
+      return { label: "Compare options", ops: [], reply: `${live.name} and its ${all.length - 1} option${all.length === 2 ? "" : "s"}, best first:\n${lines.join("\n")}\nScores catch the mechanical part; judge the bet itself, and when the choice is the person's, ask_person.` };
+    },
+  }),
+
+  pick_option: tool({
+    description:
+      "Make an option the live page: it takes the page's route, links and flows to the page now reach it, and the page that was live becomes one of its options. " +
+      "why is kept as a decision. others: keep (default) leaves the other options beside it; delete removes them.",
+    input: { option: z.string(), why: z.string().min(1), others: z.enum(["keep", "delete"]).optional() },
+    run: async (doc, a, ctx) => {
+      const chosen = page(doc, a.option);
+      if (!chosen.option) throw new ToolError(`"${chosen.name}" isn't an option of another page`);
+      const live = page(doc, chosen.option.of);
+      const rest = optionsOf(doc, live.id).filter((p) => p.id !== chosen.id);
+      const ops: Op[] = [];
+      // The chosen one takes the live page's place: its route, client and spot in the list.
+      const { option: _o, ...chosenRest } = chosen;
+      const { route: _r, ...liveRest } = live;
+      ops.push({ kind: "put", collection: "pages", value: { ...chosenRest, index: live.index, ...(live.route !== undefined ? { route: live.route } : {}), ...(live.client !== undefined ? { client: live.client } : {}) } });
+      ops.push({ kind: "put", collection: "pages", value: { ...liveRest, index: chosen.index, option: { of: chosen.id, idea: `As it was live until ${ctx.now().slice(0, 10)}` } } });
+      for (const c of Object.values(doc.connections)) if (c.to === live.id) ops.push({ kind: "put", collection: "connections", value: { ...c, to: chosen.id } });
+      for (const f of Object.values(doc.flows)) if (f.start === live.id) ops.push({ kind: "put", collection: "flows", value: { ...f, start: chosen.id } });
+      for (const j of Object.values(doc.journeys)) if (j.steps.some((s) => s.page === live.id)) ops.push({ kind: "put", collection: "journeys", value: { ...j, steps: j.steps.map((s) => (s.page === live.id ? { ...s, page: chosen.id } : s)) } });
+      if (a.others !== "delete") for (const p of rest) ops.push({ kind: "put", collection: "pages", value: { ...p, option: { ...p.option!, of: chosen.id } } });
+      const ids = new Ids(doc, ctx);
+      ops.push({ kind: "put", collection: "decisions", value: { id: ids.next(), text: `${chosen.name} replaces ${live.name}${live.route ? ` at ${live.route}` : ""}: ${a.why}`, by: ctx.author, at: ctx.now() } });
+      let reply = `${chosen.name} is live${live.route ? ` at ${live.route}` : ""}; ${live.name} is now one of its options.`;
+      if (a.others === "delete" && rest.length) {
+        let after = applied(doc, ops);
+        for (const p of rest) {
+          const gone = await pagesTools.delete_page.run(after, { page: p.id }, ctx);
+          ops.push(...gone.ops);
+          after = applied(after, gone.ops);
+        }
+        reply += ` Deleted ${rest.map((p) => p.name).join(", ")}.`;
+      }
+      if (live.route && Object.values(doc.pages).some((p) => p.state !== undefined && p.route === live.route)) reply += ` The route's states still copy ${live.name}'s layers; link_states {page: "${chosen.id}"} links them to this one.`;
+      return { label: `Make ${chosen.name} live`, ops, reply };
     },
   }),
 
@@ -628,6 +725,8 @@ export const pagesTools = {
           .map((c): Op => ({ kind: "delete", collection: "connections", id: c.id })),
         ...Object.values(doc.comments).filter((c) => gone.has(c.node)).map((c): Op => ({ kind: "delete", collection: "comments", id: c.id })),
         ...[...flows].map((id): Op => ({ kind: "delete", collection: "flows", id })),
+        // Its options become pages of their own.
+        ...optionsOf(doc, page.id).map((p): Op => { const { option: _, ...rest } = p; return { kind: "put", collection: "pages", value: rest }; }),
       ];
       for (const j of Object.values(doc.journeys)) {
         if (flows.has(j.flow)) ops.push({ kind: "delete", collection: "journeys", id: j.id });

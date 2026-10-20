@@ -33,7 +33,7 @@ are the normative definition; this page is the map.
 | Key | What it holds |
 |---|---|
 | `tokens` | Design tokens: CSS custom property name (`--` then letters, digits, `-` and `_`) → value. |
-| `pages` | Screens and boards: name, `route`, its root `frame`, optional `state` (Empty, Error…) and canvas position. |
+| `pages` | Screens and boards: name, `route`, its root `frame`, optional `state` (Empty, Error…), canvas position, and `option` `{of, idea}` for another take on page `of` (an option has no `route` while it is one). |
 | `nodes` | The layer tree: frames, text, images, svg and component instances, each with a `parent`, `index` and CSS `style`. |
 | `shared` | Components: a reusable root, placed into pages as instances with overrides (per layer: `text`, `style`, styles `at` other widths, and `markup` for an svg layer, held to the same rules as an svg layer's own). A component may hold uses of other components, never of itself; a use overrides a layer inside one by the path of use ids to it (`"nav-item/label"`). |
 | `connections` | Links from a node to a page: what a click does. |

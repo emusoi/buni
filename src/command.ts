@@ -77,6 +77,8 @@ Import a page:      buni call FILE import_html_page '{"url":"http://localhost:30
                     A JavaScript app: add "live":true (scripts run), "cookies":"session=…" when signed in, "wait_for":"#main".
 Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
                     duplicate_page "<Screen> · Next". Read buni skills critique first.
+Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
+                    then compare_options '{"page":"PAGE"}' and pick_option '{"option":"ID","why":"…"}'
 Find and replace:   buni call FILE find_nodes '{"style":[{"value":"#999"}],"replace_with":"var(--muted)"}'   (also text, page, root)
 Review a page:      buni call FILE review_page '{"page":"PAGE"}'   (score and issues worst first, on their layers;
                     "pin":true leaves them as comments, "against":"NOW_PAGE" says what a Next page fixed)

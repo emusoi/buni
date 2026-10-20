@@ -68,6 +68,7 @@ import {
   type Node,
   type Override,
   type Page,
+  type PageOption,
   type Post,
   type Rule,
   type SharedSection,
@@ -431,7 +432,7 @@ class Reader {
   }
 
   page(v: unknown, path: string): Page {
-    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths"]);
+    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option"]);
     const x = this.optNum(o.x, join(path, "x"));
     const y = this.optNum(o.y, join(path, "y"));
     if ((x === undefined) !== (y === undefined)) this.fail(path, "a canvas position needs both x and y");
@@ -446,7 +447,13 @@ class Reader {
       ...(o.client !== undefined ? { client: this.str(o.client, join(path, "client")) } : {}),
       ...(o.terminal !== undefined ? { terminal: this.terminalScreen(o.terminal, join(path, "terminal")) } : {}),
       ...(o.widths !== undefined ? { widths: this.widths(o.widths, join(path, "widths")) } : {}),
+      ...(o.option !== undefined ? { option: this.pageOption(o.option, join(path, "option")) } : {}),
     };
+  }
+
+  pageOption(v: unknown, path: string): PageOption {
+    const o = this.obj(v, path, ["of", "idea"]);
+    return { of: this.str(o.of, join(path, "of")), idea: this.str(o.idea, join(path, "idea")) };
   }
 
   terminalScreen(v: unknown, path: string): TerminalScreen {
@@ -1125,6 +1132,16 @@ function checkRefs(doc: Doc, r: Reader): void {
     const dup = routes.get(key);
     if (dup) r.fail(join(p, page.state ? "state" : "route"), page.state ? `route "${page.route}" already has a "${page.state}" state: page "${dup}"` : `route "${page.route}" is also used by page "${dup}"`);
     routes.set(key, page.id);
+  }
+  // An option is another take on a page that has none of its own options: it waits beside it, with no route of its own.
+  for (const page of Object.values(pages)) {
+    if (!page.option) continue;
+    const p = join(join("pages", page.id), "option");
+    const of = pages[page.option.of];
+    if (!of) r.fail(join(p, "of"), `page "${page.option.of}" does not exist`);
+    else if (of.id === page.id) r.fail(join(p, "of"), "a page can't be an option of itself");
+    else if (of.option) r.fail(join(p, "of"), `"${of.name}" is itself an option; make this an option of "${of.option.of}"`);
+    if (page.route !== undefined) r.fail(join(join("pages", page.id), "route"), "an option has no route of its own while it is one; pick_option gives it its page's");
   }
   for (const page of Object.values(pages)) {
     if (page.state === undefined || page.route === undefined) continue;

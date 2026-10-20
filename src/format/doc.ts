@@ -176,6 +176,22 @@ export interface Page extends SourceOwner {
    * change their style at each width (NodeBase.at).
    */
   widths?: number[];
+  /**
+   * Another take on page `of`, to compare with it and maybe make live (pick_option). Not linked to it, so each changes
+   * on its own; it has no route while it is an option, so Play and export show the page it is an option of.
+   */
+  option?: PageOption;
+}
+
+export interface PageOption {
+  of: Id;
+  /** What it bets on, one line: "Proof first: buyers trust lead times before they ask for a price". */
+  idea: string;
+}
+
+/** The options of a page, in page order. */
+export function optionsOf(doc: Doc, pageId: Id): Page[] {
+  return pagesInOrder(doc).filter((p) => p.option?.of === pageId);
 }
 
 /** The languages buni designs terminal software for. */
