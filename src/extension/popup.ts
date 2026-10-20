@@ -29,7 +29,8 @@ const prompt = (last: LastSnap) => last.file?.endsWith(".html")
 function show(last: LastSnap | undefined): void {
   const box = $<HTMLElement>("result");
   if (!last || Date.now() - last.at > 30 * 60_000) { box.className = ""; return; }
-  if (!last.ok || !last.file) { box.className = ""; say(last.reply, true); return; }
+  // A failure is said when it happens; reopened later, the popup shows only what was saved.
+  if (!last.ok || !last.file) { box.className = ""; return; }
   box.className = "shown";
   const kept = last.file.endsWith(".html");
   $<HTMLElement>("result-title").textContent = kept ? "Kept as inspiration" : `Ready to redesign: “${last.page}”`;

@@ -135,7 +135,7 @@ export async function runNativeHost(tools: HostTools): Promise<void> {
 export function hostManifestDirs(): string[] {
   const home = homedir();
   const base = process.platform === "darwin"
-    ? ["Google/Chrome", "Google/Chrome Beta", "Google/Chrome Canary", "Chromium", "BraveSoftware/Brave-Browser", "Microsoft Edge", "Arc/User Data"].map((b) => join(home, "Library/Application Support", b))
+    ? ["Google/Chrome", "Google/Chrome Beta", "Google/Chrome Canary", "Google/Chrome for Testing", "Chromium", "BraveSoftware/Brave-Browser", "Microsoft Edge", "Arc/User Data"].map((b) => join(home, "Library/Application Support", b))
     : ["google-chrome", "google-chrome-beta", "chromium", "BraveSoftware/Brave-Browser", "microsoft-edge"].map((b) => join(home, ".config", b));
   return base.filter((d) => existsSync(d)).map((d) => join(d, "NativeMessagingHosts"));
 }
