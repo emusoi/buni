@@ -80,6 +80,7 @@ function prompt(c: Capture): string {
   return [
     `Redesign "${c.page}"${c.pageId ? ` (page ${c.pageId})` : ""}, which I captured with buni into ${file}${c.url ? ` from ${c.url}` : ""}.`,
     "Use the buni skill and read buni skills critique first. It sits in its project: use the project's tokens and components.",
+    "Pass --as claude on every buni call: the design is open in buni beside the page, and your changes show there as you make them.",
     `1. buni tree ${file}, look at the page (buni shot), judge it, then review_page {page, pin: true}.`,
     `2. duplicate_page to "${c.page} · Next" and fix it there, worst first; if the direction isn't obvious, explore_page 3 options and compare_options.`,
     "3. review_page {page: Next, against: the capture} and show me before and after.",
@@ -149,7 +150,9 @@ function watch(c: Capture, copied = false): void {
   watching = c;
   $<HTMLElement>("watch-where").textContent = `in ${c.design}`;
   $<HTMLElement>("watch-title").textContent = c.page;
-  $<HTMLElement>("watch-note").textContent = copied ? "The prompt for Claude is copied: paste it in your terminal." : "";
+  $<HTMLElement>("watch-note").textContent = copied
+    ? "The prompt is copied. Paste it into Claude Code, in any folder: it works on this design through buni, and you'll see each change here."
+    : "Copy for Claude, then paste it into Claude Code: it works on this design through buni, and you'll see each change here.";
   say($("watch-status"), "");
   paintWatch(c);
   show("watch");
