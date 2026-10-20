@@ -7,3 +7,4 @@ dist
 *.buni.activity
 *.buni.chats/
 designs/
+/extension/
