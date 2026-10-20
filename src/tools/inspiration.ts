@@ -4,7 +4,8 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
+import { readSettings, updateSettings } from "./settings.ts";
 
 export interface Pattern {
   name: string;
@@ -21,8 +22,6 @@ export interface Pattern {
 
 /** buni's own library, beside the engine. */
 export const BUILTIN = resolve(import.meta.dir, "../../inspiration");
-/** Where people's buni settings live; BUNI_HOME moves them (tests, a second setup). */
-const settingsFile = () => join(process.env.BUNI_HOME ?? join(homedir(), ".buni"), "settings.json");
 
 /** A pattern's header: the `key: value` lines of its leading comment; undefined when it has none or lacks the basics. */
 export function patternHeader(html: string): Omit<Pattern, "library" | "file"> | undefined {
@@ -45,27 +44,17 @@ export function patternHeader(html: string): Omit<Pattern, "library" | "file"> |
   };
 }
 
-/** The settings file as an object, so other keys in it are kept when one is changed. */
-async function settings(): Promise<Record<string, unknown>> {
-  try {
-    const raw: unknown = JSON.parse(await readFile(settingsFile(), "utf8"));
-    return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? { ...raw } : {};
-  } catch { return {}; }
-}
-
 /** The folders people added, as they were saved. */
 export async function addedLibraries(): Promise<string[]> {
-  const list = (await settings()).inspiration;
+  const list = (await readSettings()).inspiration;
   return Array.isArray(list) ? list.filter((d): d is string => typeof d === "string") : [];
 }
 
 /** Adds or removes a library folder in the settings; answers the list after. */
 export async function setLibrary(dir: string, on: boolean): Promise<string[]> {
-  const s = await settings();
   const now = await addedLibraries();
   const next = on ? [...new Set([...now, resolve(dir)])] : now.filter((d) => d !== resolve(dir));
-  await mkdir(dirname(settingsFile()), { recursive: true });
-  await writeFile(settingsFile(), `${JSON.stringify({ ...s, inspiration: next }, null, 2)}\n`);
+  await updateSettings((st) => ({ ...st, inspiration: next }));
   return next;
 }
 

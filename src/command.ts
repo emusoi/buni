@@ -586,6 +586,8 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       // A folder (a project) opens its newest design; an empty one starts a design named for it.
       const target = await designIn(file);
       if (target !== file) return main(["open", target, ...args], ext);
+      // Remembered, so the Chrome extension can offer it as where a site's captures go.
+      await (await import("./tools/settings.ts")).rememberDesign(file).catch(() => undefined);
       const live = await liveApp(file);
       if (live) {
         const at = new URL(live);

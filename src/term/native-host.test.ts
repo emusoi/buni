@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDoc } from "../format/parse.ts";
+import { emptyDoc } from "../format/doc.ts";
+import { serializeDoc } from "../format/serialize.ts";
 import { answer, slug } from "./native-host.ts";
 
 /** Talks to `buni native-host` the way Chrome does: each message JSON behind its 4-byte little-endian length. */
@@ -95,3 +97,25 @@ test("opening a design that's already open answers its editor, on the page asked
   const headless = { ...tools, liveApp: async () => "http://localhost:4100/mcp" };
   expect(await answer({ type: "open", file: "/tmp/x/x.buni" }, headless)).toMatchObject({ ok: false });
 });
+
+test("a site's captures go to its scratch design until it's linked to a project's design, then there, with progress", async () => {
+  const home = await mkdtemp(join(tmpdir(), "buni-host-"));
+  try {
+    const project = join(home, "work/lido/intake.buni");
+    await Bun.write(project, serializeDoc(emptyDoc()));
+    const snapshot = { html: "<main><h1>Requests</h1></main>", count: 2, warnings: [], images: [], url: "https://app.lido.test/requests", width: 800 };
+    const [before, linked, snapped, where] = await host(home, [
+      { type: "where", host: "app.lido.test" },
+      { type: "link", host: "app.lido.test", file: project },
+      { type: "snap", into: { site: "app.lido.test" }, snapshot, page: { name: "Requests" } },
+      { type: "where", host: "www.lido.test" },
+    ]);
+    expect(before).toMatchObject({ ok: true, label: "Scratch · app-lido-test", linked: false });
+    expect(linked).toMatchObject({ ok: true, label: "lido · intake", linked: true, file: project });
+    expect(snapped).toMatchObject({ ok: true, file: project });
+    // A sibling host doesn't share the link: only the site itself and its subdomains do.
+    expect(where).toMatchObject({ linked: false });
+    const [snaps] = await host(home, [{ type: "snaps" }]);
+    expect(snaps).toMatchObject({ snaps: [{ page: "Requests", design: "lido · intake", progress: "Captured", url: "https://app.lido.test/requests" }] });
+  } finally { await rm(home, { recursive: true, force: true }); }
+}, 60_000);

@@ -4,104 +4,93 @@
 <meta charset="utf-8">
 <title>buni</title>
 <style>
-  :root { color-scheme: dark; --bg: #18181b; --raised: #1f1f23; --field: #26262b; --line: rgba(255,255,255,.1); --ink: #ededef; --mute: #b4b4bd; --blue: #4069e6; --green: #6ec896; --red: #ff9a90; }
+  /* One ink, one grey, one green for "working"; type and space do the rest (designs/extension.buni, Minimal). */
+  :root { color-scheme: dark; --bg: #141414; --ink: #f2f2f2; --mute: #9a9a9a; --line: rgba(255,255,255,.08); --rule: rgba(255,255,255,.14); --live: #7fd3a0; --red: #ff9a90; }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; min-width: 260px; background: var(--bg); color: var(--ink); font: 13px/1.4 "Instrument Sans", system-ui, sans-serif; display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
-  header .brand { font-weight: 800; font-size: 15px; margin-right: 8px; }
-  .tab { padding: 6px 10px; border-radius: 8px; border: 0; background: transparent; color: var(--mute); font: inherit; font-weight: 600; cursor: pointer; }
-  .tab[aria-selected="true"] { background: var(--field); color: var(--ink); }
-  section.view { display: none; flex: 1; flex-direction: column; gap: 12px; padding: 14px 12px; overflow: auto; }
-  section.view.on { display: flex; }
-  p { margin: 0; color: var(--mute); }
-  /* Two intents as one switch: it fits a narrow panel and reads as a choice. */
-  .switch { display: flex; padding: 3px; border-radius: 10px; background: var(--field); }
-  .switch button { flex: 1; min-height: 32px; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--mute); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .switch button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
-  /* Into and Name side by side when there is room, stacked when there isn't. */
-  .pair { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pair label { flex: 1 1 170px; min-width: 0; }
-  .pair select, .pair input { width: 100%; }
-  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mute); }
-  label[hidden] { display: none; }
-  input, select, textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; }
-  textarea { resize: vertical; min-height: 52px; }
-  .row { display: flex; gap: 8px; }
-  button.act { flex: 1; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
-  button.act.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-  button.act:disabled { opacity: .5; cursor: default; }
-  .card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); }
-  .card b { font-size: 13px; }
-  .card .meta { font-size: 12px; color: var(--mute); }
-  .card .brief { font-size: 12px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .card .row button.act { flex: 0 0 auto; }
-  .card .row button.act[data-do="copy"] { flex: 1; background: var(--blue); border-color: var(--blue); color: #fff; }
-  .card code { font: 12px "JetBrains Mono", ui-monospace, monospace; word-break: break-all; color: var(--mute); }
-  .ok { color: var(--green); }
-  #status:empty { display: none; }
-  #status { font-size: 12px; color: var(--mute); }
-  #status.error { color: var(--red); }
-  /* A long error shows its first line; the rest is one click away. */
-  #status details summary { cursor: pointer; list-style: none; }
-  #status details summary::after { content: " Details"; color: var(--mute); text-decoration: underline; }
-  #status details[open] summary::after { content: " Hide"; }
-  #status details p { margin-top: 6px; max-height: 160px; overflow: auto; color: var(--mute); font: 12px/1.5 "JetBrains Mono", ui-monospace, monospace; word-break: break-word; }
-  .status { min-height: 0; font-size: 12px; color: var(--mute); }
-  .empty { padding: 24px 4px; text-align: center; }
-  /* The editor, inside the panel. */
-  #editor { display: none; flex: 1; flex-direction: column; }
-  #editor.on { display: flex; }
-  #editor .bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  #editor .bar b { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #editor iframe { flex: 1; border: 0; width: 100%; background: #111; }
-  .icon { padding: 6px 8px; border-radius: 6px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+  body { margin: 0; min-width: 260px; background: var(--bg); color: var(--ink); font: 13px/1.45 "Instrument Sans", system-ui, sans-serif; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .view { display: none; flex-direction: column; height: 100%; padding: 20px 24px; max-width: 560px; margin: 0 auto; }
+  .view.on { display: flex; }
+  .top { display: flex; align-items: center; justify-content: space-between; min-height: 24px; }
+  .brand { font-weight: 700; letter-spacing: -.2px; }
+  .quiet { color: var(--mute); font-size: 12px; }
+  .quiet:hover, .link:hover { color: var(--ink); }
+  .page { display: flex; flex-direction: column; gap: 4px; margin-top: 48px; }
+  .page h1 { margin: 0; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -.4px; overflow-wrap: anywhere; }
+  .where { position: relative; display: flex; align-items: center; gap: 6px; margin-top: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); color: var(--mute); }
+  .where b { color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* The real select sits invisibly over the line: the line is what shows, the select is what's used. */
+  .where select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .actions { display: flex; align-items: center; gap: 20px; margin-top: 20px; }
+  .pill { padding: 10px 18px; border-radius: 9999px; background: var(--ink); color: var(--bg); font-weight: 600; }
+  .pill:disabled, .link:disabled { opacity: .5; cursor: default; }
+  .link { color: var(--ink); }
+  .also { margin-top: 16px; align-self: flex-start; }
+  .status { margin-top: 16px; min-height: 18px; color: var(--mute); font-size: 12px; }
+  .status.error { color: var(--red); }
+  .status details summary { cursor: pointer; list-style: none; }
+  .status details summary::after { content: " · details"; text-decoration: underline; }
+  .status details p { margin: 6px 0 0; max-height: 140px; overflow: auto; font: 12px/1.5 "JetBrains Mono", ui-monospace, monospace; word-break: break-word; }
+  .rows { margin-top: auto; display: flex; flex-direction: column; }
+  .rows h2 { margin: 24px 0 4px; font-size: 12px; font-weight: 600; color: var(--mute); }
+  .row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 0; border-top: 1px solid var(--line); text-align: left; }
+  .row .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .state { color: var(--mute); font-size: 12px; white-space: nowrap; }
+  .dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--mute); flex-shrink: 0; }
+  .dot.live { background: var(--live); }
+  .progress { display: flex; align-items: center; gap: 8px; margin-top: 24px; font-size: 15px; }
+  .brief { margin: 12px 0 0; color: var(--mute); }
+  .find { margin-top: 20px; padding: 0 0 10px; width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: none; color: var(--ink); font: inherit; font-size: 15px; outline: none; }
+  .scroll { flex: 1; overflow: auto; margin-top: 8px; }
+  /* buni itself, beside the page. */
+  #view-editor { padding: 0; max-width: none; }
+  #view-editor .bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  #view-editor .bar b { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #view-editor iframe { flex: 1; width: 100%; border: 0; background: #111; }
 </style>
 </head>
 <body>
-<header role="tablist" aria-label="buni">
-  <span class="brand">buni</span>
-  <button class="tab" role="tab" id="tab-capture" aria-selected="true">Capture</button>
-  <button class="tab" role="tab" id="tab-snaps" aria-selected="false">Snaps</button>
-  <button class="tab" role="tab" id="tab-inspiration" aria-selected="false">Inspiration</button>
-</header>
 
-<section class="view on" id="view-capture" role="tabpanel">
-  <div class="switch" role="group" aria-label="What it's for">
-    <button type="button" id="redesign" aria-pressed="true" title="Into a design, to improve it">Redesign it</button>
-    <button type="button" id="inspire" aria-pressed="false" title="Into your inspiration library">Keep as inspiration</button>
+<section class="view on" id="view-home">
+  <header class="top"><span class="brand">buni</span><button class="quiet" id="to-library" type="button">Library</button></header>
+  <div class="page"><span class="quiet" id="host"></span><h1 id="title">This page</h1></div>
+  <label class="where" title="Where this site's captures go">Goes to <b id="where-label">a scratch design</b><span aria-hidden="true">▾</span>
+    <select id="where" aria-label="Where this site's captures go"></select>
+  </label>
+  <div class="actions">
+    <button class="pill" id="capture" type="button">Capture page</button>
+    <button class="link" id="pick" type="button">Pick a part</button>
   </div>
-  <label id="brief-field">What should change? <textarea id="brief" rows="3" placeholder="Make the plans easier to compare; the CTA gets lost"></textarea></label>
-  <label id="use-field" hidden>Use it for <textarea id="use" rows="2" placeholder="When is this the right pattern?"></textarea></label>
-  <div class="pair">
-    <label id="into-field">Into <select id="into"><option value="scratch">A new scratch design</option></select></label>
-    <label>Name <input id="name" placeholder="This page’s title"></label>
-  </div>
-  <div class="row">
-    <button id="pick" type="button" class="act">Pick a part</button>
-    <button id="page" type="button" class="act primary">Capture page</button>
-  </div>
-  <div id="status" role="status"></div>
-  <div id="result"></div>
+  <button class="quiet also" id="inspire" type="button">or keep it as inspiration</button>
+  <div class="status" id="status" role="status"></div>
+  <div class="rows" id="recent"></div>
 </section>
 
-<section class="view" id="view-snaps" role="tabpanel">
-  <div id="snaps"></div>
-</section>
-
-<section class="view" id="view-inspiration" role="tabpanel">
-  <input id="find" type="search" placeholder="Find a pattern: settings, pricing, empty state…" aria-label="Find a pattern">
-  <div id="patterns"></div>
-</section>
-
-<div id="editor">
-  <div class="bar">
-    <button class="icon" id="back" type="button" aria-label="Back">←</button>
-    <b id="editor-title"></b>
-    <button class="icon" id="pop-out" type="button" title="Open in a tab">↗</button>
+<section class="view" id="view-watch">
+  <header class="top"><button class="quiet" id="watch-back" type="button">← buni</button><button class="quiet" id="watch-library" type="button">Library</button></header>
+  <div class="page"><span class="quiet" id="watch-where"></span><h1 id="watch-title"></h1></div>
+  <div class="progress"><span class="dot live" id="watch-dot"></span><span id="watch-state"></span></div>
+  <p class="brief" id="watch-note"></p>
+  <div class="actions">
+    <button class="pill" id="watch-open" type="button">Open</button>
+    <button class="link" id="watch-copy" type="button">Copy for Claude</button>
   </div>
+  <div class="status" id="watch-status" role="status"></div>
+  <div class="rows" id="watch-others"></div>
+</section>
+
+<section class="view" id="view-library">
+  <header class="top"><button class="quiet" id="library-back" type="button">← buni</button><span class="quiet">Library</span></header>
+  <input class="find" id="find" type="search" placeholder="Find a capture or a pattern" aria-label="Find a capture or a pattern">
+  <div class="scroll"><div class="rows" id="library"></div></div>
+</section>
+
+<section class="view" id="view-editor">
+  <div class="bar"><button class="quiet" id="editor-back" type="button">←</button><b id="editor-title"></b><button class="quiet" id="editor-out" type="button" title="Open in a tab">↗</button></div>
   <iframe id="frame" title="buni editor"></iframe>
-</div>
+</section>
+
 <script src="panel.js" type="module"></script>
 </body>
 </html>

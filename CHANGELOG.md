@@ -5,6 +5,13 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- The side panel is minimal (designed in designs/extension.buni, option Minimal): the page you're on is the headline,
+  one line says where it goes, and Capture page is the only button; Pick a part and "or keep it as inspiration" sit
+  beside it, recent captures are plain rows, everything else is in Library. A capture keeps the page's own name,
+  goes to the design its site's captures go to (one of your projects, chosen once from the designs you've opened, or
+  a scratch design for the site), copies the prompt for Claude, and the panel then follows the redesign (captured,
+  reviewed, Next ready, options) as Claude works. `buni open` remembers designs for this; the site links live in
+  ~/.buni/settings.json.
 - Fixed: a capture with frames or pictures the page can't hand over failed ("attachment … does not exist"). They are
   now drawn by Chrome's own screenshot of each box, wherever it is on the page (the extension asks for the debugger
   permission with page access; without it, it scrolls to each and cuts it from the screen), and one that still can't

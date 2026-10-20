@@ -1,25 +1,13 @@
-// buni in Chrome's side panel, beside the page being worked on: capture it (to redesign, or to keep as inspiration),
-// pick up earlier captures, browse the inspiration libraries, and watch the design in the buni editor right here.
-// It talks to buni on this machine through native messaging; no editor has to be running until one is opened.
+// buni in Chrome's side panel, kept to one decision: capture this page. It goes to the design this site's captures go
+// to (one of the person's projects, or a scratch design of its own), the prompt for Claude is copied, and the panel
+// follows the redesign. Everything else (all captures, inspiration) waits in Library. Talks to buni on this machine
+// through native messaging.
 import type { LastSnap, SnapAnswer, SnapRequest } from "./background.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T; // ponytail: the ids are in panel.html
 const HOST = "com.buni.snap";
 const tilde = (path: string) => path.replace(/^\/Users\/[^/]+|^\/home\/[^/]+/, "~");
-const into = $<HTMLSelectElement>("into"), name = $<HTMLInputElement>("name"), use = $<HTMLTextAreaElement>("use"), brief = $<HTMLTextAreaElement>("brief"), status = $<HTMLDivElement>("status");
-/** A message under the buttons; a long one (a refused import) shows its first line, the rest behind Details. */
-function say(text: string, error = false): void {
-  status.className = error ? "error" : "";
-  const first = text.split(/(?<=[.:])\s|\n/)[0] ?? text;
-  if (text.length <= 160 || first.length >= text.length) { status.textContent = text; return; }
-  const more = document.createElement("details");
-  const head = document.createElement("summary");
-  head.textContent = first.length > 160 ? `${first.slice(0, 157)}…` : first;
-  const rest = document.createElement("p");
-  rest.textContent = text;
-  more.append(head, rest);
-  status.replaceChildren(more);
-}
+const text = (v: unknown) => (typeof v === "string" ? v : undefined);
 
 /** One request to buni on this machine; undefined when it isn't set up for Chrome. */
 async function native(message: object): Promise<Record<string, unknown> | undefined> {
@@ -28,198 +16,230 @@ async function native(message: object): Promise<Record<string, unknown> | undefi
     return typeof r === "object" && r !== null ? (r as Record<string, unknown>) : undefined;
   } catch { return undefined; }
 }
-const text = (v: unknown) => (typeof v === "string" ? v : undefined);
 
-// --- Tabs -------------------------------------------------------------------------------------------------------------
-
-const TABS = ["capture", "snaps", "inspiration"] as const;
-type Tab = (typeof TABS)[number];
-function open(tab: Tab): void {
-  closeEditor();
-  for (const t of TABS) {
-    $<HTMLButtonElement>(`tab-${t}`).setAttribute("aria-selected", String(t === tab));
-    $<HTMLElement>(`view-${t}`).classList.toggle("on", t === tab);
-  }
-  if (tab === "snaps") void loadSnaps();
-  if (tab === "inspiration") void loadPatterns();
+/** A message under the actions; a long one (a refused import) shows its first line, the rest behind details. */
+function say(where: HTMLElement, message: string, error = false): void {
+  where.className = `status${error ? " error" : ""}`;
+  const first = message.split(/(?<=[.:])\s|\n/)[0] ?? message;
+  if (message.length <= 140 || first.length >= message.length) { where.textContent = message; return; }
+  const more = document.createElement("details");
+  const head = document.createElement("summary");
+  head.textContent = first.length > 140 ? `${first.slice(0, 137)}…` : first;
+  const rest = document.createElement("p");
+  rest.textContent = message;
+  more.append(head, rest);
+  where.replaceChildren(more);
 }
 
-// --- The editor, inside the panel ---------------------------------------------------------------------------------------
+// --- Views ------------------------------------------------------------------------------------------------------------
 
-let editorUrl = "";
-async function openEditor(file: string, page: string | undefined, title: string, here: boolean): Promise<void> {
-  say("Opening buni…");
-  const r = await native({ type: "open", file, ...(page ? { page } : {}) });
-  const url = text(r?.url);
-  if (!url) return say("buni couldn't open the editor.", true);
-  say("");
-  if (!here) { await chrome.tabs.create({ url }); return; }
-  editorUrl = url;
-  $<HTMLElement>("editor-title").textContent = title;
-  // Compact in the panel: the canvas gets the room, so the redesign shows as it happens.
-  const inPanel = new URL(url);
-  inPanel.searchParams.set("compact", "1");
-  $<HTMLIFrameElement>("frame").src = inPanel.href;
-  for (const t of TABS) $<HTMLElement>(`view-${t}`).classList.remove("on");
-  $<HTMLElement>("editor").classList.add("on");
-}
-function closeEditor(): void {
-  $<HTMLElement>("editor").classList.remove("on");
-  $<HTMLIFrameElement>("frame").removeAttribute("src");
-}
-$<HTMLButtonElement>("back").addEventListener("click", () => open("snaps"));
-$<HTMLButtonElement>("pop-out").addEventListener("click", () => { if (editorUrl) void chrome.tabs.create({ url: editorUrl }); });
-
-// --- Handing a capture on ---------------------------------------------------------------------------------------------
-
-interface Captured { file: string; page: string; pageId?: string; url?: string; brief?: string }
-
-/** What to paste into Claude (or any agent) so it picks the capture up where it was left. */
-function prompt(c: Captured): string {
-  const file = tilde(c.file);
-  if (file.endsWith(".html")) return `I kept ${c.url || "a page"} as a pattern in my buni inspiration library: ${file}. Use the buni skill: find_inspiration and use_inspiration bring it into a design.`;
-  return [
-    `Redesign the page I captured with buni: "${c.page}"${c.pageId ? ` (page ${c.pageId})` : ""} in ${file}, from ${c.url || "the live site"}.`,
-    c.brief ? `What should change: ${c.brief}` : "Find what most needs to change.",
-    "Use the buni skill (read buni skills critique first):",
-    `1. buni tree ${file}, look at it (buni shot), judge it, then review_page {page, pin: true}.`,
-    "2. duplicate_page to \"<Screen> · Next\" and fix it there, worst first; if the direction isn't obvious, explore_page 3 options and compare_options.",
-    "3. review_page {page: Next, against: Now} and show me before and after.",
-    "Check find_inspiration for patterns that fit. If I say to keep it, buni adopt moves it into the project.",
-  ].join("\n");
+const VIEWS = ["home", "watch", "library", "editor"] as const;
+type View = (typeof VIEWS)[number];
+let watching: Capture | undefined;
+let poll: ReturnType<typeof setInterval> | undefined;
+function show(view: View): void {
+  for (const v of VIEWS) $<HTMLElement>(`view-${v}`).classList.toggle("on", v === view);
+  if (view !== "editor") $<HTMLIFrameElement>("frame").removeAttribute("src");
+  clearInterval(poll);
+  if (view === "home") void loadHome();
+  if (view === "library") void loadLibrary();
+  // While a redesign is watched, its progress is read again every few seconds: Claude works in the design meanwhile.
+  if (view === "watch") poll = setInterval(() => void refreshWatch(), 4000);
 }
 
-/** A capture as a card: what it is, its brief, and the ways on (Claude, the editor here, the editor in a tab). */
-function card(c: Captured, heading: string): HTMLElement {
-  const el = document.createElement("div");
-  el.className = "card";
-  const kept = c.file.endsWith(".html");
-  const host = c.url ? (() => { try { return new URL(c.url).host; } catch { return c.url; } })() : undefined;
-  el.innerHTML = `<b></b><span class="meta"></span>${c.brief ? `<span class="brief"></span>` : ""}<code></code><div class="row"><button class="act" data-do="copy" type="button">Copy for Claude</button>${kept ? "" : `<button class="act" data-do="here" type="button">Open here</button><button class="act" data-do="tab" type="button" title="Open in a tab">↗</button>`}</div><span class="status"></span>`;
-  el.querySelector("b")!.textContent = heading;
-  el.querySelector(".meta")!.textContent = host ? `from ${host}` : "";
-  if (c.brief) el.querySelector(".brief")!.textContent = `Brief: ${c.brief}`;
-  el.querySelector("code")!.textContent = tilde(c.file);
-  const note = el.querySelector(".status")!;
-  el.addEventListener("click", (e) => {
-    const what = (e.target as HTMLElement).dataset.do;
-    if (what === "copy") void navigator.clipboard.writeText(prompt(c)).then(() => { note.textContent = "Copied. Paste it into Claude."; });
-    if (what === "here" || what === "tab") void openEditor(c.file, c.pageId, c.page, what === "here");
+// --- Captures ---------------------------------------------------------------------------------------------------------
+
+interface Capture { file: string; design: string; page: string; pageId?: string; url?: string; progress: string }
+
+async function captures(): Promise<Capture[]> {
+  const r = await native({ type: "snaps" });
+  return (Array.isArray(r?.snaps) ? r.snaps : []).flatMap((s: Record<string, unknown>) => {
+    const file = text(s.file), page = text(s.page);
+    return file && page ? [{ file, page, design: text(s.design) ?? tilde(file), progress: text(s.progress) ?? "Captured", ...(text(s.pageId) ? { pageId: text(s.pageId)! } : {}), ...(text(s.url) ? { url: text(s.url)! } : {}) }] : [];
   });
+}
+
+/** Being worked on: reviewed, or with a Next page, and no options picked between yet. */
+const working = (c: Capture) => c.progress === "Reviewed" || c.progress === "Next ready";
+
+function row(c: Capture): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "row";
+  el.innerHTML = `<span class="dot"></span><span class="name"></span><span class="state"></span>`;
+  el.querySelector(".dot")!.classList.toggle("live", working(c));
+  el.querySelector(".name")!.textContent = c.page;
+  el.querySelector(".state")!.textContent = c.progress.toLowerCase();
+  el.addEventListener("click", () => watch(c));
   return el;
 }
 
-// --- Capture ----------------------------------------------------------------------------------------------------------
-
-/** What the capture is for: a page to redesign, or a pattern to keep. Remembered between visits. */
-let intent: "redesign" | "inspiration" = "redesign";
-function choose(next: typeof intent): void {
-  intent = next;
-  $<HTMLButtonElement>("redesign").setAttribute("aria-pressed", String(next === "redesign"));
-  $<HTMLButtonElement>("inspire").setAttribute("aria-pressed", String(next === "inspiration"));
-  $<HTMLElement>("into-field").hidden = next !== "redesign";
-  $<HTMLButtonElement>("page").textContent = next === "redesign" ? "Capture page" : "Keep page";
-  $<HTMLElement>("brief-field").hidden = next !== "redesign";
-  $<HTMLElement>("use-field").hidden = next !== "inspiration";
-  void chrome.storage.local.set({ intent: next });
+/** What to paste into Claude (or any agent) so it redesigns the capture inside its project. */
+function prompt(c: Capture): string {
+  const file = tilde(c.file);
+  return [
+    `Redesign "${c.page}"${c.pageId ? ` (page ${c.pageId})` : ""}, which I captured with buni into ${file}${c.url ? ` from ${c.url}` : ""}.`,
+    "Use the buni skill and read buni skills critique first. It sits in its project: use the project's tokens and components.",
+    `1. buni tree ${file}, look at the page (buni shot), judge it, then review_page {page, pin: true}.`,
+    `2. duplicate_page to "${c.page} · Next" and fix it there, worst first; if the direction isn't obvious, explore_page 3 options and compare_options.`,
+    "3. review_page {page: Next, against: the capture} and show me before and after.",
+  ].join("\n");
 }
 
-function showLast(last: LastSnap | undefined): void {
-  const box = $<HTMLElement>("result");
-  box.replaceChildren();
-  if (!last || Date.now() - last.at > 30 * 60_000 || !last.ok || !last.file) return;
-  const c: Captured = { file: last.file, page: last.page, ...(last.pageId ? { pageId: last.pageId } : {}), ...(last.url ? { url: last.url } : {}), ...(last.brief ? { brief: last.brief } : {}) };
-  box.append(card(c, last.file.endsWith(".html") ? "Kept as inspiration" : `Ready to redesign: ${last.page}`));
+// --- Home -------------------------------------------------------------------------------------------------------------
+
+let tabUrl = "";
+const host = () => { try { return new URL(tabUrl).host; } catch { return ""; } };
+
+async function loadHome(): Promise<void> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  tabUrl = tab?.url ?? "";
+  $<HTMLElement>("host").textContent = host().replace(/^www\./, "");
+  $<HTMLElement>("title").textContent = tab?.title || "This page";
+  const usable = /^https?:/.test(tabUrl);
+  for (const b of ["capture", "pick", "inspire"]) $<HTMLButtonElement>(b).disabled = !usable;
+  say($("status"), usable ? "" : "Open a web page to capture it.");
+  await loadWhere();
+  $<HTMLElement>("recent").replaceChildren(...(await captures()).slice(0, 5).map(row));
 }
 
-async function loadTargets(): Promise<void> {
-  const saved = await chrome.storage.local.get("into");
-  const r = await native({ type: "list" });
-  if (!r) return say("buni isn't set up for Chrome yet: run  buni extension  once, then reopen this.", true);
-  into.replaceChildren(new Option("A new scratch design", "scratch"));
-  for (const d of Array.isArray(r.scratch) ? r.scratch : []) {
-    const file = text(d?.file), label = text(d?.name);
-    if (file) into.append(new Option(label ?? file, file, false, file === saved.into));
-  }
+/** Where this site's captures go, as one line; the hidden select over it changes that. */
+async function loadWhere(): Promise<void> {
+  const h = host();
+  const select = $<HTMLSelectElement>("where");
+  if (!h) { $<HTMLElement>("where-label").textContent = "nowhere yet"; select.replaceChildren(); return; }
+  const r = await native({ type: "where", host: h });
+  if (!r) return say($("status"), "buni isn't set up for Chrome yet: run  buni extension  once, then reopen this.", true);
+  $<HTMLElement>("where-label").textContent = text(r.label) ?? "a scratch design";
+  const scratch = new Option(`A scratch design for ${h.replace(/^www\./, "")}`, "");
+  const choices = (Array.isArray(r.choices) ? r.choices : []).map((c: Record<string, unknown>) => new Option(text(c.label) ?? "", text(c.file) ?? "", false, text(c.file) === text(r.file) && r.linked === true));
+  select.replaceChildren(scratch, ...choices);
+  scratch.selected = r.linked !== true;
 }
+$<HTMLSelectElement>("where").addEventListener("change", async (e) => {
+  const file = (e.target as HTMLSelectElement).value;
+  await native({ type: "link", host: host(), ...(file ? { file } : {}) });
+  await loadWhere();
+});
 
-async function capture(mode: "page" | "pick"): Promise<void> {
+async function capture(mode: "page" | "pick", intent: "redesign" | "inspiration"): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   const request: SnapRequest = intent === "inspiration"
-    ? { tabId: tab.id, mode, name: name.value.trim(), intent, use: use.value.trim() }
-    : { tabId: tab.id, mode, name: name.value.trim(), intent, into: into.value, brief: brief.value.trim() };
-  say(mode === "pick" ? "Point at a part of the page: click it, ↑ for the part around it, Enter captures, Esc cancels." : "Capturing…");
-  for (const b of ["page", "pick"]) $<HTMLButtonElement>(b).disabled = true;
+    ? { tabId: tab.id, mode, name: "", intent, use: "" }
+    : { tabId: tab.id, mode, name: "", intent, into: "site", brief: "" };
+  say($("status"), mode === "pick" ? "Point at a part: click it, ↑ for the part around it, Enter takes it, Esc cancels." : "Capturing…");
+  for (const b of ["capture", "pick", "inspire"]) $<HTMLButtonElement>(b).disabled = true;
   const answer: SnapAnswer = await chrome.runtime.sendMessage({ ...request, wait: true });
-  for (const b of ["page", "pick"]) $<HTMLButtonElement>(b).disabled = false;
-  if (!answer.ok) return say(answer.reply, true);
-  say("");
-  brief.value = ""; name.value = "";
+  for (const b of ["capture", "pick", "inspire"]) $<HTMLButtonElement>(b).disabled = false;
+  if (!answer.ok) return say($("status"), answer.reply, true);
   void chrome.action.setBadgeText({ text: "" });
   const last = (await chrome.storage.local.get("last")).last as LastSnap | undefined;
-  showLast(last);
-  void loadTargets();
-  // A page to redesign opens in buni at once, beside the original, so the redesign shows as it happens.
-  if (last?.ok && last.file?.endsWith(".buni")) await openEditor(last.file, last.pageId, last.page, true);
+  if (intent === "inspiration" || !last?.file) { say($("status"), "Kept as inspiration: find it in Library."); return; }
+  say($("status"), "");
+  const c: Capture = { file: last.file, page: last.page, design: tilde(last.file), progress: "Captured", ...(last.pageId ? { pageId: last.pageId } : {}), ...(last.url ? { url: last.url } : {}) };
+  // The prompt goes to the clipboard at once: paste it into Claude, and watch here.
+  const copied = await navigator.clipboard.writeText(prompt(c)).then(() => true, () => false);
+  watch(c, copied);
 }
 
-// --- Snaps and inspiration ----------------------------------------------------------------------------------------------
+// --- Watching a redesign ----------------------------------------------------------------------------------------------
 
-async function loadSnaps(): Promise<void> {
-  const list = $<HTMLElement>("snaps");
-  const r = await native({ type: "snaps" });
-  const snaps = Array.isArray(r?.snaps) ? r.snaps : [];
-  list.replaceChildren(...snaps.map((s: Record<string, unknown>) => {
-    const c: Captured = { file: text(s.file) ?? "", page: text(s.page) ?? "", ...(text(s.pageId) ? { pageId: text(s.pageId)! } : {}), ...(text(s.url) ? { url: text(s.url)! } : {}), ...(text(s.brief) ? { brief: text(s.brief)! } : {}) };
-    return card(c, c.page);
-  }));
-  if (!snaps.length) list.innerHTML = `<p class="empty">Nothing captured yet. Capture a page to redesign it, and it shows here.</p>`;
+function watch(c: Capture, copied = false): void {
+  watching = c;
+  $<HTMLElement>("watch-where").textContent = `in ${c.design}`;
+  $<HTMLElement>("watch-title").textContent = c.page;
+  $<HTMLElement>("watch-note").textContent = copied ? "The prompt for Claude is copied: paste it in your terminal." : "";
+  say($("watch-status"), "");
+  paintWatch(c);
+  show("watch");
+  void captures().then((all) => {
+    const me = all.find((x) => x.file === c.file && x.pageId === c.pageId);
+    if (me && watching === c) { watching = { ...c, design: me.design, progress: me.progress }; $<HTMLElement>("watch-where").textContent = `in ${me.design}`; paintWatch(watching); }
+    $<HTMLElement>("watch-others").replaceChildren(...all.filter((x) => !(x.file === c.file && x.pageId === c.pageId)).slice(0, 4).map(row));
+  });
 }
+function paintWatch(c: Capture): void {
+  const words: Record<string, string> = { Captured: "Captured, waiting for Claude", Reviewed: "Claude has reviewed it", "Next ready": "Claude made the Next version" };
+  $<HTMLElement>("watch-state").textContent = words[c.progress] ?? `Claude made ${c.progress}`;
+  $<HTMLElement>("watch-dot").classList.toggle("live", c.progress !== "Captured");
+}
+async function refreshWatch(): Promise<void> {
+  if (!watching) return;
+  const now = (await captures()).find((x) => x.file === watching!.file && x.pageId === watching!.pageId);
+  if (now && now.progress !== watching.progress) { watching = { ...watching, progress: now.progress }; paintWatch(watching); }
+}
+$<HTMLButtonElement>("watch-copy").addEventListener("click", () => {
+  if (watching) void navigator.clipboard.writeText(prompt(watching)).then(() => say($("watch-status"), "Copied. Paste it into Claude."));
+});
+$<HTMLButtonElement>("watch-open").addEventListener("click", () => { if (watching) void openEditor(watching); });
 
-let patterns: Record<string, unknown>[] = [];
-async function loadPatterns(): Promise<void> {
-  const r = await native({ type: "patterns" });
-  patterns = Array.isArray(r?.patterns) ? r.patterns : [];
-  showPatterns();
+// --- The editor, here -------------------------------------------------------------------------------------------------
+
+let editorUrl = "";
+async function openEditor(c: Capture): Promise<void> {
+  say($("watch-status"), "Opening buni…");
+  const r = await native({ type: "open", file: c.file, ...(c.pageId ? { page: c.pageId } : {}) });
+  const url = text(r?.url);
+  if (!url) return say($("watch-status"), text(r?.reply) ?? "buni couldn't open the editor.", true);
+  say($("watch-status"), "");
+  editorUrl = url;
+  // Compact: the canvas gets the room, and it follows Claude to the page it's changing.
+  const here = new URL(url);
+  here.searchParams.set("compact", "1");
+  $<HTMLElement>("editor-title").textContent = c.page;
+  show("editor");
+  $<HTMLIFrameElement>("frame").src = here.href;
 }
-function showPatterns(): void {
+$<HTMLButtonElement>("editor-back").addEventListener("click", () => (watching ? watch(watching) : show("home")));
+$<HTMLButtonElement>("editor-out").addEventListener("click", () => { if (editorUrl) void chrome.tabs.create({ url: editorUrl }); });
+
+// --- Library ----------------------------------------------------------------------------------------------------------
+
+let library: { captures: Capture[]; patterns: Record<string, unknown>[] } = { captures: [], patterns: [] };
+async function loadLibrary(): Promise<void> {
+  const [all, r] = await Promise.all([captures(), native({ type: "patterns" })]);
+  library = { captures: all, patterns: Array.isArray(r?.patterns) ? r.patterns : [] };
+  paintLibrary();
+}
+function paintLibrary(): void {
   const q = $<HTMLInputElement>("find").value.trim().toLowerCase();
-  const shown = patterns.filter((p) => !q || `${text(p.name)} ${(Array.isArray(p.tags) ? p.tags : []).join(" ")} ${text(p.use)}`.toLowerCase().includes(q));
-  $<HTMLElement>("patterns").replaceChildren(...shown.map((p) => {
-    const el = document.createElement("div");
-    el.className = "card";
-    el.innerHTML = `<b></b><span class="meta"></span><span class="brief"></span><div class="row"><button class="act" type="button">Copy for Claude</button></div><span class="status"></span>`;
-    el.querySelector("b")!.textContent = text(p.name) ?? "";
-    el.querySelector(".meta")!.textContent = text(p.library) === "buni" ? "buni's library" : `your library: ${text(p.library)}`;
-    el.querySelector(".brief")!.textContent = text(p.use) ?? "";
-    el.querySelector("button")!.addEventListener("click", () => void navigator.clipboard.writeText(
-      `Use my buni inspiration pattern "${text(p.name)}" as the reference for what we're designing: use_inspiration brings it in (buni skill). Take its structure and behaviour, and make the look and words ours.`,
-    ).then(() => { el.querySelector(".status")!.textContent = "Copied. Paste it into Claude."; }));
+  const caps = library.captures.filter((c) => !q || `${c.page} ${c.design}`.toLowerCase().includes(q));
+  const pats = library.patterns.filter((p) => !q || `${text(p.name)} ${text(p.use)} ${(Array.isArray(p.tags) ? p.tags : []).join(" ")}`.toLowerCase().includes(q));
+  const head = (t: string) => { const h = document.createElement("h2"); h.textContent = t; return h; };
+  const pattern = (p: Record<string, unknown>) => {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "row";
+    el.title = text(p.use) ?? "";
+    el.innerHTML = `<span class="name"></span><span class="state"></span>`;
+    el.querySelector(".name")!.textContent = text(p.name) ?? "";
+    el.querySelector(".state")!.textContent = text(p.library) === "buni" ? "buni" : "yours";
+    el.addEventListener("click", () => void navigator.clipboard.writeText(
+      `Use the buni inspiration pattern "${text(p.name)}" as the reference for what we're designing: use_inspiration brings it in (buni skill). Take its structure and behaviour; make the look and words ours.`,
+    ).then(() => { el.querySelector(".state")!.textContent = "prompt copied"; }));
     return el;
-  }));
-  if (!shown.length) $<HTMLElement>("patterns").innerHTML = `<p class="empty">${patterns.length ? "No pattern fits." : "No inspiration yet. Capture a page as inspiration, or run  buni inspiration add <folder>."}</p>`;
+  };
+  $<HTMLElement>("library").replaceChildren(head("Captures"), ...caps.map(row), head("Inspiration"), ...pats.map(pattern));
 }
+$<HTMLInputElement>("find").addEventListener("input", paintLibrary);
 
 // --- Wiring -----------------------------------------------------------------------------------------------------------
 
-for (const t of TABS) $<HTMLButtonElement>(`tab-${t}`).addEventListener("click", () => open(t));
-$<HTMLButtonElement>("redesign").addEventListener("click", () => choose("redesign"));
-$<HTMLButtonElement>("inspire").addEventListener("click", () => choose("inspiration"));
-$<HTMLButtonElement>("page").addEventListener("click", () => void capture("page"));
-$<HTMLButtonElement>("pick").addEventListener("click", () => void capture("pick"));
-$<HTMLInputElement>("find").addEventListener("input", showPatterns);
-// The page in the panel follows the tab: its title names the capture unless the person typed one.
-const follow = async () => { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); name.placeholder = tab?.title || "This page’s title"; };
-chrome.tabs.onActivated.addListener(() => void follow());
-chrome.tabs.onUpdated.addListener((_id, change) => { if (change.title) void follow(); });
+$<HTMLButtonElement>("capture").addEventListener("click", () => void capture("page", "redesign"));
+$<HTMLButtonElement>("pick").addEventListener("click", () => void capture("pick", "redesign"));
+$<HTMLButtonElement>("inspire").addEventListener("click", () => void capture("page", "inspiration"));
+for (const id of ["to-library", "watch-library"]) $<HTMLButtonElement>(id).addEventListener("click", () => show("library"));
+for (const id of ["watch-back", "library-back"]) $<HTMLButtonElement>(id).addEventListener("click", () => show("home"));
+// The panel follows the tab: switching tabs, or the page changing, updates what it would capture.
+const follow = () => { if ($<HTMLElement>("view-home").classList.contains("on")) void loadHome(); };
+chrome.tabs.onActivated.addListener(follow);
+chrome.tabs.onUpdated.addListener((_id, change) => { if (change.title || change.url) follow(); });
 
 void (async () => {
-  const saved = await chrome.storage.local.get(["last", "intent"]);
-  choose(saved.intent === "inspiration" ? "inspiration" : "redesign");
-  const last = saved.last as LastSnap | undefined;
-  if (last && !last.ok && Date.now() - last.at < 30 * 60_000) { say(last.reply, true); void chrome.storage.local.remove("last"); } else showLast(last);
   void chrome.action.setBadgeText({ text: "" });
-  await follow();
-  await loadTargets();
+  const last = (await chrome.storage.local.get("last")).last as LastSnap | undefined;
+  await loadHome();
+  // A pick that failed after the panel closed says so once.
+  if (last && !last.ok && Date.now() - last.at < 30 * 60_000) { say($("status"), last.reply, true); void chrome.storage.local.remove("last"); }
 })();

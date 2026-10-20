@@ -7,10 +7,11 @@ import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { z } from "zod";
-import { emptyDoc, pagesInOrder } from "../format/doc.ts";
+import { emptyDoc, optionsOf, pagesInOrder } from "../format/doc.ts";
 import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { allPatterns, personalLibrary, writePattern } from "../tools/inspiration.ts";
+import { linkedDesigns, linkSite, recentDesigns, rememberDesign, siteDesign } from "../tools/settings.ts";
 
 export const HOST_NAME = "com.buni.snap";
 export const SCRATCH = join(homedir(), "buni", "scratch");
@@ -18,11 +19,15 @@ export const SCRATCH = join(homedir(), "buni", "scratch");
 const request = z.discriminatedUnion("type", [
   z.object({ type: z.literal("list") }),
   z.object({ type: z.literal("snaps") }),
+  /** Where a site's captures go now, and the designs that could take them. */
+  z.object({ type: z.literal("where"), host: z.string().min(1) }),
+  /** Send a site's captures to a design from now on; no file sends them back to its scratch design. */
+  z.object({ type: z.literal("link"), host: z.string().min(1), file: z.string().optional() }),
   z.object({ type: z.literal("patterns") }),
   z.object({
     type: z.literal("snap"),
     /** A new scratch design named after this, or a design file snapped into before. */
-    into: z.union([z.object({ scratch: z.string().min(1) }), z.object({ file: z.string().min(1) })]),
+    into: z.union([z.object({ scratch: z.string().min(1) }), z.object({ file: z.string().min(1) }), z.object({ site: z.string().min(1) })]),
     snapshot: z.record(z.string(), z.unknown()),
     page: z.object({ name: z.string().min(1) }),
     brief: z.string().optional(),
@@ -67,6 +72,34 @@ async function newScratch(name: string): Promise<string> {
   }
 }
 
+/** The design a site's captures go into, made when it is the first: "www.inceptionlabs.ai" → inceptionlabs-ai. */
+async function siteScratch(host: string): Promise<string> {
+  const name = slug(host.replace(/^www\./, ""));
+  const file = join(SCRATCH, name, `${name}.buni`);
+  if (!existsSync(file)) {
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, serializeDoc(emptyDoc()), { encoding: "utf8", flag: "wx" }).catch(() => undefined);
+  }
+  return file;
+}
+
+/** A design as people say it: its project (the folder it's in) and its name; a scratch one says so. */
+export function designLabel(file: string): string {
+  const name = basename(file, ".buni"), folder = basename(dirname(file)), parent = basename(dirname(dirname(file)));
+  if (dirname(dirname(file)) === SCRATCH) return `Scratch · ${name}`;
+  return folder === name ? `${parent} · ${name}` : `${folder} · ${name}`;
+}
+
+/** Where a site's captures go (its chosen design, else its scratch one, made on the first capture), and the choices. */
+async function where(host: string): Promise<{ file: string; label: string; linked: boolean; choices: { file: string; label: string }[] }> {
+  const chosen = await siteDesign(host);
+  const linked = chosen !== undefined && existsSync(chosen);
+  const name = slug(host.replace(/^www\./, ""));
+  const file = linked ? chosen! : join(SCRATCH, name, `${name}.buni`);
+  const files = [...new Set([...(await recentDesigns()), ...(await linkedDesigns())])].filter((f) => existsSync(f) && dirname(dirname(f)) !== SCRATCH);
+  return { file, label: designLabel(file), linked, choices: files.map((f) => ({ file: f, label: designLabel(f) })) };
+}
+
 /** Opens the editor on a file (or finds the one already open) and answers its address. */
 async function openEditor(file: string, tools: HostTools): Promise<string> {
   // An open editor leaves its MCP address in <file>.live; the editor itself is at the same origin, on that design.
@@ -103,6 +136,12 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
   try {
     if (r.type === "list") return { ok: true, scratch: await scratchDesigns(), folder: SCRATCH };
     if (r.type === "snaps") return { ok: true, snaps: (await recentSnaps()).slice(0, 30) };
+    if (r.type === "where") return { ok: true, ...(await where(r.host)) };
+    if (r.type === "link") {
+      if (r.file && (!r.file.endsWith(".buni") || !existsSync(r.file))) return { ok: false, reply: `There is no design at ${r.file}.` };
+      await linkSite(r.host, r.file);
+      return { ok: true, ...(await where(r.host)) };
+    }
     if (r.type === "patterns") return { ok: true, patterns: (await allPatterns()).map(({ name, library, use, tags, file }) => ({ name, library, use, tags, file })) };
     if (r.type === "open") {
       const url = new URL(await openEditor(r.file, tools));
@@ -117,8 +156,10 @@ export async function answer(raw: unknown, tools: HostTools): Promise<Record<str
       const file = await writePattern(await personalLibrary(), { name: r.name, use: r.use?.trim() || `Snapped${host ? ` from ${host}` : ""}; say when to use it`, tags: ["snapped"], ...(r.snapshot.url ? { seenIn: r.snapshot.url } : {}) }, { html, css: "body{margin:0}" });
       return { ok: true, reply: `Kept as inspiration: ${file}`, file, name: r.name };
     }
-    const file = "scratch" in r.into ? await newScratch(r.into.scratch) : r.into.file;
+    // A site's captures share one design (~/buni/scratch/<site>/), made the first time.
+    const file = "scratch" in r.into ? await newScratch(r.into.scratch) : "site" in r.into ? (await siteDesign(r.into.site).then((f) => (f && existsSync(f) ? f : undefined))) ?? await siteScratch(r.into.site) : r.into.file;
     if (!file.endsWith(".buni") || !existsSync(file)) return { ok: false, reply: `There is no design at ${file}.` };
+    await rememberDesign(file).catch(() => undefined);
     const done = await tools.run(file, "import_snapshot", { snapshot: r.snapshot, page: r.page, ...(r.brief?.trim() ? { brief: r.brief.trim() } : {}) });
     const page = done.text.match(/^Created page (\S+)\./)?.[1];
     return { ok: done.ok, reply: done.text, file, name: basename(file, ".buni"), ...(page ? { page } : {}) };
@@ -157,12 +198,14 @@ export function hostManifestDirs(): string[] {
 }
 
 /** A captured page in a scratch design: where it came from and what the person wants changed. */
-export interface Snap { file: string; page: string; pageId: string; url?: string; brief?: string; modified: string }
+export interface Snap { file: string; design: string; page: string; pageId: string; url?: string; brief?: string; modified: string; progress: string }
 
 /** Captured pages in the scratch designs, newest design first: what `buni snaps` lists and agents pick up. */
 export async function recentSnaps(): Promise<Snap[]> {
   const out: Snap[] = [];
-  for (const d of await scratchDesigns()) {
+  const linked = await Promise.all((await linkedDesigns()).filter((f) => existsSync(f)).map(async (file) => ({ file, modified: (await stat(file)).mtime.toISOString() })));
+  const designs = [...await scratchDesigns(), ...linked].filter((d, i, all) => all.findIndex((x) => x.file === d.file) === i).sort((a, b) => b.modified.localeCompare(a.modified));
+  for (const d of designs) {
     const parsed = parseDoc(await Bun.file(d.file).text());
     if (!parsed.ok) continue;
     const doc = parsed.doc;
@@ -170,9 +213,16 @@ export async function recentSnaps(): Promise<Snap[]> {
     for (const p of pagesInOrder(doc).reverse()) {
       const url = p.sources?.find((s) => s.url)?.url ?? doc.nodes[p.frame]?.sources?.find((s) => s.url)?.url
         ?? Object.values(doc.nodes).find((n) => n.parent === p.frame)?.sources?.find((s) => s.url)?.url;
-      if (!url && !p.name.endsWith("· Now")) continue;
+      // A capture is a page that remembers the URL it came from; a design's own pages and its Next and options aren't.
+      if (!url || p.option || /·\s*Next/.test(p.name)) continue;
       const brief = Object.values(doc.comments).find((c) => c.node === p.frame && c.posts[0]?.body.startsWith("Brief: "))?.posts[0]?.body.slice(7);
-      out.push({ file: d.file, page: p.name, pageId: p.id, modified: d.modified, ...(url ? { url } : {}), ...(brief ? { brief } : {}) });
+      // How far the redesign got, read from the design: options made, a Next page, a review pinned, or just captured.
+      const base = p.name.replace(/\s*·\s*Now$/, "");
+      const options = optionsOf(doc, p.id).length;
+      const next = pagesInOrder(doc).some((q) => q.id !== p.id && q.name.startsWith(base) && /·\s*Next/.test(q.name));
+      const reviewed = Object.values(doc.comments).some((c) => c.posts[0]?.body.startsWith("[review:") && Object.values(doc.nodes).some((n) => n.id === c.node));
+      const progress = options ? `${options} option${options === 1 ? "" : "s"}` : next ? "Next ready" : reviewed ? "Reviewed" : "Captured";
+      out.push({ file: d.file, design: designLabel(d.file), page: p.name, pageId: p.id, modified: d.modified, progress, ...(url ? { url } : {}), ...(brief ? { brief } : {}) });
     }
   }
   return out;

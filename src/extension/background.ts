@@ -95,11 +95,12 @@ async function snap(req: SnapRequest): Promise<SnapAnswer> {
   const drawn = (await drawShotsDebugger(snapped, req.tabId)) ?? (await drawShots(snapped, req.tabId, tab.windowId));
   const warnings = [...snapped.warnings, ...(drawn.missed ? [`${drawn.missed} picture${drawn.missed === 1 ? "" : "s"} couldn't be drawn from the screen and stay as empty boxes.`] : [])];
   const title = req.name || snapped.title || new URL(snapped.url).hostname;
-  const page = `${title} · Now`;
+  // The page keeps its own name in the design: the capture is the page, as it is now.
+  const page = title;
   const snapshot = { html: snapped.html, count: snapped.count, warnings, images: [...snapped.images, ...drawn.images], url: snapped.url, width: snapped.width };
   const answer: unknown = await chrome.runtime.sendNativeMessage("com.buni.snap", req.intent === "inspiration"
     ? { type: "inspire", name: title, snapshot, ...(req.use ? { use: req.use } : {}) }
-    : { type: "snap", into: req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot, ...(req.brief ? { brief: req.brief } : {}) });
+    : { type: "snap", into: req.into === "site" ? { site: new URL(snapped.url).host || title } : req.into === "scratch" ? { scratch: title } : { file: req.into }, page: { name: page }, snapshot, ...(req.brief ? { brief: req.brief } : {}) });
   const field = (k: string) => (typeof answer === "object" && answer !== null && k in answer ? (answer as Record<string, unknown>)[k] : undefined);
   const ok = field("ok") === true, reply = typeof field("reply") === "string" ? String(field("reply")) : "buni didn't answer.";
   const file = typeof field("file") === "string" ? String(field("file")) : undefined;
