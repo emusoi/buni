@@ -306,3 +306,13 @@ export function cascadeText(arch: Architecture, ids: readonly Id[]): string {
   const names = also.slice(0, 4).map((id) => labelOf(arch, id)).join("; ");
   return `Also deletes ${what}: ${names}${also.length > 4 ? "; …" : ""}.`;
 }
+
+// ---- Link to… ----
+
+/** The parts `from` can be linked to, matching what was typed (name, id or kind), by name. */
+export function linkTargets(arch: Architecture, from: Id, query: string): Part[] {
+  const q = query.trim().toLowerCase();
+  return Object.values(arch.parts)
+    .filter((p) => p.id !== from && (!q || [p.name, p.id, p.kind].some((s) => s.toLowerCase().includes(q))))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

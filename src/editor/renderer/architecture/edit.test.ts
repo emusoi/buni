@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ARCH_COLLECTIONS, architectureOf, emptyDoc, type Architecture } from "buni/format/doc.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { Workspace } from "buni/tools/workspace.ts";
-import { ADDABLE, FORMS, addFor, cascadeOf, cascadeText, changeFor, planChange, readInput, valueOf, type Call, type Field } from "./edit.ts";
+import { ADDABLE, FORMS, addFor, cascadeOf, cascadeText, changeFor, planChange, linkTargets, readInput, valueOf, type Call, type Field } from "./edit.ts";
 
 const parcelPath = new URL(import.meta.resolve("buni/examples/parcel.buni")).pathname;
 const withParcel = async () => {
@@ -134,4 +134,13 @@ test("typed values read as the field's kind", () => {
   expect(readInput("number", "x")).toEqual({ error: "a number" });
   expect(readInput("list", " a, b ,, ")).toEqual(["a", "b"]);
   expect(valueOf({ id: "w", replicas: { min: 2 } }, "replicas.min")).toBe(2);
+});
+
+test("Link to… offers the other parts, matched by name, id or kind", async () => {
+  const a = architectureOf((await withParcel()).view());
+  const all = linkTargets(a, "returns-api", "");
+  expect(all.map((p) => p.id)).not.toContain("returns-api");
+  expect(all.length).toBe(Object.keys(a.parts).length - 1);
+  expect(linkTargets(a, "returns-api", "STORE").every((p) => p.kind === "store" || /store/i.test(p.name + p.id))).toBe(true);
+  expect(linkTargets(a, "returns-api", "no such thing")).toEqual([]);
 });

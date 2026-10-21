@@ -1933,3 +1933,11 @@ button.arch-pill:hover { border-color: rgba(138, 174, 255, 0.5); }
   .arch-inspector:not(.picked) { display: none; }
   .arch-legend { display: none; }
 }
+
+/* Link to…: a find field over the parts, the active one lit as the arrows move. */
+.arch-link-to { width: 240px; gap: 4px; }
+.arch-link-to .arch-input { margin: 0 4px; }
+.arch-link-to-list { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; }
+.arch-link-to-list button.on { background: #27272a; }
+.arch-link-to-list > .arch-sub { padding: 6px 10px; }
+

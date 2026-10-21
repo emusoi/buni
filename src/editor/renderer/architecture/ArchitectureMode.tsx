@@ -7,7 +7,7 @@ import { LINK_KINDS, archCollectionOf, architectureOf, type Architecture, type D
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
-import { ADDABLE, addFor, type AddContext, type Addable } from "./edit.ts";
+import { ADDABLE, addFor, linkTargets, type AddContext, type Addable } from "./edit.ts";
 import { useDismiss } from "../useDismiss.ts";
 import { TextPane } from "./TextPane.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
@@ -103,6 +103,16 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const [fresh, setFresh] = useState<Id>();
   const [deleting, setDeleting] = useState(false);
   const [linking, setLinking] = useState<{ from: Id; to: Id; x: number; y: number }>();
+  // Link to… from the keyboard: the part picked first, then the kind as after a drag.
+  const [picking, setPicking] = useState<{ from: Id; x: number; y: number }>();
+  // The part a link would start from: the selected part, or the selected workload's.
+  const linkFrom = selected ? (arch.parts[selected] ? selected : arch.workloads[selected] && arch.parts[arch.workloads[selected].part] ? arch.workloads[selected].part : undefined) : undefined;
+  const pickLink = (anchor?: Element | null) => {
+    if (!linkFrom) return;
+    // Beside what asked for it: the button, else the selected card, else the middle of the window.
+    const r = (anchor ?? document.querySelector(".arch-card.selected"))?.getBoundingClientRect();
+    setPicking({ from: linkFrom, x: r ? Math.min(r.left, innerWidth - 260) : innerWidth / 2 - 120, y: r ? Math.min(r.bottom + 6, innerHeight - 320) : innerHeight / 3 });
+  };
   // The architecture as text, in a pane beside the view (in place of the inspector).
   const [text, setText] = useState(false);
   const textPane = text && <TextPane version={doc.architecture} onClose={() => setText(false)} onToast={onToast} />;
@@ -120,12 +130,14 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     const onKey = (e: KeyboardEvent) => {
       const el = e.target;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el instanceof HTMLElement && el.isContentEditable)) return;
+      if (linking || picking) return;
       if ((e.key === "Backspace" || e.key === "Delete") && selected && archCollectionOf(arch, selected)) { e.preventDefault(); setDeleting(true); }
-      else if (e.key === "Escape" && !linking) { if (deleting) setDeleting(false); else if (selected) select(undefined); }
+      else if (e.key.toLowerCase() === "l" && !e.metaKey && !e.ctrlKey && !e.altKey && linkFrom) { e.preventDefault(); pickLink(); }
+      else if (e.key === "Escape") { if (deleting) setDeleting(false); else if (selected) select(undefined); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [arch, selected, deleting, linking]);
+  }, [arch, selected, deleting, linking, picking, linkFrom]);
 
   const ctx: AddContext = { env: env?.id, selected, playKind: view === "flows" ? shownPlay?.kind : undefined };
   const add = async (what: Addable) => {
@@ -201,6 +213,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             {plan && <button type="button" className="arch-btn" onClick={() => { setPlanId(plan.id); setView("proposals"); }}>Open the plan</button>}
           </>;
         })()}
+        {linkFrom && <button type="button" className="arch-btn" onClick={(e) => pickLink(e.currentTarget)} title="Link this part to another (L)">Link to…</button>}
         <button type="button" className="arch-btn" onClick={copyBrief} title="The architecture as text, focused on what's selected">Copy brief for Claude</button>
       </>}
     />
@@ -261,6 +274,10 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
         {textPane || inspector()}
         </>}
       </div>
+      {picking && (
+        <LinkTo arch={arch} from={picking.from} at={picking} onCancel={() => setPicking(undefined)}
+          onPick={(to) => { setPicking(undefined); setLinking({ from: picking.from, to, x: picking.x, y: picking.y }); }} />
+      )}
       {linking && <LinkKind at={linking} from={arch.parts[linking.from]?.name ?? linking.from} to={arch.parts[linking.to]?.name ?? linking.to} onPick={(k) => void link(k)} onCancel={() => setLinking(undefined)} />}
     </div>
   );
@@ -292,6 +309,49 @@ function LinkKind({ at, from, to, onPick, onCancel }: { at: { x: number; y: numb
       }}>
       <span className="arch-sub">{from} → {to}</span>
       {LINK_KINDS.map((k) => <button key={k} type="button" role="menuitem" onClick={() => onPick(k)}>{k}</button>)}
+    </div>
+  );
+}
+
+/** Link to…: the other parts, filtered as you type; arrows move, Enter picks, Escape or a press elsewhere closes. */
+function LinkTo({ arch, from, at, onPick, onCancel }: { arch: Architecture; from: Id; at: { x: number; y: number }; onPick: (to: Id) => void; onCancel: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDismiss(true, onCancel, ref);
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  const parts = linkTargets(arch, from, query);
+  const on = Math.min(active, parts.length - 1);
+  const name = arch.parts[from]?.name ?? from;
+  return (
+    <div ref={ref} className="arch-menu arch-link-kind arch-link-to" style={{ left: at.x, top: at.y }}>
+      <span className="arch-sub">Link {name} to…</span>
+      <input
+        autoFocus
+        className="arch-input"
+        role="combobox"
+        aria-label={`Link ${name} to`}
+        aria-expanded
+        aria-controls="arch-link-to-list"
+        aria-activedescendant={parts[on] ? `arch-link-to-${parts[on].id}` : undefined}
+        placeholder="Find a part"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setActive(0); }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (parts.length) setActive((on + (e.key === "ArrowDown" ? 1 : parts.length - 1)) % parts.length);
+          } else if (e.key === "Enter" && parts[on]) { e.preventDefault(); onPick(parts[on].id); }
+        }}
+      />
+      <div id="arch-link-to-list" role="listbox" aria-label="Parts" className="arch-link-to-list">
+        {parts.map((p, i) => (
+          <button key={p.id} id={`arch-link-to-${p.id}`} type="button" role="option" aria-selected={i === on} tabIndex={-1} className={i === on ? "on" : ""}
+            onMouseEnter={() => setActive(i)} onClick={() => onPick(p.id)}>
+            <span>{p.name}</span><span className="arch-sub">{p.kind}</span>
+          </button>
+        ))}
+        {!parts.length && <span className="arch-sub">No part matches.</span>}
+      </div>
     </div>
   );
 }
