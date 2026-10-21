@@ -23,7 +23,7 @@ export interface SettleResult {
 export const EDIT_TOOLS = [
   "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
   "make_component", "create_component", "place_component", "override", "move_component",
-  "write_section", "delete_section", "decide", "drop_decision", "comment", "merge_components", "delete_component", "rename_component",
+  "write_section", "delete_section", "comment", "merge_components", "delete_component", "rename_component",
   "set_motion", "connect", "disconnect", "set_flow", "set_screen",
 ] as const;
 export type EditTool = (typeof EDIT_TOOLS)[number];

@@ -7,7 +7,7 @@ description: Grids, a spacing scale, proximity and rhythm, alignment (geometric 
 Layout is how people find things. Consistent spacing and alignment make a screen calm; deliberate variation gives it character.
 
 ## Spacing scale
-- One scale on a 4 or 8px base: 4, 8, 12, 16, 24, 32, 48, 64, 96, 128. Put it in tokens and record the base as a decision.
+- One scale on a 4 or 8px base: 4, 8, 12, 16, 24, 32, 48, 64, 96, 128. Put it in tokens.
 - Space means relationship: tight within a group, generous between groups. Inside a card < between cards < between sections.
 - More space above a heading than below it, so the heading belongs to what follows.
 - Prefer flex/grid `gap` to margins; it keeps spacing in one place.

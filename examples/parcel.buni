@@ -489,56 +489,6 @@
       "trigger": "click"
     }
   },
-  "decisions": {
-    "28397325": {
-      "at": "2026-10-03T17:39:03.626Z",
-      "by": "you",
-      "id": "28397325",
-      "text": "POST /returns/{id}/reject: Email the reason the merchant gave; buyers asked why"
-    },
-    "30ca200d": {
-      "at": "2026-10-03T18:30:16.436Z",
-      "by": "you",
-      "id": "30ca200d",
-      "text": "PATCH /store: No cache on store settings; buyers see changes on their next lookup"
-    },
-    "38981d3b": {
-      "at": "2026-10-03T16:31:23.216Z",
-      "by": "claude-code",
-      "id": "38981d3b",
-      "text": "Order lookups are rate limited in Postgres (lookup_attempts, keyed ip:{ip} and order:{number}, one-hour windows); no Redis until load says so."
-    },
-    "450253eb": {
-      "at": "2026-10-03T16:20:36.980Z",
-      "by": "claude-code",
-      "id": "450253eb",
-      "text": "One service (Returns API, TypeScript) and one Postgres for v1; split only for a reason we can name."
-    },
-    "5494893f": {
-      "at": "2026-10-03T16:20:37.155Z",
-      "by": "claude-code",
-      "id": "5494893f",
-      "text": "Refunds go through a queue and are idempotent on the return id: at-least-once delivery, handlers safe to repeat."
-    },
-    "6a1f7e2c": {
-      "at": "2026-10-03T16:27:49.593Z",
-      "by": "claude-code",
-      "id": "6a1f7e2c",
-      "text": "Who pays for the return label? → Merchant always: v1 optimises for buyers finishing the return; stores in our range see few abusive returns, and a deduction can come later as a store setting."
-    },
-    "7d9f282c": {
-      "at": "2026-10-03T16:20:37.327Z",
-      "by": "claude-code",
-      "id": "7d9f282c",
-      "text": "Buyers never get an account: a short-lived signed link proves they own the order."
-    },
-    "d3b14c1b": {
-      "at": "2026-10-03T16:31:22.844Z",
-      "by": "claude-code",
-      "id": "d3b14c1b",
-      "text": "The buyer never waits on the carrier for more than 400 ms: past that, POST /returns answers without the label and it is booked and emailed after. Keeps the 500 ms page budget."
-    }
-  },
   "flows": {
     "09598114": {
       "id": "09598114",

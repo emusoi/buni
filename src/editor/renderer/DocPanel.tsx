@@ -41,9 +41,8 @@ function SectionEditor({ id, heading, body, onError }: { id: Id; heading: string
   );
 }
 
-/** The design doc: what the product is, for whom, its principles and the decisions made; every agent reads it first. */
+/** The design doc: what the product is, for whom, its principles and direction; every agent reads it first. */
 export function DocPanel({ doc, fileName }: { doc: Doc; fileName: string }) {
-  const [decision, setDecision] = useState("");
   const [notice, setNotice] = useState<string>();
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [reading, setReading] = useState(false);
@@ -51,8 +50,7 @@ export function DocPanel({ doc, fileName }: { doc: Doc; fileName: string }) {
     void window.buni.skills().then(setSkills);
   }, []);
   const sections = Object.values(doc.sections).sort(byIndex);
-  const decisions = Object.values(doc.decisions).sort((a, b) => (a.at < b.at ? -1 : 1));
-  const empty = sections.length === 0 && decisions.length === 0;
+  const empty = sections.length === 0;
 
   return (
     <div className="doc-panel">
@@ -70,32 +68,6 @@ export function DocPanel({ doc, fileName }: { doc: Doc; fileName: string }) {
       <button type="button" className="link-btn doc-add" onClick={() => void window.buni.edit("write_section", { heading: "New section", body: "" })}>
         <Plus size={12} /> Add section
       </button>
-
-      <section className="doc-decisions">
-        <div className="group-title">Decisions</div>
-        {decisions.map((d) => (
-          <div key={d.id} className="decision">
-            <span className="decision-date">{d.at.slice(5, 10).replace("-", "/")}</span>
-            <span className="decision-text">{d.text}</span>
-            <span className="decision-by">{d.by}</span>
-            <button type="button" className="icon-btn small" aria-label="Drop decision" onClick={() => void window.buni.edit("drop_decision", { decision: d.id })}>
-              <X size={11} />
-            </button>
-          </div>
-        ))}
-        <input
-          className="field decision-input"
-          placeholder="Record a decision, e.g. 8px spacing grid"
-          value={decision}
-          onChange={(e) => setDecision(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && decision.trim()) {
-              void window.buni.edit("decide", { text: decision.trim() });
-              setDecision("");
-            }
-          }}
-        />
-      </section>
 
       <section className="doc-skills">
         <div className="doc-skills-row">

@@ -222,12 +222,13 @@ describe("reference checks", () => {
 
 test("files with system data from before still open; the system data is dropped", () => {
   const raw = JSON.parse(exampleText);
-  // What a file held when buni also designed the system behind the screens, its plan and its agents.
+  // What a file held when buni also designed the system behind the screens, its plan and its agents, and the doc's decisions.
   Object.assign(raw, {
     parts: { api: { id: "api", kind: "service", name: "Quote API", purpose: "Quotes", index: "a0" } },
     links: {}, tables: {}, endpoints: { "list-plans": { id: "list-plans", service: "api", method: "GET", path: "/plans" } }, operations: {}, events: {}, shapes: {},
     traces: {}, environments: {}, clusters: {}, placements: {}, positions: { "api:list-plans": { id: "api:list-plans", x: 1, y: 2 } },
     phases: {}, requirements: {}, questions: {}, roles: {}, reviews: {}, threads: {}, agents: {}, evals: {},
+    decisions: { d1: { id: "d1", text: "8px spacing grid", by: "pi", at: "2026-01-01T00:00:00Z" } },
   });
   raw.pages.home.client = "api";
   raw.nodes["home-headline"].bind = { endpoint: "list-plans", field: "headline" };
@@ -236,7 +237,7 @@ test("files with system data from before still open; the system data is dropped"
   if (!r.ok) throw new Error(JSON.stringify(r.errors));
   expect(r.doc).toEqual(example());
   const saved: Record<string, unknown> = JSON.parse(serializeDoc(r.doc));
-  for (const k of ["parts", "endpoints", "positions", "agents", "evals"]) expect(saved[k]).toBeUndefined();
+  for (const k of ["parts", "endpoints", "positions", "agents", "evals", "decisions"]) expect(saved[k]).toBeUndefined();
   expect(serializeDoc(r.doc)).not.toContain("list-plans");
 });
 

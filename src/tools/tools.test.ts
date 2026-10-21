@@ -858,26 +858,22 @@ describe("components", () => {
 });
 
 describe("design doc", () => {
-  test("sections and decisions from agents and people all land in the file", async () => {
+  test("sections from agents and people all land in the file", async () => {
     const ws = await Workspace.open(file);
     expect((await ws.call(pi, "read_doc", {})).reply).toContain("no design doc yet");
     const made = await ws.call(pi, "write_section", { heading: "Who it is for", body: "Metal shops that need parts fast." });
     const section = made.reply.match(/Section (\S+) saved/)?.[1] ?? "";
-    await ws.call(pi, "decide", { text: "8px spacing grid" });
     const text = (await ws.call(pi, "read_doc", {})).reply;
     expect(text).toContain("## Who it is for");
-    expect(text).toContain("- 8px spacing grid (pi,");
 
     await ws.call("you", "write_section", { section, heading: "Who it is for", body: "Metal shops and fabricators." });
     const saved = parseDoc(await readFile(file, "utf8"));
     expect(saved.ok && Object.values(saved.doc.sections).map((x) => x.body)).toEqual(["Metal shops and fabricators."]);
-    expect(saved.ok && Object.values(saved.doc.decisions).map((d) => [d.text, d.by])).toEqual([["8px spacing grid", "pi"]]);
   });
 
   test("files from before the design doc still open", () => {
     const old = JSON.parse(readFileSync(example, "utf8"));
     delete old.sections;
-    delete old.decisions;
     const r = parseDoc(JSON.stringify(old));
     expect(r.ok && r.doc.sections).toEqual({});
   });

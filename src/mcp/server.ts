@@ -10,7 +10,7 @@ import { editChecks } from "../tools/review.ts";
 const INSTRUCTIONS = `buni is a design tool. You edit one .buni document through these tools only.
 Every edit is written to the file at once, so make each one leave the design in a good state (keep the file in git to go back).
 Design skills hold buni's design guidance: call list_skills, then read_skill the ones that fit before you design (principles for anything new, typography and color before tokens, layout before a page).
-Start with read_tree and read_doc (the design doc: who it's for, principles, direction, decisions); read_context gives the brief for one page or flow. Build UI with write_html (inline styles, CSS custom properties from tokens).
+Start with read_tree and read_doc (the design doc: who it's for, principles, direction); read_context gives the brief for one page or flow. Build UI with write_html (inline styles, CSS custom properties from tokens).
 Import existing HTML with import_html_page: give url, file (inside the design folder) or html, an optional selector, and page or parent. It resolves class styles and images into editable layers using Chrome on the host; scripts are excluded unless live is set (a JavaScript app; cookies signs it in, wait_for waits for it). Attach source_file and symbol to retain implementation context. To improve a page that already ships, snapshot it this way first and improve from the snapshot (read_skill critique).
 To try alternatives of a page: explore_page makes options (copies with an idea each), compare_options reviews them, pick_option makes one live.
 review_page checks a page as it renders (motion, contrast, type, targets, overflow, generated-look tells), scores it and names the layers; against compares a fixed copy with its snapshot.

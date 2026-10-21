@@ -28,7 +28,7 @@ Use `var(--…)` everywhere; a raw hex in a layer is a bug.
 ## One accent with a job
 - One accent for interactive and selected things. If everything is accented, nothing is.
 - The saturated accent marks the primary action and the current selection; its tint covers hover and soft emphasis.
-- A second accent needs a job (a data series, a category), recorded as a decision.
+- A second accent needs a job (a data series, a category), written down in the design doc.
 - Keep saturation in check: an accent that shouts on every screen gets tiring in an app people use all day.
 
 ## Semantic colour

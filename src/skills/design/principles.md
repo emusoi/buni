@@ -21,7 +21,7 @@ Good interfaces feel obvious: people see what matters, understand what they can 
 
 ## 3. Consistency: the same thing looks and works the same
 - One button style per role, one spacing scale, one type scale, one icon set, one word for one thing. Build a part once as a component and reuse it.
-- Follow platform conventions people already know (links look like links, destructive actions look dangerous, back goes back) unless you have a strong reason, and write the reason down as a decision.
+- Follow platform conventions people already know (links look like links, destructive actions look dangerous, back goes back) unless you have a strong reason, and write the reason down in the design doc.
 - Every inconsistency makes someone stop and wonder why. A button that is suddenly larger than its siblings reads as "this one is different": make sure it is.
 
 ## 4. Contrast: difference carries meaning
@@ -68,4 +68,4 @@ Good interfaces feel obvious: people see what matters, understand what they can 
 4. Do related things sit together and does everything align to the grid?
 5. Are empty, loading and error states designed?
 6. Does it pass contrast and work by keyboard?
-7. Does it follow the design doc's decisions and direction?
+7. Does it follow the design doc's principles and direction?

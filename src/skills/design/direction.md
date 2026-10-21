@@ -20,7 +20,7 @@ Before designing anything, answer these. If the brief doesn't say, propose an an
   - Variance: 1 symmetrical and predictable, 10 asymmetric and surprising.
   - Motion: 1 still, 10 cinematic. Operate surfaces stay low.
   - Density: 1 airy like a gallery, 10 packed like a trading screen.
-- What already exists: the design doc's decisions, tokens and components. Refining keeps the product's identity and improves its execution; redesigning replaces the visual world but keeps the content, function and conventions people rely on. Say which this is. If the product already ships, snapshot it first and improve from the snapshot (critique skill).
+- What already exists: the design doc, tokens and components. Refining keeps the product's identity and improves its execution; redesigning replaces the visual world but keeps the content, function and conventions people rely on. Say which this is. If the product already ships, snapshot it first and improve from the snapshot (critique skill).
 - Before designing a familiar pattern (a settings page, a data table, onboarding, pricing), find_inspiration: the libraries hold finished versions, the person's own among them. Take structure and behaviour from them, never their look wholesale.
 - The brief always wins. If it pins a look, era, font or palette, follow it exactly, even where this skill would choose differently.
 
@@ -54,7 +54,7 @@ Record the direction in the design doc (write_section, title "Direction"), so pe
 - Palette, type and layout, each with one line of reason tied to the subject ("serif display: the care-label feel of plant tags", "low density: people glance at this once a morning").
 - The bold thing, and what the design must never feel like.
 - What you revised in the check, and why.
-Lasting conventions (a radius, the accent's only uses, the spacing base) become decisions (decide), so every later screen follows them. Then set tokens from the plan before building (tokens).
+Lasting conventions (a radius, the accent's only uses, the spacing base) go in the design doc (write_section), so every later screen follows them. Then set tokens from the plan before building (tokens).
 
 ## 5. Build, then critique
 - Build with real content in the subject's own words, section by section.

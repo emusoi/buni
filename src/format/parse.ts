@@ -16,7 +16,6 @@ import {
   type Attachment,
   type Comment,
   type CommentState,
-  type Decision,
   type Section,
   type Confidence,
   type Connection,
@@ -64,11 +63,12 @@ const COMMENT_STATES = ["open", "addressed", "resolved"] as const satisfies read
 const CONFIDENCES = [1, 2, 3, 4, 5] as const satisfies readonly Confidence[];
 /**
  * What files from when buni also designed the system behind the pages held: still accepted, so they open, and never
- * read, so the next save drops them. So are a layer's "bind", a page's "client" and a link's "endpoint".
+ * read, so the next save drops them. So are a layer's "bind", a page's "client" and a link's "endpoint", and the design
+ * doc's old "decisions".
  */
 const LEGACY_COLLECTIONS = [
   "parts", "links", "tables", "endpoints", "operations", "events", "shapes", "traces", "environments", "clusters", "placements",
-  "positions", "phases", "requirements", "questions", "roles", "reviews", "threads", "agents", "evals",
+  "positions", "phases", "requirements", "questions", "roles", "reviews", "threads", "agents", "evals", "decisions",
 ] as const;
 const ID = /^[A-Za-z0-9_-]{1,128}$/;
 /** A style property: camelCase (or kebab-case) CSS, or a custom property. Written into stylesheets as it is. */
@@ -472,16 +472,6 @@ class Reader {
     };
   }
 
-  decision(v: unknown, path: string): Decision {
-    const o = this.obj(v, path, ["id", "text", "by", "at"]);
-    return {
-      id: this.str(o.id, join(path, "id")),
-      text: this.str(o.text, join(path, "text")),
-      by: this.str(o.by, join(path, "by")),
-      at: this.str(o.at, join(path, "at")),
-    };
-  }
-
   rule(v: unknown, path: string): Rule {
     const kind = isRecord(v) ? v.kind : undefined;
     const extra = kind === "shared-required" ? ["shared", "routePrefix"] : kind === "fixed-width" ? ["width"] : [];
@@ -514,7 +504,7 @@ class Reader {
   doc(v: unknown): Doc {
     const o = this.obj(v, "", [
       "buni", "imports", "tokensRef", "tokens", "pages", "nodes", "shared", "connections",
-      "flows", "journeys", "comments", "sections", "decisions", "rules", "attachments",
+      "flows", "journeys", "comments", "sections", "rules", "attachments",
       ...LEGACY_COLLECTIONS,
     ]);
     if (o.buni !== FORMAT_VERSION) this.fail("buni", `unsupported format version (expected ${FORMAT_VERSION})`);
@@ -535,7 +525,6 @@ class Reader {
     doc.comments = this.byId(o.comments, "comments", (x, p) => this.comment(x, p));
     // The design doc arrived after the format did; files without one simply have none.
     doc.sections = o.sections === undefined ? {} : this.byId(o.sections, "sections", (x, p) => this.section(x, p));
-    doc.decisions = o.decisions === undefined ? {} : this.byId(o.decisions, "decisions", (x, p) => this.decision(x, p));
     doc.rules = this.byId(o.rules, "rules", (x, p) => this.rule(x, p));
     doc.attachments = this.byId(o.attachments, "attachments", (x, p) => this.attachment(x, p));
     return doc;

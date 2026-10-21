@@ -3,7 +3,7 @@ import { validateDoc, type FormatError } from "../format/parse.ts";
 
 export type Collection =
   | "pages" | "nodes" | "shared" | "connections" | "flows"
-  | "journeys" | "comments" | "sections" | "decisions" | "rules" | "attachments";
+  | "journeys" | "comments" | "sections" | "rules" | "attachments";
 
 export type EntityOf<C extends Collection> = Doc[C][Id];
 
@@ -211,10 +211,6 @@ function restore(doc: Doc, collection: Collection, id: Id): Op {
       const v = doc.sections[id];
       return v ? { kind: "put", collection: "sections", value: v } : { kind: "delete", collection: "sections", id };
     }
-    case "decisions": {
-      const v = doc.decisions[id];
-      return v ? { kind: "put", collection: "decisions", value: v } : { kind: "delete", collection: "decisions", id };
-    }
     case "comments": {
       const v = doc.comments[id];
       return v ? { kind: "put", collection: "comments", value: v } : { kind: "delete", collection: "comments", id };
@@ -243,7 +239,7 @@ export function invert(doc: Doc, ops: readonly Op[]): Op[] {
 }
 
 const COLLECTIONS: readonly Collection[] = [
-  "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "sections", "decisions", "rules", "attachments",
+  "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "sections", "rules", "attachments",
 ];
 
 // The casts below: TypeScript can't tie a generic collection to its own value inside the Op union, though they match.

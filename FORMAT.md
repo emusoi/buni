@@ -23,8 +23,8 @@ are the normative definition; this page is the map.
   collection present. The same design always gives the same bytes, so a git diff shows only what changed. (buni
   reads any layout and writes its own on the first save.)
 - The screen collections are always present, even when empty: `tokens`, `pages`, `nodes`, `shared`,
-  `connections`, `flows`, `journeys`, `comments`, `rules`, `attachments`. `sections` and `decisions` may be left
-  out, and a missing one reads as empty.
+  `connections`, `flows`, `journeys`, `comments`, `rules`, `attachments`. `sections` may be left out, and a
+  missing one reads as empty.
 
 ## Collections
 
@@ -45,16 +45,17 @@ are the normative definition; this page is the map.
 | Key | What it holds |
 |---|---|
 | `sections` | The design doc every agent reads first. |
-| `decisions`, `rules` | What was decided and why, and rules every screen keeps. |
+| `rules` | Rules every screen keeps. |
 | `comments` | Discussion on the canvas, on a layer. |
 
 **Files from before**
 
 buni once also designed the system behind the screens and the agents around them. A file from then still opens: its
 `parts`, `links`, `tables`, `endpoints`, `operations`, `events`, `shapes`, `traces`, `environments`, `clusters`,
-`placements`, `positions`, `phases`, `requirements`, `questions`, `roles`, `reviews`, `threads`, `agents` and
-`evals`, a layer's `bind`, a page's `client` and a connection's `endpoint` are accepted and never read, so the next
-save drops them. The format version stays `1`: no file that opened before fails to open now.
+`placements`, `positions`, `phases`, `requirements`, `questions`, `roles`, `reviews`, `threads`, `agents`,
+`evals`, the design doc's `decisions`, a layer's `bind`, a page's `client` and a connection's `endpoint` are accepted
+and never read, so the next save drops them. The format version stays `1`: no file that opened before fails to open
+now.
 
 ## Terminal screens
 
@@ -121,4 +122,4 @@ Design records can carry an optional `sources` array. It is context for people a
 "sources": [{ "file": "src/components/Header.tsx", "symbol": "Header", "repository": "web", "line": 20, "endLine": 64, "url": "http://localhost:3000/home", "selector": "header" }]
 ```
 
-Each reference needs a `file` or an HTTP(S) `url`. Other fields are optional; positive line numbers refer to a file. `endLine` requires `line` and cannot precede it. Pages, layers, components, links, flows, journeys, doc sections, decisions, rules, attachments and comments use the same shape. `set_sources {ids, sources}` replaces the links; an empty array removes them. Manual editor controls use the same undoable operation. `create_page`, `create_component` and `write_html` also accept `sources` during creation. HTML may attach per-element references with a JSON `data-buni-sources` attribute. `read_tree`, `get_node` and `read_context` expose the stored context. Source links do not imply automatic synchronization with the implementation.
+Each reference needs a `file` or an HTTP(S) `url`. Other fields are optional; positive line numbers refer to a file. `endLine` requires `line` and cannot precede it. Pages, layers, components, links, flows, journeys, doc sections, rules, attachments and comments use the same shape. `set_sources {ids, sources}` replaces the links; an empty array removes them. Manual editor controls use the same undoable operation. `create_page`, `create_component` and `write_html` also accept `sources` during creation. HTML may attach per-element references with a JSON `data-buni-sources` attribute. `read_tree`, `get_node` and `read_context` expose the stored context. Source links do not imply automatic synchronization with the implementation.

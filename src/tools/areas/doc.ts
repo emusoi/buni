@@ -1,16 +1,16 @@
 import { sourceRefs, sourceTarget } from "../../format/sources.ts";
 import type { Op } from "../../oplog/oplog.ts";
-// The design doc: sections, and the decisions taken. One area of buni's design tools (agent/areas.ts); tools.ts gathers
+// The design doc: its sections. One area of buni's design tools (agent/areas.ts); tools.ts gathers
 // them.
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import type { Decision, Section } from "../../format/doc.ts";
+import type { Section } from "../../format/doc.ts";
 import { sectionsInOrder } from "../doc-text.ts";
 import { Ids, type Tool, ToolError, tool } from "../kit.ts";
 
 export const docTools = {
   set_sources: tool({
-    description: "Link any page, layer, component, link, flow, journey, doc section, decision, rule, attachment or comment to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
+    description: "Link any page, layer, component, link, flow, journey, doc section, rule, attachment or comment to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
     input: { ids: z.array(z.string()).min(1), sources: sourceRefs },
     run: async (doc, a) => {
       const ops: Op[] = a.ids.map((id) => {
@@ -45,25 +45,6 @@ export const docTools = {
       const old = doc.sections[a.section];
       if (!old) throw new ToolError(`section "${a.section}" does not exist`);
       return { label: `Remove doc section ${old.heading}`, ops: [{ kind: "delete", collection: "sections", id: old.id }], reply: "Removed." };
-    },
-  }),
-
-  decide: tool({
-    description: "Record a design decision in the doc, e.g. \"8px spacing grid\" or \"serif for note text\", so every agent and person follows it.",
-    input: { text: z.string().min(1) },
-    run: async (doc, a, ctx) => {
-      const value: Decision = { id: new Ids(doc, ctx).next(), text: a.text, by: ctx.author, at: ctx.now() };
-      return { label: `Decide: ${a.text}`, ops: [{ kind: "put", collection: "decisions", value }], reply: `Decision ${value.id} recorded.` };
-    },
-  }),
-
-  drop_decision: tool({
-    description: "Remove a decision from the doc when it no longer holds.",
-    input: { decision: z.string() },
-    run: async (doc, a) => {
-      const old = doc.decisions[a.decision];
-      if (!old) throw new ToolError(`decision "${a.decision}" does not exist`);
-      return { label: `Drop decision: ${old.text}`, ops: [{ kind: "delete", collection: "decisions", id: old.id }], reply: "Removed." };
     },
   }),
 } satisfies Record<string, Tool>;

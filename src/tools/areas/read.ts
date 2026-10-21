@@ -45,7 +45,7 @@ export const readTools = {
   }),
 
   read_doc: tool({
-    description: "The design doc: what this product is, who it is for, its principles and the decisions made so far. Read it before designing.",
+    description: "The design doc: what this product is, who it is for, its principles and direction. Read it before designing.",
     input: {},
     run: async (doc) => ({ label: "Read doc", ops: [], reply: docText(doc) || "(no design doc yet: write_section to start one)" }),
   }),

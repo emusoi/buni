@@ -234,7 +234,7 @@ export const pagesTools = {
   pick_option: tool({
     description:
       "Make an option the live page: it takes the page's route, links and flows to the page now reach it, and the page that was live becomes one of its options. " +
-      "why is kept as a decision. others: keep (default) leaves the other options beside it; delete removes them.",
+      "why names the edit. others: keep (default) leaves the other options beside it; delete removes them.",
     input: { option: z.string(), why: z.string().min(1), others: z.enum(["keep", "delete"]).optional() },
     run: async (doc, a, ctx) => {
       const chosen = page(doc, a.option);
@@ -251,8 +251,6 @@ export const pagesTools = {
       for (const f of Object.values(doc.flows)) if (f.start === live.id) ops.push({ kind: "put", collection: "flows", value: { ...f, start: chosen.id } });
       for (const j of Object.values(doc.journeys)) if (j.steps.some((s) => s.page === live.id)) ops.push({ kind: "put", collection: "journeys", value: { ...j, steps: j.steps.map((s) => (s.page === live.id ? { ...s, page: chosen.id } : s)) } });
       if (a.others !== "delete") for (const p of rest) ops.push({ kind: "put", collection: "pages", value: { ...p, option: { ...p.option!, of: chosen.id } } });
-      const ids = new Ids(doc, ctx);
-      ops.push({ kind: "put", collection: "decisions", value: { id: ids.next(), text: `${chosen.name} replaces ${live.name}${live.route ? ` at ${live.route}` : ""}: ${a.why}`, by: ctx.author, at: ctx.now() } });
       let reply = `${chosen.name} is live${live.route ? ` at ${live.route}` : ""}; ${live.name} is now one of its options.`;
       if (a.others === "delete" && rest.length) {
         let after = applied(doc, ops);
@@ -264,7 +262,7 @@ export const pagesTools = {
         reply += ` Deleted ${rest.map((p) => p.name).join(", ")}.`;
       }
       if (live.route && Object.values(doc.pages).some((p) => p.state !== undefined && p.route === live.route)) reply += ` The route's states still copy ${live.name}'s layers; link_states {page: "${chosen.id}"} links them to this one.`;
-      return { label: `Make ${chosen.name} live`, ops, reply };
+      return { label: `Make ${chosen.name} live: ${a.why}`, ops, reply };
     },
   }),
 

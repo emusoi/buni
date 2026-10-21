@@ -49,7 +49,6 @@ test("explore_page makes unlinked options with no route; pick_option swaps one i
     expect(doc.pages[options[1]!.id]!.option?.of).toBe(options[0]!.id);
     expect(Object.values(doc.connections).find((c) => c.node === back.id)?.to).toBe(options[0]!.id);
     expect(Object.values(doc.flows)[0]!.start).toBe(options[0]!.id);
-    expect(Object.values(doc.decisions).at(-1)!.text).toContain("Buyers trust lead times first");
     expect(parseDoc(serializeDoc(doc)).ok).toBe(true);
 
     // Deleting the live page leaves its options as pages of their own.

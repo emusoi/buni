@@ -47,7 +47,6 @@
       "trigger": "click"
     }
   },
-  "decisions": {},
   "flows": {
     "get-a-quote": {
       "id": "get-a-quote",

@@ -312,16 +312,6 @@ export interface Section extends SourceOwner {
   index: string;
 }
 
-/** A settled design decision, e.g. "8px spacing grid". */
-export interface Decision extends SourceOwner {
-  id: Id;
-  text: string;
-  /** Who made it: a person or an agent's name. */
-  by: string;
-  /** ISO 8601. */
-  at: string;
-}
-
 export type CommentState = "open" | "addressed" | "resolved";
 
 export interface Post {
@@ -397,7 +387,6 @@ export interface Doc {
   comments: Record<Id, Comment>;
   /** The design doc every agent reads first. */
   sections: Record<Id, Section>;
-  decisions: Record<Id, Decision>;
   rules: Record<Id, Rule>;
   attachments: Record<Id, Attachment>;
 }
@@ -414,7 +403,6 @@ export function emptyDoc(): Doc {
     journeys: {},
     comments: {},
     sections: {},
-    decisions: {},
     rules: {},
     attachments: {},
   };

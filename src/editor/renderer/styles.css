@@ -523,14 +523,6 @@ svg { flex-shrink: 0; }
 .doc-body:hover { border-color: var(--rule); }
 .doc-body:focus, .doc-heading:focus { border-color: var(--accent); background: var(--surface); }
 .doc-add { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; }
-.doc-decisions { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 1px solid var(--rule); }
-.decision { display: flex; align-items: baseline; gap: 10px; font-size: 13px; line-height: 19px; }
-.decision-date { width: 36px; flex: none; font-family: var(--mono); font-size: 11px; color: var(--label); }
-.decision-text { flex: 1; color: var(--ink); }
-.decision-by { font-size: 11px; color: var(--label); }
-.decision .icon-btn { opacity: 0; align-self: center; }
-.decision:hover .icon-btn { opacity: 1; }
-.decision-input { height: 30px; margin-top: 4px; }
 
 /* Agent panel: one agent in view, others as dots; activity folded; plan and questions as cards. */
 .agent-header { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
@@ -591,7 +583,7 @@ svg { flex-shrink: 0; }
 .outcome:hover { background: var(--blue-tint); }
 .plan-toggle { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); font-size: 11px; font-weight: 600; color: var(--label); white-space: nowrap; }
 .plan-toggle.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
-.doc-skills { display: flex; flex-direction: column; gap: 6px; }
+.doc-skills { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 1px solid var(--rule); }
 .skill { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--rule); }
 .skill-name { font-family: var(--mono); font-size: 12px; color: var(--ink); }
 .skill-mine { justify-self: start; padding: 0 6px; border-radius: 8px; background: var(--accent-tint); color: var(--accent-ink); font-size: 10px; font-weight: 600; }

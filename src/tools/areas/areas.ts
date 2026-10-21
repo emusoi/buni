@@ -7,7 +7,7 @@ export const AREAS = {
   read: { name: "Read the design", about: "Look at pages, layers, the doc and flows." },
   pages: { name: "Pages and layers", about: "Build and change pages: HTML, styles, text, layers, tokens, icons." },
   components: { name: "Components", about: "Make, place, override, merge and tidy reusable components and variants." },
-  doc: { name: "Design doc", about: "Write sections and record or drop decisions." },
+  doc: { name: "Design doc", about: "Write and remove its sections." },
   flows: { name: "Flows", about: "Link screens, name flows and write journeys." },
 } as const;
 export type Area = keyof typeof AREAS;
@@ -16,7 +16,7 @@ export const AREA_IDS = ["read", "pages", "components", "doc", "flows"] as const
 const IN: Record<Exclude<Area, "pages">, readonly ToolName[]> = {
   read: ["read_tree", "get_node", "read_doc", "read_flows", "read_context", "read_attachment"],
   components: ["set_variant", "add_variant", "swap_component", "detach_instance", "make_component", "find_repeats", "componentize", "create_component", "place_component", "override", "library_report", "merge_components", "rename_component", "delete_component", "move_component", "import_file"],
-  doc: ["set_sources", "write_section", "delete_section", "decide", "drop_decision"],
+  doc: ["set_sources", "write_section", "delete_section"],
   flows: ["connect", "disconnect", "set_flow", "set_journey"],
 };
 
