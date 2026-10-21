@@ -3,7 +3,7 @@
 // agents use, so undo, live sync and the format's checks apply to a person's edits too.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
-import { LINK_KINDS, archCollectionOf, architectureOf, type Architecture, type Doc, type Id } from "buni/format/doc.ts";
+import { LINK_KINDS, MAP_LEVELS, archCollectionOf, architectureOf, type Architecture, type Doc, type Id } from "buni/format/doc.ts";
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
@@ -179,6 +179,14 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     );
   }
 
+  // The levels a person arranges by hand, and whether this one has been.
+  const mapLevel = MAP_LEVELS.find((l) => l === level);
+  const arranged = mapLevel !== undefined && [...Object.values(arch.parts), ...Object.values(arch.workloads)].some((x) => x.place?.[mapLevel]);
+  const tidy = async () => {
+    if (!mapLevel) return;
+    const r = await window.buni.edit("place_architecture", { level: mapLevel, tidy: true });
+    onToast(r.reply);
+  };
   const copyBrief = () => {
     const text = architectureBrief(doc, { level, ...(env ? { environment: env.id } : {}), ...(selected && archCollectionOf(arch, selected) ? { focus: selected } : {}) });
     void navigator.clipboard.writeText(text).then(() => onToast("Copied the brief; paste it to Claude or any agent."), () => onToast("Couldn't copy the brief."));
@@ -231,6 +239,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
           ))}
         </nav>
         <span className="grow" />
+        {view === "map" && arranged && <button type="button" className="arch-btn" onClick={() => void tidy()} title="Put every card on this level back where the layout puts it">Tidy</button>}
         {(view === "map" || view === "flows") && <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />}
         {envs.length > 0 && view !== "proposals" && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
         <button type="button" className={`arch-btn${text ? " on" : ""}`} aria-pressed={text} onClick={() => setText((t) => !t)} title="The whole architecture as YAML, to read and write">Text</button>
@@ -253,6 +262,14 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
           onLink={(from, to, at) => {
             const [a, b] = [partOfBox(arch, from), partOfBox(arch, to)];
             if (a && b && a !== b) setLinking({ from: a, to: b, ...at });
+          }}
+          movable={(b) => mapLevel !== undefined && (arch.parts[b.key] !== undefined || arch.workloads[b.key] !== undefined)}
+          onMove={async (to) => {
+            if (!mapLevel) return false;
+            const at = Object.fromEntries([...to].map(([key, [x, y]]) => [key, { x, y }]));
+            const r = await window.buni.edit("place_architecture", { level: mapLevel, at });
+            if (!r.ok) onToast(r.reply);
+            return r.ok;
           }}
           footer={
             <div className="arch-foot">

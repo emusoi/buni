@@ -3,9 +3,9 @@
 // thing when it is given: what a change leaves out is kept, and null removes an optional field.
 import { z } from "zod";
 import {
-  ARCH_COLLECTIONS, ARCH_STATUSES, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY,
+  ARCH_COLLECTIONS, ARCH_STATUSES, MAP_LEVELS, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY,
   STRATEGIES, WORKLOAD_KINDS, archCollectionOf, architectureOf, workloadName,
-  type ArchCollection, type Architecture, type Doc, type Id, type Workload,
+  type ArchCollection, type Architecture, type Doc, type Id, type MapPlaces, type MapPoint, type Workload,
 } from "../../format/doc.ts";
 import { Reader } from "../../format/parse.ts";
 import type { SourceOwner } from "../../format/sources.ts";
@@ -22,6 +22,9 @@ const TEXT = opt(z.string().min(1));
 const LIST = opt(z.array(z.string().min(1)));
 const STATUS = opt(z.enum(ARCH_STATUSES)).describe("live (default), planned, deprecated, or removed: planned and removed belong to a plan");
 const PLAN = TEXT.describe("Plan id this belongs to: what merge_plan makes live (or, removed, takes out)");
+const POINT = z.object({ x: z.number(), y: z.number() });
+const PLACE = opt(z.object({ system: POINT.optional(), runtime: POINT.optional() }))
+  .describe("Where a person put its card on each map level; place_architecture sets it, left out the map lays it out");
 
 /** `base` with `changes` laid over it: undefined keeps a field, null removes it. Its sources are kept apart. */
 function edited(base: object, changes: Record<string, unknown>): Record<string, unknown> {
@@ -359,6 +362,7 @@ export const architectureTools = {
       managed: TEXT.describe('The managed service it runs as: "RDS Postgres Multi-AZ", "SQS"'),
       status: STATUS,
       plan: PLAN,
+      place: PLACE,
     },
     run: async (doc, a, ctx) => {
       const arch = architectureOf(doc);
@@ -535,6 +539,7 @@ export const architectureTools = {
       nodes: TEXT.describe("Node pool name"),
       status: STATUS,
       plan: PLAN,
+      place: PLACE,
     },
     run: async (doc, a, ctx) => {
       const arch = architectureOf(doc);
@@ -658,6 +663,51 @@ export const architectureTools = {
       const pid = idFor(doc, ctx, old, a.name ?? "play");
       const value = shaped("play", (r) => r.play(edited(old ?? { id: pid }, changes), `plays.${pid}`));
       return { label: `${old ? "Change" : "Add"} play ${value.name}`, ops: [ARCH_PUT.plays(value)], ...saved(!!old, "play", value.id) };
+    },
+  }),
+
+  place_architecture: tool({
+    description:
+      "Where cards sit on the architecture map, a level at a time (system: parts; runtime: workloads and the parts beside the cluster), as a person " +
+      "drags them: at maps an id to its card's top-left {x, y}, or null to lay it out again. tidy puts every card of the level back to the automatic layout.",
+    input: {
+      level: z.enum(MAP_LEVELS),
+      at: z.record(z.string(), POINT.nullable()).optional(),
+      tidy: z.boolean().optional(),
+    },
+    run: async (doc, a) => {
+      const arch = architectureOf(doc);
+      if (!a.at && !a.tidy) throw new ToolError("give at (ids to {x, y}) or tidy");
+      const ops: Op[] = [];
+      // A thing's places without this level's, or with it at `p`; none left is no place at all.
+      const withPlace = <T extends { place?: MapPlaces }>(x: T, p: MapPoint | undefined): Omit<T, "place"> & { place?: MapPlaces } => {
+        const { [a.level]: _, ...rest } = x.place ?? {};
+        const place: MapPlaces = p ? { ...rest, [a.level]: { x: Math.round(p.x), y: Math.round(p.y) } } : rest;
+        const { place: __, ...bare } = x;
+        return Object.keys(place).length ? { ...bare, place } : bare;
+      };
+      const at = new Map(Object.entries(a.at ?? {}));
+      for (const id of at.keys()) {
+        if (!arch.parts[id] && !arch.workloads[id]) throw new ToolError(`"${id}" is no part or workload: only their cards move`);
+        if (a.level === "system" && arch.workloads[id]) throw new ToolError(`"${id}" is a workload: workloads are on the runtime map`);
+      }
+      let moved = 0;
+      for (const x of Object.values(arch.parts)) {
+        if (!at.has(x.id) && !(a.tidy && x.place?.[a.level])) continue;
+        ops.push(ARCH_PUT.parts(withPlace(x, at.get(x.id) ?? undefined)));
+        moved++;
+      }
+      for (const x of Object.values(arch.workloads)) {
+        if (!at.has(x.id) && !(a.tidy && x.place?.[a.level])) continue;
+        ops.push(ARCH_PUT.workloads(withPlace(x, at.get(x.id) ?? undefined)));
+        moved++;
+      }
+      const placed = [...at.values()].filter(Boolean).length;
+      return {
+        label: a.tidy ? `Tidy the ${a.level} map` : `Move ${moved} card${moved === 1 ? "" : "s"} on the ${a.level} map`,
+        ops,
+        reply: a.tidy && !placed ? `Tidied the ${a.level} map: ${moved} card${moved === 1 ? "" : "s"} laid out again.` : `Placed ${placed} card${placed === 1 ? "" : "s"} on the ${a.level} map${moved > placed ? `; ${moved - placed} laid out again` : ""}.`,
+      };
     },
   }),
 

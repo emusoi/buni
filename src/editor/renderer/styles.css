@@ -1947,3 +1947,9 @@ button.arch-frame-title, button.arch-link-label { border: 0; margin: 0; font-fam
 
 /* Text with the inspector beside it: the text gives up some width so the map keeps room. */
 .arch-body > .arch-text:not(:last-child) { width: min(440px, 34vw); }
+
+/* Moving cards by hand: grabbed, a card lifts; guides show what it lines up with. */
+.arch-card.movable { cursor: grab; }
+.arch-plane { user-select: none; -webkit-user-select: none; }
+.arch-card.moving { cursor: grabbing; z-index: 2; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45); border-color: rgba(138, 174, 255, 0.9); }
+.arch-guide { stroke: #f472b6; stroke-width: 1; stroke-dasharray: 3 3; }

@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
-import { codeLayout, columnsOf, nearestBox, revealBy, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { codeLayout, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
 import { planChanges } from "./Proposals.tsx";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
@@ -159,4 +159,37 @@ test("revealing pans only as far as it takes, and shows the start of what can't 
   expect(revealBy(-40, 50, 800)).toBe(64);
   expect(revealBy(780, 50, 800)).toBe(-54);
   expect(revealBy(300, 900, 800)).toBe(-276);
+});
+
+test("a dragged card snaps to a neighbour's edge or middle when near one, with a guide along it, else to the grid", () => {
+  const n: Rect = { x: 100, y: 100, w: 100, h: 50 };
+  // Its left 4px off the neighbour's left: lined up, a vertical guide from the neighbour's top to its own bottom.
+  const a = snapMove({ x: 104, y: 203, w: 100, h: 40 }, [n]);
+  expect([a.x, a.y]).toEqual([100, 200]);
+  expect(a.guides).toEqual([{ axis: "x", at: 100, from: 100, to: 240 }]);
+  // Its middle on the neighbour's middle (150) across.
+  expect(snapMove({ x: 300, y: 103, w: 60, h: 44 }, [n])).toMatchObject({ y: 103, guides: [{ axis: "y", at: 125 }] });
+  // Nothing near: the 8px grid, never past the start of the plane.
+  expect(snapMove({ x: 413, y: 611, w: 10, h: 10 }, [n])).toEqual({ x: 416, y: 608, guides: [] });
+  expect(snapMove({ x: -30, y: -2, w: 10, h: 10 }, [])).toMatchObject({ x: 0, y: 0 });
+});
+
+test("a placed card is drawn where it was put: its frame round it again, its Ingress along with it, links routed round", () => {
+  const auto = runtimeLayout(arch, prod);
+  const w = box(auto, "returns-api-prod")!;
+  const ingress = box(auto, "returns-api-prod#ingress")!;
+  const ns = auto.frames.find((f) => f.key === arch.workloads["returns-api-prod"]!.namespace)!;
+  const l = moved(auto, new Map([["returns-api-prod", [w.x + 40, w.y + 400] as [number, number]]]));
+  expect(box(l, "returns-api-prod")).toMatchObject({ x: w.x + 40, y: w.y + 400 });
+  expect(box(l, "returns-api-prod#ingress")).toMatchObject({ x: ingress.x + 40, y: ingress.y + 400 });
+  const after = l.frames.find((f) => f.key === ns.key)!;
+  const held = ns.holds.map((k) => box(l, k)!);
+  for (const b of held) expect(b.x >= after.x && b.y >= after.y && b.x + b.w <= after.x + after.w && b.y + b.h <= after.y + after.h).toBe(true);
+  // The cluster is drawn round its namespaces as they now are.
+  const cluster = l.frames.find((f) => f.holds.includes(ns.key))!;
+  expect(cluster.y + cluster.h).toBeGreaterThanOrEqual(after.y + after.h);
+  expect(orthogonal(l)).toBe(true);
+  // A placement in the file is the same picture.
+  const placed = runtimeLayout({ ...arch, workloads: { ...arch.workloads, "returns-api-prod": { ...arch.workloads["returns-api-prod"]!, place: { runtime: { x: w.x + 40, y: w.y + 400 } } } } }, prod);
+  expect(placed).toEqual(l);
 });

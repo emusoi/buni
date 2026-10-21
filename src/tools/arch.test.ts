@@ -261,3 +261,33 @@ spec:
     expect((await ws.call("claude", "check_architecture", {})).reply).toStartWith("Architecture: no findings across");
   });
 });
+
+describe("place_architecture", () => {
+  test("puts cards where a person drags them, per level, in the file and its text; tidy and delete take them back out", async () => {
+    const file = join(await mkdtemp(join(tmpdir(), "buni-arch-place-")), "parcel.buni");
+    await copyFile(parcelPath, file);
+    const ws = await Workspace.open(file);
+    const arch = () => ws.view().architecture!;
+    const r = await ws.call("you", "place_architecture", { level: "system", at: { "returns-api": { x: 240.4, y: 96 } } });
+    expect(r).toMatchObject({ ok: true, reply: "Placed 1 card on the system map." });
+    expect(arch().parts["returns-api"]!.place).toEqual({ system: { x: 240, y: 96 } });
+    expect((await ws.call("you", "place_architecture", { level: "runtime", at: { "returns-api": { x: 1, y: 2 }, "returns-api-prod": { x: 300, y: 200 } } })).ok).toBe(true);
+    expect(arch().parts["returns-api"]!.place).toEqual({ system: { x: 240, y: 96 }, runtime: { x: 1, y: 2 } });
+    // It is part of the text, and survives the file being read again.
+    expect((await ws.call("you", "read_architecture_text", {})).reply).toContain("place:");
+    expect(parseDoc(await readFile(file, "utf8")).ok).toBe(true);
+    // Only parts and workloads move, and workloads only on the runtime map.
+    expect((await ws.call("you", "place_architecture", { level: "system", at: { "returns-api-prod": { x: 0, y: 0 } } })).reply).toBe('"returns-api-prod" is a workload: workloads are on the runtime map');
+    expect((await ws.call("you", "place_architecture", { level: "system", at: { prod: { x: 0, y: 0 } } })).ok).toBe(false);
+    // Tidy lays one level out again and leaves the other.
+    expect((await ws.call("you", "place_architecture", { level: "runtime", tidy: true })).reply).toBe("Tidied the runtime map: 2 cards laid out again.");
+    expect(arch().parts["returns-api"]!.place).toEqual({ system: { x: 240, y: 96 } });
+    expect(arch().workloads["returns-api-prod"]!.place).toBeUndefined();
+    // Undone, it is back.
+    await ws.undo();
+    expect(arch().workloads["returns-api-prod"]!.place).toEqual({ runtime: { x: 300, y: 200 } });
+    // A deleted part's place goes with it.
+    expect((await ws.call("you", "delete_architecture", { ids: ["returns-api"] })).ok).toBe(true);
+    expect(JSON.stringify(arch())).not.toContain('"x":240');
+  });
+});

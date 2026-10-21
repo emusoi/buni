@@ -381,6 +381,13 @@ export const PLAY_KINDS = ["request", "release", "failure"] as const;
 /** A Kubernetes object name (RFC 1123 label): what namespaces, workloads and node pools are called in the cluster. */
 export const K8S_NAME = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
 
+/** The architecture map's levels a person can arrange by hand; Code is a table, always laid out. */
+export const MAP_LEVELS = ["system", "runtime"] as const;
+export type MapLevel = (typeof MAP_LEVELS)[number];
+export interface MapPoint { x: number; y: number }
+/** Where a person put a card on each level of the map; a level left out is laid out automatically. */
+export type MapPlaces = Partial<Record<MapLevel, MapPoint>>;
+
 /** What a part, link, workload or migration's plan says about it, and the plan it belongs to. */
 interface Planned {
   status?: ArchStatus;
@@ -410,6 +417,7 @@ export interface Part extends Planned, SourceOwner {
   build?: Build;
   /** "RDS Postgres Multi-AZ": runs as a managed service, not a workload. */
   managed?: string;
+  place?: MapPlaces;
 }
 
 export interface ArchLink extends Planned {
@@ -497,6 +505,8 @@ export interface Workload extends Planned, SourceOwner {
   before?: boolean;
   /** The node pool it runs on. */
   nodes?: string;
+  /** On the runtime map. */
+  place?: MapPlaces;
 }
 
 export interface Release extends SourceOwner {

@@ -20,6 +20,8 @@ export interface MapBox extends Rect {
 export interface MapFrame extends Rect {
   key: string;
   ids: Id[];
+  /** The cards and frames inside it, by key: moved, it is drawn round them again. */
+  holds: string[];
   title: { lead?: string; bold: string; rest?: string; link?: string };
 }
 export interface Caption { x: number; y: number; text: string }
@@ -184,10 +186,49 @@ const bounds = (rects: readonly Rect[]): { width: number; height: number } => ({
   height: Math.max(0, ...rects.map((r) => r.y + r.h)) + M,
 });
 
-function finish(boxes: MapBox[], frames: MapFrame[], captions: Caption[], links: MapLink[]): MapLayout {
-  return { boxes, frames, captions, links: routeLinks(boxes, links), ...bounds([...boxes, ...frames]) };
+/** `at`: where a person put a card, by key; the rest stay where the layout put them. */
+function finish(boxes: MapBox[], frames: MapFrame[], captions: Caption[], links: MapLink[], at: (key: string) => Point | undefined = () => undefined): MapLayout {
+  const auto: MapLayout = { boxes, frames, captions, links: [], ...bounds([...boxes, ...frames]) };
+  const placed = new Map(boxes.flatMap((b) => { const p = at(b.key); return p ? [[b.key, p] as const] : []; }));
+  return placed.size ? moved({ ...auto, links: links.map((l) => ({ ...l, points: [] })) }, placed) : { ...auto, links: routeLinks(boxes, links) };
 }
 
+/** Room a frame keeps round what it holds: its title above, even padding on the other sides. */
+const FRAME = { pad: 16, top: 32 } as const;
+
+/**
+ * `layout` with cards moved to `to` (top-left, by key): a workload's Ingress and Service go along with it, each frame
+ * holding a moved card is drawn round what it holds again, and every link is routed again round the cards.
+ */
+export function moved(layout: MapLayout, to: ReadonlyMap<string, Point>): MapLayout {
+  if (!to.size) return layout;
+  const delta = new Map<string, Point>();
+  for (const b of layout.boxes) {
+    const p = to.get(b.key);
+    if (p) delta.set(b.key, [p[0] - b.x, p[1] - b.y]);
+  }
+  const boxes = layout.boxes.map((b) => {
+    const d = delta.get(b.key) ?? delta.get(b.key.split("#")[0]!);
+    return d && (d[0] || d[1]) ? { ...b, x: b.x + d[0], y: b.y + d[1] } : b;
+  });
+  const rects = new Map<string, Rect>(boxes.map((b) => [b.key, b]));
+  const changed = new Set(boxes.filter((b, i) => b !== layout.boxes[i]).map((b) => b.key));
+  // Inner frames first, so an outer one is drawn round them as they now are.
+  const frames = layout.frames.map((f) => ({ ...f }));
+  for (const f of [...frames].sort((a, b) => a.w * a.h - b.w * b.h)) {
+    const inner = f.holds.flatMap((k) => rects.get(k) ?? []);
+    if (inner.length && f.holds.some((k) => changed.has(k))) {
+      const [x0, y0] = [Math.min(...inner.map((r) => r.x)), Math.min(...inner.map((r) => r.y))];
+      const [x1, y1] = [Math.max(...inner.map((r) => r.x + r.w)), Math.max(...inner.map((r) => r.y + r.h))];
+      Object.assign(f, { x: x0 - FRAME.pad, y: y0 - FRAME.top, w: x1 - x0 + 2 * FRAME.pad, h: y1 - y0 + FRAME.top + FRAME.pad });
+      changed.add(f.key);
+    }
+    rects.set(f.key, f);
+  }
+  return { ...layout, boxes, frames, links: routeLinks(boxes, layout.links), ...bounds([...boxes, ...frames]) };
+}
+
+const xyOf = (p: { x: number; y: number } | undefined): Point | undefined => (p ? [p.x, p.y] : undefined);
 const linkLabel = (l: ArchLink, carries = true) => (carries && l.carries ? `${l.kind} · ${l.carries}` : l.kind);
 const KIND_ORDER: Record<Part["kind"], number> = { client: 0, edge: 1, service: 2, worker: 3, job: 4, queue: 5, cache: 6, store: 7, external: 8 };
 const byKind = (a: Part, b: Part) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.name.localeCompare(b.name);
@@ -288,7 +329,7 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
     const placed = placeColumns(mine, links, M + SYS.pad, y + SYS.pad + 10, card);
     const right = Math.max(...placed.map((b) => b.x + b.w)) + SYS.pad;
     const bottom = Math.max(...placed.map((b) => b.y + b.h)) + SYS.pad;
-    frames.push({ key: g.id, ids: [g.id], x: M, y, w: right - M, h: bottom - y, title: { bold: g.name, rest: ` · ${mine.length} part${mine.length === 1 ? "" : "s"} inside` } });
+    frames.push({ key: g.id, ids: [g.id], holds: placed.map((b) => b.key), x: M, y, w: right - M, h: bottom - y, title: { bold: g.name, rest: ` · ${mine.length} part${mine.length === 1 ? "" : "s"} inside` } });
     boxes.push(...placed);
     y = bottom + 40;
   }
@@ -318,7 +359,7 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
     const [from, to] = l.kind === "subscribes" ? [l.to, l.from] : [l.from, l.to];
     return { key: l.id, ids: [l.id], from, to, label: linkLabel(l), tone: diff(l), ...(outsideIds.has(from) !== outsideIds.has(to) ? { down: true } : {}) };
   });
-  return finish(boxes, frames, captions, mapLinks);
+  return finish(boxes, frames, captions, mapLinks, (key) => xyOf(arch.parts[key]?.place?.system));
 }
 
 // ---- Runtime: edge → the cluster's namespaces and workloads → managed services → outside services. ----
@@ -411,7 +452,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
           wy += h + 14;
         }
         rowBottom = Math.max(rowBottom, wy - 14 + 20, y + 80);
-        frames.push({ key: ns.id, ids: [ns.id], x, y, w, h: 0, title: { lead: "namespace ", bold: ns.name, ...(ns.owners ? { rest: ` · ${ns.owners}` } : {}) } });
+        frames.push({ key: ns.id, ids: [ns.id], holds: boxes.filter((b) => list.some((wl) => b.key === wl.id || b.key.startsWith(`${wl.id}#`))).map((b) => b.key), x, y, w, h: 0, title: { lead: "namespace ", bold: ns.name, ...(ns.owners ? { rest: ` · ${ns.owners}` } : {}) } });
       });
       for (const f of frames.slice(-row.length)) f.h = rowBottom - y;
       y = rowBottom + 20;
@@ -419,7 +460,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
     bottom = Math.max(y, M + 120);
     const git = cluster.gitops;
     frames.unshift({
-      key: cluster.id, ids: [cluster.id], x: left, y: M, w: RT.clusterW, h: bottom - M,
+      key: cluster.id, ids: [cluster.id], holds: frames.map((f) => f.key), x: left, y: M, w: RT.clusterW, h: bottom - M,
       title: { bold: cluster.name, rest: ` · ${cluster.provider === "eks" || cluster.provider === "gke" || cluster.provider === "aks" ? "Kubernetes" : cluster.provider} ${cluster.version ?? ""}${cluster.zones ? ` · ${cluster.zones} zones` : ""}${git ? ` · ${git.tool === "argocd" ? "Argo CD" : "Flux"} syncs ` : ""}`, ...(git ? { link: `${git.repo}${git.path ? `/${git.path}` : ""}` } : {}) },
     });
   } else if (env) {
@@ -433,7 +474,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
       y += h + 14;
     }
     bottom = y + 6;
-    frames.push({ key: `env-${env.id}`, ids: [env.id], x: left, y: M, w: RT.clusterW, h: bottom - M, title: { bold: env.name, rest: env.provider ? ` · runs on ${env.provider}` : "" } });
+    frames.push({ key: `env-${env.id}`, ids: [env.id], holds: built.map((p) => p.id), x: left, y: M, w: RT.clusterW, h: bottom - M, title: { bold: env.name, rest: env.provider ? ` · runs on ${env.provider}` : "" } });
   }
   // Managed services, then outside ones, in a column beside the cluster.
   const sideX = left + RT.clusterW + 40;
@@ -470,7 +511,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
     const stores = new Set(Object.values(arch.migrations).filter((m) => m.release && runs.some((r) => r.id === m.release)).map((m) => m.store));
     for (const s of stores) if (keys.has(s)) links.push({ key: `${w.id}#migrates-${s}`, ids: [w.id], from: w.id, to: s, label: "migrates", tone: "deploy" });
   }
-  return finish(boxes, frames, captions, links.filter((l) => keys.has(l.from) && keys.has(l.to)));
+  return finish(boxes, frames, captions, links.filter((l) => keys.has(l.from) && keys.has(l.to)), (key) => xyOf((arch.workloads[key] ?? arch.parts[key])?.place?.runtime));
 }
 
 // ---- Code: each built part as a row, its code → pipeline → what it makes → what that runs as. ----
@@ -565,4 +606,40 @@ export function revealBy(start: number, len: number, size: number, pad = 24): nu
   if (start < pad || len > size - 2 * pad) return pad - start;
   if (start + len > size - pad) return size - pad - (start + len);
   return 0;
+}
+
+// ---- Moving cards by hand: snapped to an 8px grid, or to a neighbour's edge or middle when near one. ----
+
+export const GRID = 8;
+/** A line drawn while dragging: a vertical one at x (axis "x") or a horizontal one at y, from one end to the other. */
+export interface Guide { axis: "x" | "y"; at: number; from: number; to: number }
+
+/**
+ * Where a card being dragged to `r` lands: on the line of a neighbour's left, middle or right (top, middle, bottom)
+ * within `near` px, with a guide drawn along it, else on the grid. Never left of or above the plane's start.
+ */
+export function snapMove(r: Rect, others: readonly Rect[], near = 6, grid = GRID): { x: number; y: number; guides: Guide[] } {
+  const axis = (pos: number, len: number, key: "x" | "y") => {
+    const size = key === "x" ? "w" : "h";
+    let best: { at: number; offset: number; d: number } | undefined;
+    for (const o of others) {
+      for (const line of [o[key], o[key] + o[size] / 2, o[key] + o[size]]) {
+        for (const offset of [0, len / 2, len]) {
+          const d = Math.abs(pos + offset - line);
+          if (d <= near && (!best || d < best.d)) best = { at: line, offset, d };
+        }
+      }
+    }
+    return best ? { pos: Math.max(0, best.at - best.offset), line: best.at } : { pos: Math.max(0, Math.round(pos / grid) * grid), line: undefined };
+  };
+  const sx = axis(r.x, r.w, "x"), sy = axis(r.y, r.h, "y");
+  const at: Rect = { x: sx.pos, y: sy.pos, w: r.w, h: r.h };
+  const guides: Guide[] = [];
+  for (const [g, key, size, other, otherSize] of [[sx, "x", "w", "y", "h"], [sy, "y", "h", "x", "w"]] as const) {
+    if (g.line === undefined) continue;
+    const on = (o: Rect) => [o[key], o[key] + o[size] / 2, o[key] + o[size]].some((l) => Math.abs(l - g.line!) < 0.5);
+    const lined = [at, ...others.filter(on)];
+    guides.push({ axis: key, at: g.line, from: Math.min(...lined.map((o) => o[other])), to: Math.max(...lined.map((o) => o[other] + o[otherSize])) });
+  }
+  return { x: at.x, y: at.y, guides };
 }

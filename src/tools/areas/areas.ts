@@ -21,7 +21,7 @@ const IN: Record<Exclude<Area, "pages">, readonly ToolName[]> = {
   flows: ["connect", "disconnect", "set_flow", "set_journey"],
   architecture: [
     "set_part", "set_build", "link_parts", "unlink", "set_group", "set_environment", "set_cluster", "set_namespace", "set_workload", "set_release",
-    "set_migration", "set_plan", "set_stage", "set_play", "delete_architecture", "merge_plan", "read_architecture",
+    "set_migration", "set_plan", "set_stage", "set_play", "place_architecture", "delete_architecture", "merge_plan", "read_architecture",
     "read_architecture_text", "write_architecture_text",
     "check_architecture", "export_architecture",
   ],

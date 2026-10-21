@@ -44,6 +44,7 @@ import {
   GROUP_KINDS,
   K8S_NAME,
   LINK_KINDS,
+  MAP_LEVELS,
   MIGRATION_SAFETY,
   PART_KINDS,
   PLAY_KINDS,
@@ -56,6 +57,7 @@ import {
   type ArchStatus,
   type Architecture,
   type Build,
+  type MapPlaces,
   type Cluster,
   type Environment,
   type Group,
@@ -582,7 +584,7 @@ export class Reader {
   }
 
   part(v: unknown, path: string): Part {
-    const o = this.obj(v, path, ["id", "name", "kind", "tech", "about", "status", "plan", "group", "owners", "build", "managed"]);
+    const o = this.obj(v, path, ["id", "name", "kind", "tech", "about", "status", "plan", "group", "owners", "build", "managed", "place"]);
     return {
       id: this.str(o.id, join(path, "id")),
       name: this.str(o.name, join(path, "name")),
@@ -590,7 +592,20 @@ export class Reader {
       ...this.optStrs(o, path, ["tech", "about", "group", "owners", "managed"]),
       ...this.planned(o, path),
       ...(o.build !== undefined ? { build: this.build(o.build, join(path, "build")) } : {}),
+      ...(o.place !== undefined ? { place: this.place(o.place, join(path, "place")) } : {}),
     };
+  }
+
+  /** Where a card was put on each level of the map: { system: { x, y } }. */
+  place(v: unknown, path: string): MapPlaces {
+    const o = this.obj(v, path, MAP_LEVELS);
+    const out: MapPlaces = {};
+    for (const level of MAP_LEVELS) {
+      if (o[level] === undefined) continue;
+      const at = this.obj(o[level], join(path, level), ["x", "y"]);
+      out[level] = { x: this.num(at.x, join(join(path, level), "x")), y: this.num(at.y, join(join(path, level), "y")) };
+    }
+    return out;
   }
 
   build(v: unknown, path: string): Build {
@@ -687,7 +702,7 @@ export class Reader {
   workload(v: unknown, path: string): Workload {
     const o = this.obj(v, path, [
       "id", "part", "environment", "namespace", "kind", "name", "image", "replicas", "scale", "keep", "resources", "probes", "service",
-      "ingress", "config", "secrets", "account", "egress", "schedule", "before", "nodes", "status", "plan",
+      "ingress", "config", "secrets", "account", "egress", "schedule", "before", "nodes", "status", "plan", "place",
     ]);
     const at = (k: string) => join(path, k);
     const w: Workload = {
@@ -729,6 +744,7 @@ export class Reader {
       w.account = { name: this.k8s(a.name, join(at("account"), "name")), ...this.optStrs(a, at("account"), ["role"]) };
     }
     if (o.egress !== undefined) w.egress = this.strs(o.egress, at("egress"));
+    if (o.place !== undefined) w.place = this.place(o.place, at("place"));
     if (this.flag(o.before, at("before"))) w.before = true;
     // A schedule is what makes a CronJob; running before each sync is what a Job does.
     if ((w.kind === "CronJob") !== (w.schedule !== undefined)) this.fail(at("schedule"), w.kind === "CronJob" ? 'a CronJob needs a schedule, e.g. "0 2 * * *"' : "only a CronJob has a schedule");

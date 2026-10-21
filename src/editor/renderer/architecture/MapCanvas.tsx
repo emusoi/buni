@@ -3,7 +3,7 @@ import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, 
 import { Maximize, Minus, Plus } from "lucide-react";
 import type { Id } from "buni/format/doc.ts";
 import type { Card } from "./model.ts";
-import { nearestBox, revealBy, tabOrder, type Direction, type MapBox, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
+import { moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
 
 /** How a flow shows the map: what is lit now, what stays shown, and whether the rest dims. */
 export interface Look {
@@ -78,10 +78,20 @@ export interface MapCanvasProps {
   /** Dragging from a card's edge handle onto another card: which cards have one, and the drop. */
   canLink?: (box: MapBox) => boolean;
   onLink?: (from: MapBox, to: MapBox, at: { x: number; y: number }) => void;
+  /** Dragging a card moves it: which can be, and where they were put (top-left, by key) once dropped. */
+  movable?: (box: MapBox) => boolean;
+  /** Resolves false when the move was refused: the cards go back. */
+  onMove?: (to: ReadonlyMap<string, Point>) => Promise<boolean>;
 }
 
-export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink }: MapCanvasProps) {
+export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink, movable, onMove }: MapCanvasProps) {
   const host = useRef<HTMLDivElement>(null);
+  // Cards being dragged, drawn where they are going with the links routed round them; once dropped, held there until
+  // the file says so (or the move is refused), so nothing jumps back in between.
+  const [moving, setMoving] = useState<{ to: ReadonlyMap<string, Point>; guides: Guide[]; done?: boolean }>();
+  useEffect(() => setMoving((m) => (m?.done ? undefined : m)), [given]);
+  const layout = useMemo(() => (moving ? moved(given, moving.to) : given), [given, moving]);
+  const justMoved = useRef(false);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
   const fit = (keep?: Id) => {
     const r = host.current?.getBoundingClientRect();
@@ -157,6 +167,34 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
     const r = host.current?.getBoundingClientRect();
     return r ? [(cx - r.left - view.x) / view.k, (cy - r.top - view.y) / view.k] : [0, 0];
   };
+  const startMove = (b: MapBox) => (e: React.PointerEvent) => {
+    if (e.button !== 0 || !onMove || !movable?.(b)) return;
+    e.stopPropagation();
+    justMoved.current = false;
+    const start = toPlane(e.clientX, e.clientY);
+    // Its Ingress and Service go along with a workload; the rest are what it lines up with.
+    const others = given.boxes.filter((x) => x !== b && !x.key.startsWith(`${b.key}#`));
+    let to: Map<string, Point> | undefined;
+    const move = (m: PointerEvent) => {
+      const [px, py] = toPlane(m.clientX, m.clientY);
+      const [dx, dy] = [px - start[0], py - start[1]];
+      if (!to && Math.abs(dx) + Math.abs(dy) < 4 / view.k) return;
+      const snap = snapMove({ ...b, x: b.x + dx, y: b.y + dy }, others);
+      to = new Map([[b.key, [snap.x, snap.y]]]);
+      setMoving({ to, guides: snap.guides });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!to) return;
+      justMoved.current = true;
+      setMoving({ to, guides: [], done: true });
+      const mine = to;
+      void onMove(to).then((ok) => { if (!ok) setMoving((m) => (m?.to === mine ? undefined : m)); });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
   const startLink = (from: MapBox) => (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -213,6 +251,9 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
               </g>
             );
           })}
+          {moving?.guides.map((g, i) => (
+            <line key={i} className="arch-guide" x1={g.axis === "x" ? g.at : g.from} x2={g.axis === "x" ? g.at : g.to} y1={g.axis === "x" ? g.from : g.at} y2={g.axis === "x" ? g.to : g.at} />
+          ))}
           {drawing && (
             <path className="arch-drawing" d={`M${drawing.from.x + drawing.from.w} ${drawing.from.y + drawing.from.h / 2} L${drawing.x} ${drawing.y}`} />
           )}
@@ -241,9 +282,14 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
               key={b.key}
               role="button"
               tabIndex={0}
-              className={`arch-card tone-${b.card.tone} ${s}${b.ids[0] !== undefined && b.ids[0] === selected ? " selected" : ""}`}
+              className={`arch-card tone-${b.card.tone} ${s}${b.ids[0] !== undefined && b.ids[0] === selected ? " selected" : ""}${moving?.to.has(b.key) && !moving.done ? " moving" : ""}${movable?.(b) ? " movable" : ""}`}
               style={{ left: b.x, top: b.y, width: b.w, minHeight: b.h }}
-              onClick={() => onSelect?.(own)}
+              onPointerDown={startMove(b)}
+              onClick={() => {
+                // The click that ends a drag isn't a pick.
+                if (justMoved.current) { justMoved.current = false; return; }
+                onSelect?.(own);
+              }}
               data-key={b.key}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(own); return; }
