@@ -691,6 +691,26 @@
         "strategy": {
           "kind": "rolling"
         }
+      },
+      "worker-path": {
+        "checks": [
+          "every new pod ready",
+          "no new dead letters"
+        ],
+        "id": "worker-path",
+        "manifests": "parcel-deploy/apps/worker",
+        "name": "Worker path",
+        "parts": [
+          "worker"
+        ],
+        "path": [
+          "staging",
+          "prod"
+        ],
+        "rollback": "Argo CD syncs the previous tag.",
+        "strategy": {
+          "kind": "rolling"
+        }
       }
     },
     "stages": {
@@ -845,7 +865,13 @@
         "kind": "Job",
         "name": "db-migrate",
         "namespace": "eks-prod-jobs",
-        "part": "returns-api"
+        "part": "returns-api",
+        "resources": {
+          "cpu": "100m",
+          "limitCpu": "500m",
+          "limitMemory": "512Mi",
+          "memory": "256Mi"
+        }
       },
       "db-migrate-staging": {
         "before": true,
@@ -855,7 +881,13 @@
         "kind": "Job",
         "name": "db-migrate",
         "namespace": "eks-staging-jobs",
-        "part": "returns-api"
+        "part": "returns-api",
+        "resources": {
+          "cpu": "100m",
+          "limitCpu": "500m",
+          "limitMemory": "512Mi",
+          "memory": "256Mi"
+        }
       },
       "nightly-labels-prod": {
         "egress": [
@@ -869,7 +901,16 @@
         "name": "nightly-labels",
         "namespace": "eks-prod-jobs",
         "part": "worker",
-        "schedule": "0 2 * * *"
+        "resources": {
+          "cpu": "250m",
+          "limitCpu": "500m",
+          "limitMemory": "1Gi",
+          "memory": "512Mi"
+        },
+        "schedule": "0 2 * * *",
+        "secrets": [
+          "shippo-key"
+        ]
       },
       "returns-api-prod": {
         "account": {
@@ -913,9 +954,6 @@
           "by": "cpu",
           "target": "70%"
         },
-        "secrets": [
-          "shippo-key"
-        ],
         "service": {
           "port": 8080
         }
@@ -941,9 +979,12 @@
         "replicas": {
           "min": 1
         },
-        "secrets": [
-          "shippo-key"
-        ],
+        "resources": {
+          "cpu": "100m",
+          "limitCpu": "500m",
+          "limitMemory": "512Mi",
+          "memory": "256Mi"
+        },
         "service": {
           "port": 8080
         }
@@ -977,6 +1018,8 @@
         },
         "resources": {
           "cpu": "500m",
+          "limitCpu": "1",
+          "limitMemory": "1Gi",
           "memory": "1Gi"
         },
         "scale": {
@@ -984,7 +1027,8 @@
           "target": "SQS depth > 100"
         },
         "secrets": [
-          "shopify-token"
+          "shopify-token",
+          "shippo-key"
         ]
       },
       "worker-staging": {
@@ -994,11 +1038,21 @@
         "kind": "Deployment",
         "namespace": "eks-staging-worker",
         "part": "worker",
+        "probes": {
+          "live": "/live"
+        },
         "replicas": {
           "min": 1
         },
+        "resources": {
+          "cpu": "100m",
+          "limitCpu": "500m",
+          "limitMemory": "512Mi",
+          "memory": "256Mi"
+        },
         "secrets": [
-          "shopify-token"
+          "shopify-token",
+          "shippo-key"
         ]
       }
     }

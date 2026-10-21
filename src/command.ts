@@ -3,7 +3,7 @@
 import { readFileSync, rmSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { homedir, hostname, tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -17,6 +17,7 @@ import { createMcpServer } from "./mcp/server.ts";
 import { loadSkills, readSkill, skillList, SKILLS_DIR } from "./skills/skills.ts";
 import { pageSvg } from "./tools/html.ts";
 import { toolNames, tools, type ToolName } from "./tools/tools.ts";
+import { EXPORT_FORMATS } from "./tools/arch-export.ts";
 import { Workspace } from "./tools/workspace.ts";
 import { renderHeadless, screenAsText, screenshotPng } from "./term/render.ts";
 import { embeddedFont } from "./tools/fontdata.ts";
@@ -44,6 +45,10 @@ usage: buni <command> [args] [--as <name>] [--json]
   context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
   arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
                                     the architecture as a brief: how the app is built, shipped and run
+  arch <file.buni> check            what in it would break or leak at deploy time, worst first, each with its fix
+  arch <file.buni> export manifests|argocd|ci|brief [--env NAME] [--out DIR]
+                                    draft Kubernetes YAML, Argo CD Applications, CI workflows or a Markdown brief,
+                                    written to a folder inside the design's (default architecture/FORMAT)
   call <file.buni> <tool> [json|-]  run one tool; "-" reads the JSON from stdin
   shot <file.buni> <page> <out>     draw a page (id, name or route) to .png (--scale 2; --frames 6 for its motion), .pdf, or .svg (a graphic
                                     that is one svg), with the Chrome, Chromium or Edge on this machine; a terminal
@@ -171,7 +176,9 @@ before and while it is built; not monitoring.
 - Plan a change before code: set_plan {name, issue}, then mark what it adds status "planned" (or "removed") with plan; the
   person merges it (merge_plan) or discards it (delete_architecture). Every set_ tool changes a thing when given its id;
   null removes a field.
-- Read it: buni arch FILE [--level system|runtime|code] [--env prod] [--focus ID] (read_architecture).`;
+- Read it: buni arch FILE [--level system|runtime|code] [--env prod] [--focus ID] (read_architecture).
+- How to design it, layer by layer: buni skills architecture. Then buni arch FILE check (check_architecture) and fix
+  what it finds; buni arch FILE export manifests|argocd|ci|brief writes drafts for the person to review.`;
 
 /** The guide in the SKILL.md shape shared by pi, Codex and Claude Code. */
 const SKILL = `---
@@ -332,11 +339,9 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
   return { ok: r.ok, text: checks ? `${r.reply}\n${checks}` : r.reply };
 }
 
-/** `context` arguments: what to focus on, "page:ID" or "flow:ID". */
-/** buni arch's flags as read_architecture's arguments. */
-function archArgs(args: readonly string[]): Record<string, string> {
+/** Flags as a tool's arguments, by `names` ("--env" → "environment"); anything else is left out. */
+function flagArgs(args: readonly string[], names: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
-  const names: Record<string, string> = { "--level": "level", "--env": "environment", "--focus": "focus" };
   for (let i = 0; i < args.length; i++) {
     const key = names[args[i] ?? ""];
     const value = args[i + 1];
@@ -345,6 +350,22 @@ function archArgs(args: readonly string[]): Record<string, string> {
   return out;
 }
 
+const ARCH_USAGE = "usage: buni arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID] | check | export manifests|argocd|ci|brief [--env NAME] [--out DIR]";
+
+/**
+ * buni arch as a tool call: check, export FORMAT, or the brief; a usage line when it is neither. An export's --out
+ * is read from where the command runs and handed on relative to the design, whose folder it has to be inside.
+ */
+function archCall(file: string, args: readonly string[]): { tool: ToolName; args: Record<string, string> } | undefined {
+  const [sub, format, ...rest] = args;
+  if (sub === "check") return { tool: "check_architecture", args: {} };
+  if (sub !== "export") return sub === undefined || sub.startsWith("--") ? { tool: "read_architecture", args: flagArgs(args, { "--level": "level", "--env": "environment", "--focus": "focus" }) } : undefined;
+  if (format === undefined || !EXPORT_FORMATS.some((f) => f === format)) return undefined;
+  const { out, ...flags } = flagArgs(rest, { "--env": "environment", "--out": "out" });
+  return { tool: "export_architecture", args: { format, ...flags, ...(out !== undefined ? { out: relative(dirname(resolve(file)), resolve(out)) } : {}) } };
+}
+
+/** `context` arguments: what to focus on, "page:ID" or "flow:ID". */
 function contextArgs(args: readonly string[]): { focus?: string } {
   const focus = args[0];
   return focus ? { focus } : {};
@@ -381,8 +402,15 @@ async function remoteCommand(cmd: string | undefined, name: string, args: readon
       return out(await tool("read_tree", args[0] ? { root: args[0] } : {}));
     case "context":
       return out(await tool("read_context", contextArgs(args)));
-    case "arch":
-      return out(await tool("read_architecture", archArgs(args)));
+    case "arch": {
+      const c = archCall(name, args);
+      // Drafts are files on this machine; the server's folder is no place for them.
+      if (!c || c.tool === "export_architecture") {
+        console.error(c ? "buni arch export works on local files: download the design first." : ARCH_USAGE);
+        return 2;
+      }
+      return out(await tool(c.tool, c.args));
+    }
     case "call": {
       const [name, arg] = args;
       if (!name) {
@@ -644,8 +672,14 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       return out(await run(file, as, "read_tree", args[0] ? { root: args[0] } : {}));
     case "context":
       return out(await run(file, as, "read_context", contextArgs(args)));
-    case "arch":
-      return out(await run(file, as, "read_architecture", archArgs(args)));
+    case "arch": {
+      const c = archCall(file, args);
+      if (!c) {
+        console.error(ARCH_USAGE);
+        return 2;
+      }
+      return out(await run(file, as, c.tool, c.args));
+    }
     case "call": {
       const [name, arg] = args;
       if (!name) {

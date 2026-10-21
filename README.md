@@ -22,6 +22,10 @@ buni open design.buni
 install `buni-tui` separately and run `buni-tui open design.buni`, or `buni-tui open` to wait for an agent attachment.
 Run `buni --help` for all commands.
 
+`buni arch design.buni` briefs the architecture behind the screens (how the app is built and shipped);
+`buni arch design.buni check` reviews it, and `buni arch design.buni export manifests|argocd|ci|brief` writes draft
+Kubernetes YAML, Argo CD Applications, GitHub Actions workflows or a Markdown brief to review.
+
 ## Coding agents
 
 Run `buni skill` for CLI instructions, or configure your agent's MCP client:

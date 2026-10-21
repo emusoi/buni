@@ -5,6 +5,13 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: `check_architecture` reviews the architecture worst first, each finding naming the thing and the call that
+  fixes it (probes and limits, secrets, release checks and rollback, canaries without steps or a Rollout, migrations
+  nothing runs first, ingress with no edge, egress the links don't match, missing add-ons, planned things nothing links
+  to). `export_architecture` writes drafts into a folder inside the design's: Kubernetes manifests per workload with a
+  kustomization per namespace, Argo CD Applications, GitHub Actions workflows from each part's build, or the brief as
+  Markdown; each file says it is a draft. `buni arch FILE check` and `buni arch FILE export FORMAT [--env] [--out]`.
+  A new bundled skill, `architecture`, walks an agent through designing the software path with the tools.
 - Added: architecture, rebuilt as its own model under one `architecture` key: parts and links, groups, how each part
   is built, environments, Kubernetes clusters, namespaces and workloads, releases and migrations, plans (planned
   changes, merged by a person), the software path's stages, and plays (a request, release or failure step by step).

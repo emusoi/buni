@@ -10,6 +10,8 @@ import {
 import { Reader } from "../../format/parse.ts";
 import type { SourceOwner } from "../../format/sources.ts";
 import { ARCH_PUT, type Op } from "../../oplog/oplog.ts";
+import { checkArchitecture, checkText } from "../arch-check.ts";
+import { EXPORT_FORMATS, exportArchitecture } from "../arch-export.ts";
 import { Ids, type Tool, type ToolContext, ToolError, tool } from "../kit.ts";
 
 const ID = z.string().optional().describe("Id to change; omit to create");
@@ -708,5 +710,43 @@ export const architectureTools = {
         ...(a.focus !== undefined ? { focus: a.focus } : {}),
       }),
     }),
+  }),
+
+  check_architecture: tool({
+    description:
+      "Check the architecture the way a platform reviewer would, worst first, each finding naming the thing it is on and the call that fixes it: " +
+      "workloads with no probes or limits, secrets nothing holds or the wrong part holds, releases with no checks or rollback, canaries with no steps " +
+      "or no Rollout, migrations nothing runs first, ingress with no edge, egress the links don't match, add-ons a cluster lacks, planned things " +
+      "nothing links to. Read-only; run it before exporting.",
+    input: {},
+    run: async (doc) => ({
+      label: "Check architecture",
+      ops: [],
+      reply: doc.architecture ? checkText(architectureOf(doc), checkArchitecture(doc)) : "(no architecture yet: set_part, link_parts and set_workload start one)",
+    }),
+  }),
+
+  export_architecture: tool({
+    description:
+      "Write the architecture as draft files for a person to review, in a folder inside the design's folder: manifests (per workload: Deployment or " +
+      "Argo Rollout with its canary steps, Service, Ingress, HPA or KEDA ScaledObject, PodDisruptionBudget, ServiceAccount with its role, NetworkPolicy " +
+      "from egress, ExternalSecrets, Jobs that run before a sync as PreSync hooks; a kustomization per namespace), argocd (an Application per part per " +
+      "environment), ci (a GitHub Actions workflow per part from its build) or brief (read_architecture as Markdown). Each file says it is a draft.",
+    input: {
+      format: z.enum(EXPORT_FORMATS),
+      environment: z.string().optional().describe("Environment id or name; all of them when omitted"),
+      out: z.string().min(1).optional().describe('Folder relative to the design, inside its folder; default "architecture/FORMAT"'),
+    },
+    run: async (doc, a, ctx) => {
+      if (!ctx.writeFiles) throw new ToolError("This host can't write files; run buni arch FILE export on the machine with the design.");
+      const files = exportArchitecture(doc, a.format, a.environment, () => architectureBrief(doc, a.environment === undefined ? {} : { environment: a.environment }));
+      if (files.size === 0) {
+        const why = { manifests: "no workloads run there", argocd: "no cluster there is synced by Argo CD", ci: "no part has a build", brief: "" }[a.format];
+        throw new ToolError(`Nothing to export as ${a.format}: ${why}.`);
+      }
+      const out = a.out ?? `architecture/${a.format}`;
+      const written = await ctx.writeFiles(out, files);
+      return { label: `Export architecture ${a.format}`, ops: [], reply: `Wrote ${written.length} draft file${written.length === 1 ? "" : "s"} to ${out}/ next to the design; review before applying:\n${written.map((f) => `- ${f}`).join("\n")}` };
+    },
   }),
 } satisfies Record<string, Tool>;

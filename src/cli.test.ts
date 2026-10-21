@@ -73,3 +73,24 @@ test("failed CLI calls release the file lock", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("arch checks the architecture and exports drafts next to the design", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-arch-"));
+  try {
+    const file = join(dir, "parcel.buni");
+    await writeFile(file, await readFile(join(import.meta.dir, "..", "examples", "parcel.buni"), "utf8"));
+    const check = cli("arch", file, "check");
+    expect(check.code).toBe(0);
+    expect(check.out).toContain("Architecture: no findings");
+    const out = join(dir, "deploy");
+    const exported = cli("arch", file, "export", "manifests", "--env", "prod", "--out", out);
+    expect(exported.code).toBe(0);
+    expect(exported.out).toContain("draft files to deploy/");
+    expect((await readdir(join(out, "prod"))).sort()).toEqual(["jobs", "returns", "worker"]);
+    expect(await readFile(join(out, "prod", "returns", "returns-api.yaml"), "utf8")).toContain("kind: Rollout");
+    expect(cli("arch", file, "export", "ci", "--out", join(dir, "..")).code).toBe(1);
+    expect(cli("arch", file, "export", "helm").code).toBe(2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

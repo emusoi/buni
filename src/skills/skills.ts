@@ -22,6 +22,7 @@ import palettes from "./design/palettes.md" with { type: "text" };
 import styles from "./design/styles.md" with { type: "text" };
 import philosophies from "./design/philosophies.md" with { type: "text" };
 import tells from "./design/tells.md" with { type: "text" };
+import architecture from "./design/architecture.md" with { type: "text" };
 
 /** Design guidance an agent reads before it designs: when it applies (description) and what to do (body). */
 export interface Skill {
@@ -50,8 +51,9 @@ function parseSkill(raw: string, source: Skill["source"], fallbackName: string):
   return { name: field("name") ?? fallbackName, description: field("description") ?? "", body: (m ? text.slice(m[0].length) : text).trim(), source };
 }
 
-// The order is the reading order: foundations, direction and its guards, the craft areas, then terminal screens.
-const BUNDLED = [principles, direction, tells, palettes, styles, philosophies, critique, accessibility, color, typography, layout, depth, components, interaction, uxWriting, motion, mobile, branding, logo, terminal].map((t) => parseSkill(t, "buni", "skill"));
+// The order is the reading order: foundations, direction and its guards, the craft areas, terminal screens, then the
+// architecture behind the screens.
+const BUNDLED = [principles, direction, tells, palettes, styles, philosophies, critique, accessibility, color, typography, layout, depth, components, interaction, uxWriting, motion, mobile, branding, logo, terminal, architecture].map((t) => parseSkill(t, "buni", "skill"));
 
 /** Skills every design request needs, sent with the instructions so the provider caches them once for every chat. */
 export const CORE = ["principles", "direction", "tells", "styles", "philosophies"];

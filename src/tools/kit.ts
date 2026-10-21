@@ -25,6 +25,8 @@ export interface ToolContext {
   saveImportImage: (base64: string, mime: string) => Promise<string>;
   /** The files this one imports, for tools that read their components and tokens too. */
   imported?: Doc;
+  /** Writes text files under `dir`, a folder inside the design's folder (refused anywhere else); where the host can. */
+  writeFiles?: (dir: string, files: Map<string, string>) => Promise<string[]>;
 }
 
 /** Hands out ids unused anywhere in the document and by each other. */

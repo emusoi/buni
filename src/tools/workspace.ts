@@ -363,6 +363,12 @@ export class Workspace {
         } catch (e) { throw new ToolError(e instanceof Error ? e.message : String(e)); }
       },
       ...(this.session.context ? { imported: this.session.context } : {}),
+      writeFiles: (dir, files) => {
+        const home = dirname(this.path);
+        const root = resolve(home, dir);
+        if (!root.startsWith(home + sep)) throw new ToolError("Write into a folder inside the design's folder.");
+        return this.writeFiles(root, files);
+      },
     };
   }
 
