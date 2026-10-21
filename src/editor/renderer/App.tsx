@@ -333,7 +333,8 @@ export function App({ snap }: { snap: Snapshot }) {
       void window.buni.edit(tool, args).then((r) => { if (!r.ok) setToast(r.reply); else if (pick) setSelected(pick(r.reply)); });
     const onKey = (e: KeyboardEvent) => {
       const n = selected ? doc.nodes[selected] : undefined;
-      if (!n || typing(e)) return;
+      // Architecture mode has keys of its own; a layer left selected on a page isn't what they mean.
+      if (!n || typing(e) || mode === "architecture") return;
       const mod = e.metaKey || e.ctrlKey;
       const siblings = n.parent ? childrenOf(doc, n.parent) : [];
       const at = siblings.findIndex((x) => x.id === n.id);
@@ -396,7 +397,7 @@ export function App({ snap }: { snap: Snapshot }) {
     document.addEventListener("copy", onCopy);
     document.addEventListener("paste", onPaste);
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
-  }, [selected, also, doc, page]);
+  }, [selected, also, doc, page, mode]);
   const [toast, setToast] = useState<string>();
   // The open page at every width side by side, in place of the canvas.
   const [comparing, setComparing] = useState(false);

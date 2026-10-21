@@ -25,8 +25,9 @@ export const EDIT_TOOLS = [
   "make_component", "create_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "comment", "merge_components", "delete_component", "rename_component",
   "set_motion", "connect", "disconnect", "set_flow", "set_screen",
-  // A plan's Merge and Discard in Proposals; the rest of the architecture is edited by agents.
-  "merge_plan", "delete_architecture",
+  // Architecture mode: a person writes the architecture with the same tools agents use.
+  "merge_plan", "delete_architecture", "set_part", "link_parts", "unlink", "set_group", "set_build", "set_environment", "set_cluster",
+  "set_namespace", "set_workload", "set_release", "set_migration", "set_plan", "set_stage", "set_play",
   // The architecture as text, read and written whole.
   "read_architecture_text", "write_architecture_text",
 ] as const;

@@ -1,21 +1,22 @@
 // The software path (idea to respond) and the deploy path (commit to production) as lanes, left to right.
 import type { ReactNode } from "react";
-import { workloadName, type Architecture, type Environment, type Stage } from "buni/format/doc.ts";
+import { workloadName, type Architecture, type Environment, type Id, type Stage } from "buni/format/doc.ts";
 import { environmentsInOrder, releasesOf, strategyText } from "./model.ts";
 import { edgeChain } from "./layout.ts";
 
-export function Lane({ title, sub, live, gate, children }: { title: string; sub?: string | undefined; live?: boolean; gate?: boolean; children: ReactNode }) {
+export function Lane({ title, sub, live, gate, children, onPick }: { title: string; sub?: string | undefined; live?: boolean; gate?: boolean; children: ReactNode; onPick?: (() => void) | undefined }) {
   return (
     <section className={`arch-lane${live ? " current" : ""}`}>
-      <div className="arch-lane-head"><b>{title}</b>{sub && <span className="arch-sub">{sub}</span>}</div>
+      <div className="arch-lane-head">{onPick ? <button type="button" className="arch-lane-title" onClick={onPick} title={`Edit ${title}`}>{title}</button> : <b>{title}</b>}{sub && <span className="arch-sub">{sub}</span>}</div>
       {children}
       {gate && <span className="arch-gate-mark" aria-hidden>◆</span>}
     </section>
   );
 }
-export const Item = ({ title, lines, children }: { title: string; lines?: (string | undefined)[]; children?: ReactNode }) => (
-  <div className="arch-item"><b>{title}</b>{lines?.filter(Boolean).map((l, i) => <span key={i}>{l}</span>)}{children}</div>
-);
+export const Item = ({ title, lines, children, onPick }: { title: string; lines?: (string | undefined)[]; children?: ReactNode; onPick?: (() => void) | undefined }) => {
+  const body = <><b>{title}</b>{lines?.filter(Boolean).map((l, i) => <span key={i}>{l}</span>)}{children}</>;
+  return onPick ? <button type="button" className="arch-item pickable" onClick={onPick}>{body}</button> : <div className="arch-item">{body}</div>;
+};
 export const Bullets = ({ items }: { items: readonly string[] }) => <>{items.map((s) => <div key={s} className="arch-bullet"><i />{s}</div>)}</>;
 export const Pills = ({ items, link, onClick }: { items: readonly string[]; link?: boolean; onClick?: () => void }) => (
   <div className="arch-pills">{items.map((s) => onClick ? <button key={s} type="button" className="arch-pill link" onClick={onClick}>{s}</button> : <span key={s} className={`arch-pill${link ? " link" : ""}`}>{s}</span>)}</div>
@@ -31,9 +32,9 @@ function stepCard(step: string) {
   return m ? <Item key={step} title={m[1]!.trim()} lines={[m[2]!.trim()]} /> : <Item key={step} title={step} />;
 }
 
-export function SoftwarePath({ arch, env, onSee }: { arch: Architecture; env: Environment | undefined; onSee: (view: "deploy" | "kubernetes") => void }) {
+export function SoftwarePath({ arch, env, onSee, onSelect }: { arch: Architecture; env: Environment | undefined; onSee: (view: "deploy" | "kubernetes") => void; onSelect: (id: Id) => void }) {
   const stages = Object.values(arch.stages).sort((a, b) => a.order - b.order);
-  if (!stages.length) return <div className="arch-flows-empty"><p>No software path yet. Ask your coding agent to lay it out with <code>set_stage</code>: idea, code, review, build, ship, run, watch, respond, and the gate between each.</p></div>;
+  if (!stages.length) return <div className="arch-flows-empty"><p>No software path yet. Add a stage with + Add, or ask your coding agent to lay it out with <code>set_stage</code>: idea, code, review, build, ship, run, watch, respond, and the gate between each.</p></div>;
   const cluster = env?.cluster ? arch.clusters[env.cluster] : undefined;
   const running = Object.values(arch.workloads).filter((w) => w.environment === env?.id && !w.before && w.kind !== "Job" && w.kind !== "CronJob" && w.status !== "planned");
   const managed = Object.values(arch.parts).filter((p) => p.managed);
@@ -43,7 +44,7 @@ export function SoftwarePath({ arch, env, onSee }: { arch: Architecture; env: En
     <div className="arch-page">
       <div className="arch-lanes">
         {stages.map((s, i) => (
-          <Lane key={s.id} title={s.name} sub={isRun(s) && cluster ? `${cluster.name}${env?.region ? ` · ${env.region}` : ""}` : s.tools} live={isRun(s)}>
+          <Lane key={s.id} title={s.name} sub={isRun(s) && cluster ? `${cluster.name}${env?.region ? ` · ${env.region}` : ""}` : s.tools} live={isRun(s)} onPick={() => onSelect(s.id)}>
             {isRun(s) ? (
               <>
                 {edgeChain(arch).length > 0 && <Item title="Edge" lines={[edgeChain(arch).map((p) => p.name).join(" → ")]} />}
@@ -65,7 +66,7 @@ export function SoftwarePath({ arch, env, onSee }: { arch: Architecture; env: En
   );
 }
 
-export function DeployPath({ arch, env }: { arch: Architecture; env: Environment | undefined }) {
+export function DeployPath({ arch, env, onSelect }: { arch: Architecture; env: Environment | undefined; onSelect: (id: Id) => void }) {
   const envs = environmentsInOrder(arch);
   const built = Object.values(arch.parts).filter((p) => p.build);
   const repos = [...new Set(built.map((p) => p.build!.repo))];
@@ -96,7 +97,7 @@ export function DeployPath({ arch, env }: { arch: Architecture; env: Environment
           const here = Object.values(arch.workloads).filter((w) => w.environment === e.id && !w.before)
             .sort((a, b) => Number(a.status === "planned") - Number(b.status === "planned") || Number(a.kind === "CronJob") - Number(b.kind === "CronJob") || a.id.localeCompare(b.id));
           return (
-            <Lane key={e.id} title={e.name} sub={[e.preview ? "one per pull request" : undefined, e.provider, e.region].filter(Boolean).join(" · ")} live={live} gate={!last}>
+            <Lane key={e.id} title={e.name} sub={[e.preview ? "one per pull request" : undefined, e.provider, e.region].filter(Boolean).join(" · ")} live={live} gate={!last} onPick={() => onSelect(e.id)}>
               {last && edge.length > 0 && (
                 <div className="arch-edge">{edge.map((p, k) => <span key={p.id} className="arch-edge-hop"><span className="arch-pill link">{p.name}</span>{k < edge.length - 1 && <span>→</span>}</span>)}</div>
               )}
@@ -105,7 +106,7 @@ export function DeployPath({ arch, env }: { arch: Architecture; env: Environment
                   {here.map((w) => {
                     const r = releasesOf(arch, w.part).find((x) => x.path.includes(e.id));
                     return (
-                      <Item key={w.id} title={w.kind === "CronJob" || w.kind === "Job" ? workloadName(arch, w) : arch.parts[w.part]?.name ?? w.part} lines={[`${w.kind.toLowerCase()} ×${w.replicas?.min ?? 1}${w.replicas?.max && w.replicas.max > w.replicas.min ? `–${w.replicas.max}` : ""} · ${cluster.name}${w.status === "planned" ? " · planned" : ""}`]}>
+                      <Item key={w.id} onPick={() => onSelect(w.id)} title={w.kind === "CronJob" || w.kind === "Job" ? workloadName(arch, w) : arch.parts[w.part]?.name ?? w.part} lines={[`${w.kind.toLowerCase()} ×${w.replicas?.min ?? 1}${w.replicas?.max && w.replicas.max > w.replicas.min ? `–${w.replicas.max}` : ""} · ${cluster.name}${w.status === "planned" ? " · planned" : ""}`]}>
                         {last && r && r.strategy.kind !== "rolling" && <span className="arch-green">{strategyText(r)}{r.checks?.[0] ? `, rolls back unless ${r.checks[0]}` : ""}</span>}
                       </Item>
                     );

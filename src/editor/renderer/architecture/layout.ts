@@ -275,7 +275,8 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
   const grouped = parts.filter((p) => p.group !== undefined && arch.groups[p.group] && p.kind !== "edge");
   const inGroup = new Set(grouped.map((p) => p.id));
   const linked = (p: Part) => links.some((l) => (l.from === p.id && inGroup.has(l.to)) || (l.to === p.id && inGroup.has(l.from)));
-  const outside = parts.filter((p) => !inGroup.has(p.id) && p.kind !== "edge" && (p.kind === "external" || linked(p)));
+  // Outside: what the system calls out to, and a part of no group that is neither managed nor linked yet (one just added).
+  const outside = parts.filter((p) => !inGroup.has(p.id) && p.kind !== "edge" && (p.kind === "external" || linked(p) || p.managed === undefined));
   const boxes: MapBox[] = [];
   const frames: MapFrame[] = [];
   const captions: Caption[] = [];

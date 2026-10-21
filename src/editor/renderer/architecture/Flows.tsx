@@ -16,12 +16,12 @@ const HEADING: Record<Kind, string> = { request: "Flow", release: "Release", fai
 export const CANARY_HEIGHT = 222;
 export const levelFor = (kind: Kind): Level => (kind === "request" ? "system" : "runtime");
 
-export function Flows({ arch, layout, level, env, play: playId, step, onPlay, onStep, onAsk }: {
+export function Flows({ arch, layout, level, env, play: playId, step, onPlay, onStep, onSelect }: {
   arch: Architecture; layout: MapLayout; level: Level; env: Environment | undefined;
   play: Id | undefined; step: number;
   onPlay: (id: Id) => void; onStep: (i: number) => void;
-  /** Copies a request for a coding agent. */
-  onAsk: (request: string) => void;
+  /** Opens a play or a release in the inspector. */
+  onSelect: (id: Id) => void;
 }) {
   const plays = Object.values(arch.plays).sort((a, b) => a.name.localeCompare(b.name));
   const play = (playId ? arch.plays[playId] : undefined) ?? plays[0];
@@ -52,7 +52,7 @@ export function Flows({ arch, layout, level, env, play: playId, step, onPlay, on
     return out;
   }, [layout, look]);
 
-  if (!play) return <div className="arch-flows-empty"><p>No flows yet. Ask your coding agent to add one with <code>set_play</code>: a request through the parts, a release through its environments, or what happens when a check fails.</p></div>;
+  if (!play) return <div className="arch-flows-empty"><p>No flows yet. Add a play with + Add, or ask your coding agent to add one with <code>set_play</code>: a request through the parts, a release through its environments, or what happens when a check fails.</p></div>;
 
   const kind = play.kind;
   const release = play.release ? arch.releases[play.release] : undefined;
@@ -102,7 +102,7 @@ export function Flows({ arch, layout, level, env, play: playId, step, onPlay, on
             </div>
           )}
           <div className="arch-play-title">
-            <span className="arch-sub">{HEADING[kind]}</span>
+            <span className="arch-sub">{HEADING[kind]} · <button type="button" className="arch-inline-link" onClick={() => onSelect(play.id)}>Edit play</button></span>
             <b>{release && plan && kind === "release" ? `${release.name} · ${plan.name}` : play.name}</b>
             {release && kind !== "request" && (
               <span className="arch-sub">{[plan?.issue, release.parts.map((p) => arch.parts[p]?.name ?? p).join(" + "), `to ${arch.environments[release.path.at(-1) ?? ""]?.name ?? ""}`].filter(Boolean).join(" · ")}</span>
@@ -169,7 +169,7 @@ export function Flows({ arch, layout, level, env, play: playId, step, onPlay, on
               ))}
             </div>
             {release && (
-              <button type="button" className="arch-btn" onClick={() => onAsk(`In the architecture, change how release ${release.name} (id ${release.id}) ships: its path (${release.path.join(" → ")}), strategy (${release.strategy.kind}), checks and rollback. Use set_release.`)}>
+              <button type="button" className="arch-btn" onClick={() => onSelect(release.id)}>
                 Edit the release path
               </button>
             )}

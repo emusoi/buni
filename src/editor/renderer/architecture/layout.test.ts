@@ -117,3 +117,10 @@ test("a proposal draws its plan's additions as added, and lists them", () => {
   expect(changes.every((c) => c.added)).toBe(true);
   expect(changes.some((c) => c.text.startsWith("Credit ledger, a new"))).toBe(true);
 });
+
+test("a part just added, in no group and linked to nothing, still shows on the System map", () => {
+  const fresh = { ...arch, parts: { ...arch.parts, lone: { id: "lone", name: "Lone", kind: "service" as const } } };
+  expect(box(systemLayout(fresh), "lone")).toBeDefined();
+  // Managed services nothing links to (the registry, the vault) stay off it, as before.
+  expect(box(systemLayout(arch), "ecr")).toBeUndefined();
+});

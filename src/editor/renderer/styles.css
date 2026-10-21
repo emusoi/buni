@@ -1719,6 +1719,74 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .arch-btn:hover { background: #27272a; }
 .arch-btn.primary { border-color: transparent; background: #ededef; color: #111113; font-weight: 600; }
 .arch-btn.primary:hover { background: #ffffff; }
+.arch-btn.danger { border-color: rgba(255, 138, 128, 0.5); color: var(--arch-red); }
+.arch-btn.danger:hover, .arch-btn.danger:focus-visible { background: rgba(255, 138, 128, 0.12); }
+.arch-btn:focus-visible, .arch-text-btn:focus-visible, .arch-inline-link:focus-visible, .arch-lane-title:focus-visible, .arch-item.pickable:focus-visible { outline: 2px solid var(--arch-blue); outline-offset: 2px; }
+.arch-views .arch-btn { display: inline-flex; align-items: center; gap: 5px; height: 28px; }
+
+/* Writing the architecture: quiet fields that read like the rows they replace until hovered or focused. */
+.arch-title-field { margin: 2px 0 6px; }
+.arch-field { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; line-height: 1.4; }
+.arch-field-key { flex: none; width: 84px; padding-top: 5px; color: #a1a1aa; }
+.arch-field-value { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.arch-input { box-sizing: border-box; width: 100%; min-width: 0; height: 26px; padding: 0 6px; margin-left: -6px; border-radius: 6px; border: 1px solid transparent; background: none; color: #ededef; font: inherit; font-size: 12px; outline: none; }
+.arch-field-value .arch-input { width: calc(100% + 6px); }
+textarea.arch-input { height: auto; min-height: 26px; padding: 4px 6px; resize: vertical; line-height: 1.45; }
+select.arch-input { appearance: none; cursor: pointer; }
+.arch-input::placeholder { color: #52525b; }
+.arch-input:hover { border-color: var(--arch-line); }
+.arch-input:focus { border-color: rgba(138, 174, 255, 0.7); background: #18181b; }
+.arch-input.bad { border-color: rgba(255, 138, 128, 0.6); }
+.arch-input.title { height: 32px; font-size: 18px; font-weight: 700; }
+.arch-input.strong { font-weight: 600; }
+.arch-field-error { font-size: 11px; line-height: 1.35; color: var(--arch-red); white-space: pre-wrap; }
+.arch-check { width: 14px; height: 14px; margin: 6px 0 0; accent-color: var(--arch-blue); }
+.arch-inline-check { display: inline-flex; align-items: center; gap: 5px; color: #a1a1aa; }
+.arch-inline-check .arch-check { margin: 0; }
+.arch-chips-edit { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-height: 26px; }
+.arch-chips-edit .arch-chip { display: inline-flex; align-items: center; gap: 2px; padding-right: 2px; color: #ededef; }
+.arch-chips-edit .arch-chip button { width: 14px; height: 14px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 9999px; background: none; color: #8b8b94; }
+.arch-chips-edit .arch-chip button:hover { color: #ededef; background: #27272a; }
+.arch-chips-edit .arch-chip-input, .arch-chips-edit .arch-add-pick { flex: 1; width: auto; min-width: 70px; margin-left: 0; height: 22px; }
+.arch-sub-form { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 8px 14px; border-radius: 8px; border: 1px solid var(--arch-line); }
+.arch-sub-head { display: flex; align-items: center; gap: 6px; }
+.arch-sub-grid { display: grid; grid-template-columns: 1fr 48px 48px auto; gap: 4px; align-items: center; }
+.arch-step-n.small { width: 18px; height: 18px; font-size: 10px; border-color: #8b8b94; color: #a1a1aa; }
+.arch-icon-btn { flex: none; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: #8b8b94; }
+.arch-icon-btn:hover { background: #27272a; color: #ededef; }
+.arch-icon-btn:disabled { opacity: 0.3; }
+.arch-close { position: sticky; top: 0; align-self: flex-end; margin: -8px -8px -14px 0; z-index: 1; }
+.arch-text-btn { align-self: flex-start; padding: 2px 0; border: 0; background: none; color: #a1a1aa; font-size: 12px; }
+.arch-text-btn:hover { color: #ededef; }
+.arch-text-btn.danger { color: #a1a1aa; }
+.arch-text-btn.danger:hover { color: var(--arch-red); }
+.arch-inline-link { padding: 0; border: 0; background: none; font: inherit; color: var(--arch-blue); cursor: pointer; }
+.arch-inline-link:hover { text-decoration: underline; }
+button.arch-planned { text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+button.arch-planned:hover { border-color: rgba(196, 167, 255, 0.85); }
+.arch-delete { display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid var(--arch-line); font-size: 12px; line-height: 1.45; color: #a1a1aa; }
+.arch-delete.armed { padding: 10px; margin-top: 14px; border-radius: 8px; border: 1px solid rgba(255, 138, 128, 0.45); }
+.arch-delete b { color: #ededef; }
+.arch-delete-buttons { display: flex; gap: 8px; }
+.arch-add { position: relative; flex: none; }
+.arch-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 200px; padding: 4px; display: flex; flex-direction: column; border-radius: 10px; background: #1c1c20; border: 1px solid var(--line-2); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.arch-menu button { display: flex; justify-content: space-between; gap: 12px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font-size: 12px; color: #ededef; text-align: left; white-space: nowrap; }
+.arch-menu button:hover:not(:disabled), .arch-menu button:focus { background: #27272a; outline: none; }
+.arch-menu button:disabled { color: #52525b; }
+.arch-menu button:disabled .arch-sub { color: #52525b; font-size: 11px; }
+.arch-menu > .arch-sub { padding: 4px 10px 6px; font-size: 11px; }
+.arch-link-kind { position: fixed; right: auto; top: auto; min-width: 150px; }
+.arch-handle { position: absolute; right: -6px; top: 50%; width: 10px; height: 10px; margin-top: -5px; box-sizing: border-box; border-radius: 9999px; border: 1.5px solid var(--arch-blue); background: #111113; cursor: crosshair; opacity: 0; transition: opacity 0.15s; }
+.arch-card:hover .arch-handle, .arch-card.selected .arch-handle, .arch-card:focus-visible .arch-handle { opacity: 1; }
+.arch-hit { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: pointer; }
+.arch-drawing { fill: none; stroke: var(--arch-blue); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.arch-frame-title.pickable, .arch-link-label.pickable { pointer-events: auto; cursor: pointer; }
+.arch-frame-title.pickable:hover, .arch-link-label.pickable:hover { color: #ededef; }
+.arch-frame.selected { border-color: rgba(138, 174, 255, 0.7); }
+.arch-lane-title { padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.arch-lane-title:hover { color: var(--arch-blue); }
+button.arch-item.pickable { width: 100%; text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+button.arch-item.pickable:hover { border-color: rgba(255, 255, 255, 0.2); }
 
 /* Flows: the steps on the left, the map lighting what each touches, a timeline over the map for a release. */
 .arch-flows { flex: 1; min-width: 0; display: flex; }

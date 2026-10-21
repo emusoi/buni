@@ -19,12 +19,12 @@ export function planChanges(arch: Architecture, plan: Id): Change[] {
   return out;
 }
 
-export function Proposals({ arch, plan: want, onPlan, onToast }: { arch: Architecture; plan: Id | undefined; onPlan: (id: Id) => void; onToast: (text: string) => void }) {
+export function Proposals({ arch, plan: want, onPlan, onToast, onSelect }: { arch: Architecture; plan: Id | undefined; onPlan: (id: Id) => void; onToast: (text: string) => void; onSelect: (id: Id) => void }) {
   const plans = Object.values(arch.plans).sort((a, b) => a.name.localeCompare(b.name));
   const plan = (want ? arch.plans[want] : undefined) ?? plans[0];
   const layout = useMemo(() => systemLayout(arch, plan?.id), [arch, plan?.id]);
   const [busy, setBusy] = useState(false);
-  if (!plan) return <div className="arch-flows-empty"><p>No proposals. A plan is a change drawn before it is built: ask your coding agent to propose one with <code>set_plan</code>, marking what it adds as planned.</p></div>;
+  if (!plan) return <div className="arch-flows-empty"><p>No proposals. A plan is a change drawn before it is built: add one with + Add and mark what it adds as planned in it, or ask your coding agent to propose one with <code>set_plan</code>.</p></div>;
   const changes = planChanges(arch, plan.id);
   const run = (tool: "merge_plan" | "delete_architecture", args: Record<string, unknown>) => {
     setBusy(true);
@@ -38,6 +38,7 @@ export function Proposals({ arch, plan: want, onPlan, onToast }: { arch: Archite
           <b>Proposal: {plan.name}</b>
           <span className="arch-sub">{[plan.issue, plan.releases?.length ? `ships in ${plan.releases.map((r) => arch.releases[r]?.name ?? r).join(", ")}` : undefined, "not merged"].filter(Boolean).join(" · ")}</span>
           <span className="grow" />
+          <button type="button" className="arch-btn" onClick={() => onSelect(plan.id)}>Edit plan</button>
           {plans.length > 1 ? (
             <select className="arch-select" value={plan.id} onChange={(e) => onPlan(e.target.value)} aria-label="Proposal">
               {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

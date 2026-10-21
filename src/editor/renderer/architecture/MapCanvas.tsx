@@ -73,9 +73,12 @@ export interface MapCanvasProps {
   /** Kept clear at the bottom (a timeline over the canvas). */
   bottomInset?: number;
   footer?: ReactNode;
+  /** Dragging from a card's edge handle onto another card: which cards have one, and the drop. */
+  canLink?: (box: MapBox) => boolean;
+  onLink?: (from: MapBox, to: MapBox, at: { x: number; y: number }) => void;
 }
 
-export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer }: MapCanvasProps) {
+export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink }: MapCanvasProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
   const fit = () => {
@@ -114,13 +117,36 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
     const k = Math.min(2.5, Math.max(0.3, v.k * f));
     return { k, x: px - ((px - v.x) * k) / v.k, y: py - ((py - v.y) * k) / v.k };
   });
-  const linkState = (l: RoutedLink) => stateOf(look, l.ids, l.context);
+  const linkState = (l: RoutedLink): State => (l.ids[0] !== undefined && l.ids[0] === selected ? "lit" : stateOf(look, l.ids, l.context));
+  // A link being drawn: from a card's handle to the pointer, in the plane's coordinates.
+  const [drawing, setDrawing] = useState<{ from: MapBox; x: number; y: number }>();
+  const toPlane = (cx: number, cy: number): Point => {
+    const r = host.current?.getBoundingClientRect();
+    return r ? [(cx - r.left - view.x) / view.k, (cy - r.top - view.y) / view.k] : [0, 0];
+  };
+  const startLink = (from: MapBox) => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const [x, y] = toPlane(e.clientX, e.clientY);
+    setDrawing({ from, x, y });
+    const move = (m: PointerEvent) => { const [mx, my] = toPlane(m.clientX, m.clientY); setDrawing({ from, x: mx, y: my }); };
+    const up = (u: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDrawing(undefined);
+      const [ux, uy] = toPlane(u.clientX, u.clientY);
+      const to = layout.boxes.find((b) => b !== from && canLink?.(b) && ux >= b.x && ux <= b.x + b.w && uy >= b.y && uy <= b.y + b.h);
+      if (to) onLink?.(from, to, { x: u.clientX, y: u.clientY });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
   return (
     <div
       ref={host}
       className="arch-canvas"
       onPointerDown={(e) => {
-        if ((e.target as Element).closest(".arch-card, .arch-zoom")) return;
+        if ((e.target as Element).closest(".arch-card, .arch-zoom, .arch-hit, .arch-frame-title, .arch-link-label")) return;
         drag.current = { x: e.clientX, y: e.clientY, moved: false };
         e.currentTarget.setPointerCapture(e.pointerId);
       }}
@@ -147,13 +173,19 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
               <g key={l.key} opacity={s === "dim" ? 0.25 : 1}>
                 <path d={`M${l.points.map((p) => p.join(" ")).join(" L")}`} fill="none" stroke={stroke} strokeWidth={s === "lit" ? 1.6 : 1.3} strokeDasharray={l.tone === "live" ? undefined : "4 4"} />
                 <polygon points={arrow(l.points)} fill={stroke} />
+                {onSelect && l.ids[0] !== undefined && (
+                  <path className="arch-hit" d={`M${l.points.map((p) => p.join(" ")).join(" L")}`} onClick={() => onSelect(l.ids[0])} />
+                )}
               </g>
             );
           })}
+          {drawing && (
+            <path className="arch-drawing" d={`M${drawing.from.x + drawing.from.w} ${drawing.from.y + drawing.from.h / 2} L${drawing.x} ${drawing.y}`} />
+          )}
         </svg>
         {layout.frames.map((f) => (
-          <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
-            <span className="arch-frame-title">
+          <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}${f.ids[0] !== undefined && f.ids[0] === selected ? " selected" : ""}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
+            <span className={`arch-frame-title${onSelect && f.ids[0] !== undefined ? " pickable" : ""}`} onClick={onSelect && f.ids[0] !== undefined ? () => onSelect(f.ids[0]) : undefined}>
               {f.title.lead}<b>{f.title.bold}</b>{f.title.rest}{f.title.link && <span className="arch-link-text">{f.title.link}</span>}
             </span>
           </div>
@@ -175,13 +207,15 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
             >
               {render?.(b, s) ?? <CardBody card={b.card} />}
               {badge !== undefined && <span className="arch-badge">{badge}</span>}
+              {onLink && canLink?.(b) && <span className="arch-handle" title="Drag onto another part to link them" onPointerDown={startLink(b)} onClick={(e) => e.stopPropagation()} />}
             </div>
           );
         })}
         {layout.links.filter((l) => l.at && l.label).map((l) => {
           const s = linkState(l);
           return (
-            <span key={l.key} className={`arch-link-label ${s} tone-${l.tone}`} style={{ left: l.at![0], top: l.at![1] }}>{l.label}</span>
+            <span key={l.key} className={`arch-link-label ${s} tone-${l.tone}${onSelect && l.ids[0] !== undefined ? " pickable" : ""}`} style={{ left: l.at![0], top: l.at![1] }}
+              onClick={onSelect && l.ids[0] !== undefined ? () => onSelect(l.ids[0]) : undefined}>{l.label}</span>
           );
         })}
         {bubble && (() => {
