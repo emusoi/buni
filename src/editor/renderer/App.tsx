@@ -30,7 +30,7 @@ import { Journey } from "./Journey.tsx";
 import { SystemInspector, SystemScreen, VIEW_META } from "./System.tsx";
 import { PLAN_VIEWS, SystemRail } from "./SystemRail.tsx";
 import { OwnersContext } from "./SystemCanvas.tsx";
-import type { SystemSelection, SystemView } from "./system.ts";
+import { SYSTEM_VIEWS, type SystemSelection, type SystemView } from "./system.ts";
 import { Play } from "./Play.tsx";
 import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
@@ -230,7 +230,8 @@ export function App({ snap }: { snap: Snapshot }) {
   /** Flow whose name is being edited in the rail. */
   const [renaming, setRenaming] = useState<Id>();
   /** The System view in the main area, when there is no journey open; undefined shows the canvas. */
-  const [system, setSystem] = useState<SystemView>();
+  // ?view=map (or any system view) opens the design on it: a link to the architecture, a snapshot of it.
+  const [system, setSystem] = useState<SystemView | undefined>(() => SYSTEM_VIEWS.find((v) => v === new URLSearchParams(location.search).get("view")));
   /** What the System area's inspector shows. */
   const [sysSel, setSysSel] = useState<SystemSelection>();
   /** Screens, System or Plan: which things the rail lists. The last lens of each is kept for coming back. */
