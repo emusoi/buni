@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Bot, BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, Network, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, LayoutTemplate, Library, ListChecks, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Copy, Undo2, Redo2 } from "lucide-react";
+import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -18,19 +18,14 @@ import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
 import { Shortcuts } from "./Shortcuts.tsx";
-import { Agents } from "./Agents.tsx";
 import { placeImage } from "./images.ts";
 import { useSidebar } from "./SidebarToggle.tsx";
 import { useDismiss } from "./useDismiss.ts";
 import { agentColor, agentInitials, ConnectAgent } from "./Connect.tsx";
 import { Palette, type Action } from "./Palette.tsx";
-import { contextText } from "buni/tools/context.ts";
 import { pageOfNode, type Hit } from "./search.ts";
 import { Journey } from "./Journey.tsx";
-import { SystemInspector, SystemScreen, VIEW_META } from "./System.tsx";
-import { PLAN_VIEWS, SystemRail } from "./SystemRail.tsx";
-import { OwnersContext } from "./SystemCanvas.tsx";
-import { SYSTEM_VIEWS, type SystemSelection, type SystemView } from "./system.ts";
+import { OwnersContext } from "./owners.ts";
 import { Play } from "./Play.tsx";
 import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
@@ -47,14 +42,11 @@ declare global {
 const tilde = (path: string) => path.replace(/^\/Users\/[^/]+/, "~");
 
 /** What the Export menu offers for a page: pictures and PDF always; SVG and an icon set when the page is fit for them. */
-type Mode = "screens" | "system" | "plan" | "agents";
 /** How long after its last edit an agent still counts as working here. */
 const WORKING_MS = 60_000;
 
 /** A path written relative to the file at `from`, as the file's own path. */
 export const besideFile = (from: string, rel: string): string => decodeURIComponent(new URL(rel, `file://${from}`).pathname);
-
-const MODES: readonly [Mode, string, LucideIcon][] = [["screens", "Screens", LayoutTemplate], ["system", "System", Network], ["plan", "Plan", ListChecks], ["agents", "Agents", Bot]];
 
 function pageExports(doc: Doc, pageId: Id): [string, string, PageExport][] {
   const style = doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style ?? {};
@@ -229,24 +221,6 @@ export function App({ snap }: { snap: Snapshot }) {
   const [journey, setJourney] = useState<Id>();
   /** Flow whose name is being edited in the rail. */
   const [renaming, setRenaming] = useState<Id>();
-  /** The System view in the main area, when there is no journey open; undefined shows the canvas. */
-  // ?view=map (or any system view) opens the design on it: a link to the architecture, a snapshot of it.
-  const [system, setSystem] = useState<SystemView | undefined>(() => SYSTEM_VIEWS.find((v) => v === new URLSearchParams(location.search).get("view")));
-  /** What the System area's inspector shows. */
-  const [sysSel, setSysSel] = useState<SystemSelection>();
-  /** Screens, System or Plan: which things the rail lists. The last lens of each is kept for coming back. */
-  const [agentsOpen, setAgentsOpen] = useState(false);
-  const mode: Mode = agentsOpen ? "agents" : system ? (PLAN_VIEWS.includes(system) ? "plan" : "system") : "screens";
-  const [lastLens, setLastLens] = useState<{ system: SystemView; plan: SystemView }>({ system: "map", plan: "requirements" });
-  useEffect(() => { if (system) setLastLens((l) => (PLAN_VIEWS.includes(system) ? { ...l, plan: system } : { ...l, system })); }, [system]);
-  const goMode = (m: Mode) => {
-    setAgentsOpen(m === "agents");
-    if (m === "agents") return;
-    setJourney(undefined);
-    setSysSel(undefined);
-    if (m === "screens") { setSystem(undefined); setSideTab("pages"); }
-    else setSystem(lastLens[m]);
-  };
   /** Component board in focus on the canvas, instead of a page. */
   const [component, setComponent] = useState<Id>();
   const [play, setPlay] = useState<{ page: Id; flow?: Id }>();
@@ -322,7 +296,6 @@ export function App({ snap }: { snap: Snapshot }) {
   /** Shows a page, selecting `select` on it; otherwise a layer from another page stays behind. */
   const openPage = useCallback((id: Id, select?: Id) => {
     setJourney(undefined);
-    setSystem(undefined);
     setComponent(undefined);
     const was = pageNow.current;
     setPage(id);
@@ -538,23 +511,14 @@ export function App({ snap }: { snap: Snapshot }) {
         e.preventDefault();
         setPanel("agent");
       }
-      // ⌘1 Screens, ⌘2 System, ⌘3 Plan.
-      const mode = (e.metaKey || e.ctrlKey) && !e.shiftKey ? MODES[Number(e.key) - 1]?.[0] : undefined;
-      if (mode) {
-        e.preventDefault();
-        modeKey.current(mode);
-      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const modeKey = useRef(goMode);
-  modeKey.current = goMode;
   const openComponent = (id: Id) => {
     // A core file's component is edited there.
     if (!snap.view.shared[id] && snap.owners[id]) return openElsewhere(id);
     setJourney(undefined);
-    setSystem(undefined);
     setComponent(id);
     setSideTab("library");
     setSelected(snap.view.shared[id]?.root);
@@ -563,13 +527,6 @@ export function App({ snap }: { snap: Snapshot }) {
   // Changes only with the document, so the canvas's boards don't all re-render with every other change here.
   const selectBoard = useCallback((id: Id) => (snap.view.shared[id] ? openComponent(id) : openPage(id)), [snap.view]);
   const jump = (hit: Hit) => {
-    if (hit.kind === "system") {
-      setJourney(undefined);
-      setSystem(hit.view);
-      setSysSel(hit.select);
-      setPanel("design");
-      return;
-    }
     if (hit.kind === "flow") return setJourney(hit.id);
     if (hit.kind === "component") return openComponent(hit.id);
     openPage(hit.kind === "page" ? hit.id : hit.page, hit.kind === "layer" ? hit.id : undefined);
@@ -757,15 +714,7 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "keys", title: "Keyboard shortcuts", icon: Keyboard, run: () => setKeysShown(true) },
     { id: "guides", title: "Design guides", icon: BookOpen, run: () => setGuides(true) },
     ...(activePage ? [{ id: "play", title: `Play from ${doc.pages[activePage]?.name ?? "this page"}`, icon: PlayIcon, run: () => setPlay({ page: activePage }) }] : []),
-    { id: "screens", title: "Go to Screens", keys: "⌘1", icon: LayoutTemplate, run: () => goMode("screens") },
-    { id: "system", title: "Go to System", keys: "⌘2", icon: Network, run: () => goMode("system") },
-    { id: "plan", title: "Go to Plan", keys: "⌘3", icon: ListChecks, run: () => goMode("plan") },
-    { id: "agents", title: "Go to Agents", detail: "design agents and their cases", keys: "⌘4", icon: Workflow, run: () => goMode("agents") },
     { id: "site", title: "Share as a website…", detail: "HTML + CSS", icon: Share, run: () => void window.buni.exportSite().then((r) => r && setToast(`Exported ${r.files} files to ${tilde(r.dir)}`)) },
-    ...(Object.keys(snap.system.parts).length ? [
-      { id: "pdf", title: "Share the system design as a PDF…", icon: Share, run: () => void window.buni.exportSystem().then((r) => r && setToast(`Saved ${tilde(r.path)}`)) },
-      { id: "brief", title: "Copy the brief for the whole system", detail: "paste it to any agent", icon: Copy, run: () => { const r = contextText(snap.system); if (r.ok) { void navigator.clipboard.writeText(r.text).then(() => setToast("Copied the brief; paste it to any agent.")); } } },
-    ] : []),
     { id: "undo", title: "Undo", keys: "⌘Z", icon: Undo2, run: () => void window.buni.undo().then((r) => setToast(r.reply)) },
     { id: "redo", title: "Redo", keys: "⇧⌘Z", icon: Redo2, run: () => void window.buni.redo().then((r) => setToast(r.reply)) },
   ];
@@ -786,20 +735,13 @@ export function App({ snap }: { snap: Snapshot }) {
   // The side panels float over the canvas; what they cover, for fitting pages and laying out the views beneath.
   const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (
-    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "agents" ? " agents-open" : ""}`} style={floating}>
+    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}`} style={floating}>
       <header className="tabs topbar">
         <div className="bar-lead">
           <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
           <Changes version={snap.view} onToast={setToast} />
         </div>
         <FileTabs />
-        <div className="modes-bar" role="tablist" aria-label="Mode">
-          {MODES.map(([m, label, Icon], i) => (
-            <button type="button" key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => goMode(m)} title={`${label} (⌘${i + 1})`}>
-              <Icon size={13} /> {label}
-            </button>
-          ))}
-        </div>
         <div className="bar-trail">
         {/* Who's in the file and what they're doing; clicking opens the agent panel. Saving is silent: it always happens. */}
         {presence && (
@@ -817,9 +759,6 @@ export function App({ snap }: { snap: Snapshot }) {
           </button>
         )}
         <Export
-          system={snap.system}
-          path={snap.path}
-          onToast={setToast}
           shown={sheet === "export"}
           onClose={() => setSheet(undefined)}
         >
@@ -833,13 +772,7 @@ export function App({ snap }: { snap: Snapshot }) {
             <span className="menu-name">Website…</span>
             <span className="menu-state">HTML + CSS</span>
           </button>
-          {Object.keys(snap.system.parts).length > 0 && (
-            <button type="button" className="menu-chat preset" onClick={() => void window.buni.exportSystem().then((r) => r && setToast(`Saved ${tilde(r.path)}`))}>
-              <span className="menu-name">System design…</span>
-              <span className="menu-state">PDF to share</span>
-            </button>
-          )}
-          {activePage && !system && pageExports(doc, activePage).map(([label, detail, as]) => (
+          {activePage && pageExports(doc, activePage).map(([label, detail, as]) => (
             <button type="button" key={`${label} ${detail}`} className="menu-chat preset" onClick={() => exportAs(activePage, as)}>
               <span className="menu-name">{doc.pages[activePage]?.name} as {label}</span>
               <span className="menu-state">{detail}</span>
@@ -853,8 +786,8 @@ export function App({ snap }: { snap: Snapshot }) {
             <div className="agent-menu export-menu more-menu" role="menu" onClick={() => setMore(false)}>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("versions")}><span className="menu-name">Versions…</span><span className="menu-state">save, go back</span></button>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("export")}><span className="menu-name">Export…</span><span className="menu-state">file, site, PDF</span></button>
-              {mode === "screens" && activePage && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setComparing(true)}><span className="menu-name">Every width side by side</span><span className="menu-state">⇧3</span></button>}
-              {mode === "screens" && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>}
+              {activePage && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setComparing(true)}><span className="menu-name">Every width side by side</span><span className="menu-state">⇧3</span></button>}
+              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>
               <div className="menu-rule" />
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
               <button type="button" role="menuitem" className="menu-chat preset" onClick={() => togglePanel()}><span className="menu-name">{panelOpen ? "Hide" : "Show"} inspector</span><span className="menu-state">⌘\ both</span></button>
@@ -867,13 +800,12 @@ export function App({ snap }: { snap: Snapshot }) {
         </span>
         </div>
       </header>
-      {mode === "agents" && <Agents doc={doc} />}
       {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
-      {!sidebarOpen && mode !== "agents" && (
+      {!sidebarOpen && (
         <nav className="side-rail" aria-label="Sidebar">
           <button type="button" className="icon-btn" title="Find anything (⌘K)" aria-label="Find anything" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
           <button type="button" className="icon-btn" title="Other designs in this project (⌘P)" aria-label="Other designs" onClick={() => setSwitching(true)}><FolderTree size={17} strokeWidth={1.75} /></button>
-          {mode === "screens" && ([["pages", FileText, "Pages"], ["layers", LayersIcon, "Layers"], ["library", Library, "Components"]] as const).map(([at, Icon, label]) => (
+          {([["pages", FileText, "Pages"], ["layers", LayersIcon, "Layers"], ["library", Library, "Components"]] as const).map(([at, Icon, label]) => (
             <button type="button" key={at} className={`icon-btn${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} onClick={() => {
               if (at === "library") setSideTab("library");
               else { setSideTab("pages"); setOutline(at); }
@@ -885,11 +817,6 @@ export function App({ snap }: { snap: Snapshot }) {
         </nav>
       )}
       <aside className="sidebar">
-        {mode !== "screens" && system ? (
-          <OwnersContext.Provider value={snap.owners}>
-            <SystemRail doc={snap.system} mode={mode === "plan" ? "plan" : "system"} view={system} selection={sysSel} onSelect={(s) => { setSysSel(s); setPanel("design"); }} onView={setSystem} onToast={setToast} />
-          </OwnersContext.Provider>
-        ) : (<>
         {sideTab === "pages" && (
           <div className="side-tabs" role="tablist" aria-label="Outline">
             <button type="button" role="tab" aria-selected={outline === "pages"} className={outline === "pages" ? "on" : ""} onClick={() => setOutline("pages")}>Pages</button>
@@ -943,7 +870,7 @@ export function App({ snap }: { snap: Snapshot }) {
                 <input className="field rail-filter" type="search" placeholder={`Find among ${pages.length} pages`} value={pageFilter} onChange={(e) => setPageFilter(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") setPageFilter(""); }} aria-label="Find a page" />
               )}
               {pageFilter.trim() && pages.filter(matchesPage).length === 0 && <p className="rail-empty">No page matches “{pageFilter.trim()}”.</p>}
-              <PageList pages={pageFilter.trim() ? pages.filter(matchesPage) : pages} parts={doc.parts} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
+              <PageList pages={pageFilter.trim() ? pages.filter(matchesPage) : pages} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
                 const next = new Set(f);
                 if (!next.delete(key)) next.add(key);
                 return next;
@@ -1019,14 +946,11 @@ export function App({ snap }: { snap: Snapshot }) {
             </>
           )}
         </nav>
-        </>)}
       </aside>
       <main className="main">
         <div className="workspace">
           {shownJourney ? (
             <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={showPage} />
-          ) : system ? (
-            <OwnersContext.Provider value={snap.owners}><SystemScreen doc={snap.system} fileName={fileName} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} onView={setSystem} /></OwnersContext.Provider>
           ) : comparing && activePage && doc.pages[activePage] ? (
             <Breakpoints doc={doc} page={activePage} dir={snap.dir} onClose={() => setComparing(false)} onEdit={(w) => { viewWidth(activePage, w); setComparing(false); }} />
           ) : (
@@ -1086,8 +1010,7 @@ export function App({ snap }: { snap: Snapshot }) {
               </div>
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
-            {panel === "design" && system && !shownJourney && <OwnersContext.Provider value={snap.owners}><SystemInspector doc={snap.system} dir={snap.dir} view={system} selection={sysSel} onSelect={setSysSel} onOpenPage={openPage} onToast={setToast} /></OwnersContext.Provider>}
-            {panel === "design" && !(system && !shownJourney) && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
+            {panel === "design" && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
             </div>
@@ -1128,7 +1051,7 @@ export function App({ snap }: { snap: Snapshot }) {
           onSubmit={(body) => { setCommenting(undefined); if (body.trim()) runEdit("comment", { node: commenting, body: body.trim() }); }}
           onClose={() => setCommenting(undefined)} />
       )}
-      {finding && <Palette doc={doc} system={snap.system} actions={actions} onPick={jump} onClose={() => setFinding(false)} />}
+      {finding && <Palette doc={doc} actions={actions} onPick={jump} onClose={() => setFinding(false)} />}
       {switching && <Palette doc={doc} only placeholder="Go to a design, or a page in one" onPick={jump} onClose={() => setSwitching(false)} actions={project.filter((f) => f.path !== snap.path).flatMap((f): Action[] => [
         { id: f.path, title: f.name, detail: f.pages.length ? `${f.pages.length} page${f.pages.length === 1 ? "" : "s"}` : `${f.components.length} components`, icon: FolderOpen, run: () => openAt(f.path) },
         ...f.pages.map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),

@@ -98,7 +98,7 @@ test("the hosted editor rejects another account's files and imports", async () =
   const store = new DiskStore(root, "/people");
   await store.write("/people/a/Shop/Shop.buni", serializeDoc(emptyDoc()));
   await store.write("/people/b/Other/Other.buni", serializeDoc(emptyDoc()));
-  const editor = await createEditor({ store, origin: "https://buni.test", assets: () => ({ files: new Map(), client: "", styles: "", xyflow: "" }) });
+  const editor = await createEditor({ store, origin: "https://buni.test", assets: () => ({ files: new Map(), client: "", styles: "" }) });
   const snapshot = (file: string) => new Request(`https://buni.test/rpc/snapshot?file=${encodeURIComponent(file)}`, {
     method: "POST", headers: { host: "buni.test", "content-type": "application/json" }, body: "[]",
   });

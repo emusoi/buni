@@ -17,7 +17,7 @@ export const sourceRefs = z.array(sourceRef);
 export type SourceRef = z.infer<typeof sourceRef>;
 export interface SourceOwner { sources?: SourceRef[] }
 
-export const SOURCE_COLLECTIONS = ["nodes", "pages", "shared", "connections", "parts", "links", "tables", "endpoints", "operations", "events", "shapes", "traces", "environments", "clusters", "placements", "phases", "requirements", "questions", "roles", "agents", "evals", "flows", "journeys", "sections", "decisions", "rules", "attachments", "comments", "threads"] as const;
+export const SOURCE_COLLECTIONS = ["nodes", "pages", "shared", "connections", "flows", "journeys", "sections", "decisions", "rules", "attachments", "comments"] as const;
 export type SourceCollection = (typeof SOURCE_COLLECTIONS)[number];
 export type SourceTarget = { [C in SourceCollection]: { collection: C; entity: Doc[C][string] } }[SourceCollection];
 

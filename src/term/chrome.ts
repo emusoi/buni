@@ -82,14 +82,6 @@ export function drawScales(browser: string, sheet: Sheet, scales: readonly numbe
   });
 }
 
-/** A whole document printed to PDF, every page, each sized by the document's own @page rule. */
-export function printWithBrowser(browser: string, sheet: Sheet): Promise<Uint8Array> {
-  return inBrowser(browser, sheet, async (cdp, url) => {
-    await load(cdp, url, sheet.width, 1);
-    return bytesOf(await cdp.call("Page.printToPDF", { printBackground: true, preferCSSPageSize: true }));
-  });
-}
-
 /**
  * The page's motion held still at `count` moments from its start to when the last entrance ends, one PNG each, with
  * each moment in ms. A loop is caught wherever it is at that moment.

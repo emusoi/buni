@@ -22,7 +22,6 @@ const GROUPS: [string, [string, string][]][] = [
   ["Editor", [
     ["⌘K", "Find anything, or run a command"],
     ["⌘I", "Insert a component"],
-    ["⌘1 ⌘2 ⌘3 ⌘4", "Screens, System, Plan, Agents"],
     ["⌘\\", "Hide or show both side panels"],
     ["⌘Z / ⇧⌘Z", "Undo / redo"],
     ["⌘↵ in Code", "Apply the HTML"],

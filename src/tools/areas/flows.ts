@@ -2,7 +2,7 @@
 // gathers them.
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { isUseLink, walkFlow, type Connection, type Doc, type Endpoint, type Id, type Journey, type Link } from "../../format/doc.ts";
+import { isUseLink, walkFlow, type Connection, type Doc, type Id, type Journey } from "../../format/doc.ts";
 import type { Op } from "../../oplog/oplog.ts";
 import { Ids, type Tool, ToolError, linkPages, node, page, tool } from "../kit.ts";
 
@@ -28,7 +28,6 @@ export const flowsTools = {
       transition: z.enum(["none", "fade", "slide-left", "slide-right"]).default("none"),
       durationMs: z.number().int().min(0).max(5000).default(200),
       condition: z.string().optional().describe('When the link applies, e.g. "signed in"'),
-      endpoint: z.string().optional().describe('Endpoint or GraphQL operation this trigger calls, e.g. a form submit that posts; kept from the existing link when omitted, "" to clear'),
       nav: z.boolean().optional().describe("Navigation that is always there (a sidebar item, a tab bar): flows don't follow it as a step. Kept from the existing link when omitted"),
     },
     run: async (doc, a, ctx) => {
@@ -51,8 +50,6 @@ export const flowsTools = {
           ...(a.trigger === "key" && a.key ? { key: a.key } : {}),
           ...(a.condition ? { condition: a.condition } : {}),
         };
-        const endpoint = a.endpoint ?? existing?.endpoint;
-        if (endpoint) value.endpoint = endpoint;
         if (a.nav ?? existing?.nav) value.nav = true;
         return { value, line: `${existing ? "Updated" : "Created"} connection ${value.id}: ${from.name} → ${to.name}.` };
       });

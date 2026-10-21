@@ -20,15 +20,3 @@ test("an empty query lists pages and flows, never layers; shared sources have no
   expect(pageOfNode(doc, "nav-cta")).toBeUndefined();
   expect(pageOfNode(doc, "home-cta")).toBe("home");
 });
-
-test("with the system, search finds parts, calls, tables, requirements and questions, each opening its view", () => {
-  const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/portal.buni")), "utf8"));
-  if (!r.ok) throw new Error("bad example");
-  const hits = search(r.doc, "quote", 40, r.doc).filter((h) => h.kind === "system");
-  const views = new Map(hits.map((h) => [h.title, h.kind === "system" ? h.view : undefined]));
-  expect(views.get("Quote API")).toBe("map");
-  expect(views.get("POST /quotes")).toBe("api");
-  expect(views.get("quotes")).toBe("data");
-  expect(views.get("A buyer sends a quote in under a minute")).toBe("requirements");
-  expect(search(r.doc, "quote").some((h) => h.kind === "system")).toBe(false);
-});

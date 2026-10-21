@@ -194,10 +194,10 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           {error && <div className="notice dismissable" role="alert">{error}<button type="button" className="icon-btn small" aria-label="Dismiss" onClick={() => setError(undefined)}><X size={13} /></button></div>}
           {files && files.length === 0 && (
             <div className="welcome">
-              <p className="welcome-lede">Design the screens, and the system behind them.<span>Then hand it to an agent to build.</span></p>
+              <p className="welcome-lede">Design the screens, the flows between them and the journeys through them.<span>Then hand it to an agent to build.</span></p>
               <div className="welcome-ways">
                 <button type="button" onClick={create}><FilePlus size={18} /><b>New design</b><span>Start by hand, or connect a coding agent to draft it.</span></button>
-                <button type="button" onClick={() => void run(window.buni.openExample())}><Sparkle size={18} /><b>Explore the example</b><span>A small steel shop: screens, a flow and the system behind it. Click around; it’s a copy.</span></button>
+                <button type="button" onClick={() => void run(window.buni.openExample())}><Sparkle size={18} /><b>Explore the example</b><span>A small steel shop: screens, components and a flow. Click around; it’s a copy.</span></button>
                 <button type="button" onClick={() => void run(window.buni.open())}><FolderOpen size={18} /><b>{window.buni.renameFile ? "Import a file" : "Open a file"}</b><span>Any .buni file{window.buni.renameFile ? ", with the images it uses." : ". Designs are plain files you can commit and diff."}</span></button>
               </div>
               <p className="welcome-agents"><Terminal size={14} /> Using Claude Code or Codex? <code>buni skill</code> teaches it buni, and <code>buni context FILE</code> hands it a brief.</p>
@@ -255,7 +255,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         }} />
       )}
       {asking?.kind === "delete" && (
-        <ConfirmDialog title={`Delete ${asking.file.name}?`} body={`Its ${asking.file.pages} page${asking.file.pages === 1 ? "" : "s"}, the system behind them and its images go for good. This can't be undone.`} action="Delete" onClose={() => setAsking(undefined)} onConfirm={() => {
+        <ConfirmDialog title={`Delete ${asking.file.name}?`} body={`Its ${asking.file.pages} page${asking.file.pages === 1 ? "" : "s"}, its components and its images go for good. This can't be undone.`} action="Delete" onClose={() => setAsking(undefined)} onConfirm={() => {
           setAsking(undefined);
           void window.buni.removeFile?.(asking.file.path).then(refresh, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
         }} />

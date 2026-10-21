@@ -3,10 +3,7 @@ import { validateDoc, type FormatError } from "../format/parse.ts";
 
 export type Collection =
   | "pages" | "nodes" | "shared" | "connections" | "flows"
-  | "journeys" | "comments" | "sections" | "decisions" | "rules" | "attachments"
-  | "parts" | "links" | "tables" | "endpoints" | "events" | "shapes" | "operations" | "traces"
-  | "environments" | "clusters" | "placements" | "positions"
-  | "phases" | "requirements" | "questions" | "roles" | "reviews" | "threads" | "agents" | "evals";
+  | "journeys" | "comments" | "sections" | "decisions" | "rules" | "attachments";
 
 export type EntityOf<C extends Collection> = Doc[C][Id];
 
@@ -36,7 +33,7 @@ export interface ChangeSet {
 export interface Session {
   base: Doc;
   pending: ChangeSet[];
-  /** The system of the files this one imports: changes may point into it, and are checked against it. */
+  /** The files this one imports: changes may point into them, and are checked against them. */
   context?: Doc;
 }
 
@@ -230,86 +227,6 @@ function restore(doc: Doc, collection: Collection, id: Id): Op {
       const v = doc.attachments[id];
       return v ? { kind: "put", collection: "attachments", value: v } : { kind: "delete", collection: "attachments", id };
     }
-    case "parts": {
-      const v = doc.parts[id];
-      return v ? { kind: "put", collection: "parts", value: v } : { kind: "delete", collection: "parts", id };
-    }
-    case "links": {
-      const v = doc.links[id];
-      return v ? { kind: "put", collection: "links", value: v } : { kind: "delete", collection: "links", id };
-    }
-    case "tables": {
-      const v = doc.tables[id];
-      return v ? { kind: "put", collection: "tables", value: v } : { kind: "delete", collection: "tables", id };
-    }
-    case "endpoints": {
-      const v = doc.endpoints[id];
-      return v ? { kind: "put", collection: "endpoints", value: v } : { kind: "delete", collection: "endpoints", id };
-    }
-    case "events": {
-      const v = doc.events[id];
-      return v ? { kind: "put", collection: "events", value: v } : { kind: "delete", collection: "events", id };
-    }
-    case "shapes": {
-      const v = doc.shapes[id];
-      return v ? { kind: "put", collection: "shapes", value: v } : { kind: "delete", collection: "shapes", id };
-    }
-    case "operations": {
-      const v = doc.operations[id];
-      return v ? { kind: "put", collection: "operations", value: v } : { kind: "delete", collection: "operations", id };
-    }
-    case "traces": {
-      const v = doc.traces[id];
-      return v ? { kind: "put", collection: "traces", value: v } : { kind: "delete", collection: "traces", id };
-    }
-    case "environments": {
-      const v = doc.environments[id];
-      return v ? { kind: "put", collection: "environments", value: v } : { kind: "delete", collection: "environments", id };
-    }
-    case "clusters": {
-      const v = doc.clusters[id];
-      return v ? { kind: "put", collection: "clusters", value: v } : { kind: "delete", collection: "clusters", id };
-    }
-    case "phases": {
-      const v = doc.phases[id];
-      return v ? { kind: "put", collection: "phases", value: v } : { kind: "delete", collection: "phases", id };
-    }
-    case "requirements": {
-      const v = doc.requirements[id];
-      return v ? { kind: "put", collection: "requirements", value: v } : { kind: "delete", collection: "requirements", id };
-    }
-    case "questions": {
-      const v = doc.questions[id];
-      return v ? { kind: "put", collection: "questions", value: v } : { kind: "delete", collection: "questions", id };
-    }
-    case "roles": {
-      const v = doc.roles[id];
-      return v ? { kind: "put", collection: "roles", value: v } : { kind: "delete", collection: "roles", id };
-    }
-    case "reviews": {
-      const v = doc.reviews[id];
-      return v ? { kind: "put", collection: "reviews", value: v } : { kind: "delete", collection: "reviews", id };
-    }
-    case "threads": {
-      const v = doc.threads[id];
-      return v ? { kind: "put", collection: "threads", value: v } : { kind: "delete", collection: "threads", id };
-    }
-    case "agents": {
-      const v = doc.agents[id];
-      return v ? { kind: "put", collection: "agents", value: v } : { kind: "delete", collection: "agents", id };
-    }
-    case "evals": {
-      const v = doc.evals[id];
-      return v ? { kind: "put", collection: "evals", value: v } : { kind: "delete", collection: "evals", id };
-    }
-    case "positions": {
-      const v = doc.positions[id];
-      return v ? { kind: "put", collection: "positions", value: v } : { kind: "delete", collection: "positions", id };
-    }
-    case "placements": {
-      const v = doc.placements[id];
-      return v ? { kind: "put", collection: "placements", value: v } : { kind: "delete", collection: "placements", id };
-    }
   }
 }
 
@@ -327,8 +244,6 @@ export function invert(doc: Doc, ops: readonly Op[]): Op[] {
 
 const COLLECTIONS: readonly Collection[] = [
   "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "sections", "decisions", "rules", "attachments",
-  "parts", "links", "tables", "endpoints", "events", "shapes", "operations", "traces",
-  "environments", "clusters", "placements", "positions", "phases", "requirements", "questions", "roles", "reviews", "threads", "agents", "evals",
 ];
 
 // The casts below: TypeScript can't tie a generic collection to its own value inside the Op union, though they match.

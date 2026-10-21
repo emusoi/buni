@@ -1,13 +1,11 @@
 /// <reference path="./raw.d.ts" />
 import { readImportResource } from "./import-resource.ts";
-import { exampleBody, matchEndpoint, mockGraphql } from "buni/tools/backend.ts";
-import { MockStore } from "buni/tools/mockstore.ts";
 import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts";
 import { checkImage } from "buni/tools/assets.ts";
 import { fontSlug } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { tmpdir } from "node:os";
-import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins, mockOrigin } from "./guard.ts";
+import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins } from "./guard.ts";
 import { rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { renderHeadless } from "buni/term/render.ts";
@@ -16,7 +14,6 @@ import { emptyDoc, pagesInOrder, type Doc } from "buni/format/doc.ts";
 import { parseDoc } from "buni/format/parse.ts";
 import { diffDoc } from "buni/format/patch.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
-import { systemChanges } from "buni/tools/changes.ts";
 import { Workspace } from "buni/tools/workspace.ts";
 import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { allPatterns } from "../tools/inspiration.ts";
@@ -67,8 +64,6 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     listeners: Set<() => void>;
     /** Coding agents' MCP sessions on this file, by session id, with the server each talks to. */
     mcp: Map<string, { transport: WebStandardStreamableHTTPServerTransport; server: ReturnType<typeof createMcpServer>; seen: number }>;
-    /** The mock API for this design, remembering writes until the server stops. */
-    mock: MockStore;
     /** Agents' questions waiting on the person, each with how to hand back the answer. */
     asking: Map<string, Asking & { answer: (text: string | undefined) => void }>;
   }
@@ -85,7 +80,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     let o = opened.get(path);
     if (!o) {
       o = Workspace.open(path, within(store, dirname(dirname(path)), loopback && store.localImports === true)).then(async (ws) => {
-        const file: Open = { ws, listeners: new Set(), mcp: new Map(), mock: new MockStore(), asking: new Map() };
+        const file: Open = { ws, listeners: new Set(), mcp: new Map(), asking: new Map() };
         if (disk) {
           // On disk, buni open shows who is editing, and the buni command and coding agents send their edits here
           // (through <file>.live) so this editor stays the one writer of the file.
@@ -312,7 +307,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       // A tab opening the file reads its imports again: a core may have been edited outside this server.
       await o.ws.refreshImports();
       const s = snapshot(o);
-      // Usually the system is the view itself; sent once, the tab puts it back (bridge.ts).
+      // Usually `system` is the view itself; sent once, the tab puts it back (bridge.ts).
       return s.system === s.view ? { ...s, system: undefined } : s;
     },
     build: async () => BUILD,
@@ -435,14 +430,6 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       if (!r.ok || !id) throw new Error(r.reply);
       return id;
     },
-    systemChanges: async (file) => {
-      const ws = await need(file);
-      const text = await store.read(`${ws.path}.version`).catch(() => undefined);
-      if (text === undefined) return { error: "No version is saved yet. Save one, and the changes from then on show here." };
-      const before = parseDoc(text, { refs: false });
-      if (!before.ok) return { error: "The saved version doesn't read as a .buni file." };
-      return { changes: systemChanges(before.doc, ws.view()) };
-    },
     /** The file as written, to download: the .buni text a repo or the editor can open. */
     fileText: async (file) => serializeDoc((await need(file)).view()),
     undo: async (file) => (await need(file)).undo(),
@@ -450,36 +437,6 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   });
 
   /** A tab's live feed of its file: the whole snapshot first, then only what each change changed. */
-  /**
-   * The designed API, answering before it is built: any endpoint by method and path returns an example of its
-   * response, or with ?status=409 one of its designed errors. CORS is open so a front end on another port can call it.
-   */
-  async function mock(file: string, req: Request, url: URL): Promise<Response> {
-    // Pages on this machine only: a front end in development on any local port, never another site.
-    const local = mockOrigin(req);
-    if (req.headers.get("origin") !== null && !local) return new Response("forbidden origin", { status: 403 });
-    const cors = { "access-control-allow-origin": local ?? "null", "vary": "Origin", "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE" };
-    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    const doc = (await need(file)).view();
-    const path = url.pathname.slice("/mock".length);
-    // The design's GraphQL operations, at one endpoint as GraphQL servers have it.
-    if (path === "/graphql" && req.method === "POST") return Response.json(mockGraphql(doc, await req.json().catch(() => undefined)), { headers: cors });
-    const e = matchEndpoint(doc, req.method, path);
-    if (!e) return Response.json({ error: `No ${req.method} ${path} in this design` }, { status: 404, headers: cors });
-    const status = url.searchParams.get("status");
-    if (status && status !== "200") {
-      const err = (e.errors ?? []).find((x) => x.code === status);
-      if (!err) return Response.json({ error: `${e.method} ${e.path} has no designed ${status}; it has ${(e.errors ?? []).map((x) => x.code).join(", ") || "none"}` }, { status: 400, headers: cors });
-      const code = Number(err.code);
-      return Response.json({ error: err.when }, { status: Number.isInteger(code) && code >= 400 && code < 600 ? code : 400, headers: cors });
-    }
-    // What the call sent: its path parameters, then its JSON body (or its query); the mock remembers what it changes.
-    const params = Object.fromEntries(e.path.split("/").filter(Boolean).flatMap((seg, i) => (/^\{.+\}$/.test(seg) ? [[seg.slice(1, -1), decodeURIComponent(path.split("/").filter(Boolean)[i] ?? "")]] : [])));
-    const given: unknown = req.method === "GET" || req.method === "DELETE" ? Object.fromEntries([...url.searchParams].filter(([k]) => k !== "file")) : await req.json().catch(() => ({}));
-    const sent = { ...params, ...(typeof given === "object" && given !== null ? given : {}) };
-    return Response.json((await load(file)).mock.answer(doc, e, sent), { headers: cors });
-  }
-
   /** The agent's events for a tab, as they happen; the panel replays the log it fetched first. */
   async function events(file: string): Promise<Response> {
     const o = await load(file);
@@ -559,7 +516,6 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         if (!allowedOrigin(req, OWN)) return new Response("forbidden origin", { status: 403 });
         return await mcp(file, req);
       }
-      if (url.pathname.startsWith("/mock/") && file) return await mock(file, req, url);
       const name = url.pathname.startsWith("/rpc/") ? url.pathname.slice(5) : "";
       const rpc = rpcFor(dir);
       const method = Object.hasOwn(rpc, name) ? rpc[name] : undefined;

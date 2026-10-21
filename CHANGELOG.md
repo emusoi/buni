@@ -5,6 +5,15 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Removed: buni designs UI and UX only now. The system behind the screens (parts, links, endpoints, operations,
+  tables, shapes, events, traces, where it runs), the plan (requirements, phases, questions, roles, access, review,
+  discussion threads) and designed agents and their evals are gone, with their tools (`set_part`, `set_endpoint`,
+  `bind`, `place_page`, `set_requirement`, `set_agent`…), the editor's System, Plan and Agents modes (and ⌘1–⌘4), the
+  system PDF (`buni pdf`), OpenAPI, SQL and mock API exports, `buni split FILE part:ID`, and the skills
+  system-design, api-design, database-design, backend, deployment, design-process and agent-design. Terminal screens
+  stay and need no terminal client: they gather under "Terminal" in the sidebar, and `--target` is gone from
+  `buni context`, which briefs a page or a flow (`page:ID`, `flow:ID`) or the whole design. Files from before still
+  open; their system data is ignored and dropped on the next save (format version 1, see FORMAT.md).
 - Fixed: capturing a page with its own elements (`<tip-type>`, any custom element) saved a design that then wouldn't
   open ("not a valid .buni file"). Such elements come in as the box they drew (a span in a line of text, else a div),
   and every edit now checks layer elements, so no edit can save a file that won't open.

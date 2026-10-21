@@ -3,12 +3,12 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { checkImage } from "./assets.ts";
-import { emptyDoc, SYSTEM_COLLECTIONS, withImports, withUseLinks, type Doc, type Id } from "../format/doc.ts";
+import { emptyDoc, withImports, withUseLinks, type Doc, type Id } from "../format/doc.ts";
 import { parseDoc, validateDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { applyChange, diffOps, invert, propose, view, type ChangeSet, type Op, type Rejected, type Session } from "../oplog/oplog.ts";
 import { exportSite } from "./html.ts";
-import { splitCore, splitPart } from "./split.ts";
+import { splitCore } from "./split.ts";
 import { gridProblems } from "./terminal.ts";
 import { copyHints, REPEAT_MIN } from "./library.ts";
 import { ToolError, tools, type ToolContext, type ToolName, type ToolOutput } from "./tools.ts";
@@ -28,16 +28,13 @@ export interface Edit {
   author: string;
   label: string;
   nodes: Id[];
-  /** System things it changed, as "collection:id" ("parts:api"). */
-  things?: string[];
   /** ISO 8601. */
   at: string;
 }
 
 export const isEdit = (v: unknown): v is Edit =>
   typeof v === "object" && v !== null && "author" in v && typeof v.author === "string" && "label" in v && typeof v.label === "string"
-  && "nodes" in v && Array.isArray(v.nodes) && v.nodes.every((n: unknown) => typeof n === "string") && "at" in v && typeof v.at === "string"
-  && (!("things" in v) || (Array.isArray(v.things) && v.things.every((t: unknown) => typeof t === "string")));
+  && "nodes" in v && Array.isArray(v.nodes) && v.nodes.every((n: unknown) => typeof n === "string") && "at" in v && typeof v.at === "string";
 
 export interface CallResult {
   ok: boolean;
@@ -77,12 +74,7 @@ function nodesOf(ops: readonly Op[]): Id[] {
   return ops.flatMap((op) => (op.kind === "put" && op.collection === "nodes" ? [op.value.id] : []));
 }
 
-const SYSTEM = new Set<string>(SYSTEM_COLLECTIONS);
-function thingsOf(ops: readonly Op[]): string[] {
-  return ops.flatMap((op) => (op.kind === "put" || op.kind === "delete") && SYSTEM.has(op.collection) ? [`${op.collection}:${op.kind === "put" ? op.value.id : op.id}`] : []);
-}
-
-/** A file this one imports, directly or through others: its path and system, read-only here. */
+/** A file this one imports, directly or through others: its path and design, read-only here. */
 export interface ImportedFile {
   path: string;
   doc: Doc;
@@ -272,7 +264,7 @@ export class Workspace {
     return this.imported;
   }
 
-  /** This file with what it imports (the system, components and tokens): what briefs, drawing and tools read. */
+  /** This file with what it imports (components and tokens): what briefs, drawing and tools read. */
   system(): Doc {
     // Links a component holds on every use are drawn onto the pages that use it.
     return withUseLinks(withImports(this.view(), this.session.context));
@@ -283,16 +275,16 @@ export class Workspace {
     const out: Record<Id, string> = {};
     for (const f of this.imported) {
       const name = relative(dirname(this.path), f.path) || basename(f.path);
-      for (const c of [...SYSTEM_COLLECTIONS, "shared", "pages"] as const) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
+      for (const c of ["shared", "pages"] as const) for (const id of Object.keys(f.doc[c])) out[id] ??= name;
     }
     return out;
   }
 
   /**
-   * Moves a part and what it owns into a new file at `to`, and makes the two import each other.
-   * Both are checked as one system before either is written.
+   * Moves this file's components and tokens into a new core file at `to`, which this one then imports.
+   * Both are checked together before either is written.
    */
-  split(part: Id | "core", to: string): Promise<CallResult> {
+  splitCore(to: string): Promise<CallResult> {
     return this.exclusive(async () => {
       const target = resolve(dirname(this.path), to);
       if (!target.endsWith(".buni")) return { ok: false, reply: "the new file's name ends in .buni" };
@@ -302,7 +294,7 @@ export class Workspace {
       } catch {
         // a new file: good
       }
-      const r = part === "core" ? splitCore(this.view(), relative(dirname(this.path), target)) : splitPart(this.view(), part, relative(dirname(target), this.path), relative(dirname(this.path), target));
+      const r = splitCore(this.view(), relative(dirname(this.path), target));
       if (typeof r === "string") return { ok: false, reply: r };
       const others = systemOf(this.imported);
       const restErrors = parseDoc(serializeDoc(r.rest), { context: withImports(r.moved, others) });
@@ -318,9 +310,7 @@ export class Workspace {
       this.undos = [];
       this.redos = [];
       this.changed();
-      if (part === "core") return { ok: true, reply: `Moved ${Object.keys(r.moved.shared).length} components and ${Object.keys(r.moved.tokens).length} tokens to ${to}, which this file now imports; edit them there.` };
-      const n = (c: "endpoints" | "operations" | "tables" | "events" | "shapes") => Object.keys(r.moved[c]).length;
-      return { ok: true, reply: `Moved ${r.moved.parts[part]?.name} to ${to} with ${n("endpoints") + n("operations")} calls, ${n("tables")} tables, ${n("events")} events and ${n("shapes")} shapes; the two files import each other.` };
+      return { ok: true, reply: `Moved ${Object.keys(r.moved.shared).length} components and ${Object.keys(r.moved.tokens).length} tokens to ${to}, which this file now imports; edit them there.` };
     });
   }
 
@@ -392,8 +382,7 @@ export class Workspace {
       this.redos = [];
       const nodes = nodesOf(out.ops);
       if (nodes.length) this.touched.set(author, nodes);
-      const things = thingsOf(out.ops);
-      await this.note({ author, label: out.label, nodes, ...(things.length ? { things } : {}), at: new Date().toISOString() });
+      await this.note({ author, label: out.label, nodes, at: new Date().toISOString() });
       this.changed();
       // On a terminal screen, what the edit did that a terminal can't draw, for whoever made it to fix.
       const grid = gridProblems(this.view(), nodes);

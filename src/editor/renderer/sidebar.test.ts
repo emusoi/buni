@@ -17,9 +17,8 @@ test("graphics gather under Graphics, even alone", () => {
   expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}: ${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "Graphics: logo"]);
 });
 
-test("terminal screens gather under their client, even alone", () => {
-  const screen = (id: string, client: string): Page => ({ id, name: id, frame: `${id}-frame`, index: id, client, terminal: { surface: "app", cols: 120, rows: 36, colors: "16" } });
-  const parts = { cli: { id: "cli", kind: "client" as const, name: "steel CLI", purpose: "", index: "a" } };
-  const items = groupPages([page("home", "/"), screen("quotes", "cli"), screen("help", "cli")], parts);
-  expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}: ${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "steel CLI: quotes,help"]);
+test("terminal screens gather under Terminal, even alone", () => {
+  const screen = (id: string): Page => ({ id, name: id, frame: `${id}-frame`, index: id, terminal: { surface: "app", cols: 120, rows: 36, colors: "16" } });
+  const items = groupPages([page("home", "/"), screen("quotes"), screen("help")]);
+  expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}: ${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "Terminal: quotes,help"]);
 });

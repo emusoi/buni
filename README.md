@@ -1,6 +1,6 @@
 # buni
 
-Buni's open engine for designing interfaces, flows and systems in `.buni` files. Includes a browser editor,
+Buni's open engine for designing interfaces, flows and UX journeys in `.buni` files. Includes a browser editor,
 CLI and MCP server.
 
 ## Install
@@ -36,7 +36,5 @@ Run `buni skill` for CLI instructions, or configure your agent's MCP client:
 
 ## Credits
 
-Design guidance adapts [The System Design Primer](https://github.com/donnemartin/system-design-primer) by Donne
-Martin ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) and references
-[Impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus (MIT). Fonts come from
+Design guidance references [Impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus (MIT). Fonts come from
 [Fontsource](https://fontsource.org); see [FONT-LICENSES.md](FONT-LICENSES.md).

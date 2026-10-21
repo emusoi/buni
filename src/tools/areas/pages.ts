@@ -11,12 +11,12 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Link, type Node, type Page, type PageOption, type Post, type Thread, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
 import { embeddedFont } from "../fontdata.ts";
 import { findIcons } from "../icons.ts";
-import { Ids, type Tool, ToolError, pageOf, body, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
+import { Ids, type Tool, ToolError, pageOf, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
 
 /**
  * A copy of a page as a new page: every layer with a new id, and its links from the copied layers. `twins` keeps each
@@ -109,8 +109,7 @@ export const pagesTools = {
       state: z.string().min(1).optional().describe('A state of the screen at this route: "Empty", "Error", "Label pending"'),
       width: z.number().int().positive().default(1440),
       height: z.number().int().positive().optional(),
-      client: z.string().optional().describe("Client part the page belongs to"),
-      terminal: terminalScreen.optional().describe("Make it a terminal screen of a terminal client, sized in cells; width and height are then ignored. Read the terminal skill first"),
+      terminal: terminalScreen.optional().describe("Make it a terminal screen, sized in cells; width and height are then ignored. Read the terminal skill first"),
     },
     run: async (doc, a, ctx) => {
       const ids = new Ids(doc, ctx);
@@ -128,7 +127,7 @@ export const pagesTools = {
             kind: "put", collection: "pages",
             value: {
               id: pageId, name: a.name, ...(a.sources?.length ? { sources: a.sources } : {}), ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state !== undefined ? { state: a.state } : {}), frame: frameId, index: generateKeyBetween(last, null),
-              ...(a.client !== undefined ? { client: a.client } : {}), ...(a.terminal ? { terminal: a.terminal } : {}),
+              ...(a.terminal ? { terminal: a.terminal } : {}),
             },
           },
         ],
@@ -243,10 +242,10 @@ export const pagesTools = {
       const live = page(doc, chosen.option.of);
       const rest = optionsOf(doc, live.id).filter((p) => p.id !== chosen.id);
       const ops: Op[] = [];
-      // The chosen one takes the live page's place: its route, client and spot in the list.
+      // The chosen one takes the live page's place: its route and spot in the list.
       const { option: _o, ...chosenRest } = chosen;
       const { route: _r, ...liveRest } = live;
-      ops.push({ kind: "put", collection: "pages", value: { ...chosenRest, index: live.index, ...(live.route !== undefined ? { route: live.route } : {}), ...(live.client !== undefined ? { client: live.client } : {}) } });
+      ops.push({ kind: "put", collection: "pages", value: { ...chosenRest, index: live.index, ...(live.route !== undefined ? { route: live.route } : {}) } });
       ops.push({ kind: "put", collection: "pages", value: { ...liveRest, index: chosen.index, option: { of: chosen.id, idea: `As it was live until ${ctx.now().slice(0, 10)}` } } });
       for (const c of Object.values(doc.connections)) if (c.to === live.id) ops.push({ kind: "put", collection: "connections", value: { ...c, to: chosen.id } });
       for (const f of Object.values(doc.flows)) if (f.start === live.id) ops.push({ kind: "put", collection: "flows", value: { ...f, start: chosen.id } });
@@ -483,13 +482,12 @@ export const pagesTools = {
       const hi = isRoot ? null : siblings[at + 1]?.index ?? null;
       const created: Id[] = [];
       const puts = draftOps(new Ids(doc, ctx), drafts, parent, first, created, hi, idFor, (id) => doc.nodes[id]?.index);
-      // What a kept layer had beyond its HTML: its data binding, and a component use's overrides.
+      // What a kept layer had beyond its HTML: its sources, flags and widths, and a component use's overrides.
       for (const op of puts) {
         if (op.kind !== "put" || op.collection !== "nodes") continue;
         const was = doc.nodes[op.value.id];
         if (!was) continue;
         if (was.sources && !op.value.sources) op.value = { ...op.value, sources: was.sources };
-        if (was.bind && !op.value.bind) op.value = { ...op.value, bind: was.bind };
         if (was.hidden) op.value = { ...op.value, hidden: true };
         if (was.locked) op.value = { ...op.value, locked: true };
         if (was.at) op.value = { ...op.value, at: was.at };
@@ -735,7 +733,7 @@ export const pagesTools = {
   duplicate_nodes: tool({
     description:
       "Copy layers with their children: right after the originals, or under another frame (parent, after). " +
-      "The copies keep their styles, bindings and links on that page. Replies with the new ids.",
+      "The copies keep their styles and links on that page. Replies with the new ids.",
     input: {
       nodes: z.array(z.string()).min(1),
       parent: z.string().optional().describe("Frame to copy into; omit for the originals' own parent"),
@@ -850,12 +848,6 @@ export const pagesTools = {
       for (const j of Object.values(doc.journeys)) {
         if (flows.has(j.flow)) ops.push({ kind: "delete", collection: "journeys", id: j.id });
         else if (j.steps.some((s) => s.page === page.id)) ops.push({ kind: "put", collection: "journeys", value: { ...j, steps: j.steps.filter((s) => s.page !== page.id) } });
-      }
-      // A trace keeps its steps through the system; it just no longer starts on a page.
-      for (const t of Object.values(doc.traces)) {
-        if (t.page !== page.id) continue;
-        const { page: _, ...rest } = t;
-        ops.push({ kind: "put", collection: "traces", value: rest });
       }
       ops.push(...forget(doc, ops));
       return { label: `Delete page ${page.name}`, ops, reply: `Deleted page ${page.name}${flows.size ? ` and ${flows.size} flow${flows.size === 1 ? "" : "s"} starting there` : ""}.` };
@@ -1005,7 +997,7 @@ export const pagesTools = {
   set_screen: tool({
     description:
       "Make a page a terminal screen, or change one: its surface (app, inline output, tmux status/layout/popup/menu, zellij plugin, Neovim float/split, prompt, picker), " +
-      "its size in columns and rows, and its colour depth. Resizes the page's frame to the grid. Its client must run in a terminal (set_part terminal). Read the terminal skill first.",
+      "its size in columns and rows, and its colour depth. Resizes the page's frame to the grid. Read the terminal skill first.",
     input: { page: z.string(), ...terminalScreen.shape },
     run: async (doc, a) => {
       const p = page(doc, a.page);
@@ -1019,16 +1011,6 @@ export const pagesTools = {
         ],
         reply: `${p.name} is a ${a.cols}${a.rows !== undefined ? `×${a.rows}` : "-column"} ${a.surface} screen.`,
       };
-    },
-  }),
-
-  place_page: tool({
-    description: "Say which client part (web app, mobile app) a page belongs to; omit client to clear it.",
-    input: { page: z.string(), client: z.string().optional() },
-    run: async (doc, a) => {
-      const { client: _, ...p } = page(doc, a.page);
-      const value: Page = a.client === undefined ? p : { ...p, client: a.client };
-      return { label: `Put ${p.name} in ${a.client ?? "no client"}`, ops: [{ kind: "put", collection: "pages", value }], reply: "Saved." };
     },
   }),
 

@@ -21,12 +21,6 @@ export function allowedCall(req: Request, own: ReadonlySet<string>): boolean {
   return allowedOrigin(req, own) && (req.headers.get("content-type") ?? "").split(";")[0]?.trim() === "application/json";
 }
 
-/** The mock API answers pages on this machine (a front end on any local port), never other sites. */
-export function mockOrigin(req: Request): string | undefined {
-  const origin = req.headers.get("origin");
-  return origin && /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(origin) ? origin : undefined;
-}
-
 const below = (path: string, dir: string) => path.startsWith(`${dir}/`) && !path.split("/").some((p) => p === ".." || p === ".");
 
 /** A design's own file: <dir>/<folder>/<name>.buni, nothing above or beside it. `dir` is the person's designs. */

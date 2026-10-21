@@ -4,16 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { emptyDoc, type Doc } from "../format/doc.ts";
 import { contextText } from "./context.ts";
-import { forTarget, gridProblems, terminalNotes } from "./terminal.ts";
+import { gridProblems, terminalNotes } from "./terminal.ts";
 import { renderPage } from "./html.ts";
 import { Workspace } from "./workspace.ts";
 
 function cli(): Doc {
   const doc = emptyDoc();
-  doc.parts.tui = { id: "tui", kind: "client", name: "crew TUI", purpose: "Watch agents", terminal: { targets: [{ language: "go", framework: "bubbletea" }, { language: "rust", framework: "ratatui" }, { language: "typescript", framework: "opentui" }] }, index: "a" };
   const screen = (id: string, terminal: NonNullable<Doc["pages"][string]["terminal"]>) => {
     doc.nodes[`${id}-f`] = { id: `${id}-f`, kind: "frame", index: "a0", name: id, style: {} };
-    doc.pages[id] = { id, name: id, frame: `${id}-f`, index: id, client: "tui", terminal };
+    doc.pages[id] = { id, name: id, frame: `${id}-f`, index: id, terminal };
   };
   screen("Agents", { surface: "app", cols: 120, rows: 36, colors: "truecolor" });
   screen("Keys", { surface: "tmux-popup", cols: 48, rows: 12, colors: "16" });
@@ -26,26 +25,23 @@ test("terminal screens are checked for keys, colour and the 80-column case", () 
   expect(terminalNotes(cli())).toEqual([
     "Keys has no keys linked; say how to move, act and leave.",
     "Keys reaches Agents only with the mouse; give it a key.",
-    "crew TUI is designed for more than 16 colours (Agents); say what it looks like with 16 colours and with colour off.",
-    "crew TUI's screens are all wider than 80 columns; design what it shows at 80×24.",
+    "Agents is designed for more than 16 colours; say what it looks like with 16 colours and with colour off.",
+    "The full-screen app's screens are all wider than 80 columns; design what it shows at 80×24.",
   ]);
 });
 
-test("the brief lists every build, or speaks one framework's words for one target", () => {
-  const all = contextText(cli(), { part: "tui" });
-  if (!all.ok) throw new Error(all.error);
-  expect(all.text).toContain("the same screens are built 3 ways, to compare:\n    - Go with Bubble Tea");
-  expect(all.text).toContain("- Agents (Agents): full-screen app (alternate screen), 120×36, designed for full colour; keys: ? → Keys");
-  const one = forTarget(cli(), "ratatui");
-  if (!one) throw new Error("ratatui is a target");
-  const r = contextText(one, { part: "tui" });
+test("a terminal screen's brief says where it shows, its grid and keys, and how to build it to the cell", () => {
+  const r = contextText(cli(), { page: "Agents" });
   if (!r.ok) throw new Error(r.error);
-  expect(r.text).toContain("runs in a terminal, written in Rust with Ratatui (a Block per bordered box");
-  expect(r.text).not.toContain("Bubble Tea");
-  expect(forTarget(cli(), "textual")).toBeUndefined();
+  expect(r.text).toContain("- full-screen app (alternate screen), 120×36, designed for full colour; keys: ? → Keys");
+  expect(r.text).toContain("Build each screen to match it cell for cell.");
+  const all = contextText(cli());
+  if (!all.ok) throw new Error(all.error);
+  expect(all.text).toContain("## Terminal screens\n- Agents (Agents): full-screen app (alternate screen), 120×36");
+  expect(all.text).toContain("Keys has no keys linked");
 });
 
-test("a flow's brief is its pages in order, how they link, and what they call", async () => {
+test("a flow's brief is its pages in order and how they link", async () => {
   const { readFileSync } = await import("node:fs");
   const { parseDoc } = await import("../format/parse.ts");
   const r = parseDoc(readFileSync(new URL("../../examples/portal.buni", import.meta.url), "utf8"));
@@ -54,7 +50,6 @@ test("a flow's brief is its pages in order, how they link, and what they call", 
   if (!t.ok) throw new Error(t.error);
   expect(t.text).toContain("## Pages, in order\n1. Home (home) /\n2. Pricing (pricing) /pricing");
   expect(t.text).toContain("- Home → Pricing: click See pricing");
-  expect(t.text).toContain("**GET /plans** (list-plans)");
   expect(contextText(r.doc, { flow: "nope" })).toEqual({ ok: false, error: 'flow "nope" does not exist' });
 });
 

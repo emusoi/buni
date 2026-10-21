@@ -1,7 +1,6 @@
 {
   "attachments": {},
   "buni": 1,
-  "clusters": {},
   "comments": {},
   "connections": {
     "019ae209": {
@@ -35,7 +34,6 @@
     },
     "0b528cf5": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "0b528cf5",
       "node": "ab3d66b2",
       "page": "c297162d",
@@ -45,7 +43,6 @@
     },
     "0fcdda4e": {
       "durationMs": 200,
-      "endpoint": "get-returns-id",
       "id": "0fcdda4e",
       "node": "64e173b1",
       "page": "3452a8e7",
@@ -55,7 +52,6 @@
     },
     "130adbb5": {
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "130adbb5",
       "node": "5fb7751c",
       "page": "8a0bcebd",
@@ -65,7 +61,6 @@
     },
     "13f79a0d": {
       "durationMs": 200,
-      "endpoint": "get-returns-id",
       "id": "13f79a0d",
       "node": "19d99564",
       "page": "93d6f28e",
@@ -95,7 +90,6 @@
     },
     "1c2e9aa8": {
       "durationMs": 200,
-      "endpoint": "patch-store",
       "id": "1c2e9aa8",
       "node": "32916a2c",
       "page": "2a14cd1a",
@@ -115,7 +109,6 @@
     },
     "235473e7": {
       "durationMs": 200,
-      "endpoint": "post-store-shopify-reconnect",
       "id": "235473e7",
       "node": "50269855",
       "page": "2a14cd1a",
@@ -125,7 +118,6 @@
     },
     "27bbdaeb": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-refund",
       "id": "27bbdaeb",
       "node": "05ebb98c",
       "page": "c297162d",
@@ -135,7 +127,6 @@
     },
     "3ecb7880": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "3ecb7880",
       "node": "f653ddb1",
       "page": "0aa69668",
@@ -174,7 +165,6 @@
     },
     "49e2c0dd": {
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "49e2c0dd",
       "node": "a50b1987",
       "page": "2db333ee",
@@ -204,7 +194,6 @@
     "621fb58e": {
       "condition": "Ten tries in the last hour (429)",
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "621fb58e",
       "node": "62ffe830",
       "page": "2e00677a",
@@ -214,7 +203,6 @@
     },
     "660780da": {
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "660780da",
       "node": "62ffe830",
       "page": "2e00677a",
@@ -224,7 +212,6 @@
     },
     "6767f6be": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "6767f6be",
       "nav": true,
       "node": "c5a94ea1",
@@ -245,7 +232,6 @@
     },
     "6f4322d2": {
       "durationMs": 200,
-      "endpoint": "patch-store",
       "id": "6f4322d2",
       "node": "a4321f2d",
       "page": "8ab55488",
@@ -255,7 +241,6 @@
     },
     "7c268e9a": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "7c268e9a",
       "nav": true,
       "node": "2d71ba28",
@@ -275,7 +260,6 @@
     },
     "8178114d": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-receive",
       "id": "8178114d",
       "node": "8e3cb46b",
       "page": "ea32c154",
@@ -286,7 +270,6 @@
     "821b9e37": {
       "condition": "Shopify didn't take the refund; the worker keeps trying",
       "durationMs": 200,
-      "endpoint": "post-returns-id-refund",
       "id": "821b9e37",
       "node": "05ebb98c",
       "page": "c297162d",
@@ -297,7 +280,6 @@
     "83b5047a": {
       "condition": "The number and email don't match (404)",
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "83b5047a",
       "node": "62ffe830",
       "page": "2e00677a",
@@ -327,7 +309,6 @@
     },
     "8dc2e59e": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "8dc2e59e",
       "nav": true,
       "node": "acd522b4",
@@ -348,7 +329,6 @@
     },
     "985ea08f": {
       "durationMs": 200,
-      "endpoint": "patch-store",
       "id": "985ea08f",
       "node": "6b6bc5f3",
       "page": "a26b64eb",
@@ -359,7 +339,6 @@
     "a479daee": {
       "condition": "Nothing in the order can be returned",
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "a479daee",
       "node": "62ffe830",
       "page": "2e00677a",
@@ -399,7 +378,6 @@
     },
     "bccdf8b3": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-refund",
       "id": "bccdf8b3",
       "node": "05ebb98c",
       "page": "a0ede594",
@@ -410,7 +388,6 @@
     "c1bdebc3": {
       "condition": "The carrier took longer than 400 ms",
       "durationMs": 200,
-      "endpoint": "post-returns",
       "id": "c1bdebc3",
       "node": "37f76c06",
       "page": "50094e02",
@@ -430,7 +407,6 @@
     },
     "c5d3696c": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-receive",
       "id": "c5d3696c",
       "node": "24184a21",
       "page": "ea32c154",
@@ -440,7 +416,6 @@
     },
     "cf5438d1": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "cf5438d1",
       "nav": true,
       "node": "d608a877",
@@ -451,7 +426,6 @@
     },
     "d5cf61c2": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-receive",
       "id": "d5cf61c2",
       "node": "745f222b",
       "page": "ea32c154",
@@ -462,7 +436,6 @@
     "d683a80d": {
       "condition": "The return window has closed (410)",
       "durationMs": 200,
-      "endpoint": "post-orders-lookup",
       "id": "d683a80d",
       "node": "62ffe830",
       "page": "2e00677a",
@@ -472,7 +445,6 @@
     },
     "dc8bcec8": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-receive",
       "id": "dc8bcec8",
       "node": "64e6212e",
       "page": "ea32c154",
@@ -482,7 +454,6 @@
     },
     "de22ed14": {
       "durationMs": 200,
-      "endpoint": "post-returns",
       "id": "de22ed14",
       "node": "37f76c06",
       "page": "50094e02",
@@ -492,7 +463,6 @@
     },
     "e55a257d": {
       "durationMs": 200,
-      "endpoint": "post-returns-id-reject",
       "id": "e55a257d",
       "node": "c31fca7f",
       "page": "0aa69668",
@@ -502,7 +472,6 @@
     },
     "f5fed44b": {
       "durationMs": 200,
-      "endpoint": "get-returns",
       "id": "f5fed44b",
       "node": "84b626a1",
       "page": "a0ede594",
@@ -512,7 +481,6 @@
     },
     "f6494697": {
       "durationMs": 200,
-      "endpoint": "post-store-shopify-reconnect",
       "id": "f6494697",
       "node": "50269855",
       "page": "3452a8e7",
@@ -569,443 +537,6 @@
       "by": "claude-code",
       "id": "d3b14c1b",
       "text": "The buyer never waits on the carrier for more than 400 ms: past that, POST /returns answers without the label and it is booked and emailed after. Keeps the 500 ms page budget."
-    }
-  },
-  "endpoints": {
-    "get-returns": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their store's returns",
-        "who": "roles"
-      },
-      "emits": [],
-      "id": "get-returns",
-      "index": "a3",
-      "method": "GET",
-      "path": "/returns",
-      "reads": [
-        "returns"
-      ],
-      "request": [
-        {
-          "name": "status",
-          "optional": true,
-          "type": "ReturnStatus"
-        },
-        {
-          "name": "cursor",
-          "optional": true,
-          "type": "string"
-        }
-      ],
-      "response": [],
-      "responseShape": "return-page",
-      "service": "returns-api",
-      "summary": "The store's returns, newest first, filtered by status.",
-      "writes": []
-    },
-    "get-returns-id": {
-      "access": {
-        "roles": [
-          "buyer",
-          "merchant"
-        ],
-        "rule": "The buyer with its token, or the store it belongs to",
-        "who": "roles"
-      },
-      "emits": [],
-      "errors": [
-        {
-          "code": "404",
-          "when": "No such return, or not yours"
-        }
-      ],
-      "id": "get-returns-id",
-      "index": "a2",
-      "method": "GET",
-      "path": "/returns/{id}",
-      "reads": [
-        "returns",
-        "return-items"
-      ],
-      "request": [],
-      "response": [],
-      "responseShape": "return",
-      "service": "returns-api",
-      "summary": "One return, for its buyer or its store.",
-      "writes": []
-    },
-    "get-shopify-callback": {
-      "access": {
-        "rule": "Only with Shopify's HMAC signature and the signed state from /store/shopify/reconnect, for that store",
-        "who": "public"
-      },
-      "emits": [
-        "refund-requested"
-      ],
-      "errors": [
-        {
-          "code": "400",
-          "when": "The signature or the state does not match the one we issued"
-        }
-      ],
-      "id": "get-shopify-callback",
-      "index": "aA",
-      "method": "GET",
-      "path": "/shopify/callback",
-      "reads": [
-        "refunds"
-      ],
-      "request": [
-        {
-          "name": "code",
-          "type": "string"
-        },
-        {
-          "name": "shop",
-          "type": "string"
-        },
-        {
-          "name": "state",
-          "type": "string"
-        },
-        {
-          "name": "hmac",
-          "type": "string"
-        }
-      ],
-      "response": [],
-      "service": "returns-api",
-      "summary": "Where Shopify sends the merchant back after approving Parcel: saves the new token, marks the store connected, re-queues every refund held while it was not, and redirects to Settings.",
-      "writes": [
-        "stores"
-      ]
-    },
-    "get-store": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their own store",
-        "who": "roles"
-      },
-      "emits": [],
-      "id": "get-store",
-      "index": "a7",
-      "method": "GET",
-      "path": "/store",
-      "reads": [
-        "stores"
-      ],
-      "request": [],
-      "response": [],
-      "responseShape": "store-settings",
-      "service": "returns-api",
-      "summary": "The signed-in merchant's store settings.",
-      "writes": []
-    },
-    "patch-store": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their own store",
-        "who": "roles"
-      },
-      "emits": [],
-      "errors": [
-        {
-          "code": "422",
-          "when": "The window is under 14 days (a buyer's legal minimum) or over 365, or the colour is not a hex colour"
-        }
-      ],
-      "id": "patch-store",
-      "index": "a8",
-      "method": "PATCH",
-      "path": "/store",
-      "reads": [],
-      "request": [],
-      "requestShape": "store-settings-change",
-      "response": [],
-      "responseShape": "store-settings",
-      "service": "returns-api",
-      "summary": "Change the return policy, branding or notifications; only what is sent changes. Buyers see it on their next lookup: nothing caches the store.",
-      "writes": [
-        "stores"
-      ]
-    },
-    "post-orders-lookup": {
-      "access": {
-        "rule": "Rate limited to 10 tries an hour per IP and per order number, counted in lookup_attempts",
-        "who": "public"
-      },
-      "emits": [],
-      "errors": [
-        {
-          "code": "404",
-          "when": "No order has that number and email"
-        },
-        {
-          "code": "410",
-          "when": "The return window has closed"
-        },
-        {
-          "code": "429",
-          "when": "Ten tries in the last hour for this IP or order number"
-        }
-      ],
-      "id": "post-orders-lookup",
-      "index": "a0",
-      "method": "POST",
-      "path": "/orders/lookup",
-      "reads": [
-        "stores",
-        "returns",
-        "return-items"
-      ],
-      "request": [],
-      "requestShape": "order-lookup",
-      "response": [],
-      "responseShape": "order",
-      "service": "returns-api",
-      "summary": "Find an order by its number and email, say which lines can go back and why not, and hand back a short-lived token to return it.",
-      "writes": [
-        "lookup-attempts"
-      ]
-    },
-    "post-returns": {
-      "access": {
-        "roles": [
-          "buyer"
-        ],
-        "rule": "Only the order the return token was issued for",
-        "who": "roles"
-      },
-      "emits": [
-        "label-requested"
-      ],
-      "errors": [
-        {
-          "code": "401",
-          "when": "The return token expired; look the order up again"
-        },
-        {
-          "code": "409",
-          "when": "These items are already being returned"
-        },
-        {
-          "code": "422",
-          "when": "An item is not returnable"
-        }
-      ],
-      "id": "post-returns",
-      "index": "a1",
-      "method": "POST",
-      "path": "/returns",
-      "reads": [],
-      "request": [],
-      "requestShape": "return-request",
-      "response": [],
-      "responseShape": "return",
-      "service": "returns-api",
-      "summary": "Start a return for the chosen items and book its label, waiting at most 400 ms for the carrier.",
-      "writes": [
-        "returns",
-        "return-items"
-      ]
-    },
-    "post-returns-id-receive": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their store's returns",
-        "who": "roles"
-      },
-      "emits": [],
-      "errors": [
-        {
-          "code": "409",
-          "when": "Already received or refunded"
-        }
-      ],
-      "id": "post-returns-id-receive",
-      "index": "a4",
-      "method": "POST",
-      "path": "/returns/{id}/receive",
-      "reads": [],
-      "request": [],
-      "response": [],
-      "responseShape": "return",
-      "service": "returns-api",
-      "summary": "Mark the parcel received.",
-      "writes": [
-        "returns"
-      ]
-    },
-    "post-returns-id-refund": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their store's returns",
-        "who": "roles"
-      },
-      "emits": [
-        "refund-requested"
-      ],
-      "errors": [
-        {
-          "code": "409",
-          "when": "Already refunded or refunding"
-        },
-        {
-          "code": "422",
-          "when": "Not received yet, or the amount is more than the items cost"
-        }
-      ],
-      "id": "post-returns-id-refund",
-      "index": "a5",
-      "method": "POST",
-      "path": "/returns/{id}/refund",
-      "reads": [],
-      "request": [
-        {
-          "name": "amount",
-          "optional": true,
-          "type": "Money"
-        }
-      ],
-      "response": [],
-      "responseShape": "return",
-      "service": "returns-api",
-      "summary": "Approve the refund, in full or in part; the worker pays it.",
-      "writes": [
-        "returns",
-        "refunds"
-      ]
-    },
-    "post-returns-id-reject": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their store's returns",
-        "who": "roles"
-      },
-      "emits": [
-        "return-rejected"
-      ],
-      "errors": [
-        {
-          "code": "409",
-          "when": "Already refunded"
-        }
-      ],
-      "id": "post-returns-id-reject",
-      "index": "a6",
-      "method": "POST",
-      "path": "/returns/{id}/reject",
-      "reads": [],
-      "request": [
-        {
-          "name": "reason",
-          "type": "string"
-        }
-      ],
-      "response": [],
-      "responseShape": "return",
-      "service": "returns-api",
-      "summary": "Turn a return down; the worker emails the buyer the reason.",
-      "writes": [
-        "returns"
-      ]
-    },
-    "post-store-shopify-reconnect": {
-      "access": {
-        "roles": [
-          "merchant"
-        ],
-        "rule": "Only their own store",
-        "who": "roles"
-      },
-      "emits": [],
-      "id": "post-store-shopify-reconnect",
-      "index": "a9",
-      "method": "POST",
-      "path": "/store/shopify/reconnect",
-      "reads": [
-        "stores"
-      ],
-      "request": [],
-      "response": [
-        {
-          "name": "url",
-          "type": "string"
-        }
-      ],
-      "service": "returns-api",
-      "summary": "Hand back Shopify's approval URL with a signed state naming the store; Shopify returns the merchant to GET /shopify/callback, which finishes the job.",
-      "writes": []
-    }
-  },
-  "environments": {
-    "production": {
-      "id": "production",
-      "index": "a0",
-      "name": "production",
-      "provider": "aws",
-      "regions": [
-        "eu-west-2"
-      ]
-    }
-  },
-  "events": {
-    "label-requested": {
-      "id": "label-requested",
-      "index": "a1",
-      "name": "label.requested",
-      "payload": [
-        {
-          "name": "returnId",
-          "type": "id"
-        }
-      ],
-      "queue": "refund-jobs"
-    },
-    "refund-requested": {
-      "id": "refund-requested",
-      "index": "a0",
-      "name": "refund.requested",
-      "payload": [
-        {
-          "name": "returnId",
-          "type": "id"
-        },
-        {
-          "name": "amount",
-          "type": "Money"
-        }
-      ],
-      "queue": "refund-jobs"
-    },
-    "return-rejected": {
-      "id": "return-rejected",
-      "index": "a2",
-      "name": "return.rejected",
-      "payload": [
-        {
-          "name": "returnId",
-          "type": "id"
-        },
-        {
-          "name": "reason",
-          "type": "string"
-        }
-      ],
-      "queue": "refund-jobs"
     }
   },
   "flows": {
@@ -1109,183 +640,6 @@
       ]
     }
   },
-  "links": {
-    "buyer-portal-calls-returns-api": {
-      "carries": [
-        "order-lookup",
-        "order",
-        "return-request",
-        "return"
-      ],
-      "failure": {
-        "fallback": "Show the error and keep what the buyer picked",
-        "idempotencyKey": "returnToken",
-        "retries": 1,
-        "timeoutMs": 3000
-      },
-      "from": "buyer-portal",
-      "id": "buyer-portal-calls-returns-api",
-      "kind": "calls",
-      "to": "returns-api"
-    },
-    "merchant-dashboard-calls-returns-api": {
-      "carries": [
-        "return-page",
-        "return"
-      ],
-      "failure": {
-        "fallback": "Keep the queue as last loaded and say it is out of date",
-        "idempotencyKey": "Idempotency-Key header: return id + action",
-        "retries": 2,
-        "timeoutMs": 5000
-      },
-      "from": "merchant-dashboard",
-      "id": "merchant-dashboard-calls-returns-api",
-      "kind": "calls",
-      "to": "returns-api"
-    },
-    "refund-worker-calls-resend": {
-      "carries": [
-        "return"
-      ],
-      "failure": {
-        "idempotencyKey": "refund-sent:{return id}",
-        "retries": 3,
-        "timeoutMs": 5000
-      },
-      "from": "refund-worker",
-      "id": "refund-worker-calls-resend",
-      "kind": "calls",
-      "note": "Refund sent, and return rejected with the merchant's reason",
-      "to": "resend"
-    },
-    "refund-worker-calls-shippo": {
-      "carries": [
-        "label"
-      ],
-      "failure": {
-        "fallback": "Leave the job on the queue; alert after 5 tries",
-        "idempotencyKey": "return id",
-        "retries": 5,
-        "timeoutMs": 10000
-      },
-      "from": "refund-worker",
-      "id": "refund-worker-calls-shippo",
-      "kind": "calls",
-      "note": "Book labels the API gave up waiting for",
-      "to": "shippo"
-    },
-    "refund-worker-calls-shopify": {
-      "carries": [
-        "refund-job"
-      ],
-      "failure": {
-        "fallback": "Leave the job on the queue; alert after 5 tries",
-        "idempotencyKey": "return id",
-        "retries": 5,
-        "timeoutMs": 10000
-      },
-      "from": "refund-worker",
-      "id": "refund-worker-calls-shopify",
-      "kind": "calls",
-      "note": "Create the refund on the order. A 401 means Shopify refused our token: set stores.shopify_status to needs_reconnect and hold the job, it is not a failure to retry",
-      "to": "shopify"
-    },
-    "refund-worker-subscribes-refund-jobs": {
-      "carries": [
-        "refund-job"
-      ],
-      "from": "refund-worker",
-      "id": "refund-worker-subscribes-refund-jobs",
-      "kind": "subscribes",
-      "note": "refund.requested, label.requested, return.rejected",
-      "to": "refund-jobs"
-    },
-    "refund-worker-writes-main-database": {
-      "carries": [
-        "return"
-      ],
-      "from": "refund-worker",
-      "id": "refund-worker-writes-main-database",
-      "kind": "writes",
-      "note": "Refund and return state; stores.shopify_status when Shopify refuses the token",
-      "to": "main-database"
-    },
-    "returns-api-calls-resend": {
-      "carries": [
-        "label"
-      ],
-      "failure": {
-        "idempotencyKey": "label:{return id}",
-        "retries": 3,
-        "timeoutMs": 5000
-      },
-      "from": "returns-api",
-      "id": "returns-api-calls-resend",
-      "kind": "calls",
-      "note": "Label email",
-      "to": "resend"
-    },
-    "returns-api-calls-shippo": {
-      "carries": [
-        "label"
-      ],
-      "failure": {
-        "fallback": "Accept the return now; the worker books the label and emails it",
-        "idempotencyKey": "return id",
-        "retries": 0,
-        "timeoutMs": 400
-      },
-      "from": "returns-api",
-      "id": "returns-api-calls-shippo",
-      "kind": "calls",
-      "note": "Book the return label",
-      "to": "shippo"
-    },
-    "returns-api-calls-shopify": {
-      "carries": [
-        "order"
-      ],
-      "failure": {
-        "fallback": "Tell the buyer the store is unreachable",
-        "idempotencyKey": "none needed: a read-only order lookup",
-        "retries": 1,
-        "timeoutMs": 2500
-      },
-      "from": "returns-api",
-      "id": "returns-api-calls-shopify",
-      "kind": "calls",
-      "note": "Order lookup by number and email",
-      "to": "shopify"
-    },
-    "returns-api-publishes-refund-jobs": {
-      "carries": [
-        "refund-job"
-      ],
-      "from": "returns-api",
-      "id": "returns-api-publishes-refund-jobs",
-      "kind": "publishes",
-      "to": "refund-jobs"
-    },
-    "returns-api-reads-main-database": {
-      "carries": [
-        "return"
-      ],
-      "from": "returns-api",
-      "id": "returns-api-reads-main-database",
-      "kind": "reads",
-      "to": "main-database"
-    },
-    "returns-api-writes-main-database": {
-      "carries": [
-        "return"
-      ],
-      "from": "returns-api",
-      "id": "returns-api-writes-main-database",
-      "kind": "writes",
-      "to": "main-database"
-    }
-  },
   "nodes": {
     "11569133": {
       "id": "11569133",
@@ -1354,10 +708,6 @@
       "twin": "6617bb8f"
     },
     "41342677": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "notifyEmail"
-      },
       "filled": true,
       "id": "41342677",
       "index": "a1",
@@ -1638,10 +988,6 @@
       "text": "Age"
     },
     "01516835": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopDomain"
-      },
       "id": "01516835",
       "index": "a1",
       "kind": "text",
@@ -1777,10 +1123,6 @@
       "tag": "div"
     },
     "039056a1": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].price"
-      },
       "id": "039056a1",
       "index": "a3",
       "kind": "text",
@@ -2067,10 +1409,6 @@
       "style": {}
     },
     "094d4652": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].title"
-      },
       "id": "094d4652",
       "index": "a0",
       "kind": "text",
@@ -3363,10 +2701,6 @@
       "text": "To your Visa ending 4242, within a day of arrival"
     },
     "206b7f45": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "notifyEmail"
-      },
       "filled": true,
       "id": "206b7f45",
       "index": "a1",
@@ -5489,10 +4823,6 @@
       }
     },
     "45c46559": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "store.policy"
-      },
       "id": "45c46559",
       "index": "a1",
       "kind": "text",
@@ -5935,10 +5265,6 @@
       "twin": "eb5bf25a"
     },
     "4f34af7c": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "policy"
-      },
       "filled": true,
       "id": "4f34af7c",
       "index": "a1",
@@ -6002,10 +5328,6 @@
       "text": "It closed on 12 September. If something is wrong with the item, write to the shop and they can still help."
     },
     "516c1d29": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopDomain"
-      },
       "id": "516c1d29",
       "index": "a1",
       "kind": "text",
@@ -6175,10 +5497,6 @@
       "text": "Gift cards"
     },
     "5615e63b": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].title"
-      },
       "id": "5615e63b",
       "index": "a0",
       "kind": "text",
@@ -6323,10 +5641,6 @@
       "twin": "0d0955e1"
     },
     "59e85250": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "number"
-      },
       "id": "59e85250",
       "index": "a0",
       "kind": "text",
@@ -7536,10 +6850,6 @@
       "tag": "span"
     },
     "6fe1eb8c": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnWindowDays"
-      },
       "filled": true,
       "id": "6fe1eb8c",
       "index": "a0",
@@ -7840,10 +7150,6 @@
       "tag": "section"
     },
     "75585cdb": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].notReturnable.message"
-      },
       "id": "75585cdb",
       "index": "a1",
       "kind": "text",
@@ -8098,10 +7404,6 @@
       "twin": "744ede02"
     },
     "78b582dc": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnWindowDays"
-      },
       "filled": true,
       "id": "78b582dc",
       "index": "a0",
@@ -8417,10 +7719,6 @@
       "twin": "81832792"
     },
     "7cd598a2": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "carrier"
-      },
       "id": "7cd598a2",
       "index": "a0",
       "kind": "text",
@@ -8815,10 +8113,6 @@
       "twin": "660c7048"
     },
     "84e4ebab": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "number"
-      },
       "id": "84e4ebab",
       "index": "a0",
       "kind": "text",
@@ -8946,10 +8240,6 @@
       "text": "All"
     },
     "86f2f3ad": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "carrier"
-      },
       "id": "86f2f3ad",
       "index": "a0",
       "kind": "text",
@@ -9243,10 +8533,6 @@
       "tag": "div"
     },
     "8d0e9c6d": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].title"
-      },
       "id": "8d0e9c6d",
       "index": "a0",
       "kind": "text",
@@ -9262,10 +8548,6 @@
       "twin": "094d4652"
     },
     "8d1faa1c": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopify"
-      },
       "id": "8d1faa1c",
       "index": "a0",
       "kind": "text",
@@ -9665,10 +8947,6 @@
       "twin": "1cb00b0b"
     },
     "94caac57": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopDomain"
-      },
       "id": "94caac57",
       "index": "a1",
       "kind": "text",
@@ -9849,10 +9127,6 @@
       "style": {}
     },
     "985a5782": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnsUrl"
-      },
       "id": "985a5782",
       "index": "a0",
       "kind": "text",
@@ -10100,10 +9374,6 @@
       "twin": "6be7d024"
     },
     "9e7647bd": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "notifyEmail"
-      },
       "filled": true,
       "id": "9e7647bd",
       "index": "a1",
@@ -10368,10 +9638,6 @@
       "text": "Return #R-2041 · Questions? Reply to the email we sent."
     },
     "a350cceb": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "policy"
-      },
       "filled": true,
       "id": "a350cceb",
       "index": "a1",
@@ -10563,10 +9829,6 @@
       }
     },
     "a6ef0bf7": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopify"
-      },
       "id": "a6ef0bf7",
       "index": "a0",
       "kind": "text",
@@ -11027,10 +10289,6 @@
       "tag": "div"
     },
     "afbc97bb": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].variant"
-      },
       "id": "afbc97bb",
       "index": "a1",
       "kind": "text",
@@ -11141,10 +10399,6 @@
       "tag": "div"
     },
     "b234db87": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "brandColor"
-      },
       "filled": true,
       "id": "b234db87",
       "index": "a1",
@@ -11453,10 +10707,6 @@
       "tag": "button"
     },
     "b94ca34f": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "shopify"
-      },
       "id": "b94ca34f",
       "index": "a0",
       "kind": "text",
@@ -11873,10 +11123,6 @@
       "text": "Return an item"
     },
     "c2f8a029": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnsUrl"
-      },
       "id": "c2f8a029",
       "index": "a0",
       "kind": "text",
@@ -13085,10 +12331,6 @@
       "twin": "d828c720"
     },
     "da2f13c4": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "carrier"
-      },
       "id": "da2f13c4",
       "index": "a0",
       "kind": "text",
@@ -13270,10 +12512,6 @@
       "tag": "button"
     },
     "df402a9c": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnsUrl"
-      },
       "id": "df402a9c",
       "index": "a0",
       "kind": "text",
@@ -14064,10 +13302,6 @@
       "text": "Paid by you"
     },
     "eec60523": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "returnWindowDays"
-      },
       "filled": true,
       "id": "eec60523",
       "index": "a0",
@@ -14321,10 +13555,6 @@
       "twin": "81832792"
     },
     "f3d022d0": {
-      "bind": {
-        "endpoint": "post-orders-lookup",
-        "field": "lines[].notReturnable.message"
-      },
       "id": "f3d022d0",
       "index": "a1",
       "kind": "text",
@@ -14491,10 +13721,6 @@
       "twin": "f3d53789"
     },
     "f630b127": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "brandColor"
-      },
       "filled": true,
       "id": "f630b127",
       "index": "a1",
@@ -14832,10 +14058,6 @@
       "text": "Damaged"
     },
     "fb197608": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "policy"
-      },
       "filled": true,
       "id": "fb197608",
       "index": "a1",
@@ -15015,10 +14237,6 @@
       "text": "2 d"
     },
     "fda5bbbf": {
-      "bind": {
-        "endpoint": "get-store",
-        "field": "brandColor"
-      },
       "filled": true,
       "id": "fda5bbbf",
       "index": "a1",
@@ -15156,10 +14374,8 @@
       "twin": "3329b283"
     }
   },
-  "operations": {},
   "pages": {
     "0128a3c2": {
-      "client": "buyer-portal",
       "frame": "1d769da1",
       "id": "0128a3c2",
       "index": "a1V",
@@ -15168,7 +14384,6 @@
       "state": "Nothing to return"
     },
     "0aa69668": {
-      "client": "merchant-dashboard",
       "frame": "28621c4b",
       "id": "0aa69668",
       "index": "a4G",
@@ -15179,7 +14394,6 @@
       "y": 1084
     },
     "2a14cd1a": {
-      "client": "merchant-dashboard",
       "frame": "d17151ec",
       "id": "2a14cd1a",
       "index": "a3C",
@@ -15191,7 +14405,6 @@
       ]
     },
     "2db333ee": {
-      "client": "buyer-portal",
       "frame": "5d92c248",
       "id": "2db333ee",
       "index": "a0V",
@@ -15202,7 +14415,6 @@
       "y": 0
     },
     "2e00677a": {
-      "client": "buyer-portal",
       "frame": "3329b283",
       "id": "2e00677a",
       "index": "a0",
@@ -15212,7 +14424,6 @@
       "y": 0
     },
     "3452a8e7": {
-      "client": "merchant-dashboard",
       "frame": "25e369aa",
       "id": "3452a8e7",
       "index": "a34",
@@ -15221,7 +14432,6 @@
       "state": "Shopify disconnected"
     },
     "47cde14f": {
-      "client": "buyer-portal",
       "frame": "9ee89a19",
       "id": "47cde14f",
       "index": "a5",
@@ -15232,7 +14442,6 @@
       "y": 0
     },
     "50094e02": {
-      "client": "buyer-portal",
       "frame": "967e0ad0",
       "id": "50094e02",
       "index": "a1",
@@ -15242,7 +14451,6 @@
       "y": 0
     },
     "8a0bcebd": {
-      "client": "buyer-portal",
       "frame": "cc073aab",
       "id": "8a0bcebd",
       "index": "a0l",
@@ -15253,7 +14461,6 @@
       "y": 0
     },
     "8ab55488": {
-      "client": "merchant-dashboard",
       "frame": "c45abe42",
       "id": "8ab55488",
       "index": "a38",
@@ -15264,7 +14471,6 @@
       ]
     },
     "93d6f28e": {
-      "client": "merchant-dashboard",
       "frame": "4aed76c2",
       "id": "93d6f28e",
       "index": "a3",
@@ -15274,7 +14480,6 @@
       "y": 1084
     },
     "a0ede594": {
-      "client": "merchant-dashboard",
       "frame": "b53dac53",
       "id": "a0ede594",
       "index": "a4V",
@@ -15285,7 +14490,6 @@
       "y": 1084
     },
     "a26b64eb": {
-      "client": "merchant-dashboard",
       "frame": "1d2f82b1",
       "id": "a26b64eb",
       "index": "a3A",
@@ -15297,7 +14501,6 @@
       ]
     },
     "bf6a55ad": {
-      "client": "buyer-portal",
       "frame": "e91f835e",
       "id": "bf6a55ad",
       "index": "a2",
@@ -15307,7 +14510,6 @@
       "y": 0
     },
     "c297162d": {
-      "client": "merchant-dashboard",
       "frame": "e90d98f7",
       "id": "c297162d",
       "index": "a4",
@@ -15317,7 +14519,6 @@
       "y": 1084
     },
     "e0b562c3": {
-      "client": "buyer-portal",
       "frame": "ffd999da",
       "id": "e0b562c3",
       "index": "a0d",
@@ -15328,7 +14529,6 @@
       "y": 0
     },
     "ea32c154": {
-      "client": "merchant-dashboard",
       "frame": "567ddfcd",
       "id": "ea32c154",
       "index": "a3V",
@@ -15339,7 +14539,6 @@
       "y": 1084
     },
     "f21934af": {
-      "client": "merchant-dashboard",
       "frame": "6c5f62c3",
       "id": "f21934af",
       "index": "a3G",
@@ -15348,662 +14547,6 @@
       "state": "Empty",
       "x": 1600,
       "y": 1084
-    }
-  },
-  "parts": {
-    "buyer-portal": {
-      "id": "buyer-portal",
-      "index": "a0",
-      "kind": "client",
-      "name": "Buyer portal",
-      "purpose": "Where a buyer finds their order and starts a return, on a phone, without an account.",
-      "tech": "Next.js 15"
-    },
-    "main-database": {
-      "id": "main-database",
-      "ifDown": "Buyers see \"Returns are paused for a moment, try again in a few minutes\"; nothing is accepted half-way.",
-      "index": "a4",
-      "kind": "store",
-      "name": "Main database",
-      "purpose": "Returns, their items and every refund attempt.",
-      "tech": "Postgres 16"
-    },
-    "merchant-dashboard": {
-      "id": "merchant-dashboard",
-      "index": "a1",
-      "kind": "client",
-      "name": "Merchant dashboard",
-      "purpose": "Where a merchant sees the returns queue, marks parcels received and refunds.",
-      "tech": "Next.js 15"
-    },
-    "refund-jobs": {
-      "id": "refund-jobs",
-      "ifDown": "Clicks still record the decision; jobs are re-sent from the database when the queue is back.",
-      "index": "a5",
-      "kind": "queue",
-      "name": "Jobs",
-      "purpose": "Work that happens after the response: paying refunds, and booking labels the carrier was too slow for.",
-      "tech": "SQS standard queue"
-    },
-    "refund-worker": {
-      "api": "none",
-      "id": "refund-worker",
-      "index": "a3",
-      "kind": "service",
-      "name": "Worker",
-      "purpose": "Does the work after the response, once per job: pays refunds through Shopify, books late labels, and emails the buyer (label, refund sent, rejected with the reason). Holds refunds while the store needs reconnecting.",
-      "tech": "TypeScript on Node 22"
-    },
-    "resend": {
-      "id": "resend",
-      "ifDown": "Emails retry for a day; the portal still shows the label.",
-      "index": "a8",
-      "kind": "external",
-      "name": "Resend",
-      "purpose": "Sends the buyer their label and refund emails.",
-      "tech": "Resend"
-    },
-    "returns-api": {
-      "id": "returns-api",
-      "index": "a2",
-      "kind": "service",
-      "name": "Returns API",
-      "purpose": "Owns returns: looks up orders, books labels, records decisions and queues refunds.",
-      "tech": "TypeScript on Node 22, Hono"
-    },
-    "shippo": {
-      "id": "shippo",
-      "ifDown": "The return is still accepted; the label is emailed when Shippo is back.",
-      "index": "a7",
-      "kind": "external",
-      "name": "Shippo",
-      "purpose": "Books the return label the buyer prints.",
-      "tech": "Shippo API"
-    },
-    "shopify": {
-      "id": "shopify",
-      "ifDown": "Buyers cannot find orders; the portal says the store is unreachable. Refunds wait in the queue.",
-      "index": "a6",
-      "kind": "external",
-      "name": "Shopify",
-      "purpose": "The store's orders, and where refunds are paid.",
-      "tech": "Shopify Admin API 2025-07",
-      "x": 316,
-      "y": 232
-    }
-  },
-  "phases": {
-    "later": {
-      "goal": "Exchanges, more carriers, more platforms.",
-      "id": "later",
-      "index": "a1",
-      "name": "later"
-    },
-    "v1": {
-      "goal": "A buyer returns an order and gets refunded with no email to the shop.",
-      "id": "v1",
-      "index": "a0",
-      "name": "v1"
-    }
-  },
-  "placements": {
-    "buyer-portal-production": {
-      "config": [
-        "API_URL"
-      ],
-      "environment": "production",
-      "id": "buyer-portal-production",
-      "ingress": {
-        "host": "returns.parcel.app",
-        "path": "/"
-      },
-      "part": "buyer-portal",
-      "regions": [
-        "eu-west-2"
-      ],
-      "runtime": "container",
-      "scale": {
-        "max": 6,
-        "min": 2
-      },
-      "service": "ECS Fargate"
-    },
-    "main-database-production": {
-      "environment": "production",
-      "id": "main-database-production",
-      "part": "main-database",
-      "regions": [
-        "eu-west-2"
-      ],
-      "replicas": 1,
-      "runtime": "managed",
-      "service": "RDS Postgres 16, Multi-AZ"
-    },
-    "merchant-dashboard-production": {
-      "config": [
-        "API_URL"
-      ],
-      "environment": "production",
-      "id": "merchant-dashboard-production",
-      "ingress": {
-        "host": "app.parcel.app",
-        "path": "/"
-      },
-      "part": "merchant-dashboard",
-      "regions": [
-        "eu-west-2"
-      ],
-      "runtime": "container",
-      "scale": {
-        "max": 3,
-        "min": 1
-      },
-      "secrets": [
-        "SESSION_SECRET"
-      ],
-      "service": "ECS Fargate"
-    },
-    "refund-jobs-production": {
-      "environment": "production",
-      "id": "refund-jobs-production",
-      "part": "refund-jobs",
-      "regions": [
-        "eu-west-2"
-      ],
-      "runtime": "managed",
-      "service": "SQS standard queue with a dead-letter queue after 5 tries"
-    },
-    "refund-worker-production": {
-      "config": [
-        "DATABASE_URL",
-        "REFUND_QUEUE_URL"
-      ],
-      "environment": "production",
-      "id": "refund-worker-production",
-      "part": "refund-worker",
-      "regions": [
-        "eu-west-2"
-      ],
-      "runtime": "container",
-      "scale": {
-        "max": 4,
-        "min": 1
-      },
-      "secrets": [
-        "RESEND_API_KEY",
-        "SHOPIFY_APP_SECRET"
-      ],
-      "service": "ECS Fargate"
-    },
-    "returns-api-production": {
-      "config": [
-        "DATABASE_URL",
-        "REFUND_QUEUE_URL"
-      ],
-      "environment": "production",
-      "id": "returns-api-production",
-      "ingress": {
-        "host": "api.parcel.app",
-        "path": "/"
-      },
-      "part": "returns-api",
-      "regions": [
-        "eu-west-2"
-      ],
-      "runtime": "container",
-      "scale": {
-        "max": 8,
-        "min": 2
-      },
-      "secrets": [
-        "RETURN_TOKEN_KEY",
-        "SHIPPO_API_KEY",
-        "RESEND_API_KEY",
-        "SHOPIFY_APP_SECRET"
-      ],
-      "service": "ECS Fargate"
-    }
-  },
-  "positions": {},
-  "questions": {
-    "q-who-pays-for-the": {
-      "about": [],
-      "at": "2026-10-03T16:20:37.502Z",
-      "by": "claude-code",
-      "chosen": "Merchant always",
-      "id": "q-who-pays-for-the",
-      "index": "a0",
-      "kind": "question",
-      "options": [
-        {
-          "cons": "Merchant pays for every return, even abuse",
-          "name": "Merchant always",
-          "pros": "Simplest for buyers; most returns"
-        },
-        {
-          "cons": "Buyers drop off; needs a clear price before they commit",
-          "name": "Deducted from the refund",
-          "pros": "Merchant cost is zero"
-        }
-      ],
-      "status": "decided",
-      "text": "Who pays for the return label?"
-    }
-  },
-  "requirements": {
-    "req-a-buyer-only-sees": {
-      "detail": "Order number plus the email on the order; nothing else opens an order.",
-      "id": "req-a-buyer-only-sees",
-      "index": "a1",
-      "phase": "v1",
-      "priority": "must",
-      "servedBy": [
-        "post-orders-lookup",
-        "find-my-order"
-      ],
-      "title": "A buyer only sees their own order"
-    },
-    "req-a-buyer-starts-a": {
-      "detail": "From the email link to a printable label, with no account and no message to the shop.",
-      "id": "req-a-buyer-starts-a",
-      "index": "a0",
-      "phase": "v1",
-      "priority": "must",
-      "servedBy": [
-        "2e00677a",
-        "50094e02",
-        "bf6a55ad",
-        "start-a-return",
-        "post-returns"
-      ],
-      "title": "A buyer starts a return in under two minutes"
-    },
-    "req-a-merchant-refunds-a": {
-      "id": "req-a-merchant-refunds-a",
-      "index": "a2",
-      "phase": "v1",
-      "priority": "must",
-      "servedBy": [
-        "c297162d",
-        "post-returns-id-refund",
-        "refund-a-return"
-      ],
-      "title": "A merchant refunds a received return in one click"
-    },
-    "req-a-merchant-sets-their": {
-      "id": "req-a-merchant-sets-their",
-      "index": "a6",
-      "phase": "v1",
-      "priority": "must",
-      "servedBy": [
-        "get-store",
-        "patch-store",
-        "8ab55488",
-        "get-shopify-callback"
-      ],
-      "title": "A merchant sets their return policy and branding without writing to us"
-    },
-    "req-a-refund-is-never": {
-      "detail": "Retries, double clicks and webhook replays all land on one refund.",
-      "id": "req-a-refund-is-never",
-      "index": "a3",
-      "phase": "v1",
-      "priority": "must",
-      "servedBy": [
-        "refunds",
-        "refund-worker",
-        "refund-a-return"
-      ],
-      "title": "A refund is never paid twice"
-    },
-    "req-exchanges-instead-of-refunds": {
-      "id": "req-exchanges-instead-of-refunds",
-      "index": "a5",
-      "phase": "later",
-      "priority": "could",
-      "servedBy": [],
-      "title": "Exchanges instead of refunds"
-    },
-    "req-the-buyer-hears-when": {
-      "id": "req-the-buyer-hears-when",
-      "index": "a4",
-      "phase": "v1",
-      "priority": "should",
-      "servedBy": [
-        "resend",
-        "refund-worker"
-      ],
-      "title": "The buyer hears when their refund is sent"
-    }
-  },
-  "reviews": {
-    "2e00677a": {
-      "at": "2026-10-03T18:28:51.973Z",
-      "by": "you",
-      "fingerprint": "fcda53cd",
-      "id": "2e00677a",
-      "state": "approved"
-    },
-    "50094e02": {
-      "at": "2026-10-03T18:28:53.784Z",
-      "by": "you",
-      "fingerprint": "47fd45c5",
-      "id": "50094e02",
-      "state": "approved"
-    },
-    "8ab55488": {
-      "at": "2026-10-03T20:34:16.857Z",
-      "by": "you",
-      "fingerprint": "b1fe11b6",
-      "id": "8ab55488",
-      "state": "approved"
-    },
-    "93d6f28e": {
-      "at": "2026-10-03T18:28:57.411Z",
-      "by": "you",
-      "fingerprint": "773afd2b",
-      "id": "93d6f28e",
-      "state": "approved"
-    },
-    "bf6a55ad": {
-      "at": "2026-10-03T18:28:55.595Z",
-      "by": "you",
-      "fingerprint": "7e7b8e50",
-      "id": "bf6a55ad",
-      "state": "approved"
-    },
-    "buyer-portal": {
-      "at": "2026-10-03T18:39:45.355Z",
-      "by": "you",
-      "fingerprint": "ec7cefdb",
-      "id": "buyer-portal",
-      "state": "approved",
-      "was": "{\"id\":\"buyer-portal\",\"kind\":\"client\",\"name\":\"Buyer portal\",\"purpose\":\"Where a buyer finds their order and starts a return, on a phone, without an account.\",\"tech\":\"Next.js 15\"}"
-    },
-    "c297162d": {
-      "at": "2026-10-03T20:54:57.846Z",
-      "by": "you",
-      "fingerprint": "f61d5d36",
-      "id": "c297162d",
-      "state": "approved"
-    },
-    "find-my-order": {
-      "at": "2026-10-03T18:39:47.180Z",
-      "by": "you",
-      "fingerprint": "3e8e1f68",
-      "id": "find-my-order",
-      "state": "approved",
-      "was": "{\"id\":\"find-my-order\",\"name\":\"Find my order\",\"steps\":[{\"action\":\"POST /orders/lookup\",\"carries\":\"order-lookup\",\"from\":\"buyer-portal\",\"ifFails\":\"Couldn’t reach the shop; try again\",\"ms\":30,\"to\":\"returns-api\",\"via\":\"post-orders-lookup\"},{\"action\":\"orders(query: name + email)\",\"carries\":\"order\",\"from\":\"returns-api\",\"ifFails\":\"The store is unreachable right now\",\"ms\":350,\"to\":\"shopify\"}]}"
-    },
-    "get-returns": {
-      "at": "2026-10-03T18:29:11.185Z",
-      "by": "you",
-      "fingerprint": "330ff1f6",
-      "id": "get-returns",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their store's returns\",\"who\":\"roles\"},\"id\":\"get-returns\",\"method\":\"GET\",\"path\":\"/returns\",\"reads\":[\"returns\"],\"request\":[{\"name\":\"status\",\"optional\":true,\"type\":\"ReturnStatus\"},{\"name\":\"cursor\",\"optional\":true,\"type\":\"string\"}],\"responseShape\":\"return-page\",\"service\":\"returns-api\",\"summary\":\"The store's returns, newest first, filtered by status.\"}"
-    },
-    "get-returns-id": {
-      "at": "2026-10-03T18:29:09.379Z",
-      "by": "you",
-      "fingerprint": "c3d713a9",
-      "id": "get-returns-id",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"buyer\",\"merchant\"],\"rule\":\"The buyer with its token, or the store it belongs to\",\"who\":\"roles\"},\"errors\":[{\"code\":\"404\",\"when\":\"No such return, or not yours\"}],\"id\":\"get-returns-id\",\"method\":\"GET\",\"path\":\"/returns/{id}\",\"reads\":[\"returns\",\"return-items\"],\"responseShape\":\"return\",\"service\":\"returns-api\",\"summary\":\"One return, for its buyer or its store.\"}"
-    },
-    "get-shopify-callback": {
-      "at": "2026-10-03T18:43:54.096Z",
-      "by": "you",
-      "fingerprint": "806f9f96",
-      "id": "get-shopify-callback",
-      "state": "approved",
-      "was": "{\"access\":{\"rule\":\"Only with Shopify's HMAC signature and the signed state from /store/shopify/reconnect, for that store\",\"who\":\"public\"},\"emits\":[\"refund-requested\"],\"errors\":[{\"code\":\"400\",\"when\":\"The signature or the state does not match the one we issued\"}],\"id\":\"get-shopify-callback\",\"method\":\"GET\",\"path\":\"/shopify/callback\",\"reads\":[\"refunds\"],\"request\":[{\"name\":\"code\",\"type\":\"string\"},{\"name\":\"shop\",\"type\":\"string\"},{\"name\":\"state\",\"type\":\"string\"},{\"name\":\"hmac\",\"type\":\"string\"}],\"service\":\"returns-api\",\"summary\":\"Where Shopify sends the merchant back after approving Parcel: saves the new token, marks the store connected, re-queues every refund held while it was not, and redirects to Settings.\",\"writes\":[\"stores\"]}"
-    },
-    "get-store": {
-      "at": "2026-10-03T18:29:18.328Z",
-      "by": "you",
-      "fingerprint": "b741d1cb",
-      "id": "get-store",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their own store\",\"who\":\"roles\"},\"id\":\"get-store\",\"method\":\"GET\",\"path\":\"/store\",\"reads\":[\"stores\"],\"responseShape\":\"store-settings\",\"service\":\"returns-api\",\"summary\":\"The signed-in merchant's store settings.\"}"
-    },
-    "lookup-attempts": {
-      "at": "2026-10-03T18:39:46.971Z",
-      "by": "you",
-      "fingerprint": "f82c6b57",
-      "id": "lookup-attempts",
-      "state": "approved",
-      "was": "{\"columns\":[{\"name\":\"key\",\"primary\":true,\"type\":\"text\"},{\"name\":\"window_start\",\"type\":\"timestamptz\"},{\"name\":\"count\",\"type\":\"integer\"}],\"id\":\"lookup-attempts\",\"name\":\"lookup_attempts\",\"store\":\"main-database\"}"
-    },
-    "main-database": {
-      "at": "2026-10-03T18:39:45.773Z",
-      "by": "you",
-      "fingerprint": "305f8d0c",
-      "id": "main-database",
-      "state": "approved",
-      "was": "{\"id\":\"main-database\",\"ifDown\":\"Buyers see \\\"Returns are paused for a moment, try again in a few minutes\\\"; nothing is accepted half-way.\",\"kind\":\"store\",\"name\":\"Main database\",\"purpose\":\"Returns, their items and every refund attempt.\",\"tech\":\"Postgres 16\"}"
-    },
-    "merchant-dashboard": {
-      "at": "2026-10-03T18:39:45.561Z",
-      "by": "you",
-      "fingerprint": "ffed8faf",
-      "id": "merchant-dashboard",
-      "state": "approved",
-      "was": "{\"id\":\"merchant-dashboard\",\"kind\":\"client\",\"name\":\"Merchant dashboard\",\"purpose\":\"Where a merchant sees the returns queue, marks parcels received and refunds.\",\"tech\":\"Next.js 15\"}"
-    },
-    "patch-store": {
-      "at": "2026-10-03T18:30:17.438Z",
-      "by": "you",
-      "fingerprint": "1ecaccdb",
-      "id": "patch-store",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their own store\",\"who\":\"roles\"},\"errors\":[{\"code\":\"422\",\"when\":\"The window is under 14 days (a buyer's legal minimum) or over 365, or the colour is not a hex colour\"}],\"id\":\"patch-store\",\"method\":\"PATCH\",\"path\":\"/store\",\"requestShape\":\"store-settings-change\",\"responseShape\":\"store-settings\",\"service\":\"returns-api\",\"summary\":\"Change the return policy, branding or notifications; only what is sent changes. Buyers see it on their next lookup: nothing caches the store.\",\"writes\":[\"stores\"]}"
-    },
-    "post-orders-lookup": {
-      "at": "2026-10-03T18:29:05.768Z",
-      "by": "you",
-      "fingerprint": "476f653c",
-      "id": "post-orders-lookup",
-      "state": "approved",
-      "was": "{\"access\":{\"rule\":\"Rate limited to 10 tries an hour per IP and per order number, counted in lookup_attempts\",\"who\":\"public\"},\"errors\":[{\"code\":\"404\",\"when\":\"No order has that number and email\"},{\"code\":\"410\",\"when\":\"The return window has closed\"},{\"code\":\"429\",\"when\":\"Ten tries in the last hour for this IP or order number\"}],\"id\":\"post-orders-lookup\",\"method\":\"POST\",\"path\":\"/orders/lookup\",\"reads\":[\"stores\",\"returns\",\"return-items\"],\"requestShape\":\"order-lookup\",\"responseShape\":\"order\",\"service\":\"returns-api\",\"summary\":\"Find an order by its number and email, say which lines can go back and why not, and hand back a short-lived token to return it.\",\"writes\":[\"lookup-attempts\"]}"
-    },
-    "post-returns": {
-      "at": "2026-10-03T18:29:07.608Z",
-      "by": "you",
-      "fingerprint": "800c1876",
-      "id": "post-returns",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"buyer\"],\"rule\":\"Only the order the return token was issued for\",\"who\":\"roles\"},\"emits\":[\"label-requested\"],\"errors\":[{\"code\":\"401\",\"when\":\"The return token expired; look the order up again\"},{\"code\":\"409\",\"when\":\"These items are already being returned\"},{\"code\":\"422\",\"when\":\"An item is not returnable\"}],\"id\":\"post-returns\",\"method\":\"POST\",\"path\":\"/returns\",\"requestShape\":\"return-request\",\"responseShape\":\"return\",\"service\":\"returns-api\",\"summary\":\"Start a return for the chosen items and book its label, waiting at most 400 ms for the carrier.\",\"writes\":[\"returns\",\"return-items\"]}"
-    },
-    "post-returns-id-receive": {
-      "at": "2026-10-03T18:29:12.911Z",
-      "by": "you",
-      "fingerprint": "e459e7c2",
-      "id": "post-returns-id-receive",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their store's returns\",\"who\":\"roles\"},\"errors\":[{\"code\":\"409\",\"when\":\"Already received or refunded\"}],\"id\":\"post-returns-id-receive\",\"method\":\"POST\",\"path\":\"/returns/{id}/receive\",\"responseShape\":\"return\",\"service\":\"returns-api\",\"summary\":\"Mark the parcel received.\",\"writes\":[\"returns\"]}"
-    },
-    "post-returns-id-refund": {
-      "at": "2026-10-03T18:29:14.714Z",
-      "by": "you",
-      "fingerprint": "a7dc791f",
-      "id": "post-returns-id-refund",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their store's returns\",\"who\":\"roles\"},\"emits\":[\"refund-requested\"],\"errors\":[{\"code\":\"409\",\"when\":\"Already refunded or refunding\"},{\"code\":\"422\",\"when\":\"Not received yet, or the amount is more than the items cost\"}],\"id\":\"post-returns-id-refund\",\"method\":\"POST\",\"path\":\"/returns/{id}/refund\",\"request\":[{\"name\":\"amount\",\"optional\":true,\"type\":\"Money\"}],\"responseShape\":\"return\",\"service\":\"returns-api\",\"summary\":\"Approve the refund, in full or in part; the worker pays it.\",\"writes\":[\"returns\",\"refunds\"]}"
-    },
-    "post-returns-id-reject": {
-      "at": "2026-10-03T18:29:16.511Z",
-      "by": "you",
-      "fingerprint": "6e552a86",
-      "id": "post-returns-id-reject",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their store's returns\",\"who\":\"roles\"},\"emits\":[\"return-rejected\"],\"errors\":[{\"code\":\"409\",\"when\":\"Already refunded\"}],\"id\":\"post-returns-id-reject\",\"method\":\"POST\",\"path\":\"/returns/{id}/reject\",\"request\":[{\"name\":\"reason\",\"type\":\"string\"}],\"responseShape\":\"return\",\"service\":\"returns-api\",\"summary\":\"Turn a return down; the worker emails the buyer the reason.\",\"writes\":[\"returns\"]}"
-    },
-    "post-store-shopify-reconnect": {
-      "at": "2026-10-03T18:43:52.148Z",
-      "by": "you",
-      "fingerprint": "1038baae",
-      "id": "post-store-shopify-reconnect",
-      "state": "approved",
-      "was": "{\"access\":{\"roles\":[\"merchant\"],\"rule\":\"Only their own store\",\"who\":\"roles\"},\"id\":\"post-store-shopify-reconnect\",\"method\":\"POST\",\"path\":\"/store/shopify/reconnect\",\"reads\":[\"stores\"],\"response\":[{\"name\":\"url\",\"type\":\"string\"}],\"service\":\"returns-api\",\"summary\":\"Hand back Shopify's approval URL with a signed state naming the store; Shopify returns the merchant to GET /shopify/callback, which finishes the job.\"}"
-    },
-    "refund-a-return": {
-      "at": "2026-10-03T18:44:03.453Z",
-      "by": "you",
-      "fingerprint": "2a849683",
-      "id": "refund-a-return",
-      "state": "approved",
-      "was": "{\"id\":\"refund-a-return\",\"name\":\"Refund a return\",\"steps\":[{\"action\":\"POST /returns/{id}/refund\",\"from\":\"merchant-dashboard\",\"ms\":30,\"to\":\"returns-api\",\"via\":\"post-returns-id-refund\"},{\"action\":\"insert refunds (unique return_id), status refunding\",\"from\":\"returns-api\",\"ifFails\":\"Already refunding: shown as such, nothing queued twice\",\"ms\":20,\"to\":\"main-database\"},{\"action\":\"publish refund.requested\",\"carries\":\"refund-job\",\"from\":\"returns-api\",\"ms\":20,\"to\":\"refund-jobs\",\"via\":\"refund-requested\"},{\"action\":\"deliver refund.requested\",\"async\":true,\"carries\":\"refund-job\",\"from\":\"refund-jobs\",\"to\":\"refund-worker\",\"via\":\"refund-requested\"},{\"action\":\"refundCreate\",\"async\":true,\"carries\":\"refund-job\",\"from\":\"refund-worker\",\"to\":\"shopify\"},{\"action\":\"update refunds, returns: refunded\",\"async\":true,\"from\":\"refund-worker\",\"to\":\"main-database\"},{\"action\":\"email: refund sent\",\"async\":true,\"from\":\"refund-worker\",\"to\":\"resend\"}]}"
-    },
-    "refund-jobs": {
-      "at": "2026-10-03T18:39:45.971Z",
-      "by": "you",
-      "fingerprint": "16c9f09b",
-      "id": "refund-jobs",
-      "state": "approved",
-      "was": "{\"id\":\"refund-jobs\",\"ifDown\":\"Clicks still record the decision; jobs are re-sent from the database when the queue is back.\",\"kind\":\"queue\",\"name\":\"Jobs\",\"purpose\":\"Work that happens after the response: paying refunds, and booking labels the carrier was too slow for.\",\"tech\":\"SQS standard queue\"}"
-    },
-    "refund-worker": {
-      "at": "2026-10-03T18:43:48.793Z",
-      "by": "you",
-      "fingerprint": "41f15d3f",
-      "id": "refund-worker",
-      "state": "approved",
-      "was": "{\"api\":\"none\",\"id\":\"refund-worker\",\"kind\":\"service\",\"name\":\"Worker\",\"purpose\":\"Does the work after the response, once per job: pays refunds through Shopify, books late labels, and emails the buyer (label, refund sent, rejected with the reason). Holds refunds while the store needs reconnecting.\",\"tech\":\"TypeScript on Node 22\"}"
-    },
-    "refunds": {
-      "at": "2026-10-03T18:43:42.353Z",
-      "by": "you",
-      "fingerprint": "79b8fd25",
-      "id": "refunds",
-      "state": "approved",
-      "was": "{\"columns\":[{\"name\":\"id\",\"primary\":true,\"type\":\"uuid\"},{\"name\":\"return_id\",\"ref\":{\"column\":\"id\",\"table\":\"returns\"},\"type\":\"uuid\",\"unique\":true},{\"name\":\"amount\",\"type\":\"integer\"},{\"name\":\"currency\",\"type\":\"char(3)\"},{\"name\":\"shopify_refund_id\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"state\",\"type\":\"text\"},{\"name\":\"attempts\",\"type\":\"integer\"},{\"name\":\"last_error\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"created_at\",\"type\":\"timestamptz\"}],\"id\":\"refunds\",\"name\":\"refunds\",\"store\":\"main-database\"}"
-    },
-    "req-a-buyer-only-sees": {
-      "at": "2026-10-03T18:39:47.834Z",
-      "by": "you",
-      "fingerprint": "9c4fdfdd",
-      "id": "req-a-buyer-only-sees",
-      "state": "approved",
-      "was": "{\"detail\":\"Order number plus the email on the order; nothing else opens an order.\",\"id\":\"req-a-buyer-only-sees\",\"phase\":\"v1\",\"priority\":\"must\",\"servedBy\":[\"post-orders-lookup\",\"find-my-order\"],\"title\":\"A buyer only sees their own order\"}"
-    },
-    "req-a-buyer-starts-a": {
-      "at": "2026-10-03T18:39:47.604Z",
-      "by": "you",
-      "fingerprint": "d50f6871",
-      "id": "req-a-buyer-starts-a",
-      "state": "approved",
-      "was": "{\"detail\":\"From the email link to a printable label, with no account and no message to the shop.\",\"id\":\"req-a-buyer-starts-a\",\"phase\":\"v1\",\"priority\":\"must\",\"servedBy\":[\"2e00677a\",\"50094e02\",\"bf6a55ad\",\"start-a-return\",\"post-returns\"],\"title\":\"A buyer starts a return in under two minutes\"}"
-    },
-    "req-a-merchant-refunds-a": {
-      "at": "2026-10-03T18:39:48.043Z",
-      "by": "you",
-      "fingerprint": "03789381",
-      "id": "req-a-merchant-refunds-a",
-      "state": "approved",
-      "was": "{\"id\":\"req-a-merchant-refunds-a\",\"phase\":\"v1\",\"priority\":\"must\",\"servedBy\":[\"c297162d\",\"post-returns-id-refund\",\"refund-a-return\"],\"title\":\"A merchant refunds a received return in one click\"}"
-    },
-    "req-a-merchant-sets-their": {
-      "at": "2026-10-03T18:44:05.483Z",
-      "by": "you",
-      "fingerprint": "96d2ce2a",
-      "id": "req-a-merchant-sets-their",
-      "state": "approved",
-      "was": "{\"id\":\"req-a-merchant-sets-their\",\"phase\":\"v1\",\"priority\":\"must\",\"servedBy\":[\"get-store\",\"patch-store\",\"8ab55488\",\"get-shopify-callback\"],\"title\":\"A merchant sets their return policy and branding without writing to us\"}"
-    },
-    "req-a-refund-is-never": {
-      "at": "2026-10-03T18:39:48.245Z",
-      "by": "you",
-      "fingerprint": "e0447fa8",
-      "id": "req-a-refund-is-never",
-      "state": "approved",
-      "was": "{\"detail\":\"Retries, double clicks and webhook replays all land on one refund.\",\"id\":\"req-a-refund-is-never\",\"phase\":\"v1\",\"priority\":\"must\",\"servedBy\":[\"refunds\",\"refund-worker\",\"refund-a-return\"],\"title\":\"A refund is never paid twice\"}"
-    },
-    "req-the-buyer-hears-when": {
-      "at": "2026-10-03T18:39:48.451Z",
-      "by": "you",
-      "fingerprint": "662b347b",
-      "id": "req-the-buyer-hears-when",
-      "state": "approved",
-      "was": "{\"id\":\"req-the-buyer-hears-when\",\"phase\":\"v1\",\"priority\":\"should\",\"servedBy\":[\"resend\",\"refund-worker\"],\"title\":\"The buyer hears when their refund is sent\"}"
-    },
-    "resend": {
-      "at": "2026-10-03T18:39:46.568Z",
-      "by": "you",
-      "fingerprint": "8542b8cd",
-      "id": "resend",
-      "state": "approved",
-      "was": "{\"id\":\"resend\",\"ifDown\":\"Emails retry for a day; the portal still shows the label.\",\"kind\":\"external\",\"name\":\"Resend\",\"purpose\":\"Sends the buyer their label and refund emails.\",\"tech\":\"Resend\"}"
-    },
-    "return-items": {
-      "at": "2026-10-03T18:39:46.762Z",
-      "by": "you",
-      "fingerprint": "0833dfc5",
-      "id": "return-items",
-      "state": "approved",
-      "was": "{\"columns\":[{\"name\":\"id\",\"primary\":true,\"type\":\"uuid\"},{\"name\":\"return_id\",\"ref\":{\"column\":\"id\",\"table\":\"returns\"},\"type\":\"uuid\"},{\"name\":\"line_id\",\"type\":\"text\"},{\"name\":\"quantity\",\"type\":\"integer\"},{\"name\":\"reason\",\"type\":\"text\"},{\"classification\":\"personal\",\"name\":\"note\",\"nullable\":true,\"type\":\"text\"}],\"id\":\"return-items\",\"name\":\"return_items\",\"store\":\"main-database\"}"
-    },
-    "returns": {
-      "at": "2026-10-03T18:43:58.924Z",
-      "by": "you",
-      "fingerprint": "38da0a13",
-      "id": "returns",
-      "state": "approved",
-      "was": "{\"columns\":[{\"name\":\"id\",\"primary\":true,\"type\":\"uuid\"},{\"name\":\"store_id\",\"ref\":{\"column\":\"id\",\"table\":\"stores\"},\"type\":\"uuid\"},{\"name\":\"order_id\",\"type\":\"text\"},{\"name\":\"order_number\",\"type\":\"text\"},{\"classification\":\"personal\",\"name\":\"buyer_email\",\"type\":\"text\"},{\"name\":\"status\",\"type\":\"text\"},{\"name\":\"refund_amount\",\"type\":\"integer\"},{\"name\":\"currency\",\"type\":\"char(3)\"},{\"classification\":\"personal\",\"name\":\"rejection_reason\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"label_url\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"tracking_number\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"created_at\",\"type\":\"timestamptz\"},{\"name\":\"updated_at\",\"type\":\"timestamptz\"}],\"id\":\"returns\",\"name\":\"returns\",\"store\":\"main-database\"}"
-    },
-    "returns-api": {
-      "at": "2026-10-03T18:29:03.996Z",
-      "by": "you",
-      "fingerprint": "382290bd",
-      "id": "returns-api",
-      "state": "approved",
-      "was": "{\"id\":\"returns-api\",\"kind\":\"service\",\"name\":\"Returns API\",\"purpose\":\"Owns returns: looks up orders, books labels, records decisions and queues refunds.\",\"tech\":\"TypeScript on Node 22, Hono\"}"
-    },
-    "shippo": {
-      "at": "2026-10-03T18:39:46.367Z",
-      "by": "you",
-      "fingerprint": "e6f97f62",
-      "id": "shippo",
-      "state": "approved",
-      "was": "{\"id\":\"shippo\",\"ifDown\":\"The return is still accepted; the label is emailed when Shippo is back.\",\"kind\":\"external\",\"name\":\"Shippo\",\"purpose\":\"Books the return label the buyer prints.\",\"tech\":\"Shippo API\"}"
-    },
-    "shopify": {
-      "at": "2026-10-03T18:39:46.172Z",
-      "by": "you",
-      "fingerprint": "d66bbad3",
-      "id": "shopify",
-      "state": "approved",
-      "was": "{\"id\":\"shopify\",\"ifDown\":\"Buyers cannot find orders; the portal says the store is unreachable. Refunds wait in the queue.\",\"kind\":\"external\",\"name\":\"Shopify\",\"purpose\":\"The store's orders, and where refunds are paid.\",\"tech\":\"Shopify Admin API 2025-07\"}"
-    },
-    "start-a-return": {
-      "at": "2026-10-03T18:39:47.389Z",
-      "by": "you",
-      "fingerprint": "0d6f130a",
-      "id": "start-a-return",
-      "state": "approved",
-      "was": "{\"id\":\"start-a-return\",\"name\":\"Start a return\",\"steps\":[{\"action\":\"POST /returns\",\"carries\":\"return-request\",\"from\":\"buyer-portal\",\"ms\":30,\"to\":\"returns-api\",\"via\":\"post-returns\"},{\"action\":\"insert returns, return_items\",\"carries\":\"return\",\"from\":\"returns-api\",\"ifFails\":\"Nothing is saved; the buyer can submit again\",\"ms\":20,\"to\":\"main-database\"},{\"action\":\"create return label, waiting at most 400 ms\",\"carries\":\"label\",\"from\":\"returns-api\",\"ifFails\":\"Return started; the page says the label is on its way by email\",\"ms\":400,\"to\":\"shippo\"},{\"action\":\"email the label\",\"async\":true,\"carries\":\"label\",\"from\":\"returns-api\",\"to\":\"resend\"}]}"
-    },
-    "stores": {
-      "at": "2026-10-03T18:29:23.929Z",
-      "by": "you",
-      "fingerprint": "74e4d894",
-      "id": "stores",
-      "state": "approved",
-      "was": "{\"columns\":[{\"name\":\"id\",\"primary\":true,\"type\":\"uuid\"},{\"name\":\"shop_domain\",\"type\":\"text\",\"unique\":true},{\"name\":\"name\",\"type\":\"text\"},{\"classification\":\"secret\",\"name\":\"shopify_token\",\"type\":\"text\"},{\"name\":\"shopify_status\",\"type\":\"text\"},{\"name\":\"return_window_days\",\"type\":\"integer\"},{\"name\":\"policy_text\",\"type\":\"text\"},{\"name\":\"excluded_product_types\",\"type\":\"text[]\"},{\"name\":\"carrier\",\"type\":\"text\"},{\"name\":\"logo_url\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"brand_color\",\"type\":\"text\"},{\"classification\":\"personal\",\"name\":\"notify_email\",\"nullable\":true,\"type\":\"text\"},{\"name\":\"created_at\",\"type\":\"timestamptz\"},{\"name\":\"updated_at\",\"type\":\"timestamptz\"}],\"id\":\"stores\",\"name\":\"stores\",\"store\":\"main-database\"}"
-    }
-  },
-  "roles": {
-    "buyer": {
-      "description": "Someone returning an order; proves it with the order number and its email.",
-      "id": "buyer",
-      "index": "a0",
-      "name": "buyer"
-    },
-    "merchant": {
-      "description": "Runs a store; signs in to the dashboard.",
-      "id": "merchant",
-      "index": "a1",
-      "name": "merchant"
     }
   },
   "rules": {},
@@ -16031,424 +14574,6 @@
       "heading": "Problem",
       "id": "f115e3c0",
       "index": "a0"
-    }
-  },
-  "shapes": {
-    "label": {
-      "fields": [
-        {
-          "name": "url",
-          "type": "string"
-        },
-        {
-          "name": "carrier",
-          "type": "string"
-        },
-        {
-          "name": "trackingNumber",
-          "type": "string"
-        }
-      ],
-      "id": "label",
-      "index": "a8",
-      "name": "Label"
-    },
-    "money": {
-      "fields": [
-        {
-          "name": "amount",
-          "type": "integer"
-        },
-        {
-          "name": "currency",
-          "type": "string"
-        }
-      ],
-      "id": "money",
-      "index": "a0",
-      "name": "Money",
-      "note": "amount in the smallest unit (cents)"
-    },
-    "not-returnable": {
-      "fields": [
-        {
-          "name": "reason",
-          "type": "NotReturnableReason"
-        },
-        {
-          "name": "message",
-          "type": "string"
-        }
-      ],
-      "id": "not-returnable",
-      "index": "aG",
-      "name": "NotReturnable",
-      "note": "message is written for the buyer: \"Gift cards can't be returned\", \"Returned on 20 Sep\""
-    },
-    "not-returnable-reason": {
-      "fields": [],
-      "id": "not-returnable-reason",
-      "index": "aF",
-      "name": "NotReturnableReason",
-      "note": "excluded_type: a product type the store excludes in Settings",
-      "values": [
-        "excluded_type",
-        "already_returned",
-        "not_delivered"
-      ]
-    },
-    "order": {
-      "fields": [
-        {
-          "name": "id",
-          "type": "id"
-        },
-        {
-          "name": "number",
-          "type": "string"
-        },
-        {
-          "name": "placedAt",
-          "type": "datetime"
-        },
-        {
-          "name": "store",
-          "type": "PublicStore"
-        },
-        {
-          "name": "lines",
-          "type": "OrderLine[]"
-        },
-        {
-          "name": "returnToken",
-          "type": "string"
-        }
-      ],
-      "id": "order",
-      "index": "a5",
-      "name": "Order",
-      "note": "returnToken is the signed link that lets this buyer start a return for 30 minutes"
-    },
-    "order-line": {
-      "fields": [
-        {
-          "name": "id",
-          "type": "id"
-        },
-        {
-          "name": "title",
-          "type": "string"
-        },
-        {
-          "name": "variant",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "imageUrl",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "quantity",
-          "type": "integer"
-        },
-        {
-          "name": "price",
-          "type": "Money"
-        },
-        {
-          "name": "notReturnable",
-          "optional": true,
-          "type": "NotReturnable"
-        }
-      ],
-      "id": "order-line",
-      "index": "a4",
-      "name": "OrderLine",
-      "note": "No notReturnable: the buyer can send it back"
-    },
-    "order-lookup": {
-      "fields": [
-        {
-          "name": "orderNumber",
-          "type": "string"
-        },
-        {
-          "name": "email",
-          "type": "string"
-        }
-      ],
-      "id": "order-lookup",
-      "index": "a3",
-      "name": "OrderLookup"
-    },
-    "public-store": {
-      "fields": [
-        {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "logoUrl",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "brandColor",
-          "type": "string"
-        },
-        {
-          "name": "policy",
-          "type": "string"
-        },
-        {
-          "name": "returnWindowDays",
-          "type": "integer"
-        }
-      ],
-      "id": "public-store",
-      "index": "aH",
-      "name": "PublicStore",
-      "note": "What a buyer may see of the store, read fresh on every lookup"
-    },
-    "refund-job": {
-      "fields": [
-        {
-          "name": "returnId",
-          "type": "id"
-        },
-        {
-          "name": "amount",
-          "type": "Money"
-        }
-      ],
-      "id": "refund-job",
-      "index": "aB",
-      "name": "RefundJob",
-      "note": "idempotent on returnId"
-    },
-    "return": {
-      "fields": [
-        {
-          "name": "id",
-          "type": "id"
-        },
-        {
-          "name": "orderNumber",
-          "type": "string"
-        },
-        {
-          "name": "status",
-          "type": "ReturnStatus"
-        },
-        {
-          "name": "items",
-          "type": "ReturnItem[]"
-        },
-        {
-          "name": "refund",
-          "type": "Money"
-        },
-        {
-          "name": "label",
-          "optional": true,
-          "type": "Label"
-        },
-        {
-          "name": "createdAt",
-          "type": "datetime"
-        }
-      ],
-      "id": "return",
-      "index": "a9",
-      "name": "Return"
-    },
-    "return-item": {
-      "fields": [
-        {
-          "name": "lineId",
-          "type": "id"
-        },
-        {
-          "name": "quantity",
-          "type": "integer"
-        },
-        {
-          "name": "reason",
-          "type": "ReturnReason"
-        },
-        {
-          "name": "note",
-          "optional": true,
-          "type": "string"
-        }
-      ],
-      "id": "return-item",
-      "index": "a6",
-      "name": "ReturnItem"
-    },
-    "return-page": {
-      "fields": [
-        {
-          "name": "items",
-          "type": "Return[]"
-        },
-        {
-          "name": "nextCursor",
-          "optional": true,
-          "type": "string"
-        }
-      ],
-      "id": "return-page",
-      "index": "aA",
-      "name": "ReturnPage"
-    },
-    "return-reason": {
-      "fields": [],
-      "id": "return-reason",
-      "index": "a1",
-      "name": "ReturnReason",
-      "values": [
-        "wrong_size",
-        "damaged",
-        "not_as_described",
-        "changed_mind",
-        "other"
-      ]
-    },
-    "return-request": {
-      "fields": [
-        {
-          "name": "returnToken",
-          "type": "string"
-        },
-        {
-          "name": "items",
-          "type": "ReturnItem[]"
-        }
-      ],
-      "id": "return-request",
-      "index": "a7",
-      "name": "ReturnRequest"
-    },
-    "return-status": {
-      "fields": [],
-      "id": "return-status",
-      "index": "a2",
-      "name": "ReturnStatus",
-      "note": "refunding: approved and queued; the worker has not had Shopify's yes yet",
-      "values": [
-        "requested",
-        "label_sent",
-        "received",
-        "refunding",
-        "refunded",
-        "rejected"
-      ]
-    },
-    "shopify-status": {
-      "fields": [],
-      "id": "shopify-status",
-      "index": "aC",
-      "name": "ShopifyStatus",
-      "note": "needs_reconnect: Shopify refused our token; refunds wait until the merchant reconnects",
-      "values": [
-        "connected",
-        "needs_reconnect"
-      ]
-    },
-    "store-settings": {
-      "fields": [
-        {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "shopDomain",
-          "type": "string"
-        },
-        {
-          "name": "returnsUrl",
-          "type": "string"
-        },
-        {
-          "name": "shopify",
-          "type": "ShopifyStatus"
-        },
-        {
-          "name": "returnWindowDays",
-          "type": "integer"
-        },
-        {
-          "name": "policy",
-          "type": "string"
-        },
-        {
-          "name": "excludedProductTypes",
-          "type": "string[]"
-        },
-        {
-          "name": "carrier",
-          "type": "string"
-        },
-        {
-          "name": "logoUrl",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "brandColor",
-          "type": "string"
-        },
-        {
-          "name": "notifyEmail",
-          "optional": true,
-          "type": "string"
-        }
-      ],
-      "id": "store-settings",
-      "index": "aD",
-      "name": "StoreSettings",
-      "note": "What a merchant controls. The Shopify token never leaves the server."
-    },
-    "store-settings-change": {
-      "fields": [
-        {
-          "name": "returnWindowDays",
-          "optional": true,
-          "type": "integer"
-        },
-        {
-          "name": "policy",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "excludedProductTypes",
-          "optional": true,
-          "type": "string[]"
-        },
-        {
-          "name": "logoUrl",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "brandColor",
-          "optional": true,
-          "type": "string"
-        },
-        {
-          "name": "notifyEmail",
-          "optional": true,
-          "type": "string"
-        }
-      ],
-      "id": "store-settings-change",
-      "index": "aE",
-      "name": "StoreSettingsChange",
-      "note": "Only what changed. Name, domain and carrier are set at install."
     }
   },
   "shared": {
@@ -16504,427 +14629,6 @@
       "root": "33a4c529"
     }
   },
-  "tables": {
-    "lookup-attempts": {
-      "columns": [
-        {
-          "name": "key",
-          "primary": true,
-          "type": "text"
-        },
-        {
-          "name": "window_start",
-          "type": "timestamptz"
-        },
-        {
-          "name": "count",
-          "type": "integer"
-        }
-      ],
-      "id": "lookup-attempts",
-      "index": "a4",
-      "name": "lookup_attempts",
-      "store": "main-database"
-    },
-    "refunds": {
-      "columns": [
-        {
-          "name": "id",
-          "primary": true,
-          "type": "uuid"
-        },
-        {
-          "name": "return_id",
-          "ref": {
-            "column": "id",
-            "table": "returns"
-          },
-          "type": "uuid",
-          "unique": true
-        },
-        {
-          "name": "amount",
-          "type": "integer"
-        },
-        {
-          "name": "currency",
-          "type": "char(3)"
-        },
-        {
-          "name": "shopify_refund_id",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "state",
-          "type": "text"
-        },
-        {
-          "name": "attempts",
-          "type": "integer"
-        },
-        {
-          "name": "last_error",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        }
-      ],
-      "id": "refunds",
-      "index": "a3",
-      "name": "refunds",
-      "store": "main-database"
-    },
-    "return-items": {
-      "columns": [
-        {
-          "name": "id",
-          "primary": true,
-          "type": "uuid"
-        },
-        {
-          "name": "return_id",
-          "ref": {
-            "column": "id",
-            "table": "returns"
-          },
-          "type": "uuid"
-        },
-        {
-          "name": "line_id",
-          "type": "text"
-        },
-        {
-          "name": "quantity",
-          "type": "integer"
-        },
-        {
-          "name": "reason",
-          "type": "text"
-        },
-        {
-          "classification": "personal",
-          "name": "note",
-          "nullable": true,
-          "type": "text"
-        }
-      ],
-      "id": "return-items",
-      "index": "a2",
-      "name": "return_items",
-      "store": "main-database"
-    },
-    "returns": {
-      "columns": [
-        {
-          "name": "id",
-          "primary": true,
-          "type": "uuid"
-        },
-        {
-          "name": "store_id",
-          "ref": {
-            "column": "id",
-            "table": "stores"
-          },
-          "type": "uuid"
-        },
-        {
-          "name": "order_id",
-          "type": "text"
-        },
-        {
-          "name": "order_number",
-          "type": "text"
-        },
-        {
-          "classification": "personal",
-          "name": "buyer_email",
-          "type": "text"
-        },
-        {
-          "name": "status",
-          "type": "text"
-        },
-        {
-          "name": "refund_amount",
-          "type": "integer"
-        },
-        {
-          "name": "currency",
-          "type": "char(3)"
-        },
-        {
-          "classification": "personal",
-          "name": "rejection_reason",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "label_url",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "tracking_number",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "id": "returns",
-      "index": "a1",
-      "name": "returns",
-      "store": "main-database"
-    },
-    "stores": {
-      "columns": [
-        {
-          "name": "id",
-          "primary": true,
-          "type": "uuid"
-        },
-        {
-          "name": "shop_domain",
-          "type": "text",
-          "unique": true
-        },
-        {
-          "name": "name",
-          "type": "text"
-        },
-        {
-          "classification": "secret",
-          "name": "shopify_token",
-          "type": "text"
-        },
-        {
-          "name": "shopify_status",
-          "type": "text"
-        },
-        {
-          "name": "return_window_days",
-          "type": "integer"
-        },
-        {
-          "name": "policy_text",
-          "type": "text"
-        },
-        {
-          "name": "excluded_product_types",
-          "type": "text[]"
-        },
-        {
-          "name": "carrier",
-          "type": "text"
-        },
-        {
-          "name": "logo_url",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "brand_color",
-          "type": "text"
-        },
-        {
-          "classification": "personal",
-          "name": "notify_email",
-          "nullable": true,
-          "type": "text"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "id": "stores",
-      "index": "a0",
-      "name": "stores",
-      "store": "main-database"
-    }
-  },
-  "threads": {
-    "46354088": {
-      "id": "46354088",
-      "posts": [
-        {
-          "at": "2026-10-03T18:39:49.220Z",
-          "author": "you",
-          "body": "This hands back Shopify's URL, but nothing receives Shopify's callback: no endpoint stores the new token, sets the store connected, and re-sends the held refunds. Settings, reconnected promises all three."
-        },
-        {
-          "at": "2026-10-03T18:41:28.859Z",
-          "author": "codex",
-          "body": "Added GET /shopify/callback: verifies Shopify's HMAC and our signed state, saves the token, sets the store connected and publishes refund.requested for each held refund. This endpoint now only hands out the URL with that state."
-        }
-      ],
-      "state": "resolved",
-      "target": "post-store-shopify-reconnect"
-    },
-    "05c0a0b2": {
-      "id": "05c0a0b2",
-      "posts": [
-        {
-          "at": "2026-10-03T18:29:41.386Z",
-          "author": "you",
-          "body": "It says buyers pick up branding within an hour, but nothing caches it. Either cache what the buyer page reads of the store (and drop it on save), or say changes show at once."
-        },
-        {
-          "at": "2026-10-03T18:30:01.162Z",
-          "author": "codex",
-          "body": "Went with showing changes at once: the lookup already reads stores and load is a few requests a second, so a cache would only add a way to be wrong. Updated the summary, the PublicStore note and the Settings header."
-        },
-        {
-          "at": "2026-10-03T18:30:16.436Z",
-          "author": "you",
-          "body": "Decided: No cache on store settings; buyers see changes on their next lookup"
-        }
-      ],
-      "state": "resolved",
-      "target": "patch-store"
-    },
-    "06879cbc": {
-      "id": "06879cbc",
-      "posts": [
-        {
-          "at": "2026-10-03T17:47:05.932Z",
-          "author": "you",
-          "body": "Say what the buyer sees when the order is older than the return window"
-        },
-        {
-          "at": "2026-10-03T17:47:57.096Z",
-          "author": "codex",
-          "body": "Added a Window closed state on Find your order: the 410 shows when the window closed and what the buyer can still do."
-        }
-      ],
-      "state": "resolved",
-      "target": "post-orders-lookup"
-    },
-    "0c893fc9": {
-      "id": "0c893fc9",
-      "posts": [
-        {
-          "at": "2026-10-03T20:54:56.663Z",
-          "author": "codex",
-          "body": "Its buttons are now uses of the Buttons set (Tone: Accent | Danger, Weight: Solid | Outline): Refund is Accent solid, Reject is Danger outline, and in Rejecting the send button is Danger solid. Looks the same; one place to change them from now on."
-        }
-      ],
-      "state": "resolved",
-      "target": "c297162d"
-    },
-    "48e512a2": {
-      "id": "48e512a2",
-      "posts": [
-        {
-          "at": "2026-10-03T17:03:47.127Z",
-          "author": "claude-code",
-          "body": "Should a merchant be able to refund before the parcel arrives (trusted buyers, damaged items they don't want back)? Right now 422 blocks it."
-        },
-        {
-          "at": "2026-10-03T17:03:47.343Z",
-          "author": "reviewer",
-          "body": "Not for v1: refunds wait for the parcel. Revisit with a per-store 'refund on label scan' setting."
-        }
-      ],
-      "state": "resolved",
-      "target": "post-returns-id-refund"
-    },
-    "68723c6c": {
-      "id": "68723c6c",
-      "posts": [
-        {
-          "at": "2026-10-03T18:39:49.025Z",
-          "author": "you",
-          "body": "Step 2 sets status refunding, but ReturnStatus has no refunding (the Refund retrying screen shows it too). Add it to the enum, or name the status this step really sets."
-        },
-        {
-          "at": "2026-10-03T18:41:15.628Z",
-          "author": "codex",
-          "body": "Added refunding to ReturnStatus: approved and queued, not yet confirmed by Shopify. The trace and the Refund retrying screen now agree with it."
-        }
-      ],
-      "state": "resolved",
-      "target": "refund-a-return"
-    },
-    "6d1ebd91": {
-      "id": "6d1ebd91",
-      "posts": [
-        {
-          "at": "2026-10-03T18:39:48.650Z",
-          "author": "you",
-          "body": "Two gaps. It hears return.rejected, but its Resend link carries only the refund-sent email, so the reason never reaches the buyer. And when Shopify refuses the token (401), nothing sets stores.shopify_status to needs_reconnect, so Settings never shows the disconnected state; say it holds the job and marks the store."
-        },
-        {
-          "at": "2026-10-03T18:40:17.727Z",
-          "author": "codex",
-          "body": "Worker now emails the rejection with the reason (Resend link), and on a Shopify 401 marks the store needs_reconnect and holds the job instead of retrying; its purpose says both."
-        }
-      ],
-      "state": "resolved",
-      "target": "refund-worker"
-    },
-    "7b3056a8": {
-      "id": "7b3056a8",
-      "posts": [
-        {
-          "at": "2026-10-03T17:38:15.227Z",
-          "author": "codex",
-          "body": "Should a rejected return email the buyer a reason, or just the status?"
-        },
-        {
-          "at": "2026-10-03T17:39:03.626Z",
-          "author": "you",
-          "body": "Decided: Email the reason the merchant gave; buyers asked why"
-        }
-      ],
-      "state": "resolved",
-      "target": "post-returns-id-reject"
-    },
-    "80bf3d05": {
-      "id": "80bf3d05",
-      "posts": [
-        {
-          "at": "2026-10-03T18:39:48.834Z",
-          "author": "you",
-          "body": "Reject sends a reason the buyer reads, but no column keeps it: add rejection_reason. Related: refunds has no amount, so a partial refund's amount lives nowhere."
-        },
-        {
-          "at": "2026-10-03T18:41:15.327Z",
-          "author": "codex",
-          "body": "Added returns.rejection_reason (personal: merchants may quote the buyer). refunds now keeps amount and currency, the amount actually paid; returns.refund_amount stays what the items cost, the most a refund can be."
-        }
-      ],
-      "state": "resolved",
-      "target": "returns"
-    },
-    "9214aa0f": {
-      "id": "9214aa0f",
-      "posts": [
-        {
-          "at": "2026-10-03T20:34:16.256Z",
-          "author": "codex",
-          "body": "Works at 768 now: sections stack to one column, the sidebar narrows to 184 px, and Save never wraps. Same in both states."
-        }
-      ],
-      "state": "resolved",
-      "target": "8ab55488"
-    }
-  },
   "tokens": {
     "--accent": "#0f766e",
     "--accent-ink": "#ffffff",
@@ -16942,125 +14646,5 @@
     "--surface": "#ffffff",
     "--warn": "#b45309",
     "--warn-tint": "#fef3c7"
-  },
-  "traces": {
-    "find-my-order": {
-      "id": "find-my-order",
-      "index": "a0",
-      "name": "Find my order",
-      "steps": [
-        {
-          "action": "POST /orders/lookup",
-          "carries": "order-lookup",
-          "from": "buyer-portal",
-          "ifFails": "Couldn’t reach the shop; try again",
-          "ms": 30,
-          "to": "returns-api",
-          "via": "post-orders-lookup"
-        },
-        {
-          "action": "orders(query: name + email)",
-          "carries": "order",
-          "from": "returns-api",
-          "ifFails": "The store is unreachable right now",
-          "ms": 350,
-          "to": "shopify"
-        }
-      ]
-    },
-    "refund-a-return": {
-      "id": "refund-a-return",
-      "index": "a2",
-      "name": "Refund a return",
-      "steps": [
-        {
-          "action": "POST /returns/{id}/refund",
-          "from": "merchant-dashboard",
-          "ms": 30,
-          "to": "returns-api",
-          "via": "post-returns-id-refund"
-        },
-        {
-          "action": "insert refunds (unique return_id), status refunding",
-          "from": "returns-api",
-          "ifFails": "Already refunding: shown as such, nothing queued twice",
-          "ms": 20,
-          "to": "main-database"
-        },
-        {
-          "action": "publish refund.requested",
-          "carries": "refund-job",
-          "from": "returns-api",
-          "ms": 20,
-          "to": "refund-jobs",
-          "via": "refund-requested"
-        },
-        {
-          "action": "deliver refund.requested",
-          "async": true,
-          "carries": "refund-job",
-          "from": "refund-jobs",
-          "to": "refund-worker",
-          "via": "refund-requested"
-        },
-        {
-          "action": "refundCreate",
-          "async": true,
-          "carries": "refund-job",
-          "from": "refund-worker",
-          "to": "shopify"
-        },
-        {
-          "action": "update refunds, returns: refunded",
-          "async": true,
-          "from": "refund-worker",
-          "to": "main-database"
-        },
-        {
-          "action": "email: refund sent",
-          "async": true,
-          "from": "refund-worker",
-          "to": "resend"
-        }
-      ]
-    },
-    "start-a-return": {
-      "id": "start-a-return",
-      "index": "a1",
-      "name": "Start a return",
-      "steps": [
-        {
-          "action": "POST /returns",
-          "carries": "return-request",
-          "from": "buyer-portal",
-          "ms": 30,
-          "to": "returns-api",
-          "via": "post-returns"
-        },
-        {
-          "action": "insert returns, return_items",
-          "carries": "return",
-          "from": "returns-api",
-          "ifFails": "Nothing is saved; the buyer can submit again",
-          "ms": 20,
-          "to": "main-database"
-        },
-        {
-          "action": "create return label, waiting at most 400 ms",
-          "carries": "label",
-          "from": "returns-api",
-          "ifFails": "Return started; the page says the label is on its way by email",
-          "ms": 400,
-          "to": "shippo"
-        },
-        {
-          "action": "email the label",
-          "async": true,
-          "carries": "label",
-          "from": "returns-api",
-          "to": "resend"
-        }
-      ]
-    }
   }
 }

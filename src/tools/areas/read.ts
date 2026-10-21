@@ -3,8 +3,8 @@ import { sourceLabel } from "../../format/sources.ts";
 // (agent/areas.ts); tools.ts gathers them.
 import { z } from "zod";
 import { childrenOf, outline, pageLabel, pagesInOrder, walkFlow, withImports, type Id, type Node } from "../../format/doc.ts";
-import { contextText, docText, parseFocus } from "../context.ts";
-import { forTarget } from "../terminal.ts";
+import { contextText, parseFocus } from "../context.ts";
+import { docText } from "../doc-text.ts";
 import { type Tool, ToolError, node, page, subtree, tool } from "../kit.ts";
 
 export const readTools = {
@@ -52,18 +52,15 @@ export const readTools = {
 
   read_context: tool({
     description:
-      "A brief to build from: the design doc, then the system slice around one part, page, endpoint or table (its links, contracts, " +
-      "tables, events and the pages that use it). Omit focus for the whole system. Read it before building or changing any piece.",
+      "A brief to build from: the design doc, then one page (its states, links in and out, flows, layers and terminal screen) or one " +
+      "flow (its pages in order and how they link). Omit focus for every page and flow. Read it before building a screen.",
     input: {
-      focus: z.string().optional().describe('"part:ID", "page:ID", "flow:ID", "endpoint:ID" (or "operation:ID"), "table:ID" or "trace:ID"; omit for the whole system'),
-      target: z.string().optional().describe('For terminal clients built several ways: the one to brief, e.g. "ratatui", or "go" for a target with no framework'),
+      focus: z.string().optional().describe('"page:ID" or "flow:ID"; omit for the whole design'),
     },
     run: async (own, a, ctx) => {
-      const all = withImports(own, ctx.imported);
-      const doc = a.target === undefined ? all : forTarget(all, a.target);
-      if (!doc) throw new ToolError(`no terminal client is built with "${a.target}"`);
+      const doc = withImports(own, ctx.imported);
       const focus = a.focus === undefined ? undefined : parseFocus(a.focus);
-      if (a.focus !== undefined && !focus) throw new ToolError('focus looks like "part:ID", "page:ID", "flow:ID", "endpoint:ID", "operation:ID", "table:ID" or "trace:ID"');
+      if (a.focus !== undefined && !focus) throw new ToolError('focus looks like "page:ID" or "flow:ID"');
       const r = contextText(doc, focus);
       if (!r.ok) throw new ToolError(r.error);
       return { label: "Read context", ops: [], reply: r.text };

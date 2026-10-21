@@ -1,13 +1,13 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, isUseLink, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, responseFields, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, isUseLink, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
 import { useProject } from "./projectStore.ts";
 import { NameDialog } from "./Ask.tsx";
-import { OwnersContext } from "./SystemCanvas.tsx";
+import { OwnersContext } from "./owners.ts";
 import { SmallSizes } from "./SmallSizes.tsx";
 import { Tokens } from "./Tokens.tsx";
 import { Widths } from "./Widths.tsx";
@@ -196,62 +196,6 @@ function UseLinks({ doc, use, onError }: { doc: Doc; use: InstanceNode; onError:
         </div>
       ))}
     </>
-  );
-}
-
-/** Where a layer meets the system: the response field it shows, and the endpoint each of its links calls. */
-function DataSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
-  const endpoints = Object.values(doc.endpoints).sort((a, b) => (a.index < b.index ? -1 : 1));
-  if (endpoints.length === 0) return null;
-  const run = async (tool: EditTool, args: Record<string, unknown>) => {
-    const r = await window.buni.edit(tool, args);
-    onError(r.ok ? undefined : r.reply);
-  };
-  const calls: [string, string][] = endpoints.map((e) => [e.id, `${e.method} ${e.path}`]);
-  const links = Object.values(doc.connections).filter((c) => c.node === node.id);
-  // The calls this screen touches come first: made from it, that lead to it, or already shown on it.
-  let top = node;
-  while (top.parent && doc.nodes[top.parent]) top = doc.nodes[top.parent] ?? top;
-  const page = Object.values(doc.pages).find((p) => p.frame === top.id)?.id;
-  const near = new Set(Object.values(doc.connections).flatMap((c) => (c.endpoint && (c.page === page || c.to === page) ? [c.endpoint] : [])));
-  for (const n of Object.values(doc.nodes)) if (n.bind && page && pageOfNodeIn(doc, n.id) === page) near.add(n.bind.endpoint);
-  if (node.bind) near.add(node.bind.endpoint);
-  const group = (list: typeof endpoints) => list.filter((e) => responseFields(doc, { kind: "rest", endpoint: e }).length > 0).map((e) => (
-    <optgroup key={e.id} label={`${e.method} ${e.path}`}>
-      {responseFields(doc, { kind: "rest", endpoint: e }).map((f) => <option key={f} value={`${e.id}\n${f}`}>{f}</option>)}
-    </optgroup>
-  ));
-  const others = endpoints.filter((e) => !near.has(e.id));
-  return (
-    <Group title="Data" empty={!node.bind} summary={node.bind ? node.bind.field : "Nothing live"}>
-      <div className="data-row">
-        <span className="prop-name">Shows</span>
-        <label className="select" title="A field of an endpoint's response this layer shows">
-          <select value={node.bind ? `${node.bind.endpoint}\n${node.bind.field}` : ""} onChange={(e) => {
-            const [endpoint, field] = e.target.value.split("\n");
-            void run("bind", endpoint ? { node: node.id, endpoint, field } : { node: node.id });
-          }}>
-            <option value="">Nothing live</option>
-            {group(endpoints.filter((e) => near.has(e.id)))}
-            {group(others)}
-          </select>
-        </label>
-      </div>
-      {links.map((c) => (
-        <div key={c.id} className="data-row">
-          <span className="prop-name">On {c.trigger} → {pageName(doc, c.to)}, calls</span>
-          <Select
-            title="The endpoint this link calls"
-            value={c.endpoint ?? ""}
-            options={[["", "No endpoint"], ...calls]}
-            onChange={(v) => void run("connect", {
-              node: c.node, page: c.page, to: c.to, trigger: c.trigger, transition: c.transition, durationMs: c.durationMs,
-              ...(c.condition ? { condition: c.condition } : {}), endpoint: v,
-            })}
-          />
-        </div>
-      ))}
-    </Group>
   );
 }
 
@@ -938,7 +882,6 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         </div>
       </Group>
       {/* What a layer is and looks like comes first; what it shows, how it moves and what people said about it after. */}
-      <DataSection doc={doc} node={node} onError={setNotice} />
       <MotionSection node={node} onError={setNotice} />
       <Comments doc={doc} node={node} onError={setNotice} />
       <Sources key={node.id} doc={doc} id={source?.root === node.id ? source.id : node.id} inherited={node.kind === "instance" ? doc.shared[node.shared] : undefined} />

@@ -41,8 +41,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
-  context <file.buni> [kind:id] [--target fw]   brief to build from: doc + system slice (part:, page:, flow:, endpoint:, table:);
-                                    --target picks one build of a terminal client, e.g. ratatui
+  context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
   call <file.buni> <tool> [json|-]  run one tool; "-" reads the JSON from stdin
   shot <file.buni> <page> <out>     draw a page (id, name or route) to .png (--scale 2; --frames 6 for its motion), .pdf, or .svg (a graphic
                                     that is one svg), with the Chrome, Chromium or Edge on this machine; a terminal
@@ -50,8 +49,6 @@ usage: buni <command> [args] [--as <name>] [--json]
   icons <file.buni> <page> <dir>    an app icon set from a square graphic: PNGs 16-1024, favicon.ico, AppIcon.icns
   capture <file.buni> <page> <out.png>   PNG plus exact document, revision and layer bounds in out.png.json
   export <file.buni> <out-dir>      write the site as static HTML + CSS
-  pdf <file.buni> <out.pdf>         the whole system design as one PDF to share
-  split <file.buni> part:<id> <new.buni>  move a part and what it owns into its own file; the two import each other
   split <file.buni> core <core.buni>      move every component and token into a core file the design imports
   mcp <file.buni>                   serve the tools over MCP (stdio)
   login [--server URL]              sign in with Wazo; your designs on buni.emusoi.app (or URL) then work with --remote
@@ -104,14 +101,9 @@ Rules that save retries:
 - New page: create_page {name, route}. Links: connect {node, to}. Flows: set_flow, set_journey.
 - Graphics (logo, icon, post, slide): create_page {name, width, height} with no route; draw one <svg> of shapes; change it with set_svg {node, markup}. Read buni skills logo first. buni icons FILE PAGE DIR exports an app icon set.
 - Reuse: make_component {node}, place_component {component, parent}, override {instance, node, text}. Anything on two pages is a component; find_repeats lists copies, componentize {nodes, name} makes them one. Components can hold components (place_component into one); override reaches inside by path "use/layer".
-- The system behind the pages: set_part (client, service, store, cache, queue, external), link_parts (with carries: the shapes on it),
-  set_shape for data structures and enums, then contracts with set_table, set_endpoint (REST) or set_operation (GraphQL services), set_event;
-  set_trace follows one user action through the parts. Where it runs: set_environment, set_cluster, place (Kubernetes, functions, managed services).
-  Tie pages in with place_page {page, client}, connect {…, endpoint}, and bind {node, endpoint, field}. Read buni skills system-design, api-design and database-design first.
-- Why and what's open: set_phase, set_requirement, serve {requirement, id}; set_question (options, assumptions), decide_question;
-  set_role, set_access {call, who, roles, rule}; failure on link_parts, ifDown on set_part, ifFails on trace steps; review {id, state}, discuss. Read buni skills design-process.
-- Big systems split across files: buni split FILE part:ID NEW.buni, or import_file {path}; imported components, tokens, parts, shapes and calls can be used, and are edited in their own file.
-- Before building any piece, read its brief: buni context FILE part:ID (or page:, flow:, endpoint:, table:); with no focus, the whole system.
+- Terminal screens: create_page {name, terminal} or set_screen, sized in cells. Read buni skills terminal first.
+- Big designs split across files: buni split FILE core CORE.buni, or import_file {path}; imported components and tokens can be used, and are edited in their own file.
+- Before building a screen, read its brief: buni context FILE page:ID (or flow:ID); with no focus, every page and flow.
 - Name components "Group / Name" (e.g. "Buttons / Primary"). library_report finds unused and near-duplicate ones; merge_components and rename_component tidy them.
 - If a call is refused, the reply says which rule it broke; fix the arguments and call again.
 
@@ -128,7 +120,7 @@ A big app is a project: one folder of .buni files, a core and its sections.
 - Split by area of the product, not by page: checkout.buni, account.buni, admin.buni, marketing.buni. Split once a
   file passes about 15 pages, or when two agents or people would work in it at once; a small app stays one file.
 - What sections share lives in core files: core.buni holds the tokens and the reused components (nav, footer,
-  buttons, cards); system.buni holds the parts, shapes and calls. A big library can be split again (core/forms.buni).
+  buttons, cards). A big library can be split again (core/forms.buni).
 - A section builds on them with import_file {"path":"core.buni"}: place_component places a core component, and a
   token the section doesn't set comes from the core. Set a token in the section only to override it there.
 - A core component is edited in the core file, never copied: change the core and every section shows it. A component
@@ -171,12 +163,11 @@ side by side, so check order and pace there. Imported pages keep their motion.`;
 const SKILL = `---
 name: buni
 description: >-
-  Design desktop web pages, app flows and UX journeys, and the system behind them, in buni (.buni files)
-  through the buni CLI: pages, components, links, flows, journeys, services, stores, queues, endpoints and tables.
-  Also snapshots a live app to improve it, reviews pages (motion, contrast, type, targets, generated-look tells),
-  and tries options of a page to compare and pick from. Use when asked to design, mock up, lay out or restyle a
-  screen, page, site or app flow, to improve or review an existing UI, to try alternatives of a page, to design an
-  API, database or system architecture, to build from a design, or when a .buni file is involved.
+  Design desktop web pages, app flows, UX journeys and terminal screens in buni (.buni files) through the buni
+  CLI: pages, components, tokens, motion, links, flows and journeys. Also snapshots a live app to improve it,
+  reviews pages (motion, contrast, type, targets, generated-look tells), and tries options of a page to compare and
+  pick from. Use when asked to design, mock up, lay out or restyle a screen, page, site or app flow, to improve or
+  review an existing UI, to try alternatives of a page, to build from a design, or when a .buni file is involved.
 ---
 
 ${GUIDE.replace("# Designing with buni", "# buni")}
@@ -325,12 +316,10 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
   return { ok: r.ok, text: checks ? `${r.reply}\n${checks}` : r.reply };
 }
 
-/** `context` arguments: what to focus on, and --target ratatui for one build of a terminal client designed several ways. */
-function contextArgs(args: readonly string[]): { focus?: string; target?: string } {
-  const at = args.indexOf("--target");
-  const target = at >= 0 ? args[at + 1] : undefined;
-  const focus = (at >= 0 ? args.filter((_, i) => i !== at && i !== at + 1) : args)[0];
-  return { ...(focus ? { focus } : {}), ...(target ? { target } : {}) };
+/** `context` arguments: what to focus on, "page:ID" or "flow:ID". */
+function contextArgs(args: readonly string[]): { focus?: string } {
+  const focus = args[0];
+  return focus ? { focus } : {};
 }
 
 /** Signs in with Wazo: a code here, approved on Wazo's site in the browser; the token is kept for this buni server. */
@@ -515,7 +504,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         const schema = z.toJSONSchema(z.object(tools[name].input), { io: "input" });
         return { name, description: tools[name].description, arguments: schema };
       });
-      // `buni tools set_endpoint`: one tool, every nested argument spelled out (fields, columns, steps).
+      // `buni tools write_html`: one tool, every nested argument spelled out.
       const one = file && list.find((t) => t.name === file);
       if (file && !one) {
         console.error(`Unknown tool "${file}". Run "buni tools".`);
@@ -704,14 +693,6 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       await createMcpServer(ws, host).connect(new StdioServerTransport());
       return new Promise<number>(() => {});
     }
-    case "pdf": {
-      const [target] = args;
-      if (!target?.toLowerCase().endsWith(".pdf")) {
-        console.error("usage: buni pdf <file.buni> <out.pdf>");
-        return 2;
-      }
-      return out(await renderHeadless({ file: resolve(file), out: resolve(target), format: "system" }));
-    }
     case "export": {
       const [dir] = args;
       if (!dir) {
@@ -739,13 +720,12 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       return out({ ok: true, text: `Moved to ${join(dest, basename(file))}. It is part of ${resolve(to)} now: import_file links it to the project's core.` });
     }
     case "split": {
-      const [focus, to] = args;
-      const part = focus === "core" ? "core" : focus?.startsWith("part:") ? focus.slice(5) : undefined;
-      if (!part || !to) {
-        console.error("usage: buni split <file.buni> part:<id>|core <new.buni>");
+      const [what, to] = args;
+      if (what !== "core" || !to) {
+        console.error("usage: buni split <file.buni> core <new.buni>");
         return 2;
       }
-      const r = await (await Workspace.open(file)).split(part, to);
+      const r = await (await Workspace.open(file)).splitCore(to);
       return out({ ok: r.ok, text: r.reply });
     }
     default:

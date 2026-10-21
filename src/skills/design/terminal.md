@@ -1,17 +1,16 @@
 ---
 name: terminal
-description: Designing terminal software — full-screen TUIs (Bubble Tea, Ratatui, Textual, Ink), output a CLI prints, tmux status lines, layouts, popups and menus, zellij plugins, Neovim floats and splits, shell prompts and pickers — on a grid of character cells, driven by keys. Read before making a terminal client, a terminal screen, or key links.
+description: Designing terminal software — full-screen TUIs (Bubble Tea, Ratatui, Textual, Ink), output a CLI prints, tmux status lines, layouts, popups and menus, zellij plugins, Neovim floats and splits, shell prompts and pickers — on a grid of character cells, driven by keys. Read before making a terminal screen or key links.
 ---
 # Terminal screens
 
 A terminal screen is a grid of character cells: every box, gap and line is a whole number of cells, one monospace font, colour from a palette, and no images or mouse to rely on. buni designs it; whoever builds it writes the Go, Rust, Python or TypeScript.
 
-## Clients, targets and frameworks
-- A terminal client is a client part with `terminal.targets`: each target is a language and, when it draws full screens, a framework. Go: Bubble Tea with Lip Gloss. Rust: Ratatui. Python: Textual. TypeScript: Ink, OpenTUI or pi-tui. A CLI that only prints, a tmux script or a prompt names a language and no framework.
-- Design the screens once. Several targets build the same screens in different frameworks so the person can compare them; the first target is the main one. Unless asked, give one target.
-- Keep the design framework-neutral: boxes, borders, lists, inputs and keys every target can draw. When one framework can't do something the design needs (a popup over the screen, mouse), say so in a comment on the screen (comment) rather than designing around one framework.
-- Speak the frameworks' words in the client part's purpose and in comments so the builder maps straight across: Lip Gloss styles and borders, Bubbles components (list, table, textinput, viewport, spinner, help); Ratatui `Block`, `List`, `Table`, `Paragraph`, `Tabs`, `Gauge`, `Layout` constraints; Textual widgets, screens and TCSS; Ink `<Box>`, `<Text>`, `useInput`; OpenTUI's `BoxRenderable`, `TextRenderable`, `SelectRenderable` and `renderer.keyInput`; pi-tui's `Container`, `SelectList`, `Input`, overlays and `matchesKey`.
-- Each target gets its own brief: `read_context` with `target` ("ratatui", "opentui", or the language for a target with no framework), `buni context FILE part:ID --target ratatui` on the command line.
+## Frameworks
+- A terminal screen needs no client or build target: design it once, framework-neutral, and say in the doc which language and framework will build it. Go: Bubble Tea with Lip Gloss. Rust: Ratatui. Python: Textual. TypeScript: Ink, OpenTUI or pi-tui. A CLI that only prints, a tmux script or a prompt needs no framework.
+- Keep the design to boxes, borders, lists, inputs and keys every framework can draw. When one framework can't do something the design needs (a popup over the screen, mouse), say so in a comment on the screen (comment) rather than designing around one framework.
+- Speak the frameworks' words in the doc and in comments so the builder maps straight across: Lip Gloss styles and borders, Bubbles components (list, table, textinput, viewport, spinner, help); Ratatui `Block`, `List`, `Table`, `Paragraph`, `Tabs`, `Gauge`, `Layout` constraints; Textual widgets, screens and TCSS; Ink `<Box>`, `<Text>`, `useInput`; OpenTUI's `BoxRenderable`, `TextRenderable`, `SelectRenderable` and `renderer.keyInput`; pi-tui's `Container`, `SelectList`, `Input`, overlays and `matchesKey`.
+- Each screen has a brief: `read_context` with `page:ID`, or `buni context FILE page:ID` on the command line.
 - tmux, zellij and Neovim are hosts, not frameworks. Say which language drives them: "a Go binary prints the status segments; tmux runs it every 5s", "a Rust zellij plugin (zellij-tile)", "a Neovim plugin in TypeScript over the remote API".
 
 ## Surfaces

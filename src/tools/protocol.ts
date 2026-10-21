@@ -9,7 +9,7 @@ import type { Edit } from "./workspace.ts";
  */
 export type SnapshotUpdate =
   | { kind: "whole"; snap: Snapshot | undefined }
-  /** `system` is left out when the system is the view itself: the file imports nothing. */
+  /** `system` is left out when it is the view itself: the file imports nothing. */
   | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[] };
 
 export interface Snapshot {
@@ -17,7 +17,7 @@ export interface Snapshot {
   /** Folder of the .buni file, for resolving attachments. */
   dir: string;
   view: Doc;
-  /** The view with everything it imports: what the System area shows. */
+  /** The view with everything it imports: the components and tokens the canvas draws. */
   system: Doc;
   /** Imported things by id: the file (relative to this one) each lives in. */
   owners: Record<Id, string>;

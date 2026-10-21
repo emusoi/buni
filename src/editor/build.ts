@@ -1,5 +1,4 @@
 import { basename, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 export interface EditorSource {
   path: string;
@@ -11,7 +10,6 @@ export interface EditorSources {
   files: EditorSource[];
   client: string;
   styles: string;
-  xyflow: string;
 }
 
 /** Built from source here, embedded ahead of time in the standalone command. */
@@ -32,11 +30,10 @@ export async function editorSources(): Promise<EditorSources> {
   }
   const css = (await Bun.file(join(import.meta.dir, "renderer/styles.css")).text()).replaceAll('url("fonts/', 'url("/fonts/');
   const styles = new TextEncoder().encode(css);
-  const xyflow = await Bun.file(fileURLToPath(import.meta.resolve("@xyflow/react/dist/style.css"))).bytes();
   const add = (name: string, body: Uint8Array<ArrayBuffer>): string => {
     const path = `/assets/${name}-${Bun.hash(body).toString(36)}.css`;
     files.push({ path, body, type: "text/css; charset=utf-8" });
     return path;
   };
-  return { files, client, styles: add("styles", styles), xyflow: add("xyflow", xyflow) };
+  return { files, client, styles: add("styles", styles) };
 }

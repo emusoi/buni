@@ -43,7 +43,7 @@ it in separate repositories; nothing here imports from them, and `src/boundary.t
 
 ### Adding a design tool
 
-Tools live in `src/tools/areas/`, one file per area (read, pages, components, system, plan, doc, flows); an agent
+Tools live in `src/tools/areas/`, one file per area (read, pages, components, doc, flows); an agent
 loads an area's tools together, so add a tool to the file of its area and list it in `src/tools/areas/areas.ts` (anything
 unlisted counts as pages). Each is a `tool({ description, input, run })`: `input` is a Zod shape (agents
 see it as the tool's schema, so describe each argument), and `run` returns what it changed; for anything the caller

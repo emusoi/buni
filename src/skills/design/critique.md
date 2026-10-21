@@ -46,6 +46,6 @@ Tag every finding, yours and review_page's alike: P1 gets in someone's way (can'
 - Specific and located: "Today, the 'Coming up' header has more space below than above, so it floats" beats "spacing is off".
 - Say why it matters and what you'll do: the principle it breaks and the fix.
 - Separate what you fixed from what the person should decide (taste calls, product questions).
-- For a recorded review of a whole piece, use review and discuss on that piece so the notes live with the design.
+- For a recorded review, pin the findings as comments on their layers (comment, or review_page with pin) so the notes live with the design.
 
 _The lenses are named after the commands of [Impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus (MIT)._

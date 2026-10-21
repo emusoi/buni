@@ -18,7 +18,7 @@ test.skipIf(!browser)("the extension's capture snaps a page in the browser, and 
   await mkdir(join(root, "Shop"), { recursive: true });
   const store = new DiskStore(root, "/designs");
   await store.write("/designs/Shop/Shop.buni", serializeDoc(emptyDoc()));
-  const editor = await createEditor({ store, origin: "http://localhost:4999", assets: () => ({ files: new Map(), client: "", styles: "", xyflow: "" }) });
+  const editor = await createEditor({ store, origin: "http://localhost:4999", assets: () => ({ files: new Map(), client: "", styles: "" }) });
   const files = await extensionFiles();
   try {
     expect(JSON.parse(files["manifest.json"]!).key).toBeString();

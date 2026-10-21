@@ -1,12 +1,10 @@
-// The open page, across the file: its screens side (flows, links) and its system side (calls, parts, requirements).
-// Every row opens what it names.
+// The open page, across the file: the flows it is in and the pages it links with. Every row opens what it names.
 import { useContext, useMemo, useState, type ReactNode } from "react";
-import { Braces, FileText, ListChecks, Monitor, Server, Workflow, type LucideIcon } from "lucide-react";
+import { FileText, Monitor, Workflow, type LucideIcon } from "lucide-react";
 import { pageLabel, type Doc, type Id } from "buni/format/doc.ts";
-import { callName } from "buni/tools/calls.ts";
 import { pageSummary } from "./pageSummary.ts";
 import type { Hit } from "./search.ts";
-import { OwnersContext } from "./SystemCanvas.tsx";
+import { OwnersContext } from "./owners.ts";
 
 const pageIcon = (p: { terminal?: unknown }): LucideIcon => (p.terminal ? Monitor : FileText);
 
@@ -63,9 +61,7 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
   const s = useMemo(() => pageSummary(doc, page), [doc, page]);
   const owners = useContext(OwnersContext);
   if (!s) return null;
-  const sys = (select: Extract<Hit, { kind: "system" }>["select"], view: Extract<Hit, { kind: "system" }>["view"], icon: Extract<Hit, { kind: "system" }>["icon"], title: string) =>
-    onJump({ kind: "system", id: "id" in select ? select.id : "", select, view, icon, title, detail: "" });
-  const tied = s.client || s.calls.length || s.requirements.length;
+  const tied = s.flows.length || s.out.length || s.in.length || s.away.length;
   return (
     <div className="page-summary">
       <div className="layer-head">
@@ -87,22 +83,11 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
       </div>
 
       <PageLook doc={doc} frame={s.page.frame} />
-      {s.client && (
-        <section className="sum-group">
-          <h3>Client</h3>
-          <Row icon={s.page.terminal ? Monitor : Server} title={s.client.name} detail={s.client.tech} onClick={() => sys({ kind: "part", id: s.client?.id ?? "" }, "map", "part", s.client?.name ?? "")} />
-        </section>
-      )}
-      {/* The system side first: it is what the canvas can't show. */}
-      <Group title="Calls" rows={s.calls.map((c) => (
-        <Row key={c.value.id} icon={Braces} title={callName(c)} detail={doc.parts[c.value.service]?.name} onClick={() => sys({ kind: c.rest ? "endpoint" : "operation", id: c.value.id }, "api", "call", callName(c))} />
-      ))} />
-      <Group title="Serves" rows={s.requirements.map((q) => <Row key={q.id} icon={ListChecks} title={q.title} detail={q.priority} onClick={() => sys({ kind: "requirement", id: q.id }, "requirements", "requirement", q.title)} />)} />
       <Group title="In flows" rows={s.flows.map((f) => <Row key={f.id} icon={Workflow} title={f.name} onClick={() => onJump({ kind: "flow", id: f.id, title: f.name, detail: "" })} />)} />
       <Group title="Goes to" rows={s.out.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => onJump({ kind: "page", id: p.id, title: p.name, detail: "" })} />)} />
       <Group title="Goes to other files" rows={s.away.map((p) => <Row key={p.id} icon={FileText} title={p.name} detail={owners[p.id]?.replace(/^.*\//, "")} onClick={() => onOpenElsewhere?.(p.id)} />)} />
       <Group title="Comes from" rows={s.in.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => onJump({ kind: "page", id: p.id, title: p.name, detail: "" })} />)} />
-      {!tied && <p className="hint">Not tied to the system yet. Say which client it belongs to, and link its buttons and forms to the calls they make.</p>}
+      {!tied && <p className="hint">Not linked yet. Link its buttons and links to the pages they open, and name the paths through them as flows.</p>}
     </div>
   );
 }

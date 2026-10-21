@@ -1,19 +1,18 @@
-// Pages drawn to PNG or PDF, icon sets and the system PDF, with no editor open. The buni desktop app draws them when
+// Pages drawn to PNG or PDF, and icon sets, with no editor open. The buni desktop app draws them when
 // buni runs inside it or a host names it; otherwise any Chrome, Chromium or Edge on this machine does (chrome.ts). The CLI's shot, icons and pdf use
 // this, and so does the terminal agent when it looks at its own work.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { pagesInOrder, type Doc, type Id, type Page } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
 import { fontFaces, motionCss, renderPage } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
-import { systemReport } from "../tools/report.ts";
-import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, framesWithBrowser, printWithBrowser, type Sheet } from "./chrome.ts";
+import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, framesWithBrowser, type Sheet } from "./chrome.ts";
 import { icnsFile, icoFile, ICON_SIZES } from "./iconset.ts";
 
 export interface Reply {
@@ -23,11 +22,11 @@ export interface Reply {
 
 export interface RenderJob {
   file: string;
-  /** The page to draw, by id, name or route; absent for the system design. */
+  /** The page to draw, by id, name or route. */
   page?: string;
   out: string;
   /** txt and ans: a terminal screen as its characters, plain or coloured. */
-  format: "png" | "pdf" | "icons" | "system" | "txt" | "ans";
+  format: "png" | "pdf" | "icons" | "txt" | "ans";
   scale?: number;
   /** A PNG of the page's motion: this many moments side by side, from the start to when the last entrance ends. */
   frames?: number;
@@ -43,14 +42,6 @@ export async function renderHeadless(job: RenderJob, app: AppRenderer | undefine
   try {
     const ws = await Workspace.open(job.file);
     const doc = ws.system();
-    if (job.format === "system") {
-      if (app) return await renderInApp(app, job);
-      const browser = findBrowser();
-      if (!browser) return { ok: false, text: NEEDS };
-      const html = systemReport(ws.system(), { title: basename(job.file, ".buni"), date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }), owners: ws.owners() });
-      await writeFile(job.out, await printWithBrowser(browser, { html, dir: dirname(job.file), width: 1123 }));
-      return { ok: true, text: `Saved ${job.out}.` };
-    }
     const wanted = job.page ?? "";
     const page = doc.pages[wanted] ?? pagesInOrder(doc).find((p) => p.name.toLowerCase() === wanted.toLowerCase() || p.route === wanted);
     if (!page) return { ok: false, text: `No page "${wanted}" in ${job.file}; buni tree lists them.` };

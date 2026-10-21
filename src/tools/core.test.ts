@@ -55,7 +55,7 @@ test("buni split core moves components and tokens out, ids kept, and the design 
   const before = Object.keys(ws.view().pages).map((p) => renderPage(ws.system(), p).html);
   const components = Object.keys(ws.view().shared);
   expect(components.length).toBeGreaterThan(0);
-  const r = await ws.split("core", "core.buni");
+  const r = await ws.splitCore("core.buni");
   expect(r.ok).toBe(true);
   expect(ws.view().shared).toEqual({});
   expect(ws.view().imports).toEqual(["core.buni"]);

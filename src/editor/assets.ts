@@ -12,7 +12,6 @@ export interface Built {
   files: Map<string, Asset>;
   client: string;
   styles: string;
-  xyflow: string;
 }
 
 export const compress = (body: Uint8Array<ArrayBuffer>, type: string): Asset => ({
@@ -36,7 +35,6 @@ export function serveAsset(a: Asset, req: Request): Response {
 
 export function page(html: string, built: Built): Response {
   const body = html
-    .replace('<link rel="stylesheet" href="xyflow.css">', `<link rel="stylesheet" href="${built.xyflow}">`)
     .replace('<link rel="stylesheet" href="styles.css">', `<link rel="stylesheet" href="${built.styles}">`)
     .replace('<script src="main.js"></script>', `<script type="module" src="${built.client}"></script>`);
   return new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" } });

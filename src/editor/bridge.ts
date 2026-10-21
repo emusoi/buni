@@ -1,7 +1,6 @@
 import type { AccountState, BuniApi, Snapshot, SnapshotUpdate, StripApi, ThemeChoice } from "./api.ts";
-import { systemReport } from "./report.ts";
 import { exportSite, pageSvg } from "buni/tools/html.ts";
-import { download, iconSet, pagePng, print, printPage, zip } from "./export.ts";
+import { download, iconSet, pagePng, printPage, zip } from "./export.ts";
 
 /** The file this tab shows, from its URL; none on the home screen. It changes when the tab switches to another design. */
 let file = new URLSearchParams(location.search).get("file") ?? undefined;
@@ -67,7 +66,7 @@ applyTheme(savedTheme());
 const accounts = document.documentElement.dataset.accounts === "wazo";
 const desktopOnly = () => Promise.reject(new Error("Only in the desktop app for now."));
 
-/** The open file as it is now. The server leaves out the system when it is the view itself; it's put back here. */
+/** The open file as it is now. The server leaves out `system` when it is the view itself; it's put back here. */
 async function fetchSnapshot(): Promise<Snapshot | undefined> {
   const s = await call<(Omit<Snapshot, "system"> & { system?: Snapshot["system"] }) | undefined>("snapshot");
   return s && { ...s, system: s.system ?? s.view };
@@ -220,13 +219,6 @@ const api: BuniApi = {
     download(name, zip(files));
     return { dir: `Downloads/${name}`, files: files.size };
   },
-  exportSystem: async () => {
-    const s = await current();
-    const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-    // The print dialog is the save step: Save as PDF there writes the file, so there's nothing to report back.
-    await print(systemReport(s.system, { title: stem(s), date, owners: s.owners }));
-    return undefined;
-  },
   exportPage: async (pageId, as) => {
     const s = await current();
     const page = s.view.pages[pageId];
@@ -242,7 +234,6 @@ const api: BuniApi = {
     await printPage(s.view, page.id, assets(s));
     return undefined;
   },
-  systemChanges: () => call("systemChanges"),
   saveVersion: (name) => call("saveVersion", name),
   answer: (id, text) => call("answer", id, text),
   changes: () => call("changes"),

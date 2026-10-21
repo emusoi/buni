@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Braces, CircleHelp, Component, CornerDownLeft, FileText, ListChecks, Search, Server, Table2, Type, Workflow, type LucideIcon } from "lucide-react";
+import { Component, CornerDownLeft, FileText, Search, Type, Workflow, type LucideIcon } from "lucide-react";
 import type { Doc } from "buni/format/doc.ts";
 import { search, type Hit } from "./search.ts";
 
 const ICON = { page: FileText, flow: Workflow, component: Component, layer: Type } as const;
-const SYSTEM_ICON = { part: Server, call: Braces, table: Table2, requirement: ListChecks, question: CircleHelp } as const;
 
 /** Something to do from ⌘K; every one is also a button somewhere in the app. */
 export interface Action { id: string; title: string; detail?: string; keys?: string; icon: LucideIcon; run: () => void }
 
 type Row = { kind: "hit"; hit: Hit } | { kind: "action"; action: Action };
 
-/** ⌘K: go to any page, flow, layer or piece of the system, or do something, by name. */
-export function Palette({ doc, system, actions, onPick, onClose, only, placeholder }: { doc: Doc; system?: Doc; actions: Action[]; onPick: (hit: Hit) => void; onClose: () => void; /** Only these, as places to go: ⌘P's designs and their pages. */ only?: boolean; placeholder?: string }) {
+/** ⌘K: go to any page, flow, component or layer, or do something, by name. */
+export function Palette({ doc, actions, onPick, onClose, only, placeholder }: { doc: Doc; actions: Action[]; onPick: (hit: Hit) => void; onClose: () => void; /** Only these, as places to go: ⌘P's designs and their pages. */ only?: boolean; placeholder?: string }) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const list = useRef<HTMLDivElement>(null);
   const rows = useMemo<Row[]>(() => {
     const q = query.trim().toLowerCase().replace(/^>\s*/, "");
     const commandsOnly = only || query.trim().startsWith(">");
-    const hits = commandsOnly ? [] : search(doc, query, 30, system).map((hit): Row => ({ kind: "hit", hit }));
+    const hits = commandsOnly ? [] : search(doc, query, 30).map((hit): Row => ({ kind: "hit", hit }));
     // Each word somewhere in the title or its detail: "shop check" finds Checkout in shop.
     const words = q.split(/\s+/).filter(Boolean);
     const acts = actions.filter((a) => words.every((w) => `${a.title} ${a.detail ?? ""}`.toLowerCase().includes(w))).map((action): Row => ({ kind: "action", action }));
     return [...hits, ...acts];
-  }, [doc, system, actions, query]);
+  }, [doc, actions, query]);
   useEffect(() => setCursor(0), [query]);
   useEffect(() => {
     // Braces matter: scrollIntoView returns a promise in newer Chromium, and an effect may only return a cleanup.
@@ -46,7 +45,7 @@ export function Palette({ doc, system, actions, onPick, onClose, only, placehold
           <Search size={16} strokeWidth={1.75} />
           <input
             autoFocus
-            placeholder={placeholder ?? "Go to a page, part or call… or do something"}
+            placeholder={placeholder ?? "Go to a page, flow or layer… or do something"}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -71,7 +70,7 @@ export function Palette({ doc, system, actions, onPick, onClose, only, placehold
             const head = i === 0 && r.kind === "hit" ? "Go to" : i === firstAction ? (only ? "Go to" : "Do") : undefined;
             if (r.kind === "hit") {
               const h = r.hit;
-              const Icon = h.kind === "system" ? SYSTEM_ICON[h.icon] : ICON[h.kind];
+              const Icon = ICON[h.kind];
               return (
                 <div key={`${h.kind}:${h.id}`}>
                   {head && <div className="palette-head">{head}</div>}

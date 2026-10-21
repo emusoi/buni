@@ -749,7 +749,7 @@ export function layerJsx(doc: Doc, id: Id, depth = 0): string {
     }
     case "text": {
       const tag = n.tag ?? "p";
-      const words = n.bind ? `{data.${n.bind.field.replace(/\[\]/g, "[0]")}}` : jsxText(n.text);
+      const words = jsxText(n.text);
       if (tag === "input") return `${pad}<input${style} ${n.filled ? "defaultValue" : "placeholder"}=${JSON.stringify(n.text)} />`;
       if (tag === "textarea") return `${pad}<textarea${style} ${n.filled ? "defaultValue" : "placeholder"}=${JSON.stringify(n.text)} />`;
       return `${pad}<${tag}${style}>${words}</${tag}>`;

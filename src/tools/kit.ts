@@ -1,16 +1,9 @@
 // The helpers every design tool is built from: the tool wrapper, its errors and context, and lookups the tools share.
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { CELL, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, type Motion, childrenOf, setOf, statesOf, variantProperties, fingerprint, outline, pieceName, pageLabel, reviewCopy, type TerminalScreen, pagesInOrder, walkFlow, withImports, type Connection, type Decision, type Doc, type Endpoint, type Field, type Id, type Section, type InstanceNode, type Journey, type Link, type Node, type Page, type Part, type Access, type Cluster, type Environment, type Operation, type Phase, type Placement, type Post, type Question, type Requirement, type Role, type Thread, type QueueEvent, type Shape, type Trace, type SharedSection, type Style, type Table, type AgentDef, type EvalCase, endpointToolName, operationToolName } from "../format/doc.ts";
-import { AREA_IDS } from "./areas/areas.ts";
+import { CELL, childrenOf, pagesInOrder, type Doc, type Id, type Node, type Page, type Style, type TerminalScreen } from "../format/doc.ts";
 import type { Op } from "../oplog/oplog.ts";
-import { openApi, sqlSchema } from "./backend.ts";
-import { layerHtml, parseHtml, renderPage, snippet, type Draft } from "./html.ts";
-import { contextText, docText, parseFocus, sectionsInOrder } from "./context.ts";
-import { forTarget } from "./terminal.ts";
-import { placementOf } from "./topology.ts";
-import { findIcons } from "./icons.ts";
-import { layersOf, libraryReport, shapeOf, usesOf } from "./library.ts";
+import type { Draft } from "./html.ts";
 
 /** What a tool call produces: ops for one change (possibly none), and text for the caller. */
 export interface ToolOutput {
@@ -30,7 +23,7 @@ export interface ToolContext {
   localImports?: boolean;
   readImportFile: (path: string) => Promise<import("../editor/import-resource.ts").ImportResource>;
   saveImportImage: (base64: string, mime: string) => Promise<string>;
-  /** The system of the files this one imports, for tools that read the whole system. */
+  /** The files this one imports, for tools that read their components and tokens too. */
   imported?: Doc;
 }
 
@@ -39,7 +32,7 @@ export class Ids {
   private readonly taken: Set<Id>;
   constructor(doc: Doc, private readonly ctx: ToolContext) {
     // Every collection's ids, so a new one never lands on an entry of any kind (a list here fell behind once and new
-    // requirements, agents and phases replaced old ones).
+    // entries replaced old ones).
     this.taken = new Set(Object.entries(doc).flatMap(([k, v]) => (k !== "tokens" && typeof v === "object" && v !== null && !Array.isArray(v) ? Object.keys(v) : [])));
   }
   /** A readable id from a name ("Quote API" → "quote-api"), random when that is taken. */
@@ -60,9 +53,8 @@ export class Ids {
 export class ToolError extends Error {}
 
 /**
- * What else has to go when `edit` deletes things: their mentions in requirements and questions, their reviews and
- * threads, comments on deleted layers, and component overrides that point at them. Anything `edit` already writes is
- * left as it wrote it.
+ * What else has to go when `edit` deletes things: comments on deleted layers, and component overrides that point at
+ * them. Anything `edit` already writes is left as it wrote it.
  */
 export function forget(doc: Doc, edit: readonly Op[]): Op[] {
   const gone = deleted(edit);
@@ -73,14 +65,6 @@ export function forget(doc: Doc, edit: readonly Op[]): Op[] {
     if (n.kind !== "instance" || gone.has(n.id) || written.has(n.id) || !Object.keys(n.overrides).some((id) => gone.has(id))) continue;
     ops.push({ kind: "put", collection: "nodes", value: { ...n, overrides: Object.fromEntries(Object.entries(n.overrides).filter(([id]) => !gone.has(id))) } });
   }
-  for (const q of Object.values(doc.requirements)) {
-    if (q.servedBy.some((id) => gone.has(id))) ops.push({ kind: "put", collection: "requirements", value: { ...q, servedBy: q.servedBy.filter((id) => !gone.has(id)) } });
-  }
-  for (const q of Object.values(doc.questions)) {
-    if (q.about.some((id) => gone.has(id))) ops.push({ kind: "put", collection: "questions", value: { ...q, about: q.about.filter((id) => !gone.has(id)) } });
-  }
-  for (const id of gone) if (doc.reviews[id]) ops.push({ kind: "delete", collection: "reviews", id });
-  for (const t of Object.values(doc.threads)) if (gone.has(t.target)) ops.push({ kind: "delete", collection: "threads", id: t.id });
   return ops;
 }
 
@@ -260,35 +244,3 @@ export function draftOps(ids: Ids, drafts: Draft[], parent: Id, firstIndex: stri
 }
 
 export const styleValues = z.record(z.string(), z.string()).describe('CSS properties in camelCase or kebab-case; "" removes a property');
-
-/**
- * The design tools: the only way buni's agent, MCP clients and the app change a document.
- * Attachment reads and HTML import assets go through the workspace storage boundary.
- */
-export const ACCESS = z.object({
-  who: z.enum(["public", "signed-in", "roles"]),
-  roles: z.array(z.string()).optional().describe('Role ids, when who is "roles"'),
-  rule: z.string().optional().describe('Which rows: "only their workspace\'s projects"'),
-}).optional().describe("Who may call it; kept when omitted");
-export const CACHE = z.object({
-  part: z.string().describe("A cache part"),
-  ttlSeconds: z.number().int().positive(),
-  key: z.string().min(1).describe('What varies the entry, e.g. "plans" or "quote:{id}"; include every argument that changes the answer'),
-});
-export const ERRORS = z.array(z.object({ code: z.string().min(1).describe('"409", "NOT_FOUND"'), when: z.string().min(1) })).optional().describe("Failures a caller must handle");
-
-export const FIELD = z.object({
-  name: z.string().min(1),
-  type: z.string().min(1).describe('id, string, integer, number, boolean, datetime, or a shape name ("Quote"); add [] for a list'),
-  optional: z.boolean().optional(),
-  example: z.union([z.string(), z.number(), z.boolean()]).optional().describe('A value it might hold, e.g. "Monstera": the mock API and evals use it so they read like the product'),
-});
-export const BODY = z.union([z.array(FIELD), z.string().min(1)]).optional();
-
-/** An endpoint body as stored: a shape (named by id or name) whole, or a list of fields. */
-export function body(doc: Doc, side: "request" | "response", v: string | Field[]): { fields: Field[]; shape?: Id | undefined } {
-  if (typeof v !== "string") return { fields: v };
-  const shape = doc.shapes[v] ?? Object.values(doc.shapes).find((s) => s.name === v);
-  if (!shape) throw new ToolError(`no shape "${v}"; add it with set_shape, or give the ${side} as fields`);
-  return { fields: [], shape: shape.id };
-}

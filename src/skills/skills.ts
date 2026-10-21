@@ -3,19 +3,14 @@ import { readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import accessibility from "./design/accessibility.md" with { type: "text" };
-import apiDesign from "./design/api-design.md" with { type: "text" };
 import branding from "./design/branding.md" with { type: "text" };
 import color from "./design/color.md" with { type: "text" };
 import components from "./design/components.md" with { type: "text" };
-import databaseDesign from "./design/database-design.md" with { type: "text" };
-import deployment from "./design/deployment.md" with { type: "text" };
-import designProcess from "./design/design-process.md" with { type: "text" };
 import depth from "./design/depth.md" with { type: "text" };
 import layout from "./design/layout.md" with { type: "text" };
 import logo from "./design/logo.md" with { type: "text" };
 import motion from "./design/motion.md" with { type: "text" };
 import principles from "./design/principles.md" with { type: "text" };
-import systemDesign from "./design/system-design.md" with { type: "text" };
 import terminal from "./design/terminal.md" with { type: "text" };
 import typography from "./design/typography.md" with { type: "text" };
 import uxWriting from "./design/ux-writing.md" with { type: "text" };
@@ -27,8 +22,6 @@ import palettes from "./design/palettes.md" with { type: "text" };
 import styles from "./design/styles.md" with { type: "text" };
 import philosophies from "./design/philosophies.md" with { type: "text" };
 import tells from "./design/tells.md" with { type: "text" };
-import agentDesign from "./design/agent-design.md" with { type: "text" };
-import backend from "./design/backend.md" with { type: "text" };
 
 /** Design guidance an agent reads before it designs: when it applies (description) and what to do (body). */
 export interface Skill {
@@ -57,8 +50,8 @@ function parseSkill(raw: string, source: Skill["source"], fallbackName: string):
   return { name: field("name") ?? fallbackName, description: field("description") ?? "", body: (m ? text.slice(m[0].length) : text).trim(), source };
 }
 
-// The order is the reading order: foundations, direction and its guards, the craft areas, then systems.
-const BUNDLED = [principles, direction, tells, palettes, styles, philosophies, critique, accessibility, color, typography, layout, depth, components, interaction, uxWriting, motion, mobile, branding, logo, systemDesign, backend, apiDesign, databaseDesign, deployment, designProcess, agentDesign, terminal].map((t) => parseSkill(t, "buni", "skill"));
+// The order is the reading order: foundations, direction and its guards, the craft areas, then terminal screens.
+const BUNDLED = [principles, direction, tells, palettes, styles, philosophies, critique, accessibility, color, typography, layout, depth, components, interaction, uxWriting, motion, mobile, branding, logo, terminal].map((t) => parseSkill(t, "buni", "skill"));
 
 /** Skills every design request needs, sent with the instructions so the provider caches them once for every chat. */
 export const CORE = ["principles", "direction", "tells", "styles", "philosophies"];

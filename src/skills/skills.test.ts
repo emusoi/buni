@@ -6,7 +6,7 @@ import { loadSkills, readSkill } from "./skills.ts";
 
 test("bundled skills all have a name, a description and a body", async () => {
   const skills = await loadSkills(join(tmpdir(), "no-such-skills-dir"));
-  expect(skills.map((s) => s.name)).toEqual(["principles", "direction", "tells", "palettes", "styles", "philosophies", "critique", "accessibility", "color", "typography", "layout", "depth", "components", "interaction", "ux-writing", "motion", "mobile", "branding", "logo", "system-design", "backend", "api-design", "database-design", "deployment", "design-process", "agent-design", "terminal"]);
+  expect(skills.map((s) => s.name)).toEqual(["principles", "direction", "tells", "palettes", "styles", "philosophies", "critique", "accessibility", "color", "typography", "layout", "depth", "components", "interaction", "ux-writing", "motion", "mobile", "branding", "logo", "terminal"]);
   for (const s of skills) {
     expect(s.description.length).toBeGreaterThan(20);
     expect(s.body).toStartWith("# ");

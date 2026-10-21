@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { allowedCall, allowedOrigin, localOrigins, isDesignFile, isDesignPath, mockOrigin } from "./guard.ts";
+import { allowedCall, allowedOrigin, localOrigins, isDesignFile, isDesignPath } from "./guard.ts";
 
 const local = localOrigins(7720);
 const req = (headers: Record<string, string>) => new Request("http://localhost:7720/rpc/removeFile", { method: "POST", headers });
@@ -13,13 +13,6 @@ test("another site's page can't call in; buni's page and local tools can", () =>
   // Hosted, only the public origin calls in.
   expect(allowedCall(req({ origin: "https://buni.emusoi.app", "content-type": "application/json" }), new Set(["https://buni.emusoi.app"]))).toBe(true);
   expect(allowedCall(req({ origin: "http://localhost:7720", "content-type": "application/json" }), new Set(["https://buni.emusoi.app"]))).toBe(false);
-});
-
-test("the mock answers local pages on any port, never other sites", () => {
-  expect(mockOrigin(req({ origin: "http://localhost:3000" }))).toBe("http://localhost:3000");
-  expect(mockOrigin(req({ origin: "http://127.0.0.1:5173" }))).toBe("http://127.0.0.1:5173");
-  expect(mockOrigin(req({ origin: "https://evil.example" }))).toBeUndefined();
-  expect(mockOrigin(req({ origin: "http://localhost.evil.example" }))).toBeUndefined();
 });
 
 test("only a design's own file can be deleted or moved, and /files/ serves only design folders", () => {

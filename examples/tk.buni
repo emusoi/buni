@@ -1,18 +1,11 @@
 {
-  "agents": {},
   "attachments": {},
   "buni": 1,
-  "clusters": {},
   "comments": {},
   "connections": {},
   "decisions": {},
-  "endpoints": {},
-  "environments": {},
-  "evals": {},
-  "events": {},
   "flows": {},
   "journeys": {},
-  "links": {},
   "nodes": {
     "84303012": {
       "id": "84303012",
@@ -445,10 +438,8 @@
       "text": "today"
     }
   },
-  "operations": {},
   "pages": {
     "bee81065": {
-      "client": "tk",
       "frame": "721a0205",
       "id": "bee81065",
       "index": "a0",
@@ -462,40 +453,8 @@
       }
     }
   },
-  "parts": {
-    "tk": {
-      "id": "tk",
-      "index": "a0",
-      "kind": "client",
-      "name": "tk",
-      "purpose": "A terminal task list for developers: browse, add and finish tasks without leaving the shell.",
-      "terminal": {
-        "targets": [
-          {
-            "framework": "bubbletea",
-            "language": "go"
-          },
-          {
-            "framework": "ratatui",
-            "language": "rust"
-          }
-        ]
-      }
-    }
-  },
-  "phases": {},
-  "placements": {},
-  "positions": {},
-  "questions": {},
-  "requirements": {},
-  "reviews": {},
-  "roles": {},
   "rules": {},
   "sections": {},
-  "shapes": {},
   "shared": {},
-  "tables": {},
-  "threads": {},
-  "tokens": {},
-  "traces": {}
+  "tokens": {}
 }

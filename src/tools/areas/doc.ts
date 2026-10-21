@@ -5,12 +5,12 @@ import type { Op } from "../../oplog/oplog.ts";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
 import type { Decision, Section } from "../../format/doc.ts";
-import { sectionsInOrder } from "../context.ts";
-import { Ids, type Tool, ToolError, body, tool } from "../kit.ts";
+import { sectionsInOrder } from "../doc-text.ts";
+import { Ids, type Tool, ToolError, tool } from "../kit.ts";
 
 export const docTools = {
   set_sources: tool({
-    description: "Link any page, layer, component, system part, contract, plan item, agent or evaluation to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
+    description: "Link any page, layer, component, link, flow, journey, doc section, decision, rule, attachment or comment to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
     input: { ids: z.array(z.string()).min(1), sources: sourceRefs },
     run: async (doc, a) => {
       const ops: Op[] = a.ids.map((id) => {

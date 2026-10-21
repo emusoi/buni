@@ -84,9 +84,6 @@ test.skipIf(!findBrowser())("an icon set draws each size sharp on a see-through 
   expect(small[25]).toBe(6); // colour type: RGBA, so the rounded corners stay clear
   expect((await readFile(join(out, "AppIcon.icns"))).subarray(0, 4).toString()).toBe("icns");
   expect((await renderHeadless({ file, page: "Nope", out, format: "icons" })).ok).toBe(false);
-  const pdf = join(dir, "system.pdf");
-  expect((await renderHeadless({ file: portal, out: pdf, format: "system" })).ok).toBe(true);
-  expect((await readFile(pdf)).subarray(0, 4).toString()).toBe("%PDF");
 }, 60_000);
 
 test.skipIf(!findBrowser())("--frames draws a page's motion as moments side by side, and says so when nothing moves", async () => {

@@ -61,13 +61,14 @@ test("svg loads nothing from elsewhere, however the CSS is spelled", () => {
   expect(svgProblem('<svg><defs><linearGradient id="g"/></defs><rect fill="url(#g)" style="fill:url(\'#g\')"/></svg>')).toBeUndefined();
 });
 
-test("what parses also saves and reads back: nulls, review snapshots, width styles", async () => {
+test("what parses also saves and reads back: legacy data with nulls, width styles", async () => {
   const { serializeDoc } = await import("./serialize.ts");
   const d = base();
+  // Data from before (an eval case, a review snapshot that isn't JSON) is never read, so nothing in it can fail a save.
   d.evals = { e: { id: "e", agent: "buni", ask: "Quote 10 kg", must: ["shows a price"], given: { tool: { item: null } }, index: "a0" } };
+  d.reviews = { home: { id: "home", state: "changed", by: "a", at: "2026-10-07", was: "not json" } };
   const withNull = parseDoc(JSON.stringify(d));
   if (!withNull.ok) throw new Error(withNull.errors.map((e) => `${e.path}: ${e.message}`).join("; "));
   expect(() => serializeDoc(withNull.doc)).not.toThrow();
-  expect(refused((x) => { x.reviews = { home: { id: "home", state: "changed", by: "a", at: "2026-10-07", was: "not json" } }; })).toContain("expected a JSON object");
   expect(refused((x) => { x.nodes["home-headline"].at = { "390": { color: "red" } }; })).toContain("isn't one of the page's widths");
 });

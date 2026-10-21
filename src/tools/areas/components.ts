@@ -528,4 +528,15 @@ export const componentsTools = {
       return { label: `Move ${section.name}`, ops: [{ kind: "put", collection: "shared", value: { ...section, x: a.x, y: a.y } }], reply: `Moved ${section.name}.` };
     },
   }),
+  import_file: tool({
+    description: "Build on another .buni file: its components and tokens become usable here (they stay edited in their own file; a token set here wins). Pass a path relative to this file.",
+    input: { path: z.string().min(1).describe('"catalog.buni"'), remove: z.boolean().optional().describe("Stop importing it") },
+    run: async (doc, a) => {
+      const now = doc.imports ?? [];
+      if (!a.remove && now.includes(a.path)) return { label: "Import", ops: [], reply: `Already imports ${a.path}.` };
+      if (a.remove && !now.includes(a.path)) throw new ToolError(`this file doesn't import ${a.path}`);
+      const imports = a.remove ? now.filter((p) => p !== a.path) : [...now, a.path];
+      return { label: `${a.remove ? "Stop importing" : "Import"} ${a.path}`, ops: [{ kind: "imports", value: imports }], reply: `${a.remove ? "No longer imports" : "Imports"} ${a.path}.` };
+    },
+  }),
 } satisfies Record<string, Tool>;

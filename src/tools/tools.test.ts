@@ -5,11 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { childrenOf, emptyDoc, pagesInOrder, pickVariant, reviewOf, setOf, variantProperties, walkFlow, type Node } from "../format/doc.ts";
+import { childrenOf, emptyDoc, pagesInOrder, pickVariant, setOf, variantProperties, walkFlow, type Node } from "../format/doc.ts";
 import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
 import { contextText } from "./context.ts";
-import { designNotes } from "./notes.ts";
 import type { ToolName } from "./tools.ts";
 import { createMcpServer } from "../mcp/server.ts";
 import { exportSite, fontFaces, layerHtml, layerJsx, pageSvg, parseHtml, parseStyle, renderComponent, renderPage } from "./html.ts";
@@ -93,55 +92,15 @@ describe("html in", () => {
     expect(exportSite(ws.view(), embeddedFont).get("styles/tokens.css")).toContain('font-family:"Inter"');
   });
 
-  test("changing one thing about an endpoint keeps the rest", async () => {
-    const ws = await Workspace.open(file);
-    const e = ws.view().endpoints["create-quote"];
-    if (!e) throw new Error("the example has POST /quotes");
-    await ws.call("codex", "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: "Price a quote." });
-    const after = ws.view().endpoints[e.id];
-    expect([after?.summary, after?.request, after?.writes, after?.emits, after?.errors, after?.access]).toEqual(["Price a quote.", e.request, e.writes, e.emits, e.errors, e.access]);
-    await ws.call("codex", "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: "Price a quote.", emits: [] });
-    expect(ws.view().endpoints[e.id]?.emits).toEqual([]);
-  });
-
-  test("an approval covers the piece as it was: a later change shows, in the board, the brief and the notes", async () => {
-    const ws = await Workspace.open(file);
-    const e = ws.view().endpoints["create-quote"];
-    if (!e) throw new Error("the example has POST /quotes");
-    await ws.call("reviewer", "review", { id: e.id, state: "approved" });
-    expect(reviewOf(ws.view(), e.id)?.changed).toBe(false);
-    await ws.call("codex", "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: "Price a quote, now with discounts.", request: e.request, response: e.response });
-    expect(reviewOf(ws.view(), e.id)?.changed).toBe(true);
-    const brief = contextText(ws.view(), { endpoint: e.id });
-    expect(brief.ok && brief.text).toContain("then changed (summary): not approved as it stands");
-    expect(reviewOf(ws.view(), e.id)?.changes).toEqual([{ field: "summary", was: e.summary, now: "Price a quote, now with discounts." }]);
-    expect(designNotes(ws.view()).some((n) => n.startsWith("1 piece was approved, then changed"))).toBe(true);
-    // The whole-system brief tells an author what waits and what nobody has proposed yet.
-    const all = contextText(ws.view());
-    expect(all.ok && all.text).toContain("- POST /quotes: approved by reviewer, then changed (summary); review it again");
-    expect(all.ok && all.text).toMatch(/- Not reviewed yet \(\d+\): .*Pricing/);
-    // Proposed again, it still shows what changed since that approval, until someone approves it.
-    await ws.call("codex", "review", { id: e.id, state: "proposed" });
-    expect(reviewOf(ws.view(), e.id)).toMatchObject({ state: "proposed", approved: { by: "reviewer" }, changes: [{ field: "summary" }] });
-    await ws.call("reviewer", "review", { id: e.id, state: "approved" });
-    expect(reviewOf(ws.view(), e.id)).toMatchObject({ changed: false, changes: [] });
-    expect(reviewOf(ws.view(), e.id)?.approved).toBeUndefined();
-    // A named list (errors by code, fields and columns by name) changes item by item.
-    await ws.call("codex", "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: "Price a quote, now with discounts.", errors: [...(e.errors ?? []), { code: "418", when: "Teapot" }] });
-    expect(reviewOf(ws.view(), e.id)?.changes).toEqual([{ field: "errors 418", was: "nothing", now: '{"when":"Teapot"}' }]);
-  });
-
-  test("a layer reads as JSX: style objects, data as {data.field}, components by name", async () => {
+  test("a layer reads as JSX: style objects, components by name", async () => {
     const ws = await Workspace.open(file);
     const jsx = layerJsx(ws.view(), "home-frame");
-    expect(jsx).toContain('<h1 style={{ fontSize: "44px", color: "var(--color-ink)" }}>');
+    expect(jsx).toContain('<h1 style={{ color: "var(--color-ink)", fontSize: "44px" }}>');
     expect(jsx).toContain("<PublicNav />");
     expect(jsx).not.toContain("class=");
-    const bound = Object.values(ws.view().nodes).find((n) => n.bind);
-    if (bound) expect(layerJsx(ws.view(), bound.id)).toContain(`{data.${bound.bind?.field}}`);
   });
 
-  test("a layer's own HTML written back changes nothing; an edited word changes only that, keeping ids, links and data", async () => {
+  test("a layer's own HTML written back changes nothing; an edited word changes only that, keeping ids and links", async () => {
     const ws = await Workspace.open(file);
     const sorted = (_: string, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([p], [q]) => (p < q ? -1 : 1))) : x);
     const snapshot = () => JSON.stringify(Object.values(ws.view().nodes).sort((x, y) => (x.id < y.id ? -1 : 1)), sorted);
@@ -256,34 +215,6 @@ describe("html in", () => {
     expect(ws.view().nodes[auto.id]?.name).toBe("Rate limit notice");
   });
 
-  test("asking for changes with a note leaves the builder a thread saying which", async () => {
-    const ws = await Workspace.open(file);
-    const r = await ws.call("reviewer", "review", { id: "create-quote", state: "changes", note: "Return the quote's expiry too" });
-    expect(r.reply).toStartWith("POST /quotes is sent back for changes. Thread ");
-    const brief = contextText(ws.view(), { endpoint: "create-quote" });
-    expect(brief.ok && brief.text).toContain("reviewer: Return the quote's expiry too");
-  });
-
-  test("an approved screen is approved no longer once its layers, or a state's, change", async () => {
-    const ws = await Workspace.open(file);
-    const page = Object.values(ws.view().pages).find((p) => p.route === "/pricing");
-    const under = (id: string): Node[] => childrenOf(ws.view(), id).flatMap((c) => [c, ...under(c.id)]);
-    const text = page && under(page.frame).find((n) => n.kind === "text");
-    if (!page || !text) throw new Error("the example has a /pricing page with text");
-    await ws.call("reviewer", "review", { id: page.id, state: "approved" });
-    expect(reviewOf(ws.view(), page.id)?.changed).toBe(false);
-    await ws.call("codex", "set_text", { node: text.id, text: "Something else" });
-    expect(reviewOf(ws.view(), page.id)?.changed).toBe(true);
-    // Its states are part of the screen: changing one shows on the screen's approval.
-    await ws.call(pi, "duplicate_page", { page: page.id, state: "Sold out" });
-    await ws.call("reviewer", "review", { id: page.id, state: "approved" });
-    const state = Object.values(ws.view().pages).find((p) => p.state === "Sold out");
-    const copy = state && under(state.frame).find((n) => n.kind === "text");
-    if (!copy) throw new Error("the state copies the text");
-    await ws.call("codex", "set_text", { node: copy.id, text: "Sold out" });
-    expect(reviewOf(ws.view(), page.id)?.changed).toBe(true);
-  });
-
   test("a page's brief says how you arrive, where its links go, and outlines the screen", async () => {
     const ws = await Workspace.open(file);
     const pricing = Object.values(ws.view().pages).find((p) => p.route === "/pricing");
@@ -316,24 +247,6 @@ describe("html in", () => {
     expect(layers(copy?.frame ?? "")).toBe(layers(doc.pages["home"]?.frame ?? ""));
     expect(Object.values(doc.connections).filter((c) => c.page === copy?.id).map((c) => c.to)).toEqual(Object.values(before.connections).filter((c) => c.page === "home").map((c) => c.to));
     expect((await ws.call(pi, "duplicate_page", { page: "home" })).ok).toBe(false);
-  });
-
-  test("an endpoint's body can be a shape whole, named in briefs, never both a shape and fields", async () => {
-    const ws = await Workspace.open(file);
-    const e = ws.view().endpoints["create-quote"];
-    if (!e) throw new Error("the example has POST /quotes");
-    const r = await ws.call(pi, "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: e.summary, request: "QuoteRequest", response: "quote" });
-    expect(r.ok).toBe(true);
-    const saved = ws.view().endpoints[e.id];
-    expect([saved?.requestShape, saved?.responseShape, saved?.request, saved?.response]).toEqual(["quote-request", "quote", [], []]);
-    const brief = contextText(ws.view(), { endpoint: e.id });
-    expect(brief.ok && brief.text).toContain("request QuoteRequest (the whole body)");
-    expect(brief.ok && brief.text).toContain("shape **QuoteRequest**");
-    expect((await ws.call(pi, "set_endpoint", { endpoint: e.id, service: e.service, method: e.method, path: e.path, summary: e.summary, request: "Nope" })).reply).toContain('no shape "Nope"');
-    if (!saved) throw new Error("the endpoint was saved");
-    const doc = structuredClone(ws.view());
-    doc.endpoints[e.id] = { ...saved, request: [{ name: "x", type: "string" }] };
-    expect(parseDoc(serializeDoc(doc)).ok).toBe(false);
   });
 
   test("a link with a condition is an alternative path, next to the usual one, and flows walk the usual path first", async () => {
@@ -438,11 +351,8 @@ describe("html in", () => {
     await ws.call(pi, "create_page", { name: "Home, empty", route: "/", state: "Empty" });
     const empty = Object.values(ws.view().pages).find((p) => p.state === "Empty");
     await ws.call(pi, "replace_html", { node: empty?.frame ?? "", html: layerHtml(ws.view(), "home-hero") });
-    // Linking is bookkeeping: an approval of the screen still covers it.
-    await ws.call("reviewer", "review", { id: "home", state: "approved" });
     const linked = await ws.call(pi, "link_states", { page: "home" });
     expect(linked.ok).toBe(true);
-    expect(reviewOf(ws.view(), "home")?.changed).toBe(false);
     const copy = Object.values(ws.view().nodes).find((n) => n.twin === "home-headline" && n.id !== twin.id);
     expect(copy).toBeDefined();
   });
@@ -1095,223 +1005,34 @@ describe("library health", () => {
 });
 
 describe("context", () => {
-  test("an endpoint's brief carries its tables, the tables they point at, its events and who hears them", async () => {
-    const ws = await Workspace.open(file);
-    const reply = (await ws.call(pi, "read_context", { focus: "endpoint:create-quote" })).reply;
-    expect(reply).toStartWith("# Context: POST /quotes");
-    expect(reply).toContain("plan_id: uuid, not null → plans.id");
-    expect(reply).toContain("table **plans**");
-    expect(reply).toContain("heard by Mailer");
-  });
-
-  test("a page's brief is what it calls and shows, not the whole system", async () => {
+  test("a page's brief is its screen, links and flows, not every page", async () => {
     const ws = await Workspace.open(file);
     const reply = (await ws.call(pi, "read_context", { focus: "page:pricing" })).reply;
-    expect(reply).toContain("GET /plans");
-    expect(reply).toContain('"Title" (pricing-title) shows headline');
-    expect(reply).not.toContain("**POST /quotes**");
+    expect(reply).toStartWith("# Context: page Pricing (/pricing)");
+    expect(reply).toContain("## Arrives from\n- Home: click on");
+    expect(reply).toContain("## Flows\n- Get a quote");
+    expect(reply).not.toContain("## Pages");
   });
 
-  test("a focus naming nothing is refused", async () => {
+  test("a focus naming nothing, or anything but a page or flow, is refused", async () => {
     const ws = await Workspace.open(file);
-    const r = await ws.call(pi, "read_context", { focus: "part:ghost" });
+    const r = await ws.call(pi, "read_context", { focus: "page:ghost" });
     expect(r.ok).toBe(false);
-    expect(r.reply).toContain('part "ghost" does not exist');
+    expect(r.reply).toContain('page "ghost" does not exist');
+    expect((await ws.call(pi, "read_context", { focus: "part:quote-api" })).reply).toContain('focus looks like "page:ID" or "flow:ID"');
   });
 });
 
-describe("system tools", () => {
-  test("design a system from nothing: parts, links, a table, an endpoint, a page that calls it", async () => {
-    const ws = await Workspace.open(file);
-    const call = async (name: Parameters<Workspace["call"]>[1], args: unknown) => {
-      const r = await ws.call(pi, name, args);
-      if (!r.ok) throw new Error(r.reply);
-      return r.reply;
-    };
-    await call("set_part", { kind: "service", name: "Billing", purpose: "Charges for quotes." });
-    await call("set_part", { kind: "store", name: "Ledger", purpose: "Every charge.", tech: "Postgres 16" });
-    await call("link_parts", { from: "billing", to: "ledger", kind: "writes" });
-    await call("set_table", { store: "ledger", name: "charges", columns: [{ name: "id", type: "uuid", primary: true }, { name: "quote_id", type: "uuid" }] });
-    await call("set_endpoint", { id: "charge", service: "billing", method: "POST", path: "/charges", summary: "Charges a quote.", request: [{ name: "quoteId", type: "string" }], response: [{ name: "receipt", type: "string" }], writes: ["charges"] });
-    await call("link_parts", { from: "web", to: "billing", kind: "calls" });
-    await call("connect", { node: "home-cta", to: "pricing", endpoint: "charge" });
-    await call("bind", { node: "home-headline", endpoint: "charge", field: "receipt" });
-
-    const saved = parseDoc(await readFile(file, "utf8"));
-    if (!saved.ok) throw new Error(JSON.stringify(saved.errors));
-    expect(saved.doc.endpoints["charge"]?.writes).toEqual(["charges"]);
-    expect(saved.doc.connections["home-to-pricing"]?.endpoint).toBe("charge");
-    expect(saved.doc.nodes["home-headline"]?.bind).toEqual({ endpoint: "charge", field: "receipt" });
-    expect((await call("read_context", { focus: "part:billing" }))).toContain("table **charges**");
-  });
-
-  test("an endpoint writing a store its service has no link to is refused with the reason", async () => {
-    const ws = await Workspace.open(file);
-    const r = await ws.call(pi, "set_endpoint", { service: "mailer", method: "POST", path: "/send", summary: "Sends.", writes: ["quotes"] });
-    expect(r.ok).toBe(false);
-    expect(r.reply).toContain('service "mailer" has no writes link to store "pg"');
-  });
-
-  test("relinking a trigger keeps the endpoint it calls", async () => {
-    const ws = await Workspace.open(file);
-    await ws.call(pi, "connect", { node: "home-cta", to: "pricing", transition: "fade" });
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && saved.doc.connections["home-to-pricing"]?.endpoint).toBe("list-plans");
-  });
-
-  test("deleting a part takes its links; deleting a table still in use is refused", async () => {
-    const ws = await Workspace.open(file);
-    await ws.call(pi, "set_part", { kind: "service", name: "Audit", purpose: "Keeps a log." });
-    await ws.call(pi, "link_parts", { from: "audit", to: "jobs", kind: "subscribes" });
-    expect((await ws.call(pi, "delete_system", { what: "part", id: "audit" })).ok).toBe(true);
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && Object.values(saved.doc.links).some((l) => l.from === "audit")).toBe(false);
-    expect((await ws.call(pi, "delete_system", { what: "part", id: "mailer" })).ok).toBe(false);
-    const r = await ws.call(pi, "delete_system", { what: "table", id: "plans" });
-    expect(r.ok).toBe(false);
-    expect(r.reply).toContain('table "plans" does not exist');
-  });
-});
-
-
-describe("shapes and caching", () => {
-  test("renaming a shape carries through to every field typed with it", async () => {
-    const ws = await Workspace.open(file);
-    const r = await ws.call(pi, "set_shape", { shape: "plan", name: "PricePlan", fields: [{ name: "id", type: "string" }] });
-    expect(r.ok).toBe(true);
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && saved.doc.endpoints["list-plans"]?.response[1]?.type).toBe("PricePlan[]");
-  });
-
-  test("a shape still in use can't be deleted; relinking keeps what it carries", async () => {
-    const ws = await Workspace.open(file);
-    expect((await ws.call(pi, "delete_system", { what: "shape", id: "plan" })).ok).toBe(false);
-    await ws.call(pi, "link_parts", { from: "web", to: "quote-api", kind: "calls", note: "HTTPS" });
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && saved.doc.links["web-api"]).toMatchObject({ id: "web-api", from: "web", to: "quote-api", kind: "calls", note: "HTTPS", carries: ["quote-request", "plan"] });
-  });
-
-  test("a brief says what is cached, for how long, and what makes it stale", async () => {
-    const ws = await Workspace.open(file);
-    const e = parseDoc(await readFile(file, "utf8"));
-    if (!e.ok) throw new Error("bad example");
-    const q = e.doc.endpoints["create-quote"]!;
-    const r = await ws.call(pi, "set_endpoint", { endpoint: q.id, service: q.service, method: q.method, path: q.path, summary: q.summary, request: q.request, response: q.response, reads: q.reads, writes: q.writes, emits: q.emits, invalidates: ["list-plans"] });
-    expect(r.ok).toBe(true);
-    const brief = (await ws.call(pi, "read_context", { focus: "part:edge-cache" })).reply;
-    expect(brief).toContain('cached in Plan cache for 300s under key "plans"');
-    expect(brief).toContain("made stale by: POST /quotes");
-    expect(brief).toContain("carrying Plan");
-  });
-});
-
-describe("editing a link in place", () => {
-  test("a link keeps its id when it gets a new kind, and a blank note clears", async () => {
-    const ws = await Workspace.open(file);
-    await ws.call(pi, "link_parts", { from: "mailer", to: "jobs", kind: "subscribes", note: "retries 3 times" });
-    const r = await ws.call(pi, "link_parts", { link: "mailer-jobs", from: "mailer", to: "jobs", kind: "publishes", note: "" });
-    expect(r.ok).toBe(true);
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && saved.doc.links["mailer-jobs"]).toEqual({ id: "mailer-jobs", from: "mailer", to: "jobs", kind: "publishes" });
-  });
-});
-
-describe("GraphQL and traces through the tools", () => {
-  test("a service switches to GraphQL and gets an operation, an enum and a trace; the brief shows them", async () => {
-    const ws = await Workspace.open(file);
-    const call = async (name: Parameters<Workspace["call"]>[1], args: unknown) => {
-      const r = await ws.call(pi, name, args);
-      if (!r.ok) throw new Error(r.reply);
-      return r.reply;
-    };
-    await call("set_part", { kind: "service", name: "Admin API", purpose: "Back office.", api: "graphql" });
-    await call("link_parts", { from: "admin-api", to: "pg", kind: "reads" });
-    await call("set_shape", { name: "Tier", values: ["basic", "pro"] });
-    expect(await call("set_operation", { service: "admin-api", kind: "query", name: "quotes", summary: "All quotes.", returns: "Quote[]", reads: ["quotes"], errors: [{ code: "FORBIDDEN", when: "not an admin" }] })).toBe("Operation quotes-query saved.");
-    await call("link_parts", { from: "web", to: "admin-api", kind: "calls" });
-    expect(await call("set_trace", { name: "Review quotes", steps: [{ from: "web", to: "admin-api", action: "list", via: "quotes-query", ms: 80 }, { from: "admin-api", to: "pg", action: "select quotes", ms: 20 }] })).toBe("Trace review-quotes saved.");
-    const brief = await call("read_context", { focus: "part:admin-api" });
-    expect(brief).toContain("service, GraphQL **Admin API**");
-    expect(brief).toContain("**query quotes** (quotes-query)");
-    expect(brief).toContain("fails FORBIDDEN when not an admin");
-    expect(brief).toContain("trace **Review quotes** (review-quotes), ~100 ms before the response");
-    expect(await call("read_context", { focus: "trace:review-quotes" })).toContain("1. Customer portal → Admin API: list (via query quotes, 80 ms)");
-  });
-
-  test("an operation on a REST service is refused with the fix", async () => {
-    const ws = await Workspace.open(file);
-    const r = await ws.call(pi, "set_operation", { service: "quote-api", kind: "query", name: "x", summary: "x", returns: "string" });
-    expect(r.ok).toBe(false);
-    expect(r.reply).toContain("set its API style to GraphQL");
-  });
-});
-
-
-describe("deployment topology through the tools", () => {
-  test("place a part, read where it runs in its brief, and see what isn't placed yet", async () => {
-    const ws = await Workspace.open(file);
-    const call = async (name: Parameters<Workspace["call"]>[1], args: unknown) => {
-      const r = await ws.call(pi, name, args);
-      if (!r.ok) throw new Error(r.reply);
-      return r.reply;
-    };
-    expect(await call("place", { part: "mailer", environment: "staging", runtime: "cronjob", regions: ["us-east-1"], cluster: "staging-use1", namespace: "quotes", schedule: "*/5 * * * *", secrets: ["RESEND_API_KEY"] })).toBe("Placement mailer-staging saved.");
-    const brief = await call("read_context", { focus: "part:mailer" });
-    expect(brief).toContain("- staging: CronJob on staging-use1/quotes in us-east-1, runs \"*/5 * * * *\", secrets RESEND_API_KEY");
-    expect(brief).toContain("- prod: Deployment on prod-use1/quotes in us-east-1, 1–3 pods");
-    const whole = await call("read_context", {});
-    expect(whole).toContain("staging: Customer portal, Main database, Jobs, Plan cache, Catalog aren't placed yet.");
-  });
-
-  test("placing again replaces the placement; a bad runtime is refused with the reason", async () => {
-    const ws = await Workspace.open(file);
-    await ws.call(pi, "place", { part: "pg", environment: "prod", runtime: "statefulset", regions: ["us-east-1"], cluster: "prod-use1", namespace: "data", replicas: 2 });
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && Object.values(saved.doc.placements).filter((p) => p.part === "pg" && p.environment === "prod").map((p) => [p.id, p.runtime])).toEqual([["pg-prod", "statefulset"]]);
-    const r = await ws.call(pi, "place", { part: "web", environment: "prod", runtime: "cronjob", regions: ["us-east-1"] });
-    expect(r.ok).toBe(false);
-    expect(r.reply).toContain("a client runs as static, function, container, deployment, not cronjob");
-  });
-
-  test("deleting an environment takes its clusters and placements", async () => {
-    const ws = await Workspace.open(file);
-    expect((await ws.call(pi, "delete_system", { what: "environment", id: "staging" })).ok).toBe(true);
-    const saved = parseDoc(await readFile(file, "utf8"));
-    expect(saved.ok && [Object.keys(saved.doc.clusters), Object.keys(saved.doc.placements).filter((p) => p.endsWith("staging"))]).toEqual([["prod-use1"], []]);
-  });
-});
-
-describe("systems across files", () => {
-  test("split moves a part into a new file; both open, and the brief still sees everything", async () => {
-    const ws = await Workspace.open(file);
-    const r = await ws.split("catalog", "catalog.buni");
-    expect(r.reply).toStartWith("Moved Catalog to catalog.buni with 3 calls, 0 tables, 0 events and 1 shapes");
-    const main = parseDoc(await readFile(file, "utf8"), { refs: false });
-    expect(main.ok && [main.doc.imports, main.doc.parts["catalog"]]).toEqual([["catalog.buni"], undefined]);
-    const again = await Workspace.open(file);
-    expect(again.owners()["update-plan"]).toBe("catalog.buni");
-    expect((await again.call(pi, "read_context", { focus: "part:catalog" })).reply).toContain("**mutation updatePlan**");
-    const other = await Workspace.open(join(dir, "catalog.buni"));
-    expect(other.owners()["quote-api"]).toBe("portal.buni");
-  });
-
-  test("an edit here can point at a part in the imported file, and can't reuse its ids", async () => {
-    const ws = await Workspace.open(file);
-    await ws.split("catalog", "catalog.buni");
-    const ok = await ws.call(pi, "link_parts", { from: "quote-api", to: "catalog", kind: "calls" });
-    expect(ok.ok).toBe(true);
-    const clash = await ws.call(pi, "set_shape", { name: "Plan", fields: [{ name: "id", type: "id" }] });
-    expect(clash.ok).toBe(false);
-  });
-
-  test("import_file brings another file in and can be undone; dropping an import still in use is refused", async () => {
+describe("designs across files", () => {
+  test("import_file brings another file's components in and can be undone; dropping an import still in use is refused", async () => {
     const ws = await Workspace.open(file);
     const shared = emptyDoc();
-    shared.shapes["money"] = { id: "money", name: "Money", fields: [{ name: "amount", type: "integer" }], index: "a0" };
+    shared.nodes["badge-root"] = { id: "badge-root", kind: "frame", index: "a0", name: "Badge", style: {} };
+    shared.shared["badge"] = { id: "badge", name: "Badge", root: "badge-root" };
     await writeFile(join(dir, "shared.buni"), serializeDoc(shared));
     expect((await ws.call(pi, "import_file", { path: "shared.buni" })).ok).toBe(true);
-    expect(ws.owners()["money"]).toBe("shared.buni");
-    expect((await ws.call(pi, "set_shape", { shape: "quote", name: "Quote", fields: [{ name: "id", type: "id" }, { name: "total", type: "Money" }] })).ok).toBe(true);
+    expect(ws.owners()["badge"]).toBe("shared.buni");
+    expect((await ws.call(pi, "place_component", { component: "badge", parent: "home-hero" })).ok).toBe(true);
     expect((await ws.call(pi, "import_file", { path: "shared.buni", remove: true })).ok).toBe(false);
     await ws.undo();
     await ws.undo();
@@ -1319,75 +1040,16 @@ describe("systems across files", () => {
   });
 });
 
-describe("the design process", () => {
-  test("requirements, questions, roles, access and review round-trip through the tools", async () => {
-    const ws = await Workspace.open(file);
-    const call = async (tool: ToolName, args: object) => { const r = await ws.call(pi, tool, args); if (!r.ok) throw new Error(`${tool}: ${r.reply}`); return r; };
-    await call("set_phase", { name: "v2", goal: "Accounts" });
-    await call("set_requirement", { title: "Buyers see past quotes", priority: "should", phase: "v2" });
-    let doc = parseDoc(await readFile(file, "utf8"));
-    const req = doc.ok ? Object.values(doc.doc.requirements).find((q) => q.title === "Buyers see past quotes") : undefined;
-    expect(req?.phase).toBe("v2");
-    await call("serve", { requirement: req!.id, id: "create-quote" });
-    await call("set_role", { name: "Reviewer", description: "Checks quotes." });
-    await call("set_access", { call: "create-quote", who: "roles", roles: ["reviewer"], rule: "own quotes only" });
-    // Editing the endpoint without access keeps it.
-    await call("set_endpoint", { endpoint: "create-quote", service: "quote-api", method: "POST", path: "/quotes", summary: "Records a quote.", reads: ["plans"], writes: ["quotes"], emits: ["quote-created"] });
-    await call("decide_question", { question: "q-queue", option: "SQS", why: "No ops" });
-    await call("review", { id: "catalog", state: "approved" });
-    await call("discuss", { thread: "t-cache", body: "Yes, prices are read on every page.", state: "resolved", decision: "Cache prices for a minute" });
-    await call("link_parts", { from: "web", to: "quote-api", kind: "calls", failure: { timeoutMs: 1000 } });
-    doc = parseDoc(await readFile(file, "utf8"));
-    if (!doc.ok) throw new Error("bad doc");
-    const d = doc.doc;
-    expect(d.requirements[req!.id]!.servedBy).toEqual(["create-quote"]);
-    expect(d.endpoints["create-quote"]!.access).toEqual({ who: "roles", roles: ["reviewer"], rule: "own quotes only" });
-    expect(d.questions["q-queue"]).toMatchObject({ status: "decided", chosen: "SQS" });
-    expect(Object.values(d.decisions).some((x) => x.text.includes("SQS: No ops"))).toBe(true);
-    expect(d.reviews["catalog"]!.state).toBe("approved");
-    expect(d.threads["t-cache"]).toMatchObject({ state: "resolved" });
-    expect(d.threads["t-cache"]!.posts.at(-1)!.body).toBe("Decided: Cache prices for a minute");
-    // The outcome joins the doc's decisions, named after the piece it was about.
-    expect(Object.values(d.decisions).some((x) => x.text.endsWith(": Cache prices for a minute") && !x.text.startsWith(":"))).toBe(true);
-    expect((await ws.call(pi, "discuss", { target: "catalog", body: "Hm", decision: "No" })).ok).toBe(false);
-    expect(Object.values(d.links).find((l) => l.from === "web" && l.to === "quote-api")!.failure).toEqual({ timeoutMs: 1000 });
-    // A link carries shapes by name, as every other tool names them.
-    const shape = Object.values(d.shapes)[0];
-    if (!shape) throw new Error("the example has shapes");
-    await call("link_parts", { from: "web", to: "quote-api", kind: "calls", carries: [shape.name] });
-    expect(Object.values(ws.view().links).find((l) => l.from === "web" && l.to === "quote-api")?.carries).toEqual([shape.id]);
-    // A question can only be decided with one of its options; deleting a role takes it off every call.
-    expect((await ws.call(pi, "decide_question", { question: "q-queue", option: "Kafka" })).ok).toBe(false);
-    await call("delete_system", { what: "role", id: "reviewer" });
-    const after = parseDoc(await readFile(file, "utf8"));
-    expect(after.ok && after.doc.endpoints["create-quote"]!.access).toEqual({ who: "signed-in", rule: "own quotes only" });
-  });
-
-  test("the brief says why a piece exists and what is open about it", async () => {
-    const doc = parseDoc(readFileSync(file, "utf8"));
-    if (!doc.ok) throw new Error("bad doc");
-    const t = contextText(doc.doc, { part: "jobs" });
-    expect(t.ok && t.text).toContain("## Open questions\n- OPEN: SQS or a Redis queue for Jobs?");
-    const e = contextText(doc.doc, { endpoint: "create-quote" });
-    expect(e.ok && e.text).toContain("who may call: public; rate limited");
-    expect(e.ok && e.text).toContain("## Why\n- [must] A buyer sends a quote in under a minute");
-  });
-});
-
 describe("terminal screens", () => {
-  test("an agent makes a terminal client, its screens on a grid, and key links between them", async () => {
+  test("an agent makes terminal screens on a grid, with no client, and key links between them", async () => {
     const ws = await Workspace.open(file);
     const ok = async (name: ToolName, args: unknown) => {
       const r = await ws.call(pi, name, args);
       if (!r.ok) throw new Error(`${name}: ${r.reply}`);
       return r.reply;
     };
-    await ok("set_part", { kind: "client", name: "steel CLI", purpose: "Quotes from the terminal", terminal: { targets: [{ language: "rust", framework: "ratatui" }] } });
-    const cli = Object.values(ws.view().parts).find((p) => p.name === "steel CLI");
-    expect(cli?.terminal).toEqual({ targets: [{ language: "rust", framework: "ratatui" }] });
-
-    await ok("create_page", { name: "Quotes", client: cli?.id, terminal: { surface: "app", cols: 120, rows: 36, colors: "256" } });
-    await ok("create_page", { name: "Help", client: cli?.id, terminal: { surface: "tmux-popup", cols: 60, rows: 20 } });
+    await ok("create_page", { name: "Quotes", terminal: { surface: "app", cols: 120, rows: 36, colors: "256" } });
+    await ok("create_page", { name: "Help", terminal: { surface: "tmux-popup", cols: 60, rows: 20 } });
     const [quotes, help] = ["Quotes", "Help"].map((n) => Object.values(ws.view().pages).find((p) => p.name === n));
     if (!quotes || !help) throw new Error("screens missing");
     // The frame is the grid: 120 columns of 9px, 36 rows of 18px.
@@ -1404,8 +1066,9 @@ describe("terminal screens", () => {
     await ok("set_screen", { page: quotes.id, surface: "inline", cols: 80 });
     expect(ws.view().nodes[quotes.frame]?.style.height).toBeUndefined();
     expect(ws.view().nodes[quotes.frame]?.style.width).toBe("720px");
-    // A web page can't become a screen of a web client.
-    expect((await ws.call(pi, "set_screen", { page: "home", surface: "app", cols: 120, rows: 36 })).reply).toContain("runs in a terminal");
+    // Any page can become a screen: there is no client to belong to.
+    await ok("set_screen", { page: "home", surface: "app", cols: 120, rows: 36 });
+    expect(ws.view().pages.home?.terminal).toEqual({ surface: "app", cols: 120, rows: 36, colors: "16" });
   });
 });
 

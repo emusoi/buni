@@ -1,5 +1,5 @@
-// Terminal clients in the brief, in each framework's own words, and what to look at before building them.
-import { CELL, pageName, type Doc, type Id, type Node, type Page, type Part, type Style, type TerminalFramework, type TerminalLanguage, type TerminalSurface, type TerminalTarget } from "../format/doc.ts";
+// Terminal screens in the brief, what to look at before building them, and what a terminal can't draw.
+import { CELL, pageName, type Doc, type Id, type Node, type Page, type Style, type TerminalSurface } from "../format/doc.ts";
 
 /**
  * The 16 colours a terminal names, in ANSI order (black is 0, bright white 15), as a dark theme draws them on the
@@ -20,18 +20,6 @@ export function paletteVars(): Record<string, string> {
   return { ...Object.fromEntries(ANSI.map(([name, hex]) => [`--term-${name}`, hex])), "--term-fg": TERM_FG, "--term-bg": TERM_BG };
 }
 
-const LANGUAGE = { go: "Go", rust: "Rust", python: "Python", typescript: "TypeScript" } as const;
-
-/** What a builder reaches for in each framework, so the brief maps straight onto real code. */
-const FRAMEWORK: Record<TerminalFramework, string> = {
-  bubbletea: "Bubble Tea (a model with Update and View per screen; Lip Gloss for styles and borders; Bubbles for list, table, textinput, viewport, spinner, help)",
-  ratatui: "Ratatui (a Block per bordered box, List, Table, Paragraph, Tabs, Gauge; Layout constraints for the grid; crossterm events for keys)",
-  textual: "Textual (an App with a Screen per screen, widgets such as ListView, DataTable, Input, Footer for the keys; TCSS for styles; BINDINGS for keys)",
-  ink: "Ink (<Box> for layout with flexbox, <Text> for styled text, useInput for keys)",
-  opentui: "OpenTUI (createCliRenderer; BoxRenderable with flexbox and single, double, rounded or heavy borders, TextRenderable, SelectRenderable, TabSelectRenderable, InputRenderable, ScrollBoxRenderable, TextTable; renderer.keyInput for keys; or the same through its React or Solid bindings)",
-  "pi-tui": "pi-tui (TuiAltScreen for a full screen or TuiMainScreen to keep scrollback; Container, VStack, HStack and Box for layout, Text, SelectList, SettingsList, Input, Editor, ScrollView, Loader; overlays for popups; matchesKey and KeybindingsManager for keys)",
-};
-
 const SURFACE: Record<TerminalSurface, string> = {
   app: "full-screen app (alternate screen)",
   inline: "output printed inline into the scrollback",
@@ -47,38 +35,6 @@ const SURFACE: Record<TerminalSurface, string> = {
 };
 
 const COLORS = { none: "no colour", "16": "the terminal's 16 colours", "256": "256 colours", truecolor: "full colour" } as const;
-
-function targetText(t: TerminalTarget): string {
-  return `${LANGUAGE[t.language]}${t.framework ? ` with ${FRAMEWORK[t.framework]}` : ""}`;
-}
-
-/** How a terminal client is built, for its line in the brief: one build, or the same screens built several ways. */
-export function terminalClientText(p: Part): string | undefined {
-  const targets = p.terminal?.targets ?? [];
-  if (targets.length === 0) return undefined;
-  if (targets.length === 1 && targets[0]) return `runs in a terminal, written in ${targetText(targets[0])}`;
-  return `runs in a terminal; the same screens are built ${targets.length} ways, to compare:\n${targets.map((t) => `    - ${targetText(t)}`).join("\n")}`;
-}
-
-/** What a target is called on the command line and in tools: its framework, or its language when it has none. */
-export function targetName(t: TerminalTarget): TerminalFramework | TerminalLanguage {
-  return t.framework ?? t.language;
-}
-
-/**
- * The document as one target sees it: every terminal client that builds that target keeps only it,
- * so a brief speaks one framework's words. Undefined when no client builds it.
- */
-export function forTarget(doc: Doc, target: string): Doc | undefined {
-  let found = false;
-  const parts: Doc["parts"] = {};
-  for (const [id, p] of Object.entries(doc.parts)) {
-    const keep = p.terminal?.targets.filter((t) => targetName(t) === target) ?? [];
-    if (keep.length > 0) found = true;
-    parts[id] = keep.length > 0 ? { ...p, terminal: { targets: keep } } : p;
-  }
-  return found ? { ...doc, parts } : undefined;
-}
 
 /** One terminal screen: where it shows, its grid, its colour, and the keys that leave it. */
 export function screenText(doc: Doc, page: Page): string | undefined {
@@ -107,18 +63,15 @@ export function terminalNotes(doc: Doc): string[] {
     if (INTERACTIVE.has(t.surface) && !links.some((c) => c.trigger === "key")) notes.push(`${p.name} has no keys linked; say how to move, act and leave.`);
     for (const c of links) if (c.trigger === "click" || c.trigger === "hover") notes.push(`${p.name} reaches ${pageName(doc, c.to)} only with the mouse; give it a key.`);
   }
-  // Colour is a client's choice more than a screen's: one note per client, naming its screens.
-  for (const part of Object.values(doc.parts)) {
-    const rich = screens.filter((p) => p.client === part.id && (p.terminal?.colors === "truecolor" || p.terminal?.colors === "256"));
-    if (rich.length === 0) continue;
+  // Colour is a choice for the whole app more than a screen: one note, naming the screens.
+  const rich = screens.filter((p) => p.terminal?.colors === "truecolor" || p.terminal?.colors === "256");
+  if (rich.length) {
     const names = rich.length > 3 ? `${rich.slice(0, 3).map((p) => p.name).join(", ")} and ${rich.length - 3} more` : rich.map((p) => p.name).join(", ");
-    notes.push(`${part.name} is designed for more than 16 colours (${names}); say what it looks like with 16 colours and with colour off.`);
+    notes.push(`${names} ${rich.length === 1 ? "is" : "are"} designed for more than 16 colours; say what ${rich.length === 1 ? "it looks" : "they look"} like with 16 colours and with colour off.`);
   }
   // A full-screen app should still work in the classic 80×24 terminal.
-  for (const part of Object.values(doc.parts)) {
-    const apps = screens.filter((p) => p.client === part.id && p.terminal?.surface === "app");
-    if (apps.length > 0 && apps.every((p) => (p.terminal?.cols ?? 0) > 80)) notes.push(`${part.name}'s screens are all wider than 80 columns; design what it shows at 80×24.`);
-  }
+  const apps = screens.filter((p) => p.terminal?.surface === "app");
+  if (apps.length > 0 && apps.every((p) => (p.terminal?.cols ?? 0) > 80)) notes.push("The full-screen app's screens are all wider than 80 columns; design what it shows at 80×24.");
   return notes;
 }
 
