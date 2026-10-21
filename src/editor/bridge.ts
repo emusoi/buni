@@ -82,8 +82,39 @@ async function current(): Promise<Snapshot> {
  * each time it opens: once it's open the first time (the window's first snapshot, so no edit falls between the two),
  * and again after any reconnect, as a whole update. Changes that arrive while the first fetch is under way follow it.
  */
+/** The feed's two events and a way to close it, whichever carries it. */
+interface Feed { onopen: (() => void) | null; onmessage: ((e: MessageEvent<string>) => void) | null; close(): void }
+
+/**
+ * A WebSocket feed that reconnects like an EventSource does. Used when buni runs on this machine over plain HTTP: an
+ * event stream there holds one of the six connections Chrome allows per host, so a seventh tab would never load.
+ */
+function socketFeed(path: string): Feed {
+  const feed: Feed = { onopen: null, onmessage: null, close: () => { closed = true; ws.close(); } };
+  let closed = false;
+  let ws: WebSocket;
+  const connect = () => {
+    ws = new WebSocket(new URL(path, location.href.replace(/^http/, "ws")));
+    ws.onopen = () => feed.onopen?.();
+    ws.onmessage = (e: MessageEvent<string>) => feed.onmessage?.(e);
+    // A server restart drops it: try again shortly, as an EventSource would.
+    ws.onclose = () => { if (!closed) setTimeout(connect, 1000); };
+  };
+  connect();
+  return feed;
+}
+
+/** The feed as an event stream: on an HTTPS host, served over HTTP/2, where streams share one connection. */
+function streamFeed(path: string): Feed {
+  const es = new EventSource(path);
+  const feed: Feed = { onopen: null, onmessage: null, close: () => es.close() };
+  es.onopen = () => feed.onopen?.();
+  es.onmessage = (e: MessageEvent<string>) => feed.onmessage?.(e);
+  return feed;
+}
+
 function watchFile(switched = false) {
-  const events = new EventSource(at("/events"));
+  const events = location.protocol === "http:" ? socketFeed(at("/events")) : streamFeed(at("/events"));
   let waiting: SnapshotUpdate[] | undefined = [];
   let opens = 0;
   let build: string | undefined;

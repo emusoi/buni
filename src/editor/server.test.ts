@@ -78,8 +78,20 @@ test("the local editor saves, undoes and streams CLI edits through its live MCP 
     expect(Object.values(again.value.view.pages).some((page) => page.name === "CLI page")).toBe(true);
     expect(again.value.edits?.some((edit) => edit.author === "test-agent")).toBe(true);
     expect(parseDoc(await readFile(file, "utf8")).ok).toBe(true);
+    // The tab's feed is a WebSocket here (an event stream per tab runs out Chrome's six connections a host); another
+    // site may not open one, since a socket isn't held back by CORS.
+    const wsUrl = `ws://${url.host}/events${url.search}`;
+    const upgrade = (origin: string) => fetch(`${url.origin}/events${url.search}`, { headers: { upgrade: "websocket", connection: "Upgrade", "sec-websocket-version": "13", "sec-websocket-key": "dGhlIHNhbXBsZSBub25jZQ==", origin } });
+    expect((await upgrade("https://evil.example")).status).toBe(403);
+    const socket = new WebSocket(wsUrl);
+    await new Promise<void>((done, fail) => { socket.onopen = () => done(); socket.onerror = fail; });
+    const heard = new Promise<string>((done) => { socket.onmessage = (e) => { if (String(e.data).includes("Socket page")) done(String(e.data)); }; });
+    expect((await call("edit", ["create_page", { name: "Socket page", route: "/socket" }])).status).toBe(200);
+    expect(await heard).toContain('"kind":"patch"');
+    socket.close();
     const reopen = Bun.spawn(["bun", "src/cli.ts", "open", file, "--no-open"], { cwd: join(import.meta.dir, "../.."), stdout: "pipe", stderr: "inherit" });
-    expect(await new Response(reopen.stdout).text()).toContain("Already open:");
+    // The live stream above is a tab showing it: buni open points at it rather than opening another.
+    expect(await new Response(reopen.stdout).text()).toContain("Already open in a tab:");
     expect(await reopen.exited).toBe(0);
   } finally {
     await reader?.cancel();

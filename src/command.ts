@@ -41,6 +41,7 @@ usage: buni <command> [args] [--as <name>] [--json]
                                     the inspiration libraries agents design from: buni's own, and folders of yours
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
+      [--new]                         another tab even when one already shows it
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
   arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
@@ -688,6 +689,12 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         const design = at.searchParams.get("file");
         if (design) {
           const url = `${at.origin}/?file=${encodeURIComponent(design)}`;
+          // A tab already showing it is enough: agents open designs often, and every extra tab holds a connection.
+          const open = await fetch(`${at.origin}/tabs?file=${encodeURIComponent(design)}`).then((r) => r.json()).then((j: unknown) => typeof j === "object" && j !== null && "tabs" in j && typeof j.tabs === "number" ? j.tabs : 0, () => 0);
+          if (open > 0 && !args.includes("--new")) {
+            console.log(`Already open in ${open === 1 ? "a tab" : `${open} tabs`}: ${url} (buni open ${file} --new opens another).`);
+            return 0;
+          }
           console.log(`Already open: ${url}`);
           if (!args.includes("--no-open")) openUrl(url);
           return 0;
@@ -699,7 +706,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const at = args.indexOf("--port");
       const port = at >= 0 ? Number(args[at + 1]) : 0;
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
-        console.error("usage: buni open <file.buni> [--port N] [--no-open]");
+        console.error("usage: buni open <file.buni> [--port N] [--no-open] [--new]");
         return 2;
       }
       const { url, stop } = await serveEditor(file, port);

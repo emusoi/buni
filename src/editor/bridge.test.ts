@@ -9,7 +9,8 @@ test("startup snapshots are released after handoff, with queued edits and reconn
   class Stream {
     onopen?: () => void;
     onmessage?: (event: { data: string }) => void;
-    constructor(_url: string) { streams.push(this); }
+    constructor(_url: string | URL) { streams.push(this); }
+    close() {}
   }
   const response = Promise.withResolvers<Response>();
   const edited = Promise.withResolvers<void>();
@@ -24,7 +25,8 @@ test("startup snapshots are released after handoff, with queued edits and reconn
     location: new URL("http://localhost/?file=design.buni"),
     document: { documentElement: { dataset: {} }, styleSheets: [], title: "" },
     window: { addEventListener: () => {}, dispatchEvent: () => true },
-    EventSource: Stream,
+    // A local buni (plain http) feeds the tab over a WebSocket; it opens and delivers just like the stream.
+    WebSocket: Stream,
     fetch: async (url: string) => {
       if (url.startsWith("/rpc/snapshot")) return ++requests === 1 ? response.promise : new Response(body);
       if (url.startsWith("/rpc/build")) return Response.json({ value: "test-build" });

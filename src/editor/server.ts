@@ -45,6 +45,10 @@ export interface EditorOptions {
 /** The same editor and design API, with the host choosing storage and who may reach it. */
 export interface Editor {
   fetch(req: Request, dir?: string): Promise<Response>;
+  /** The design a WebSocket upgrade for the live feed may watch, or undefined when it isn't allowed. */
+  socketFile(req: Request, dir?: string): string | undefined;
+  /** Sends `file`'s changes to `send` as they happen; returns how to stop. */
+  watch(file: string, send: (data: string) => void): Promise<() => void>;
   stop(): void;
 }
 
@@ -437,29 +441,56 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     redo: async (file) => (await need(file)).redo(),
   });
 
-  /** A tab's live feed of its file: the whole snapshot first, then only what each change changed. */
-  /** The agent's events for a tab, as they happen; the panel replays the log it fetched first. */
-  async function events(file: string): Promise<Response> {
+  /**
+   * A tab's live feed of its file: changes only, from the file as it is now. The tab fetches the whole file (compressed)
+   * once the feed is open, so nothing between the two is missed and the file isn't sent twice. Returns how to stop it.
+   */
+  async function watch(file: string, send: (data: string) => void): Promise<() => void> {
     const o = await load(file);
+    let sent: { view: Doc; system: Doc } = snapshot(o);
+    const changed = () => {
+      const s = snapshot(o);
+      const u: SnapshotUpdate = { kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}), ...(s.asking ? { asking: s.asking } : {}) };
+      send(JSON.stringify(u));
+      sent = s;
+    };
+    o.listeners.add(changed);
+    tabs.set(file, (tabs.get(file) ?? 0) + 1);
+    let stopped = false;
+    return () => {
+      if (stopped) return;
+      stopped = true;
+      o.listeners.delete(changed);
+      tabs.set(file, (tabs.get(file) ?? 1) - 1);
+    };
+  }
+  /** How many tabs have each design open: buni open shows the one that's there instead of opening another. */
+  const tabs = new Map<string, number>();
+
+  /** The feed as a server-sent event stream, for hosts that serve the editor over HTTP/2 (no per-host socket limit). */
+  async function events(file: string): Promise<Response> {
     let stop = () => {};
     const stream = new ReadableStream<string>({
-      start(c) {
-        const send = (u: SnapshotUpdate) => c.enqueue(`data: ${JSON.stringify(u)}\n\n`);
-        // Changes only, from the file as it is now: the tab fetches the whole file (compressed) once this stream is
-        // open, so nothing between the two is missed and the file isn't sent twice. The comment opens the stream at once.
-        let sent: { view: Doc; system: Doc } = snapshot(o);
+      async start(c) {
+        // The comment opens the stream at once.
         c.enqueue(": open\n\n");
-        const changed = () => {
-          const s = snapshot(o);
-          send({ kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}), ...(s.asking ? { asking: s.asking } : {}) });
-          sent = s;
-        };
-        o.listeners.add(changed);
-        stop = () => o.listeners.delete(changed);
+        stop = await watch(file, (data) => c.enqueue(`data: ${data}\n\n`));
       },
       cancel: () => stop(),
     });
     return new Response(stream, { headers: { "content-type": "text/event-stream", "cache-control": "no-cache" } });
+  }
+
+  /**
+   * The design a WebSocket for the feed may watch, or undefined. A socket isn't held back by CORS the way a fetch is, so
+   * the host and origin are checked here: otherwise any site open in the browser could read the design through it.
+   */
+  function socketFile(req: Request, dir = "/designs"): string | undefined {
+    const url = new URL(req.url);
+    const file = url.searchParams.get("file") ?? undefined;
+    if (url.pathname !== "/events" || !isDesignPath(file, dir)) return undefined;
+    if (!HOSTS.has(req.headers.get("host") ?? "") || !allowedOrigin(req, new Set([...OWN, EXTENSION_ORIGIN]))) return undefined;
+    return file;
   }
 
   /**
@@ -513,6 +544,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         return Response.json({ error: "forbidden" }, { status: 403 });
       }
       if (url.pathname === "/events" && file) return await events(file);
+      if (url.pathname === "/tabs" && file && req.method === "GET") return Response.json({ tabs: tabs.get(file) ?? 0 });
       if (url.pathname === "/mcp" && file) {
         if (!allowedOrigin(req, OWN)) return new Response("forbidden origin", { status: 403 });
         return await mcp(file, req);
@@ -536,7 +568,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
 
   if (LOCAL_PATH) await load(LOCAL_PATH);
   const stop = () => { for (const live of lives) rmSync(live, { force: true }); lives.clear(); };
-  return { fetch, stop };
+  return { fetch, socketFile, watch, stop };
 }
 
 /** The full editor on files in place, served only on this machine. */
@@ -546,9 +578,32 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
   keepBrowserWarm();
   const assets = await buildAssets();
   const ready = Promise.withResolvers<Editor>();
-  const server = Bun.serve({
+  // Each tab's live feed is a WebSocket here: an event stream holds one of the six HTTP/1.1 connections Chrome allows
+  // per host, so with six tabs open on this buni a seventh never loads. Sockets don't count against that limit.
+  const server = Bun.serve<{ file: string; stop?: () => void; closed?: boolean }>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,
-    fetch: async (req) => (await ready.promise).fetch(req),
+    fetch: async (req, srv) => {
+      const editor = await ready.promise;
+      if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+        const file = editor.socketFile(req);
+        if (!file) return new Response("forbidden", { status: 403 });
+        return srv.upgrade(req, { data: { file } }) ? undefined : new Response("upgrade failed", { status: 400 });
+      }
+      return editor.fetch(req);
+    },
+    websocket: {
+      async open(ws) {
+        const stop = await (await ready.promise).watch(ws.data.file, (data) => ws.send(data));
+        // Closed while the file was loading: stop at once rather than feed a socket that's gone.
+        if (ws.data.closed) stop();
+        else ws.data.stop = stop;
+      },
+      message() {},
+      close(ws) {
+        ws.data.closed = true;
+        ws.data.stop?.();
+      },
+    },
   });
   try {
     const editor = await createEditor({ store: new DiskStore(dirname(dirname(localFile))), origin: `http://localhost:${server.port}`, localFile, assets: () => assets });
