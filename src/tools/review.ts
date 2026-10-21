@@ -64,6 +64,41 @@ export function reviewText(doc: Doc, pageName: string, r: Review): string {
 /** How a pinned finding starts, so a second review doesn't pin it again. */
 export const pinTag = (rule: string) => `[review: ${rule}]`;
 
+/** At most this many edit checks load pages at once: each is a browser tab, and agents can edit in bursts. */
+const CHECKS_AT_ONCE = 2;
+let checking = 0;
+const turns: (() => void)[] = [];
+/** Checks queued and not yet started, by page: a later edit of that page joins the wait, and the check reads its doc. */
+const waiting = new Map<Id, { box: { doc: Doc }; review: Promise<Review> }>();
+
+const turn = (): Promise<void> => checking < CHECKS_AT_ONCE ? (checking++, Promise.resolve()) : new Promise((go) => turns.push(go));
+// A finished check hands its place straight to the next in line.
+const release = (): void => { const next = turns.shift(); if (next) next(); else checking--; };
+
+/**
+ * The page reviewed as it is when its check starts: twenty edits to one page in a burst share a check or two of the
+ * newest version, not twenty tabs of versions already gone. Each caller still keeps only the issues on what it changed.
+ */
+function latestReview(doc: Doc, pageId: Id): Promise<Review> {
+  const queued = waiting.get(pageId);
+  if (queued) {
+    queued.box.doc = doc;
+    return queued.review;
+  }
+  const box = { doc };
+  // Started after the set below (a then callback never runs at once), so a started check is never joined.
+  const review = turn().then(async () => {
+    waiting.delete(pageId);
+    try {
+      return await reviewPage(box.doc, pageId, { edit: true });
+    } finally {
+      release();
+    }
+  });
+  waiting.set(pageId, { box, review });
+  return review;
+}
+
 /**
  * The quick checks after an edit (low contrast, tiny text, small targets, overflow, hidden content) on the layers it
  * changed, as a note for the reply; "" when they pass, there's no browser, or they take too long.
@@ -89,7 +124,7 @@ export async function editChecks(before: Doc, after: Doc): Promise<string> {
   const late = new Promise<void>((resolve) => { timer = setTimeout(resolve, 15_000); });
   const work = (async () => {
     for (const pageId of [...pages].slice(0, 2)) {
-      const r = await reviewPage(after, pageId, { edit: true });
+      const r = await latestReview(after, pageId);
       for (const issue of r.issues) {
         const i = issue.at.findIndex((n) => n !== undefined && changed.has(n));
         const here = issue.nodes.filter((n) => changed.has(n));

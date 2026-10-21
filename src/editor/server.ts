@@ -33,6 +33,7 @@ import { embeddedFont } from "../tools/fontdata.ts";
 import example from "../../examples/portal.buni" with { type: "text" };
 import exampleImage from "../../examples/assets/steel-rack.jpg" with { type: "file" };
 import exampleNotes from "../../examples/assets/usability-0917.md" with { type: "file" };
+import { keepBrowserWarm } from "buni/term/chrome.ts";
 
 export interface EditorOptions {
   store: EditorStore;
@@ -541,6 +542,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
 /** The full editor on files in place, served only on this machine. */
 export async function serveEditor(file: string, port = 0): Promise<{ url: string; stop: () => void }> {
   const localFile = resolve(file);
+  // Edit checks run on every visible edit: one browser kept warm beats starting Chrome each time.
+  keepBrowserWarm();
   const assets = await buildAssets();
   const ready = Promise.withResolvers<Editor>();
   const server = Bun.serve({

@@ -206,7 +206,7 @@ export function evaluateLiveWithBrowser(browser: string, live: LivePage, express
       pngs.push(Buffer.from(bytesOf(shot)).toString("base64"));
     }
     return { value, pngs };
-  });
+  }, true);
 }
 
 /** Evaluates `expression` on the page and returns its string value. */
@@ -233,26 +233,108 @@ async function inBrowser<T>(browser: string, sheet: Sheet, work: (cdp: Cdp, url:
   }
 }
 
-/** A headless browser on a throwaway profile, for `work` to drive. */
-async function withBrowser<T>(browser: string, work: (cdp: Cdp) => Promise<T>): Promise<T> {
+/** A headless browser started on a throwaway profile, with the DevTools address it answers on. */
+interface Started { proc: Bun.Subprocess; endpoint: string | undefined; scratch: string }
+
+/** Browsers this process started and hasn't closed: killed on the way out, so none outlive it. */
+const running = new Set<Bun.Subprocess>();
+process.once("exit", () => { for (const p of running) p.kill("SIGKILL"); });
+
+async function start(browser: string): Promise<Started> {
   const scratch = await mkdtemp(join(tmpdir(), "buni-draw-"));
-  let endpoint: string | undefined;
   const proc = Bun.spawn([browser, "--headless=new", "--remote-debugging-port=0", `--user-data-dir=${join(scratch, "profile")}`, "--no-first-run", "--no-default-browser-check", "--disable-extensions", "--hide-scrollbars", "--mute-audio", "about:blank"], { stdout: "ignore", stderr: "pipe" });
+  running.add(proc);
   try {
-    endpoint = await within(15_000, "Starting the browser", devtools(proc.stderr));
-    const port = new URL(endpoint).port;
-    const targets: unknown = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-    const target = Array.isArray(targets) ? targets.find((t): t is { type: string; webSocketDebuggerUrl: string } => typeof t === "object" && t !== null && t.type === "page" && typeof t.webSocketDebuggerUrl === "string") : undefined;
-    if (!target) throw new Error("the browser opened no page to draw in");
-    const cdp = await connect(target.webSocketDebuggerUrl);
-    try {
-      return await within(45_000, "Drawing the page", work(cdp));
-    } finally {
-      cdp.close();
+    return { proc, endpoint: await within(15_000, "Starting the browser", devtools(proc.stderr)), scratch };
+  } catch (e) {
+    await stop({ proc, endpoint: undefined, scratch });
+    throw e;
+  }
+}
+
+async function stop(b: Started): Promise<void> {
+  await quit(b.proc, b.endpoint);
+  running.delete(b.proc);
+  await rm(b.scratch, { recursive: true, force: true });
+}
+
+/** How long a kept browser waits for more work before it closes; 0 starts one per job (a CLI call that then exits). */
+let keepFor = 0;
+let kept: { browser: string; started: Promise<Started>; busy: number; idle?: ReturnType<typeof setTimeout> } | undefined;
+
+/**
+ * For a long-running server: keep one browser open between jobs, each in its own tab, instead of starting Chrome for
+ * every edit check (about 2s each, and a pile of them when agents edit at once). It closes after `ms` with nothing to do.
+ */
+export function keepBrowserWarm(ms = 60_000): void {
+  keepFor = ms;
+  reapOrphans();
+}
+
+/**
+ * Closes buni browsers whose buni was killed mid-job (no parent left, a buni-draw- profile): nothing else ever would,
+ * and each holds a few hundred MB. Run when a server starts; a browser some live buni is using always has its parent.
+ */
+function reapOrphans(): void {
+  if (process.platform === "win32") return;
+  const ps = Bun.spawnSync(["ps", "-axo", "pid=,ppid=,command="], { stdout: "pipe", stderr: "ignore" });
+  for (const line of ps.stdout.toString().split("\n")) {
+    const m = line.trim().match(/^(\d+)\s+1\s+(.*)$/);
+    if (m?.[2]?.includes("--headless=new") && /--user-data-dir=\S*buni-draw-/.test(m[2])) {
+      try { process.kill(Number(m[1]), "SIGKILL"); } catch { /* already gone */ }
     }
+  }
+}
+
+/**
+ * A headless browser for `work` to drive in a page of its own: a kept one when the server asked, else a fresh one.
+ * `fresh` always starts its own: a live page's cookies and storage must not carry over to the next job.
+ */
+async function withBrowser<T>(browser: string, work: (cdp: Cdp) => Promise<T>, fresh = false): Promise<T> {
+  if (!keepFor || fresh) {
+    const b = await start(browser);
+    try {
+      return await inTab(b, work);
+    } finally {
+      await stop(b);
+    }
+  }
+  if (!kept || kept.browser !== browser) {
+    const old = kept;
+    kept = { browser, started: start(browser), busy: 0 };
+    if (old) void old.started.then(stop, () => undefined);
+  }
+  const k = kept;
+  k.busy++;
+  clearTimeout(k.idle);
+  try {
+    return await inTab(await k.started, work);
+  } catch (e) {
+    // A browser that died or never started is not kept: the next job starts a fresh one.
+    if (kept === k) kept = undefined;
+    void k.started.then(stop, () => undefined);
+    throw e;
   } finally {
-    await quit(proc, endpoint);
-    await rm(scratch, { recursive: true, force: true });
+    k.busy--;
+    if (kept === k && k.busy === 0) k.idle = setTimeout(() => { if (kept === k && k.busy === 0) { kept = undefined; void k.started.then(stop, () => undefined); } }, keepFor);
+  }
+}
+
+/** `work` in a new tab of `b`, closed after. */
+async function inTab<T>(b: Started, work: (cdp: Cdp) => Promise<T>): Promise<T> {
+  if (!b.endpoint) throw new Error("the browser opened no DevTools");
+  const port = new URL(b.endpoint).port;
+  const res = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
+  const target: unknown = await res.json();
+  if (typeof target !== "object" || target === null || !("webSocketDebuggerUrl" in target) || typeof target.webSocketDebuggerUrl !== "string" || !("id" in target) || typeof target.id !== "string") {
+    throw new Error("the browser opened no page to draw in");
+  }
+  const cdp = await connect(target.webSocketDebuggerUrl);
+  try {
+    return await within(45_000, "Drawing the page", work(cdp));
+  } finally {
+    cdp.close();
+    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
   }
 }
 

@@ -784,6 +784,8 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         await proxyMcp(new URL(live), {});
         return new Promise<number>(() => {});
       }
+      // Long-running: one browser kept warm for the edit checks.
+      (await import("./term/chrome.ts")).keepBrowserWarm();
       const ws = await Workspace.open(file);
       const host = { screenshot: (page: string) => screenshotPng(ws.path, page), screenAsText: (page: string) => screenAsText(ws.path, page) };
       // Otherwise this is the writer while it runs: buni call and other MCP clients find it through <file>.live.

@@ -179,3 +179,29 @@ test.skipIf(!browser)("an agent's edit comes back with the quick checks on the l
     await rm(dir, { recursive: true, force: true });
   }
 }, 60_000);
+
+test.skipIf(!browser)("a burst of edits to one page shares checks in a kept browser, and each still hears about its own layer", async () => {
+  const { dir, ws } = await design();
+  const { keepBrowserWarm } = await import("../term/chrome.ts");
+  const { editChecks } = await import("./review.ts");
+  keepBrowserWarm(2_000);
+  try {
+    expect((await ws.call("agent", "create_page", { name: "Home" })).ok).toBe(true);
+    const page = Object.values(ws.view().pages)[0]!;
+    const html = `<main style="background:#fff;padding:24px">${[0, 1, 2, 3, 4, 5].map((i) => `<p layer-name="Line ${i}" style="color:#111">Line ${i}</p>`).join("")}</main>`;
+    expect((await ws.call("agent", "write_html", { parent: page.frame, html })).ok).toBe(true);
+    // Six edits at once, each making its own line too faint to read.
+    const lines = Object.values(ws.view().nodes).filter((n) => n.name?.startsWith("Line "));
+    const edits = [];
+    for (const n of lines) {
+      const before = ws.view();
+      await ws.call("agent", "update_styles", { nodes: [n.id], style: { color: "#f4f4f4" } });
+      edits.push({ id: n.id, before, after: ws.view() });
+    }
+    // Their checks all at once, as when several agents edit: they queue and share a check of the newest page.
+    const checks = await Promise.all(edits.map(async (e) => ({ id: e.id, text: await editChecks(e.before, e.after) })));
+    for (const c of checks) expect(c.text).toContain(`(${c.id})`);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}, 60_000);
