@@ -195,6 +195,28 @@ async function openEditor(c: Capture): Promise<void> {
   $<HTMLIFrameElement>("frame").src = here.href;
 }
 $<HTMLButtonElement>("editor-back").addEventListener("click", () => (watching ? watch(watching) : show("home")));
+// The page you're on, into the design open here: the site's captures go here from now on too.
+$<HTMLButtonElement>("editor-capture").addEventListener("click", async () => {
+  if (!watching) return;
+  const design = watching;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !/^https?:/.test(tab.url ?? "")) return say($("editor-status"), "Open a web page to capture it here.", true);
+  say($("editor-status"), "Capturing…");
+  const request: SnapRequest = { tabId: tab.id, mode: "page", name: "", intent: "redesign", into: design.file, brief: "" };
+  const answer: SnapAnswer = await chrome.runtime.sendMessage({ ...request, wait: true });
+  if (!answer.ok) return say($("editor-status"), answer.reply, true);
+  await native({ type: "link", host: new URL(tab.url!).host, file: design.file });
+  const last = (await chrome.storage.local.get("last")).last as LastSnap | undefined;
+  say($("editor-status"), `Added “${last?.page ?? "the page"}”; this site's captures come here now.`);
+  // The editor shows the new page: same design, opened on it.
+  if (last?.pageId) {
+    const at = new URL($<HTMLIFrameElement>("frame").src);
+    at.searchParams.set("page", last.pageId);
+    $<HTMLIFrameElement>("frame").src = at.href;
+    watching = { ...design, page: last.page, pageId: last.pageId, progress: "Captured", ...(last.url ? { url: last.url } : {}) };
+    $<HTMLElement>("editor-title").textContent = last.page;
+  }
+});
 $<HTMLButtonElement>("editor-out").addEventListener("click", () => { if (editorUrl) void chrome.tabs.create({ url: editorUrl }); });
 
 // --- Library ----------------------------------------------------------------------------------------------------------
