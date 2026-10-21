@@ -8,6 +8,14 @@ The architecture is the app behind the screens, from code to running pods: what 
 each is built, where it runs, how it ships, and how a change gets there. buni designs it before and while it is built;
 nothing in it is live state. Work top down, one layer at a time, and read it back with `read_architecture` as you go.
 
+## Two ways to write it
+The tools below build it a call at a time. The same architecture is also plain YAML a person writes by hand:
+`read_architecture_text` (`buni arch FILE text`) gives every section, each a map keyed by id, with defaults left out;
+`write_architecture_text {text}` (`buni arch FILE write PATH|-`, or `buni arch FILE edit` in `$EDITOR`) replaces the
+whole architecture with what the text says, as one edit one undo takes back. A refused text names the line, path and
+rule. People may sketch the system this way and hand it over; you may too, when writing many things at once is
+clearer than many calls: read the text first, change it, write it back.
+
 ## Order of work
 1. **Parts and links.** `set_part` for every client, service, worker, store, queue, outside service and edge piece
    (DNS, CDN, firewall, load balancer). A database or queue the cloud runs gets `managed` ("RDS Postgres Multi-AZ") and

@@ -94,3 +94,38 @@ test("arch checks the architecture and exports drafts next to the design", async
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("arch text prints the architecture as YAML; write and edit apply a text as one edit", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-arch-text-"));
+  try {
+    const file = join(dir, "app.buni");
+    expect(cli("new", file).code).toBe(0);
+    const yaml = join(dir, "arch.yaml");
+    await writeFile(yaml, "parts:\n  api:\n    name: API\n    kind: service\n");
+    const wrote = cli("arch", file, "write", yaml);
+    expect(wrote.code).toBe(0);
+    expect(wrote.out).toContain("Wrote the architecture: added api.");
+    const text = cli("arch", file, "text");
+    expect(text.code).toBe(0);
+    expect(text.out).toContain("parts:\n  api:\n    name: API\n    kind: service\n");
+    await writeFile(yaml, "parts:\n  api:\n    name: API\n    kind: servce\n");
+    const refused = cli("arch", file, "write", yaml);
+    expect(refused.code).toBe(1);
+    expect(refused.out).toContain("line 4 · parts.api.kind: expected one of");
+    const piped = Bun.spawnSync(["bun", join(import.meta.dir, "cli.ts"), "arch", file, "write", "-"], { stdin: Buffer.from("parts:\n  web:\n    name: Web\n    kind: client\n"), stdout: "pipe", stderr: "pipe" });
+    expect(`${piped.stdout}`).toContain("added web; removed api");
+    expect(cli("arch", file, "write").code).toBe(2);
+
+    // An editor that first saves a broken kind, then (seeing the error on top) fixes it.
+    const editor = join(dir, "editor.sh");
+    await writeFile(editor, `#!/bin/sh
+if grep -q '^# ! ' "$1"; then sed -i.bak 's/kind: servce/kind: service/' "$1"; else printf 'parts:\\n  web:\\n    name: Web\\n    kind: client\\n  api:\\n    name: API\\n    kind: servce\\n' > "$1"; fi
+`, { mode: 0o755 });
+    const edit = Bun.spawnSync(["bun", join(import.meta.dir, "cli.ts"), "arch", file, "edit"], { env: { ...process.env, VISUAL: "", EDITOR: editor }, stdout: "pipe", stderr: "pipe" });
+    expect(edit.exitCode).toBe(0);
+    expect(`${edit.stdout}`).toContain("added api");
+    expect(cli("arch", file, "text").out).toContain("    kind: service");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

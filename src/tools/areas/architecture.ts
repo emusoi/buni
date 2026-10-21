@@ -12,6 +12,7 @@ import type { SourceOwner } from "../../format/sources.ts";
 import { ARCH_PUT, type Op } from "../../oplog/oplog.ts";
 import { checkArchitecture, checkText } from "../arch-check.ts";
 import { EXPORT_FORMATS, exportArchitecture } from "../arch-export.ts";
+import { architectureText, parseArchitectureText } from "../arch-text.ts";
 import { Ids, type Tool, type ToolContext, ToolError, tool } from "../kit.ts";
 
 const ID = z.string().optional().describe("Id to change; omit to create");
@@ -80,6 +81,17 @@ function opsBetween(before: Architecture, after: Architecture): Op[] {
   const out: Op[] = [];
   for (const c of ARCH_COLLECTIONS) bagOps(c, before, after, out);
   return out;
+}
+
+/** Keeps `before`'s own object for each thing `next` says just as `was` (before, read back from its text) does. */
+function keepUnchanged<C extends ArchCollection>(c: C, before: ArchBags, was: ArchBags, next: ArchBags): void {
+  keepIn(before[c], was[c], next[c]);
+}
+function keepIn<T>(before: Record<Id, T>, was: Record<Id, T>, next: Record<Id, T>): void {
+  for (const [id, v] of Object.entries(next)) {
+    const old = before[id];
+    if (old !== undefined && JSON.stringify(was[id]) === JSON.stringify(v)) next[id] = old;
+  }
 }
 
 /** `x` without `plan` and `status`: it is simply live now. */
@@ -710,6 +722,48 @@ export const architectureTools = {
         ...(a.focus !== undefined ? { focus: a.focus } : {}),
       }),
     }),
+  }),
+
+  read_architecture_text: tool({
+    description:
+      "The whole architecture as YAML for a person (or you) to read and write: sections parts, links, groups, environments, clusters, " +
+      "namespaces, workloads, releases, migrations, plans, stages and plays, each a map keyed by id, with defaults left out. Change it and " +
+      "give it back to write_architecture_text.",
+    input: {},
+    run: async (doc) => ({ label: "Read architecture text", ops: [], reply: architectureText(architectureOf(doc)).trimEnd() }),
+  }),
+
+  write_architecture_text: tool({
+    description:
+      "Replace the whole architecture with what a text in read_architecture_text's form says, as one edit that one undo takes back: what " +
+      "the text leaves out is deleted, what it says as it is stays untouched. Refused, naming each line, path and broken rule, when the text " +
+      "breaks the format; then nothing changes.",
+    input: { text: z.string().describe("The architecture as YAML, as read_architecture_text gives it") },
+    run: async (doc, a) => {
+      const before = architectureOf(doc);
+      const next = parseArchitectureText(a.text);
+      // Through the text, status live and empty lists read as left out: saying them again is no change.
+      const was = parseArchitectureText(architectureText(before));
+      for (const c of ARCH_COLLECTIONS) keepUnchanged(c, before, was, next);
+      const ops = opsBetween(before, next);
+      if (ops.length === 0) return { label: "Write architecture text", ops, reply: "The architecture already says that: nothing changed." };
+      const added: Id[] = [];
+      const changed: Id[] = [];
+      const removed: Id[] = [];
+      for (const c of ARCH_COLLECTIONS) {
+        for (const id of Object.keys(before[c])) if (!Object.hasOwn(next[c], id)) removed.push(id);
+        for (const [id, v] of Object.entries(next[c])) {
+          if (!Object.hasOwn(before[c], id)) added.push(id);
+          else if (before[c][id] !== v) changed.push(id);
+        }
+      }
+      const said = [["added", added], ["changed", changed], ["removed", removed]] as const;
+      return {
+        label: "Write architecture text",
+        ops,
+        reply: `Wrote the architecture: ${said.filter(([, ids]) => ids.length).map(([verb, ids]) => `${verb} ${ids.join(", ")}`).join("; ")}.`,
+      };
+    },
   }),
 
   check_architecture: tool({

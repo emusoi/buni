@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { emptyArchitecture, emptyDoc, type Doc } from "../format/doc.ts";
 import { parseDoc } from "../format/parse.ts";
 import { checkArchitecture, checkText } from "./arch-check.ts";
-import { DRAFT, exportArchitecture, yamlFile, type YamlMap } from "./arch-export.ts";
+import { DRAFT, exportArchitecture, yamlFile } from "./arch-export.ts";
+import type { YamlMap } from "./yaml.ts";
 import { toolNames } from "./tools.ts";
 import { Workspace } from "./workspace.ts";
 

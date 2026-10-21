@@ -83,6 +83,11 @@ Parts, links, workloads and migrations carry an optional `status` (`live` when a
 adds live and deletes what it removes, then the plan goes; discarding it (deleting the plan) deletes what it would
 have added. Parts, workloads, releases and plans take `sources`.
 
+The architecture can also be read and written whole as YAML (`read_architecture_text`, `write_architecture_text`,
+`buni arch FILE text|write|edit`): a section per collection, each a map keyed by id with no `id` inside, `status: live`
+and empty lists left out, and a link optionally on one line as `FROM KIND TO`. That text is a view for people to
+write; the file itself stays JSON, and a text is held to the same rules before anything in it is saved.
+
 The reader checks every reference, the enums, Kubernetes names (lowercase letters, digits and `-`, up to 63), that a
 workload's namespace is in its environment's cluster, that only a CronJob has a `schedule` and only a Job runs
 `before`, that a canary's steps rise to 100, that a migration changes a store, that a managed part is no workload, and

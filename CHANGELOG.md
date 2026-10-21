@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: the architecture as text people write by hand. `read_architecture_text` gives it as YAML, a section per
+  collection keyed by id with defaults left out and links on one line (`web calls api`); `write_architecture_text
+  {text}` replaces the whole architecture with what a text says as one undoable edit (unchanged things untouched),
+  or refuses naming each line, path and rule. `buni arch FILE text`, `buni arch FILE write PATH|-`, and `buni arch
+  FILE edit`, which opens it in `$EDITOR` and reopens it with what's wrong on top until it applies.
 - Added: `check_architecture` reviews the architecture worst first, each finding naming the thing and the call that
   fixes it (probes and limits, secrets, release checks and rollback, canaries without steps or a Rollout, migrations
   nothing runs first, ingress with no edge, egress the links don't match, missing add-ons, planned things nothing links

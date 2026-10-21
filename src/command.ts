@@ -46,6 +46,9 @@ usage: buni <command> [args] [--as <name>] [--json]
   arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
                                     the architecture as a brief: how the app is built, shipped and run
   arch <file.buni> check            what in it would break or leak at deploy time, worst first, each with its fix
+  arch <file.buni> text             the architecture as YAML to read and write by hand
+  arch <file.buni> write <file|->   replace the architecture with what a text says, as one edit; "-" reads stdin
+  arch <file.buni> edit             the text in $EDITOR, applied when you save and close; reopened with what's wrong
   arch <file.buni> export manifests|argocd|ci|brief [--env NAME] [--out DIR]
                                     draft Kubernetes YAML, Argo CD Applications, CI workflows or a Markdown brief,
                                     written to a folder inside the design's (default architecture/FORMAT)
@@ -177,6 +180,8 @@ before and while it is built; not monitoring.
   person merges it (merge_plan) or discards it (delete_architecture). Every set_ tool changes a thing when given its id;
   null removes a field.
 - Read it: buni arch FILE [--level system|runtime|code] [--env prod] [--focus ID] (read_architecture).
+- Or write it whole as YAML, keyed by id: buni arch FILE text prints it (read_architecture_text); buni arch FILE write
+  PATH|- applies it as one edit (write_architecture_text); buni arch FILE edit opens it in $EDITOR. People write it too.
 - How to design it, layer by layer: buni skills architecture. Then buni arch FILE check (check_architecture) and fix
   what it finds; buni arch FILE export manifests|argocd|ci|brief writes drafts for the person to review.`;
 
@@ -350,19 +355,60 @@ function flagArgs(args: readonly string[], names: Record<string, string>): Recor
   return out;
 }
 
-const ARCH_USAGE = "usage: buni arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID] | check | export manifests|argocd|ci|brief [--env NAME] [--out DIR]";
+const ARCH_USAGE = "usage: buni arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID] | check | text | write <file|-> | edit | export manifests|argocd|ci|brief [--env NAME] [--out DIR]";
 
 /**
- * buni arch as a tool call: check, export FORMAT, or the brief; a usage line when it is neither. An export's --out
- * is read from where the command runs and handed on relative to the design, whose folder it has to be inside.
+ * buni arch as a tool call: check, text, write PATH|-, export FORMAT, or the brief; a usage line when it is none of
+ * them. An export's --out is read from where the command runs and handed on relative to the design, whose folder it
+ * has to be inside.
  */
-function archCall(file: string, args: readonly string[]): { tool: ToolName; args: Record<string, string> } | undefined {
+async function archCall(file: string, args: readonly string[]): Promise<{ tool: ToolName; args: Record<string, string> } | undefined> {
   const [sub, format, ...rest] = args;
   if (sub === "check") return { tool: "check_architecture", args: {} };
+  if (sub === "text") return { tool: "read_architecture_text", args: {} };
+  if (sub === "write") return format === undefined ? undefined : { tool: "write_architecture_text", args: { text: format === "-" ? await stdin() : await readFile(format, "utf8") } };
   if (sub !== "export") return sub === undefined || sub.startsWith("--") ? { tool: "read_architecture", args: flagArgs(args, { "--level": "level", "--env": "environment", "--focus": "focus" }) } : undefined;
   if (format === undefined || !EXPORT_FORMATS.some((f) => f === format)) return undefined;
   const { out, ...flags } = flagArgs(rest, { "--env": "environment", "--out": "out" });
   return { tool: "export_architecture", args: { format, ...flags, ...(out !== undefined ? { out: relative(dirname(resolve(file)), resolve(out)) } : {}) } };
+}
+
+/** What `buni arch FILE edit` puts above the text when the last save was refused; taken off again before applying. */
+const REFUSED = "# ! ";
+
+/**
+ * buni arch FILE edit: the architecture's text in $VISUAL or $EDITOR on a temporary copy, written back when the
+ * editor closes. A refused save opens again with what is wrong on top, as git commit does; closing it unchanged
+ * gives up and leaves the design as it was.
+ */
+async function archEdit(call: (tool: ToolName, args: Record<string, string>) => Promise<Reply>): Promise<number> {
+  const read = await call("read_architecture_text", {});
+  if (!read.ok) { console.error(read.text); return 1; }
+  const editor = process.env.VISUAL || process.env.EDITOR || "vi";
+  const dir = await mkdtemp(join(tmpdir(), "buni-arch-"));
+  const path = join(dir, "architecture.yaml");
+  try {
+    let text = read.text.endsWith("\n") ? read.text : `${read.text}\n`;
+    let problem = "";
+    for (;;) {
+      const shown = `${problem ? `${problem.split("\n").map((l) => `${REFUSED}${l}`).join("\n")}\n${REFUSED}Fix it and save, or close without saving to give up.\n` : ""}${text}`;
+      await writeFile(path, shown);
+      // Through the shell, so an $EDITOR with flags ("code --wait") runs as written.
+      const exit = await Bun.spawn(["sh", "-c", `${editor} "$1"`, "sh", path], { stdio: ["inherit", "inherit", "inherit"] }).exited;
+      if (exit !== 0) { console.error(`${editor} exited with ${exit}; the architecture is as it was.`); return 1; }
+      const saved = (await readFile(path, "utf8")).split("\n").filter((l) => !l.startsWith(REFUSED)).join("\n");
+      if (saved === text) {
+        console.log(problem ? "Gave up; the architecture is as it was." : "No changes.");
+        return problem ? 1 : 0;
+      }
+      text = saved;
+      const r = await call("write_architecture_text", { text });
+      if (r.ok) { console.log(r.text); return 0; }
+      problem = r.text;
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 /** `context` arguments: what to focus on, "page:ID" or "flow:ID". */
@@ -403,7 +449,8 @@ async function remoteCommand(cmd: string | undefined, name: string, args: readon
     case "context":
       return out(await tool("read_context", contextArgs(args)));
     case "arch": {
-      const c = archCall(name, args);
+      if (args[0] === "edit") return archEdit(tool);
+      const c = await archCall(name, args);
       // Drafts are files on this machine; the server's folder is no place for them.
       if (!c || c.tool === "export_architecture") {
         console.error(c ? "buni arch export works on local files: download the design first." : ARCH_USAGE);
@@ -673,7 +720,8 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     case "context":
       return out(await run(file, as, "read_context", contextArgs(args)));
     case "arch": {
-      const c = archCall(file, args);
+      if (args[0] === "edit") return archEdit((t, a) => run(file, as, t, a));
+      const c = await archCall(file, args);
       if (!c) {
         console.error(ARCH_USAGE);
         return 2;

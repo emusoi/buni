@@ -1,57 +1,15 @@
 // The architecture as draft files to start the real ones from: Kubernetes manifests per workload, Argo CD
 // Applications, GitHub Actions workflows and a Markdown brief. Drafts: every file says so, and a person reviews them
-// before anything is applied. YAML comes from the small emitter below (block style, quoted where YAML would misread).
+// before anything is applied. YAML comes from yaml.ts's small emitter.
 import { architectureOf, k8sName, workloadName, type Architecture, type Cluster, type Doc, type Environment, type Id, type Namespace, type Part, type Release, type Workload } from "../format/doc.ts";
 import { ToolError } from "./kit.ts";
+import { filled, yamlLines, type YamlMap } from "./yaml.ts";
 
 export const EXPORT_FORMATS = ["manifests", "argocd", "ci", "brief"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 export const DRAFT = "Draft from buni — review before applying.";
 
 // ---- YAML ----
-
-export type Yaml = string | number | boolean | readonly Yaml[] | YamlMap;
-export type YamlMap = { readonly [k: string]: Yaml | undefined };
-
-const isList = (v: Yaml): v is readonly Yaml[] => Array.isArray(v);
-const isMap = (v: Yaml): v is YamlMap => typeof v === "object" && !Array.isArray(v);
-const pairs = (m: YamlMap) => Object.entries(m).filter((e): e is [string, Yaml] => e[1] !== undefined);
-const filled = (v: Yaml) => (isList(v) ? v.length > 0 : isMap(v) ? pairs(v).length > 0 : false);
-
-// What a plain scalar can't be: starting with an indicator, edge spaces, ": " or " #", flow brackets, or a word
-// YAML reads as a bool, null or number.
-const UNSAFE = /^[-?:,[\]{}#&*!|>'"%@`]|^\s|\s$|: | #|[{}[\],]|[\u0000-\u001f\u007f]/;
-const RESERVED = /^(true|false|yes|no|on|off|y|n|null|~|[-+]?(\.\d+|\d[\d_]*(\.\d*)?)([eE][-+]?\d+)?|0x[0-9a-f]+|0o[0-7]+|[-+]?\.inf|\.nan)$/i;
-const scalar = (s: string) => (s === "" || UNSAFE.test(s) || RESERVED.test(s) ? JSON.stringify(s) : s);
-
-/** A value that sits on its key's line: a scalar, an empty collection, or the head of a block literal. */
-function inline(v: Yaml, pad: string): string {
-  if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (isList(v)) return "[]";
-  if (isMap(v)) return "{}";
-  if (v.includes("\n") && !/^\s/.test(v)) return `|-\n${v.split("\n").map((l) => (l ? `${pad}${l}` : "")).join("\n")}`;
-  return scalar(v);
-}
-
-/** A map's keys or a list's items as lines at `pad`. */
-function block(v: YamlMap | readonly Yaml[], pad: string): string[] {
-  const out: string[] = [];
-  const nested = (item: Yaml, at: string) => (filled(item) && (isList(item) || isMap(item)) ? block(item, at) : undefined);
-  if (isList(v)) {
-    for (const item of v) {
-      const inner = nested(item, `${pad}  `);
-      if (inner) out.push(`${pad}- ${(inner[0] ?? "").slice(pad.length + 2)}`, ...inner.slice(1));
-      else out.push(`${pad}- ${inline(item, `${pad}  `)}`);
-    }
-    return out;
-  }
-  for (const [k, item] of pairs(v)) {
-    const inner = nested(item, `${pad}  `);
-    if (inner) out.push(`${pad}${scalar(k)}:`, ...inner);
-    else out.push(`${pad}${scalar(k)}: ${inline(item, `${pad}  `)}`);
-  }
-  return out;
-}
 
 export interface YamlDoc {
   /** Lines said above the document, as # comments. */
@@ -63,7 +21,7 @@ export interface YamlDoc {
 export function yamlFile(about: readonly string[], docs: readonly YamlDoc[]): string {
   const comment = (l: string) => `# ${l}`.trimEnd();
   const head = [DRAFT, ...about].map(comment);
-  const body = docs.map((d, i) => [...(i > 0 ? ["---"] : []), ...(d.notes ?? []).map(comment), ...block(d.value, "")].join("\n"));
+  const body = docs.map((d, i) => [...(i > 0 ? ["---"] : []), ...(d.notes ?? []).map(comment), ...yamlLines(d.value, "")].join("\n"));
   return `${[...head, ...body].join("\n")}\n`;
 }
 
@@ -162,7 +120,7 @@ function workloadDocs(arch: Architecture, env: Environment, ns: Namespace, w: Wo
         image: w.image ?? `${name}:TAG`,
         ports: port ? [{ name: "http", containerPort: port }] : undefined,
         envFrom: envFrom.length ? envFrom : undefined,
-        resources: res ? { requests: pairs(requests).length ? requests : undefined, limits: pairs(limits).length ? limits : undefined } : undefined,
+        resources: res ? { requests: filled(requests) ? requests : undefined, limits: filled(limits) ? limits : undefined } : undefined,
         readinessProbe: w.probes?.ready ? probe(w.probes.ready) : undefined,
         livenessProbe: w.probes?.live ? probe(w.probes.live) : undefined,
       }],

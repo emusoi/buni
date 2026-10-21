@@ -27,6 +27,8 @@ export const EDIT_TOOLS = [
   "set_motion", "connect", "disconnect", "set_flow", "set_screen",
   // A plan's Merge and Discard in Proposals; the rest of the architecture is edited by agents.
   "merge_plan", "delete_architecture",
+  // The architecture as text, read and written whole.
+  "read_architecture_text", "write_architecture_text",
 ] as const;
 export type EditTool = (typeof EDIT_TOOLS)[number];
 
