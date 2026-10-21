@@ -31,6 +31,7 @@ import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode 
 import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
 import { loadProject, useProject } from "./projectStore.ts";
+import { archParams, ArchitectureMode } from "./architecture/ArchitectureMode.tsx";
 
 declare global {
   interface Window {
@@ -224,6 +225,8 @@ export function App({ snap }: { snap: Snapshot }) {
   /** Component board in focus on the canvas, instead of a page. */
   const [component, setComponent] = useState<Id>();
   const [play, setPlay] = useState<{ page: Id; flow?: Id }>();
+  /** Screens (pages, components, flows) or Architecture (how the app behind them is built and shipped); ?arch= opens the second. */
+  const [mode, setMode] = useState<"screens" | "architecture">(() => (archParams(location.search) ? "architecture" : "screens"));
 
   // The design with what it imports, so instances of a core file's components draw; those stay edited in their own file.
   const doc = snap.system;
@@ -735,13 +738,18 @@ export function App({ snap }: { snap: Snapshot }) {
   // The side panels float over the canvas; what they cover, for fitting pages and laying out the views beneath.
   const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (
-    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}`} style={floating}>
+    <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
       <header className="tabs topbar">
         <div className="bar-lead">
           <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
           <Changes version={snap.view} onToast={setToast} />
         </div>
         <FileTabs />
+        <nav className="modes-bar" role="tablist" aria-label="Mode">
+          {([["screens", "Screens"], ["architecture", "Architecture"]] as const).map(([m, label]) => (
+            <button type="button" key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => setMode(m)}>{label}</button>
+          ))}
+        </nav>
         <div className="bar-trail">
         {/* Who's in the file and what they're doing; clicking opens the agent panel. Saving is silent: it always happens. */}
         {presence && (
@@ -753,7 +761,7 @@ export function App({ snap }: { snap: Snapshot }) {
           </button>
         )}
         <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
-        {activePage && (
+        {activePage && mode === "screens" && (
           <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
             <PlayIcon size={16} strokeWidth={1.75} />
           </button>
@@ -800,8 +808,9 @@ export function App({ snap }: { snap: Snapshot }) {
         </span>
         </div>
       </header>
+      {mode === "architecture" && <ArchitectureMode doc={doc} name={fileName} onToast={setToast} />}
       {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
-      {!sidebarOpen && (
+      {mode === "screens" && !sidebarOpen && (
         <nav className="side-rail" aria-label="Sidebar">
           <button type="button" className="icon-btn" title="Find anything (⌘K)" aria-label="Find anything" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
           <button type="button" className="icon-btn" title="Other designs in this project (⌘P)" aria-label="Other designs" onClick={() => setSwitching(true)}><FolderTree size={17} strokeWidth={1.75} /></button>
@@ -816,6 +825,7 @@ export function App({ snap }: { snap: Snapshot }) {
           <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeftOpen size={17} strokeWidth={1.75} /></button>
         </nav>
       )}
+      {mode === "screens" && <>
       <aside className="sidebar">
         {sideTab === "pages" && (
           <div className="side-tabs" role="tablist" aria-label="Outline">
@@ -1018,6 +1028,7 @@ export function App({ snap }: { snap: Snapshot }) {
           )}
         </div>
       </main>
+      </>}
       {toast && <div className="toast" role="status">{toast}</div>}
       {agentNote && !toast && (
         <div className="toast agent-note" role="status">
