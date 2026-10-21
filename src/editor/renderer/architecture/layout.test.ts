@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
-import { codeLayout, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { between, boxesIn, codeLayout, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
 import { planChanges } from "./Proposals.tsx";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
@@ -192,4 +192,15 @@ test("a placed card is drawn where it was put: its frame round it again, its Ing
   // A placement in the file is the same picture.
   const placed = runtimeLayout({ ...arch, workloads: { ...arch.workloads, "returns-api-prod": { ...arch.workloads["returns-api-prod"]!, place: { runtime: { x: w.x + 40, y: w.y + 400 } } } } }, prod);
   expect(placed).toEqual(l);
+});
+
+test("a marquee picks the cards it touches, drawn either way round", () => {
+  const l = systemLayout(arch);
+  const [a, b] = [l.boxes[0]!, l.boxes[1]!];
+  const r = between([b.x + b.w + 1, b.y + b.h + 1], [a.x + 1, a.y + 1]);
+  expect(r.w).toBeGreaterThan(0);
+  const got = boxesIn(l.boxes, r).map((x) => x.key);
+  expect(got).toContain(a.key);
+  expect(got).toContain(b.key);
+  expect(boxesIn(l.boxes, between([-50, -50], [-10, -10]))).toEqual([]);
 });

@@ -116,7 +116,24 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   // The architecture as text, in a pane beside the view; what is selected keeps its inspector beside it.
   const [text, setText] = useState(false);
   const textPane = text && <TextPane version={doc.architecture} onClose={() => setText(false)} onToast={onToast} />;
-  const select = useCallback((id: Id | undefined) => { setSelected(id); setFresh(undefined); setDeleting(false); }, []);
+  // Selected along with `selected` (the one the inspector is about): shift-click and the marquee add to it.
+  const [more, setMore] = useState<Id[]>([]);
+  const select = useCallback((id: Id | undefined) => { setSelected(id); setMore([]); setFresh(undefined); setDeleting(false); }, []);
+  const toggle = (id: Id) => {
+    const all = [...more, ...(selected ? [selected] : [])];
+    const next = all.includes(id) ? all.filter((x) => x !== id) : [...all, id];
+    setSelected(next.at(-1));
+    setMore(next.slice(0, -1));
+    setFresh(undefined);
+    setDeleting(false);
+  };
+  const pickMany = (ids: Id[], add: boolean) => {
+    const next = [...new Set([...(add ? [...more, ...(selected ? [selected] : [])] : []), ...ids])];
+    setSelected(next.at(-1));
+    setMore(next.slice(0, -1));
+    setFresh(undefined);
+    setDeleting(false);
+  };
   const env = environmentOf(arch, envId);
   const envs = environmentsInOrder(arch);
   // A release's canary split is drawn in its workload's card, which takes the room for it.
@@ -125,6 +142,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const layout = useMemo(() => layoutFor(arch, level, env, canary ? new Map([[canary.workload, CANARY_HEIGHT]]) : undefined), [arch, level, env, canary?.workload]);
   // A selection the architecture no longer has (an agent deleted it, or undo took it back) goes; one just made waits for it.
   useEffect(() => { if (selected && selected !== fresh && !archCollectionOf(arch, selected)) select(undefined); }, [arch, selected, fresh]);
+  useEffect(() => { if (more.some((id) => !archCollectionOf(arch, id))) setMore((m) => m.filter((id) => archCollectionOf(arch, id))); }, [arch, more]);
   // ⌫ asks to delete what is selected (the inspector says what goes with it); Escape lets go of it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -198,6 +216,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     <ArchInspector
       arch={arch}
       id={selected}
+      more={more}
       env={env}
       fresh={fresh}
       onSelect={select}
@@ -208,7 +227,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
         <>
           <b className="arch-inspector-name">{group.name}</b>
           <p className="arch-about">{Object.values(arch.parts).filter((p) => p.group === group.id).map((p) => p.name).join(", ")}.</p>
-          <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as. Drag from a card's right edge onto another to link them. Drag to pan; ⌘-scroll zooms.</p>
+          <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as. Drag a card to move it, or from its right edge onto another to link them. Drag on empty space to pick several (shift adds); hold space and drag to pan; ⌘-scroll zooms.</p>
         </>
       ) : <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as.</p>}
       actions={<>
@@ -257,6 +276,9 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
           layout={layout}
           fitKey={`${level} ${env?.id}`}
           selected={selected}
+          also={new Set(more)}
+          onToggle={toggle}
+          onMarquee={pickMany}
           onSelect={select}
           canLink={(b) => partOfBox(arch, b) !== undefined}
           onLink={(from, to, at) => {
@@ -273,7 +295,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             const at = Object.fromEntries([...to].map(([key, [x, y]]) => [key, { x, y }]));
             // Let go over a frame it can go in, it moves there too, in the same edit; over one it can't, it goes back.
             const [key, p] = [...to][0] ?? [];
-            const into = key && p && onto ? dropOn(arch, mapLevel, key, onto.ids[0], { x: p[0], y: p[1] }) : undefined;
+            const into = to.size === 1 && key && p && onto ? dropOn(arch, mapLevel, key, onto.ids[0], { x: p[0], y: p[1] }) : undefined;
             if (into && "error" in into) { onToast(into.error); return false; }
             const r = into ? await window.buni.edit(into.tool, into.args) : await window.buni.edit("place_architecture", { level: mapLevel, at });
             if (!r.ok) onToast(r.reply);

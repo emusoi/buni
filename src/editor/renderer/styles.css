@@ -1965,3 +1965,8 @@ button.arch-frame-title, button.arch-link-label { border: 0; margin: 0; font-fam
 .arch-sub-form.drop-before { box-shadow: 0 -6px 0 -4px var(--arch-blue); }
 .arch-sub-form.drop-after { box-shadow: 0 6px 0 -4px var(--arch-blue); }
 button.arch-step-n { padding: 0; background: none; font-family: inherit; }
+/* Several picked: the marquee while dragging, and the list the inspector shows. */
+.arch-marquee { fill: rgba(138, 174, 255, 0.08); stroke: rgba(138, 174, 255, 0.8); stroke-width: 1; }
+.arch-canvas.panning, .arch-canvas.panning .arch-card { cursor: grab; }
+.arch-picked-list { list-style: none; margin: 8px 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+.arch-picked-list li { display: flex; justify-content: space-between; gap: 8px; }

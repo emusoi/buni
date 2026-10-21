@@ -47,6 +47,8 @@ export function selectionOf(arch: Architecture, id: Id, env: Id | undefined): { 
 
 export interface InspectorProps {
   arch: Architecture; id: Id | undefined; env: Environment | undefined;
+  /** Selected along with `id`: the inspector lists them all and deletes them together. */
+  more?: readonly Id[];
   /** Buttons at the foot: Play the release, Open the plan, Copy brief. */
   actions: ReactNode; empty: ReactNode;
   /** Just made: its name field takes the focus. */
@@ -58,8 +60,24 @@ export interface InspectorProps {
   onClose?: () => void;
 }
 
-export function ArchInspector({ arch, id, env, actions, empty, fresh, onSelect, deleting, onDeleting, onClose }: InspectorProps) {
+export function ArchInspector({ arch, id, env, more = [], actions, empty, fresh, onSelect, deleting, onDeleting, onClose }: InspectorProps) {
   const c = id ? archCollectionOf(arch, id) : undefined;
+  const all = [...more, ...(id ? [id] : [])].filter((x) => archCollectionOf(arch, x) !== undefined);
+  if (all.length > 1) {
+    return (
+      <aside className="arch-inspector picked">
+        {onClose && <button type="button" className="arch-icon-btn arch-close" aria-label="Close the inspector" onClick={onClose}><X size={13} /></button>}
+        <span className="arch-lbl">Selected</span>
+        <b className="arch-inspector-name">{all.length} things</b>
+        <ul className="arch-picked-list">
+          {all.map((x) => (
+            <li key={x}><button type="button" className="arch-inline-link" onClick={() => onSelect(x)}>{labelOf(arch, x)}</button><span className="arch-sub">{NOUN[archCollectionOf(arch, x) ?? "parts"]}</span></li>
+          ))}
+        </ul>
+        <DeleteRow arch={arch} ids={all} armed={deleting} onArm={onDeleting} onDone={() => onSelect(undefined)} />
+      </aside>
+    );
+  }
   if (!id || !c) {
     return (
       <aside className="arch-inspector">
@@ -72,7 +90,7 @@ export function ArchInspector({ arch, id, env, actions, empty, fresh, onSelect, 
   const close = onClose && <button type="button" className="arch-icon-btn arch-close" aria-label="Close the inspector" onClick={onClose}><X size={13} /></button>;
   const foot = (
     <>
-      <DeleteRow arch={arch} id={id} armed={deleting} onArm={onDeleting} onDone={() => onSelect(undefined)} />
+      <DeleteRow arch={arch} ids={[id]} armed={deleting} onArm={onDeleting} onDone={() => onSelect(undefined)} />
       <div className="arch-actions">{actions}</div>
     </>
   );
@@ -103,25 +121,27 @@ export function ArchInspector({ arch, id, env, actions, empty, fresh, onSelect, 
 }
 
 /** One line asking before a delete, naming what goes with it; Enter deletes, Escape keeps. */
-function DeleteRow({ arch, id, armed, onArm, onDone }: { arch: Architecture; id: Id; armed: boolean; onArm: (on: boolean) => void; onDone: () => void }) {
+function DeleteRow({ arch, ids, armed, onArm, onDone }: { arch: Architecture; ids: readonly Id[]; armed: boolean; onArm: (on: boolean) => void; onDone: () => void }) {
   const [error, setError] = useState<string>();
   const yes = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (armed) yes.current?.focus(); }, [armed]);
-  useEffect(() => setError(undefined), [id]);
+  useEffect(() => setError(undefined), [ids.join(" ")]);
+  const [one] = ids;
+  const what = ids.length === 1 && one ? NOUN[archCollectionOf(arch, one) ?? "parts"] : `${ids.length} things`;
   if (!armed) {
     return (
       <div className="arch-delete">
-        <button type="button" className="arch-text-btn danger" onClick={() => onArm(true)} title="Delete (⌫)">Delete {NOUN[archCollectionOf(arch, id) ?? "parts"]}</button>
+        <button type="button" className="arch-text-btn danger" onClick={() => onArm(true)} title="Delete (⌫)">Delete {what}</button>
         {error && <span className="arch-field-error" role="alert">{error}</span>}
       </div>
     );
   }
   return (
     <div className="arch-delete armed" onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onArm(false); } }}>
-      <span><b>Delete {labelOf(arch, id)}?</b> {cascadeText(arch, [id])}</span>
+      <span><b>Delete {ids.length === 1 && one ? labelOf(arch, one) : what}?</b> {cascadeText(arch, ids)}</span>
       <div className="arch-delete-buttons">
         <button ref={yes} type="button" className="arch-btn danger" onClick={() => {
-          void window.buni.edit("delete_architecture", { ids: [id] }).then((r) => {
+          void window.buni.edit("delete_architecture", { ids: [...ids] }).then((r) => {
             onArm(false);
             if (r.ok) onDone();
             else setError(r.reply);

@@ -643,3 +643,8 @@ export function snapMove(r: Rect, others: readonly Rect[], near = 6, grid = GRID
   }
   return { x: at.x, y: at.y, guides };
 }
+
+/** The rectangle between two corners, either way round. */
+export const between = (a: Point, b: Point): Rect => ({ x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), w: Math.abs(a[0] - b[0]), h: Math.abs(a[1] - b[1]) });
+/** The cards a marquee touches. */
+export const boxesIn = (boxes: readonly MapBox[], r: Rect): MapBox[] => boxes.filter((b) => b.x < r.x + r.w && r.x < b.x + b.w && b.y < r.y + r.h && r.y < b.y + b.h);
