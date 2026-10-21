@@ -5,6 +5,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Fixed: capturing a page with its own elements (`<tip-type>`, any custom element) saved a design that then wouldn't
+  open ("not a valid .buni file"). Such elements come in as the box they drew (a span in a line of text, else a div),
+  and every edit now checks layer elements, so no edit can save a file that won't open.
 - The side panel is minimal (designed in designs/extension.buni, option Minimal): the page you're on is the headline,
   one line says where it goes, and Capture page is the only button; Pick a part and "or keep it as inspiration" sit
   beside it, recent captures are plain rows, everything else is in Library. A capture keeps the page's own name,

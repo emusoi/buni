@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { emptyDoc, type Doc, type Node } from "../format/doc.ts";
-import { exportSite, renderComponent, renderLayer, renderPage } from "./html.ts";
+import { exportSite, parseHtml, renderComponent, renderLayer, renderPage } from "./html.ts";
 
 function design(): Doc {
   const doc = emptyDoc();
@@ -45,4 +45,11 @@ test("adding unused components does not grow a board's stylesheet", () => {
     doc.nodes[id] = { id, kind: "frame", name: id, index: "a0", style: { background: "purple" } };
   }
   expect(renderPage(doc, "page")).toEqual(before);
+});
+
+test("a page's own elements come in as the box they drew: a span in a line of text, else a div", () => {
+  const { drafts, warnings } = parseHtml(`<div><tip-type style="display:inline-block">Tip</tip-type><my-card style="display:flex"><p>Hi</p></my-card></div>`);
+  const kids = drafts[0]!.kind === "frame" ? drafts[0]!.children : [];
+  expect(kids.map((k) => ("tag" in k ? k.tag : undefined))).toEqual(["span", "div"]);
+  expect(warnings).toEqual(["<tip-type> came in as a span", "<my-card> came in as a div"]);
 });

@@ -150,7 +150,7 @@ const CSS_MESSAGE = "CSS values cannot contain {, } or <";
 /** Elements a design may not hold: exported pages stay static markup that runs and embeds nothing. */
 export const UNSAFE_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "base", "canvas"];
 /** The elements a layer may be: layout, text and form controls. Exported pages stay static markup that loads nothing. */
-const TAGS = new Set([
+export const TAGS: ReadonlySet<string> = new Set([
   "a", "abbr", "address", "article", "aside", "b", "bdi", "bdo", "blockquote", "br", "button", "caption", "cite", "code",
   "col", "colgroup", "data", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "fieldset", "figcaption",
   "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "i", "input", "ins", "kbd",
@@ -1748,10 +1748,18 @@ function ownOnly(doc: Doc): Doc {
  * With `context` (the system of the files it imports), references may point into those files;
  * only this file's own entries are reported, and an id in both is an error.
  */
+/** A layer's element must be one a design can hold: an edit that put any other in would save a file that won't open. */
+function checkTags(doc: Doc, r: Reader): void {
+  for (const n of Object.values(doc.nodes)) {
+    if ((n.kind === "frame" || n.kind === "text") && n.tag !== undefined) r.tag(n.tag, join(join("nodes", n.id), "tag"));
+  }
+}
+
 export function validateDoc(given: Doc, givenContext?: Doc): FormatError[] {
   const doc = ownOnly(given);
   const context = givenContext && ownOnly(givenContext);
   const r = new Reader();
+  checkTags(doc, r);
   if (!context) {
     checkRefs(doc, r);
     return r.errors;

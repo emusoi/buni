@@ -3,7 +3,7 @@ import { parseFragment, serializeOuter, type DefaultTreeAdapterTypes as P } from
 import { findIcons, iconSvg } from "./icons.ts";
 import { paletteVars } from "./terminal.ts";
 import { FONT_FAMILIES } from "./fonts.gen.ts";
-import { UNSAFE_TAGS } from "../format/parse.ts";
+import { TAGS, UNSAFE_TAGS } from "../format/parse.ts";
 import { z } from "zod";
 import { CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
 
@@ -130,7 +130,11 @@ function bareDraft(el: P.Element, warnings: string[], keep: boolean): Draft | un
   }
   const style = parseStyle(attr(el, "style") ?? "");
   const layer = attr(el, "layer-name");
-  const tag = el.tagName;
+  // A page's own elements (<tip-type>, <my-card>) aren't ones a design can hold: they come in as the box they drew,
+  // a span when they sat in a line of text, else a div, with their styles.
+  const own = ["svg", "img", "buni-icon", "buni-instance"].includes(el.tagName) || TAGS.has(el.tagName);
+  const tag = own ? el.tagName : /^inline/.test(style.display ?? "") ? "span" : "div";
+  if (!own) warnings.push(`<${el.tagName}> came in as a ${tag}`);
 
   if (tag === "img") {
     const src = attr(el, "src") ?? "";
@@ -230,7 +234,8 @@ function childDrafts(nodes: P.ChildNode[], warnings: string[], keep: boolean, ke
 export function parseHtml(html: string, opts: { keepSpaces?: boolean } = {}): ParsedHtml {
   const warnings: string[] = [];
   const fragment = parseFragment(html);
-  return { drafts: childDrafts(fragment.childNodes, warnings, opts.keepSpaces ?? false), warnings };
+  const drafts = childDrafts(fragment.childNodes, warnings, opts.keepSpaces ?? false);
+  return { drafts, warnings: [...new Set(warnings)] };
 }
 
 // ---------------------------------------------------------------------------
