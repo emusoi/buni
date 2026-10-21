@@ -7,7 +7,7 @@ import { LINK_KINDS, MAP_LEVELS, archCollectionOf, architectureOf, type Architec
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
-import { ADDABLE, addFor, linkTargets, type AddContext, type Addable } from "./edit.ts";
+import { ADDABLE, addFor, dropOn, linkTargets, type AddContext, type Addable } from "./edit.ts";
 import { useDismiss } from "../useDismiss.ts";
 import { TextPane } from "./TextPane.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
@@ -246,8 +246,8 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
         <AddMenu arch={arch} view={view} ctx={ctx} onAdd={(what) => void add(what)} />
       </div>
       <div className="arch-body">
-        {view === "software" ? <><SoftwarePath arch={arch} env={env} onSee={setView} onSelect={select} />{aside}</>
-        : view === "deploy" ? <><DeployPath arch={arch} env={env} onSelect={select} />{aside}</>
+        {view === "software" ? <><SoftwarePath arch={arch} env={env} onSee={setView} onSelect={select} onToast={onToast} />{aside}</>
+        : view === "deploy" ? <><DeployPath arch={arch} env={env} onSelect={select} onToast={onToast} />{aside}</>
         : view === "kubernetes" ? <><Kubernetes arch={arch} env={env} onSelect={select} />{aside}</>
         : view === "proposals" ? <><Proposals arch={arch} plan={planId} onPlan={setPlanId} onToast={onToast} onSelect={select} />{aside}</>
         : view === "flows" ? (
@@ -264,10 +264,18 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             if (a && b && a !== b) setLinking({ from: a, to: b, ...at });
           }}
           movable={(b) => mapLevel !== undefined && (arch.parts[b.key] !== undefined || arch.workloads[b.key] !== undefined)}
-          onMove={async (to) => {
+          dropRule={(b, f) => {
+            const r = mapLevel && dropOn(arch, mapLevel, b.key, f.ids[0], { x: b.x, y: b.y });
+            return r ? ("error" in r ? { why: r.error } : {}) : undefined;
+          }}
+          onMove={async (to, onto) => {
             if (!mapLevel) return false;
             const at = Object.fromEntries([...to].map(([key, [x, y]]) => [key, { x, y }]));
-            const r = await window.buni.edit("place_architecture", { level: mapLevel, at });
+            // Let go over a frame it can go in, it moves there too, in the same edit; over one it can't, it goes back.
+            const [key, p] = [...to][0] ?? [];
+            const into = key && p && onto ? dropOn(arch, mapLevel, key, onto.ids[0], { x: p[0], y: p[1] }) : undefined;
+            if (into && "error" in into) { onToast(into.error); return false; }
+            const r = into ? await window.buni.edit(into.tool, into.args) : await window.buni.edit("place_architecture", { level: mapLevel, at });
             if (!r.ok) onToast(r.reply);
             return r.ok;
           }}

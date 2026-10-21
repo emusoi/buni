@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import { workloadName, type Architecture, type Environment, type Id, type Stage } from "buni/format/doc.ts";
 import { environmentsInOrder, releasesOf, strategyText } from "./model.ts";
 import { edgeChain } from "./layout.ts";
+import { orderAt } from "./edit.ts";
+import { useReorder, type Reorderable } from "./useReorder.ts";
 
-export function Lane({ title, sub, live, gate, children, onPick }: { title: string; sub?: string | undefined; live?: boolean; gate?: boolean; children: ReactNode; onPick?: (() => void) | undefined }) {
+export function Lane({ title, sub, live, gate, children, onPick, reorder }: { title: string; sub?: string | undefined; live?: boolean; gate?: boolean; children: ReactNode; onPick?: (() => void) | undefined; reorder?: Reorderable }) {
   return (
-    <section className={`arch-lane${live ? " current" : ""}`}>
-      <div className="arch-lane-head">{onPick ? <button type="button" className="arch-lane-title" onClick={onPick} title={`Edit ${title}`}>{title}</button> : <b>{title}</b>}{sub && <span className="arch-sub">{sub}</span>}</div>
+    <section className={`arch-lane${live ? " current" : ""}${reorder?.mark ?? ""}`} {...(reorder ? { "data-reorder": "" } : {})}>
+      <div className="arch-lane-head">{onPick ? <button type="button" className={`arch-lane-title${reorder ? " grip" : ""}`} onClick={onPick} title={reorder ? `Edit ${title}; drag (or Alt+arrow) to move it` : `Edit ${title}`} {...reorder?.handle}>{title}</button> : <b>{title}</b>}{sub && <span className="arch-sub">{sub}</span>}</div>
       {children}
       {gate && <span className="arch-gate-mark" aria-hidden>◆</span>}
     </section>
@@ -32,8 +34,18 @@ function stepCard(step: string) {
   return m ? <Item key={step} title={m[1]!.trim()} lines={[m[2]!.trim()]} /> : <Item key={step} title={step} />;
 }
 
-export function SoftwarePath({ arch, env, onSee, onSelect }: { arch: Architecture; env: Environment | undefined; onSee: (view: "deploy" | "kubernetes") => void; onSelect: (id: Id) => void }) {
+/** A stage or an environment dragged to a new place in its path: one call, its order halfway between its new neighbours. */
+function moveInOrder(tool: "set_stage" | "set_environment", items: readonly { id: Id; order: number }[], onToast: (text: string) => void) {
+  return (from: number, to: number) => {
+    const order = orderAt(items, from, to);
+    if (order === undefined || !items[from]) return;
+    void window.buni.edit(tool, { id: items[from].id, order }).then((r) => { if (!r.ok) onToast(r.reply); });
+  };
+}
+
+export function SoftwarePath({ arch, env, onSee, onSelect, onToast }: { arch: Architecture; env: Environment | undefined; onSee: (view: "deploy" | "kubernetes") => void; onSelect: (id: Id) => void; onToast: (text: string) => void }) {
   const stages = Object.values(arch.stages).sort((a, b) => a.order - b.order);
+  const lanes = useReorder("x", stages.length, moveInOrder("set_stage", stages, onToast));
   if (!stages.length) return <div className="arch-flows-empty"><p>No software path yet. Add a stage with + Add, or ask your coding agent to lay it out with <code>set_stage</code>: idea, code, review, build, ship, run, watch, respond, and the gate between each.</p></div>;
   const cluster = env?.cluster ? arch.clusters[env.cluster] : undefined;
   const running = Object.values(arch.workloads).filter((w) => w.environment === env?.id && !w.before && w.kind !== "Job" && w.kind !== "CronJob" && w.status !== "planned");
@@ -42,9 +54,9 @@ export function SoftwarePath({ arch, env, onSee, onSelect }: { arch: Architectur
   const last = stages.at(-1);
   return (
     <div className="arch-page">
-      <div className="arch-lanes">
+      <div className="arch-lanes" ref={lanes.container}>
         {stages.map((s, i) => (
-          <Lane key={s.id} title={s.name} sub={isRun(s) && cluster ? `${cluster.name}${env?.region ? ` · ${env.region}` : ""}` : s.tools} live={isRun(s)} onPick={() => onSelect(s.id)}>
+          <Lane key={s.id} title={s.name} sub={isRun(s) && cluster ? `${cluster.name}${env?.region ? ` · ${env.region}` : ""}` : s.tools} live={isRun(s)} onPick={() => onSelect(s.id)} reorder={lanes.item(i)}>
             {isRun(s) ? (
               <>
                 {edgeChain(arch).length > 0 && <Item title="Edge" lines={[edgeChain(arch).map((p) => p.name).join(" → ")]} />}
@@ -66,8 +78,9 @@ export function SoftwarePath({ arch, env, onSee, onSelect }: { arch: Architectur
   );
 }
 
-export function DeployPath({ arch, env, onSelect }: { arch: Architecture; env: Environment | undefined; onSelect: (id: Id) => void }) {
+export function DeployPath({ arch, env, onSelect, onToast }: { arch: Architecture; env: Environment | undefined; onSelect: (id: Id) => void; onToast: (text: string) => void }) {
   const envs = environmentsInOrder(arch);
+  const lanes = useReorder("x", envs.length, moveInOrder("set_environment", envs, onToast));
   const built = Object.values(arch.parts).filter((p) => p.build);
   const repos = [...new Set(built.map((p) => p.build!.repo))];
   const steps = [...new Set(built.flatMap((p) => p.build!.steps ?? []))];
@@ -80,7 +93,7 @@ export function DeployPath({ arch, env, onSelect }: { arch: Architecture; env: E
   const edge = edgeChain(arch);
   return (
     <div className="arch-page">
-      <div className="arch-lanes gated">
+      <div className="arch-lanes gated" ref={lanes.container}>
         <Lane title="Commit" sub="main · pull requests" gate>
           {repos.map((r) => <Item key={r} title={r.split("/").at(-1) ?? r} lines={[r.replace(/^https?:\/\//, "")]} />)}
           {stage("review")?.gate && <Gate text={`Gate to next: ${stage("review")!.gate}`} />}
@@ -97,7 +110,7 @@ export function DeployPath({ arch, env, onSelect }: { arch: Architecture; env: E
           const here = Object.values(arch.workloads).filter((w) => w.environment === e.id && !w.before)
             .sort((a, b) => Number(a.status === "planned") - Number(b.status === "planned") || Number(a.kind === "CronJob") - Number(b.kind === "CronJob") || a.id.localeCompare(b.id));
           return (
-            <Lane key={e.id} title={e.name} sub={[e.preview ? "one per pull request" : undefined, e.provider, e.region].filter(Boolean).join(" · ")} live={live} gate={!last} onPick={() => onSelect(e.id)}>
+            <Lane key={e.id} title={e.name} sub={[e.preview ? "one per pull request" : undefined, e.provider, e.region].filter(Boolean).join(" · ")} live={live} gate={!last} onPick={() => onSelect(e.id)} reorder={lanes.item(i)}>
               {last && edge.length > 0 && (
                 <div className="arch-edge">{edge.map((p, k) => <span key={p.id} className="arch-edge-hop"><span className="arch-pill link">{p.name}</span>{k < edge.length - 1 && <span>→</span>}</span>)}</div>
               )}

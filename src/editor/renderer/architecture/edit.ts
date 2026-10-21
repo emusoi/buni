@@ -2,7 +2,7 @@
 // "+ Add" makes where you are, and what a delete takes with it. Pure, so the forms and the tests read the same table.
 import {
   ARCH_STATUSES, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY, STRATEGIES, WORKLOAD_KINDS,
-  archCollectionOf, workloadName, type ArchCollection, type Architecture, type Id, type Part, type Workload,
+  archCollectionOf, workloadName, type ArchCollection, type Architecture, type Id, type MapLevel, type MapPoint, type Part, type Workload,
 } from "buni/format/doc.ts";
 import type { EditTool } from "../../api.ts";
 import { archCascade } from "buni/tools/areas/architecture.ts";
@@ -315,4 +315,54 @@ export function linkTargets(arch: Architecture, from: Id, query: string): Part[]
   return Object.values(arch.parts)
     .filter((p) => p.id !== from && (!q || [p.name, p.id, p.kind].some((s) => s.toLowerCase().includes(q))))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---- Dropping and reordering ----
+
+/**
+ * What dropping a card (by its key: a part, a workload) on a frame does on a map level: a part into a group joins it,
+ * a workload into another namespace of its cluster moves there, each kept where it was let go (`at`). Why not, for
+ * a frame it can't go in; undefined for one it is already in or that isn't a home (a cluster's own frame).
+ */
+export function dropOn(arch: Architecture, level: MapLevel, key: string, frame: Id | undefined, at: MapPoint): Call | { error: string } | undefined {
+  const part = arch.parts[key];
+  const w = arch.workloads[key];
+  if (frame === undefined) return undefined;
+  if (level === "system" && part && arch.groups[frame]) {
+    if (part.kind === "edge") return { error: "Edge parts sit in front of the groups, not in one" };
+    if (part.group === frame) return undefined;
+    return { tool: "set_part", args: { id: part.id, group: frame, place: { ...part.place, system: at } } };
+  }
+  const ns = arch.namespaces[frame];
+  if (level !== "runtime" || !ns) return undefined;
+  if (part) return { error: part.managed !== undefined ? `${part.name} is managed (${part.managed}): it runs outside the cluster` : `${part.name} runs outside the cluster` };
+  if (!w || w.namespace === ns.id) return undefined;
+  const from = arch.namespaces[w.namespace];
+  if (from && from.cluster !== ns.cluster) return { error: `${ns.name} is in another cluster` };
+  const name = workloadName(arch, w);
+  if (Object.values(arch.workloads).some((x) => x.id !== w.id && x.namespace === ns.id && x.environment === w.environment && workloadName(arch, x) === name)) {
+    return { error: `${ns.name} already runs a ${name}` };
+  }
+  return { tool: "set_workload", args: { id: w.id, namespace: ns.id, place: { ...w.place, runtime: at } } };
+}
+
+/** Where something let go at `pos` lands among its siblings' middles (in order): the index it goes before. */
+export const insertionAt = (mids: readonly number[], pos: number): number => mids.filter((m) => m < pos).length;
+
+/** `list` with the item at `from` put before what was at `to` (the length puts it last). */
+export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  const out = [...list];
+  const [item] = out.splice(from, 1);
+  if (item === undefined) return out;
+  out.splice(to > from ? to - 1 : to, 0, item);
+  return out;
+}
+
+/** The order that puts item `from` before what was at `to` in `items` (sorted by order): halfway between its new neighbours. */
+export function orderAt(items: readonly { order: number }[], from: number, to: number): number | undefined {
+  if (to === from || to === from + 1 || !items[from]) return undefined;
+  const rest = items.filter((_, i) => i !== from);
+  const j = to > from ? to - 1 : to;
+  const [prev, next] = [rest[j - 1], rest[j]];
+  return prev && next ? (prev.order + next.order) / 2 : prev ? prev.order + 1 : next ? next.order - 1 : 0;
 }

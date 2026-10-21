@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { ARCH_COLLECTIONS, type ArchCollection, type Architecture, type Cluster, type Id, type NodePool, type Play, type PlayStep, type Workload } from "buni/format/doc.ts";
-import { FORMS, PLANNABLE, TOOL, changeFor, labelOf, planChange, poolOptions, readInput, refOptions, valueOf, type Call, type Field, type FieldValue } from "./edit.ts";
+import { FORMS, PLANNABLE, TOOL, changeFor, labelOf, moveItem, planChange, poolOptions, readInput, refOptions, valueOf, type Call, type Field, type FieldValue } from "./edit.ts";
+import { useReorder } from "./useReorder.ts";
 
 /** Runs a call; resolves to the refusal, or undefined when it went in. */
 export async function send(call: Call): Promise<string | undefined> {
@@ -266,15 +267,17 @@ function Steps({ arch, play }: { arch: Architecture; play: Play }) {
     else delete s[key];
     return save(play.steps.map((x, k) => (k === i ? s : x)));
   };
+  const steps = useReorder("y", play.steps.length, (from, to) => void save(moveItem(play.steps, from, to)));
   const touchable = ARCH_COLLECTIONS.filter((x) => x !== "plays" && x !== "plans" && x !== "stages")
     .flatMap((x) => Object.keys(arch[x]).map((id): [string, string] => [id, labelOf(arch, id)]));
   return (
     <section className="arch-section">
       <span className="arch-section-title">Steps</span>
+      <div className="arch-step-forms" ref={steps.container}>
       {play.steps.map((s, i) => (
-        <div key={i} className="arch-sub-form">
+        <div key={i} className={`arch-sub-form${steps.item(i).mark}`} data-reorder="">
           <div className="arch-sub-head">
-            <span className="arch-step-n small">{i + 1}</span>
+            <button type="button" className="arch-step-n small grip" aria-label={`Step ${i + 1}: drag, or Alt+arrow, to move it`} title="Drag to move the step" {...steps.item(i).handle}>{i + 1}</button>
             <Draft label={`Step ${i + 1} name`} className="strong" value={s.name} onCommit={(raw) => (raw.trim() ? set(i, { name: raw.trim() }) : Promise.resolve("a step needs a name"))} />
             <button type="button" className="arch-icon-btn" aria-label={`Remove step ${i + 1}`} disabled={play.steps.length === 1} onClick={() => void save(play.steps.filter((_, k) => k !== i))}><X size={12} /></button>
           </div>
@@ -283,6 +286,7 @@ function Steps({ arch, play }: { arch: Architecture; play: Play }) {
           <Draft label={`Step ${i + 1} check`} placeholder="check it must pass" value={s.check ?? ""} onCommit={(raw) => drop(i, "check", raw)} />
         </div>
       ))}
+      </div>
       {error && <span className="arch-field-error" role="alert">{error}</span>}
       <button type="button" className="arch-text-btn" onClick={() => void save([...play.steps, { name: `Step ${play.steps.length + 1}`, touches: [] }])}>+ Add step</button>
     </section>

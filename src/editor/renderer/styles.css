@@ -1953,3 +1953,15 @@ button.arch-frame-title, button.arch-link-label { border: 0; margin: 0; font-fam
 .arch-plane { user-select: none; -webkit-user-select: none; }
 .arch-card.moving { cursor: grabbing; z-index: 2; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45); border-color: rgba(138, 174, 255, 0.9); }
 .arch-guide { stroke: #f472b6; stroke-width: 1; stroke-dasharray: 3 3; }
+/* Where a dragged card can go: the frame lights; where it can't, it says why beside the pointer. */
+.arch-frame.drop-ok { border: 1px solid rgba(110, 200, 150, 0.85); background: rgba(110, 200, 150, 0.05); }
+.arch-frame.drop-no { border: 1px dashed rgba(255, 138, 128, 0.8); background: rgba(255, 138, 128, 0.04); }
+.arch-drop-why { position: absolute; z-index: 3; padding: 4px 8px; border-radius: 6px; background: #1c1c20; border: 1px solid rgba(255, 138, 128, 0.6); color: #ededef; font-size: 12px; white-space: nowrap; pointer-events: none; }
+/* Reordering lanes and steps: the one moving fades, a bar shows where it lands. */
+.grip { cursor: grab; touch-action: none; }
+.arch-lane.dragging, .arch-sub-form.dragging { opacity: 0.45; }
+.arch-lane.drop-before { box-shadow: -8px 0 0 -6px var(--arch-blue); }
+.arch-lane.drop-after { box-shadow: 8px 0 0 -6px var(--arch-blue); }
+.arch-sub-form.drop-before { box-shadow: 0 -6px 0 -4px var(--arch-blue); }
+.arch-sub-form.drop-after { box-shadow: 0 6px 0 -4px var(--arch-blue); }
+button.arch-step-n { padding: 0; background: none; font-family: inherit; }

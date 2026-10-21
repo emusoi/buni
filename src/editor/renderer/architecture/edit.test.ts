@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ARCH_COLLECTIONS, architectureOf, emptyDoc, type Architecture } from "buni/format/doc.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { Workspace } from "buni/tools/workspace.ts";
-import { ADDABLE, FORMS, addFor, cascadeOf, cascadeText, changeFor, planChange, linkTargets, readInput, valueOf, type Call, type Field } from "./edit.ts";
+import { ADDABLE, FORMS, addFor, dropOn, insertionAt, moveItem, orderAt, cascadeOf, cascadeText, changeFor, planChange, linkTargets, readInput, valueOf, type Call, type Field } from "./edit.ts";
 
 const parcelPath = new URL(import.meta.resolve("buni/examples/parcel.buni")).pathname;
 const withParcel = async () => {
@@ -143,4 +143,42 @@ test("Link to… offers the other parts, matched by name, id or kind", async () 
   expect(all.length).toBe(Object.keys(a.parts).length - 1);
   expect(linkTargets(a, "returns-api", "STORE").every((p) => p.kind === "store" || /store/i.test(p.name + p.id))).toBe(true);
   expect(linkTargets(a, "returns-api", "no such thing")).toEqual([]);
+});
+
+test("a card dropped on a frame: into a group, into another namespace of its cluster, or why not; the tools take each", async () => {
+  const ws = await withParcel();
+  const a = architectureOf(ws.view());
+  const at = { x: 300, y: 200 };
+  const w = a.workloads["returns-api-prod"]!;
+  const other = Object.values(a.namespaces).find((n) => n.cluster === a.namespaces[w.namespace]!.cluster && n.id !== w.namespace && !Object.values(a.workloads).some((x) => x.namespace === n.id && x.environment === "prod" && x.part === w.part))!;
+  expect(dropOn(a, "runtime", w.id, w.namespace, at)).toBeUndefined();
+  const into = dropOn(a, "runtime", w.id, other.id, at);
+  expect(into).toEqual({ tool: "set_workload", args: { id: w.id, namespace: other.id, place: { runtime: at } } });
+  expect((await run(ws, into)).ok).toBe(true);
+  expect(architectureOf(ws.view()).workloads[w.id]).toMatchObject({ namespace: other.id, place: { runtime: at } });
+  const db = Object.values(a.parts).find((p) => p.managed)!;
+  expect(dropOn(a, "runtime", db.id, other.id, at)).toEqual({ error: `${db.name} is managed (${db.managed}): it runs outside the cluster` });
+  // A part into a group; an edge part has none; a cluster's own frame is no home.
+  const g = Object.keys(a.groups)[0]!;
+  const loose = Object.values(a.parts).find((p) => p.group === undefined && p.kind !== "edge")!;
+  const join_ = dropOn(a, "system", loose.id, g, at);
+  expect(join_).toMatchObject({ tool: "set_part", args: { id: loose.id, group: g, place: { system: at } } });
+  expect((await run(ws, join_)).ok).toBe(true);
+  expect(dropOn(a, "system", Object.values(a.parts).find((p) => p.kind === "edge")!.id, g, at)).toEqual({ error: "Edge parts sit in front of the groups, not in one" });
+  expect(dropOn(a, "runtime", w.id, Object.keys(a.clusters)[0], at)).toBeUndefined();
+});
+
+test("reordering: where a drop lands, the list after it, and the one order number that says so", () => {
+  expect(insertionAt([10, 30, 50], 5)).toBe(0);
+  expect(insertionAt([10, 30, 50], 35)).toBe(2);
+  expect(insertionAt([10, 30, 50], 99)).toBe(3);
+  expect(moveItem(["a", "b", "c", "d"], 0, 3)).toEqual(["b", "c", "a", "d"]);
+  expect(moveItem(["a", "b", "c", "d"], 3, 1)).toEqual(["a", "d", "b", "c"]);
+  expect(moveItem(["a", "b", "c"], 1, 3)).toEqual(["a", "c", "b"]);
+  const items = [{ order: 1 }, { order: 2 }, { order: 3 }];
+  expect(orderAt(items, 0, 2)).toBe(2.5);
+  expect(orderAt(items, 2, 0)).toBe(0);
+  expect(orderAt(items, 0, 3)).toBe(4);
+  expect(orderAt(items, 1, 1)).toBeUndefined();
+  expect(orderAt(items, 1, 2)).toBeUndefined();
 });

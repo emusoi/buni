@@ -3,7 +3,7 @@ import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, 
 import { Maximize, Minus, Plus } from "lucide-react";
 import type { Id } from "buni/format/doc.ts";
 import type { Card } from "./model.ts";
-import { moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
+import { moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapFrame, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
 
 /** How a flow shows the map: what is lit now, what stays shown, and whether the rest dims. */
 export interface Look {
@@ -80,15 +80,17 @@ export interface MapCanvasProps {
   onLink?: (from: MapBox, to: MapBox, at: { x: number; y: number }) => void;
   /** Dragging a card moves it: which can be, and where they were put (top-left, by key) once dropped. */
   movable?: (box: MapBox) => boolean;
-  /** Resolves false when the move was refused: the cards go back. */
-  onMove?: (to: ReadonlyMap<string, Point>) => Promise<boolean>;
+  /** Resolves false when the move was refused: the cards go back. `onto`: the frame let go over, when it is a drop target. */
+  onMove?: (to: ReadonlyMap<string, Point>, onto: MapFrame | undefined) => Promise<boolean>;
+  /** Whether a card can go into a frame (lit while dragged over), why not (said beside the pointer), or neither. */
+  dropRule?: (box: MapBox, frame: MapFrame) => { why?: string } | undefined;
 }
 
-export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink, movable, onMove }: MapCanvasProps) {
+export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink, movable, onMove, dropRule }: MapCanvasProps) {
   const host = useRef<HTMLDivElement>(null);
   // Cards being dragged, drawn where they are going with the links routed round them; once dropped, held there until
   // the file says so (or the move is refused), so nothing jumps back in between.
-  const [moving, setMoving] = useState<{ to: ReadonlyMap<string, Point>; guides: Guide[]; done?: boolean }>();
+  const [moving, setMoving] = useState<{ to: ReadonlyMap<string, Point>; guides: Guide[]; done?: boolean; over?: { frame: MapFrame; why?: string | undefined; at: Point } }>();
   useEffect(() => setMoving((m) => (m?.done ? undefined : m)), [given]);
   const layout = useMemo(() => (moving ? moved(given, moving.to) : given), [given, moving]);
   const justMoved = useRef(false);
@@ -175,13 +177,18 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, bad
     // Its Ingress and Service go along with a workload; the rest are what it lines up with.
     const others = given.boxes.filter((x) => x !== b && !x.key.startsWith(`${b.key}#`));
     let to: Map<string, Point> | undefined;
+    let over: { frame: MapFrame; why?: string | undefined } | undefined;
     const move = (m: PointerEvent) => {
       const [px, py] = toPlane(m.clientX, m.clientY);
       const [dx, dy] = [px - start[0], py - start[1]];
       if (!to && Math.abs(dx) + Math.abs(dy) < 4 / view.k) return;
       const snap = snapMove({ ...b, x: b.x + dx, y: b.y + dy }, others);
       to = new Map([[b.key, [snap.x, snap.y]]]);
-      setMoving({ to, guides: snap.guides });
+      // The innermost frame under the pointer that has something to say about this card.
+      const under = given.frames.filter((f) => px >= f.x && px <= f.x + f.w && py >= f.y && py <= f.y + f.h).sort((p, q) => p.w * p.h - q.w * q.h);
+      const target = under.flatMap((f) => { const rule = dropRule?.(b, f); return rule ? [{ frame: f, why: rule.why, at: [px, py] as Point }] : []; })[0];
+      over = target;
+      setMoving({ to, guides: snap.guides, ...(target ? { over: target } : {}) });
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
@@ -190,7 +197,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, bad
       justMoved.current = true;
       setMoving({ to, guides: [], done: true });
       const mine = to;
-      void onMove(to).then((ok) => { if (!ok) setMoving((m) => (m?.to === mine ? undefined : m)); });
+      void onMove(to, over?.frame).then((ok) => { if (!ok) setMoving((m) => (m?.to === mine ? undefined : m)); });
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -266,7 +273,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, bad
             const id = onSelect ? f.ids[0] : undefined;
             const title = <>{f.title.lead}<b>{f.title.bold}</b>{f.title.rest}{f.title.link && <span className="arch-link-text">{f.title.link}</span>}</>;
             return (
-              <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}${f.ids[0] !== undefined && f.ids[0] === selected ? " selected" : ""}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
+              <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}${f.ids[0] !== undefined && f.ids[0] === selected ? " selected" : ""}${moving?.over?.frame.key === f.key && !moving.done ? (moving.over.why ? " drop-no" : " drop-ok") : ""}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
                 {id !== undefined
                   ? <button type="button" className="arch-frame-title pickable" onClick={() => onSelect?.(id)}>{title}</button>
                   : <span className="arch-frame-title">{title}</span>}
@@ -315,6 +322,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, bad
               : <span key={l.key} className={`arch-link-label ${s} tone-${l.tone}`} style={{ left: l.at![0], top: l.at![1] }}>{l.label}</span>
           );
         })}
+        {moving?.over?.why && !moving.done && <span className="arch-drop-why" role="status" style={{ left: moving.over.at[0] + 14, top: moving.over.at[1] + 14 }}>{moving.over.why}</span>}
         {bubble && (() => {
           const b = layout.boxes.find((x) => x.key === bubble.key);
           return b && <code className="arch-bubble" style={{ left: b.x + b.w / 2, top: b.y - 46 }}>{bubble.text}</code>;
