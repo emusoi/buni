@@ -6,21 +6,24 @@ import { architectureBrief } from "buni/tools/areas/architecture.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level } from "./layout.ts";
 import { MapCanvas } from "./MapCanvas.tsx";
-import { ArchInspector, selectionOf } from "./Inspector.tsx";
+import { ArchInspector, plansAbout, selectionOf } from "./Inspector.tsx";
+import { DeployPath, SoftwarePath } from "./Paths.tsx";
+import { Kubernetes } from "./Kubernetes.tsx";
+import { Proposals } from "./Proposals.tsx";
 import { CANARY_HEIGHT, Flows, levelFor } from "./Flows.tsx";
 
-export const ARCH_VIEWS = [["map", "Map"], ["flows", "Flows"]] as const;
+export const ARCH_VIEWS = [["map", "Map"], ["flows", "Flows"], ["software", "Software path"], ["deploy", "Deploy path"], ["kubernetes", "Kubernetes"], ["proposals", "Proposals"]] as const;
 export type ArchView = (typeof ARCH_VIEWS)[number][0];
 const LEVELS: [Level, string][] = [["system", "System"], ["runtime", "Runtime"], ["code", "Code"]];
 
 /** Where a link opens architecture mode: ?arch=map&level=runtime&env=prod&select=returns-api, ?arch=flows&play=…&step=5. */
-export function archParams(search: string): { view: ArchView; level?: Level; env?: Id; select?: Id; play?: Id; step?: number } | undefined {
+export function archParams(search: string): { view: ArchView; level?: Level; env?: Id; select?: Id; play?: Id; step?: number; plan?: Id } | undefined {
   const q = new URLSearchParams(search);
   const view = ARCH_VIEWS.find(([v]) => v === q.get("arch"))?.[0];
   if (!view) return undefined;
   const level = LEVELS.find(([l]) => l === q.get("level"))?.[0];
   return { view, ...(level ? { level } : {}), ...(q.get("env") ? { env: q.get("env")! } : {}), ...(q.get("select") ? { select: q.get("select")! } : {}),
-    ...(q.get("play") ? { play: q.get("play")! } : {}), ...(Number(q.get("step")) > 0 ? { step: Number(q.get("step")) - 1 } : {}) };
+    ...(q.get("play") ? { play: q.get("play")! } : {}), ...(q.get("plan") ? { plan: q.get("plan")! } : {}), ...(Number(q.get("step")) > 0 ? { step: Number(q.get("step")) - 1 } : {}) };
 }
 
 export function Segmented<T extends string>({ options, value, onChange, label }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; label: string }) {
@@ -39,6 +42,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const [view, setView] = useState<ArchView>(start?.view ?? "map");
   const [playId, setPlayId] = useState<Id | undefined>(start?.play);
   const [step, setStep] = useState(start?.step ?? 0);
+  const [planId, setPlanId] = useState<Id | undefined>(start?.plan);
   const startPlay = playId ? arch.plays[playId] : Object.values(arch.plays).sort((a, b) => a.name.localeCompare(b.name))[0];
   const [level, setLevel] = useState<Level>(start?.level ?? (start?.view === "flows" && startPlay ? levelFor(startPlay.kind) : "runtime"));
   const playOn = (id: Id) => {
@@ -88,11 +92,15 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
           ))}
         </nav>
         <span className="grow" />
-        <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />
-        {envs.length > 0 && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
+        {(view === "map" || view === "flows") && <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />}
+        {envs.length > 0 && view !== "proposals" && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
       </div>
       <div className="arch-body">
-        {view === "flows" ? (
+        {view === "software" ? <SoftwarePath arch={arch} env={env} onSee={setView} />
+        : view === "deploy" ? <DeployPath arch={arch} env={env} />
+        : view === "kubernetes" ? <Kubernetes arch={arch} env={env} />
+        : view === "proposals" ? <Proposals arch={arch} plan={planId} onPlan={setPlanId} onToast={onToast} />
+        : view === "flows" ? (
           <Flows arch={arch} layout={layout} level={level} env={env} play={playId} step={step} onPlay={playOn} onStep={setStep}
             onAsk={(text) => void navigator.clipboard.writeText(text).then(() => onToast("Copied the request; paste it to your coding agent."), () => onToast("Couldn't copy the request."))} />
         ) : <>
@@ -134,7 +142,11 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             {(() => {
               // The release that ships the selection, played; and the plan that changes it.
               const rel = part && Object.values(arch.plays).find((p) => p.kind === "release" && p.release && arch.releases[p.release]?.parts.includes(part.id));
-              return rel && <button type="button" className="arch-btn primary" onClick={() => { playOn(rel.id); setView("flows"); }}>Play the release</button>;
+              const plan = part && plansAbout(arch, part.id)[0];
+              return <>
+                {rel && <button type="button" className="arch-btn primary" onClick={() => { playOn(rel.id); setView("flows"); }}>Play the release</button>}
+                {plan && <button type="button" className="arch-btn" onClick={() => { setPlanId(plan.id); setView("proposals"); }}>Open the plan</button>}
+              </>;
             })()}
             <button type="button" className={`arch-btn${part ? "" : " primary"}`} onClick={copyBrief} title="The architecture as text, focused on what's selected">Copy brief for Claude</button>
           </>}

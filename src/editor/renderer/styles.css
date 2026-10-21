@@ -1779,6 +1779,60 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   .arch-timeline > .arch-btn { display: none; }
 }
 
+/* Lanes: the software path, the deploy path, Kubernetes; each a column of cards with its gate at the foot. */
+.arch-page { flex: 1; min-width: 0; overflow: auto; display: flex; flex-direction: column; gap: 16px; padding: 18px 24px; }
+.arch-lanes { display: flex; gap: 12px; align-items: stretch; min-width: min-content; }
+.arch-lanes.gated { gap: 28px; }
+.arch-lane { position: relative; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; border: 1px solid var(--arch-line); background: rgba(255, 255, 255, 0.015); }
+.arch-lane.current { border-color: rgba(110, 200, 150, 0.35); }
+.arch-lanes:not(.gated) .arch-lane:last-child.current { border-color: rgba(138, 174, 255, 0.4); }
+.arch-lane-head { display: flex; flex-direction: column; gap: 2px; }
+.arch-lane-head b { font-size: 14px; }
+.arch-lane > .arch-sub { font-size: 12px; }
+.arch-item { display: flex; flex-direction: column; gap: 3px; padding: 9px 10px; border-radius: 8px; background: var(--arch-card); border: 1px solid var(--arch-line); font-size: 12px; line-height: 1.45; color: #a1a1aa; }
+.arch-item b { font-size: 13px; color: #ededef; }
+.arch-group { display: flex; flex-direction: column; gap: 8px; }
+.arch-group.planned > .arch-item:first-child { border: 1px dashed rgba(196, 167, 255, 0.55); background: rgba(196, 167, 255, 0.05); }
+.arch-group.planned > .arch-item:first-child b { color: var(--arch-purple); }
+.arch-group.deploy > .arch-item:first-child { border: 1px dashed rgba(232, 196, 106, 0.55); }
+.arch-green { color: var(--arch-green); }
+.arch-bullet { display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.3; }
+.arch-bullet i { flex: none; width: 6px; height: 6px; border-radius: 9999px; background: var(--arch-green); transform: translateY(-1px); }
+.arch-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.arch-pills.column { flex-direction: column; }
+.arch-pill { font-size: 12px; color: #a1a1aa; padding: 1px 7px; border-radius: 9999px; border: 1px solid var(--arch-line); background: none; white-space: nowrap; }
+.arch-pill.link { color: var(--arch-blue); }
+button.arch-pill:hover { border-color: rgba(138, 174, 255, 0.5); }
+.arch-gate { margin-top: auto; font-size: 12px; line-height: 1.4; color: var(--arch-gold); padding: 8px 10px; border-radius: 8px; background: rgba(232, 196, 106, 0.08); }
+.arch-gate-mark { position: absolute; right: -29px; top: 46px; z-index: 2; width: 28px; height: 28px; border-radius: 9999px; background: #111113; border: 1px solid #e2b863; display: grid; place-items: center; color: #e2b863; font-size: 13px; }
+.arch-loops { font-size: 12px; color: var(--arch-green); }
+.arch-loop { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px dashed rgba(138, 174, 255, 0.4); font-size: 12px; color: var(--arch-blue); }
+.arch-edge { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-radius: 8px; border: 1px dashed rgba(138, 174, 255, 0.4); font-size: 12px; color: #a1a1aa; }
+.arch-edge-hop { display: flex; align-items: center; gap: 6px; }
+.arch-notes { display: flex; gap: 12px; }
+.arch-note { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 10px; background: var(--arch-card); border: 1px solid var(--arch-line); font-size: 12px; line-height: 1.45; color: #a1a1aa; }
+.arch-note b { font-size: 13px; color: #ededef; }
+/* Proposals: the plan's diff on the map, its changes beside it, Merge or Discard. */
+.arch-proposals { flex: 1; min-width: 0; display: flex; }
+.arch-proposal-main { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.arch-banner { flex: none; margin: 14px 20px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 9px 14px; border-radius: 8px; background: rgba(110, 200, 150, 0.09); border: 1px solid rgba(110, 200, 150, 0.3); font-size: 13px; }
+.arch-banner i { width: 7px; height: 7px; border-radius: 9999px; background: var(--arch-green); }
+.arch-banner .grow { flex: 1; }
+.arch-select { height: 26px; border-radius: 6px; border: 1px solid var(--arch-line); background: #18181b; color: #ededef; font: inherit; font-size: 12px; }
+.arch-changes-title { font-size: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--arch-line); }
+.arch-change { display: grid; grid-template-columns: 68px 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--arch-line); font-size: 13px; line-height: 1.4; }
+.arch-change .added { font-size: 12px; font-weight: 600; color: var(--arch-green); }
+.arch-change .removed { font-size: 12px; font-weight: 600; color: var(--arch-red); }
+.arch-actions.wide .arch-btn { flex: 1; height: 38px; font-size: 13px; font-weight: 600; }
+.arch-btn:disabled { opacity: 0.5; }
+@media (max-width: 900px) {
+  .arch-page { padding: 12px; }
+  .arch-notes { flex-direction: column; }
+  .arch-proposals { flex-direction: column; }
+  .arch-proposal-main { flex: 1; min-height: 50%; }
+  .arch-proposals .arch-inspector { display: flex; position: static; width: auto; max-height: 45%; border-left: 0; border-top: 1px solid var(--arch-line); box-shadow: none; }
+}
+
 .arch-empty { display: grid; place-items: center; padding: 24px; }
 .arch-empty > div { max-width: 520px; font-size: 13px; line-height: 1.55; color: #a1a1aa; }
 .arch-empty b { display: block; margin-bottom: 8px; font-size: 16px; color: #ededef; }

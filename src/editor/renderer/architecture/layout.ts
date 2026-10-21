@@ -1,6 +1,6 @@
 // Where everything sits on the architecture map, at each level: deterministic positions and orthogonal routes, pure
 // so the same architecture always draws the same picture (and tests can say so).
-import type { Architecture, ArchLink, Environment, Id, Part, Workload } from "buni/format/doc.ts";
+import type { Architecture, ArchLink, ArchStatus, Environment, Id, Part, Workload } from "buni/format/doc.ts";
 import { workloadName } from "buni/format/doc.ts";
 import { cardHeight, edgeCard, partCard, serviceCard, toneOf, workloadCard, workloadsOf, type Card, type Tone } from "./model.ts";
 
@@ -266,7 +266,10 @@ function spreadRow(items: { key: string; want: number; w: number }[], gap: numbe
   return out;
 }
 
-export function systemLayout(arch: Architecture, card: (p: Part) => Card = partCard): MapLayout {
+/** With `plan`, what that plan adds is drawn as added (green) and what it removes as removed (red): its diff. */
+export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
+  const diff = (x: { plan?: Id; status?: ArchStatus }): Tone => (plan !== undefined && x.plan === plan ? (x.status === "removed" ? "removed" : "added") : toneOf(x.status));
+  const card = (p: Part): Card => ({ ...partCard(p), tone: diff(p) });
   const parts = Object.values(arch.parts).sort(byKind);
   const links = Object.values(arch.links);
   const grouped = parts.filter((p) => p.group !== undefined && arch.groups[p.group] && p.kind !== "edge");
@@ -312,7 +315,7 @@ export function systemLayout(arch: Architecture, card: (p: Part) => Card = partC
   const outsideIds = new Set(outside.map((p) => p.id));
   const mapLinks = links.filter((l) => shown.has(l.from) && shown.has(l.to)).map((l): MapLink => {
     const [from, to] = l.kind === "subscribes" ? [l.to, l.from] : [l.from, l.to];
-    return { key: l.id, ids: [l.id], from, to, label: linkLabel(l), tone: toneOf(l.status), ...(outsideIds.has(from) !== outsideIds.has(to) ? { down: true } : {}) };
+    return { key: l.id, ids: [l.id], from, to, label: linkLabel(l), tone: diff(l), ...(outsideIds.has(from) !== outsideIds.has(to) ? { down: true } : {}) };
   });
   return finish(boxes, frames, captions, mapLinks);
 }
@@ -331,7 +334,7 @@ function primaryKey(arch: Architecture, part: Id, env: Id | undefined, keys: Rea
 }
 
 /** The edge in the order requests pass through it: DNS first, the load balancer last. */
-function edgeChain(arch: Architecture): Part[] {
+export function edgeChain(arch: Architecture): Part[] {
   const edge = Object.values(arch.parts).filter((p) => p.kind === "edge").sort(byKind);
   const ids = new Set(edge.map((p) => p.id));
   const links = Object.values(arch.links).filter((l) => ids.has(l.from) && ids.has(l.to));

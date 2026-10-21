@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
 import { codeLayout, columnsOf, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { planChanges } from "./Proposals.tsx";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
 const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/parcel.buni")), "utf8"));
@@ -104,4 +105,15 @@ test("a request lights its whole path, numbered where each hop lands; a release 
   // On the System map a touched workload lights its part.
   expect(flowLook(arch, arch.plays["release-v42"]!, 4, true).lit.has("returns-api")).toBe(true);
   expect(payloadOf("publishes RefundJob { returnId, amount, reason }")).toBe("RefundJob { returnId, amount, reason }");
+});
+
+test("a proposal draws its plan's additions as added, and lists them", () => {
+  const sys = systemLayout(arch, "store-credit");
+  expect(box(sys, "credit-ledger")!.card.tone).toBe("added");
+  expect(sys.links.find((l) => l.key === "credit-ledger-writes-main-database")?.tone).toBe("added");
+  expect(box(sys, "returns-api")!.card.tone).toBe("live");
+  const changes = planChanges(arch, "store-credit");
+  expect(changes.length).toBeGreaterThan(0);
+  expect(changes.every((c) => c.added)).toBe(true);
+  expect(changes.some((c) => c.text.startsWith("Credit ledger, a new"))).toBe(true);
 });
