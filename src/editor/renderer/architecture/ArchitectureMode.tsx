@@ -342,10 +342,18 @@ export function partOfBox(arch: Architecture, b: MapBox): Id | undefined {
   return undefined;
 }
 
+/** Puts focus back where it was (the card) when a picker closes, so Escape doesn't drop it on the page. */
+function useFocusReturn(): void {
+  // Read at first render: autoFocus has already moved focus by the time an effect runs.
+  const [back] = useState(() => document.activeElement);
+  useEffect(() => () => { if (back instanceof HTMLElement && back.isConnected) back.focus(); }, [back]);
+}
+
 /** After a drop: how the two parts talk, calls first; Escape or a press elsewhere draws nothing. */
 function LinkKind({ at, from, to, onPick, onCancel }: { at: { x: number; y: number }; from: string; to: string; onPick: (k: (typeof LINK_KINDS)[number]) => void; onCancel: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(true, onCancel, ref);
+  useFocusReturn();
   useEffect(() => { ref.current?.querySelector("button")?.focus(); }, []);
   return (
     <div ref={ref} className="arch-menu arch-link-kind" role="menu" aria-label={`How ${from} talks to ${to}`} style={{ left: at.x, top: at.y }}
@@ -366,6 +374,7 @@ function LinkKind({ at, from, to, onPick, onCancel }: { at: { x: number; y: numb
 function LinkTo({ arch, from, at, onPick, onCancel }: { arch: Architecture; from: Id; at: { x: number; y: number }; onPick: (to: Id) => void; onCancel: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(true, onCancel, ref);
+  useFocusReturn();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const parts = linkTargets(arch, from, query);
