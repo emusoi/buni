@@ -1941,3 +1941,7 @@ button.arch-pill:hover { border-color: rgba(138, 174, 255, 0.5); }
 .arch-link-to-list button.on { background: #27272a; }
 .arch-link-to-list > .arch-sub { padding: 6px 10px; }
 
+/* Frame titles and link labels are buttons on a map you can pick from: Tab reaches them, the ring shows where. */
+button.arch-frame-title, button.arch-link-label { border: 0; margin: 0; font-family: inherit; text-align: left; }
+.arch-frame-title:focus-visible, .arch-link-label:focus-visible, .arch-zoom button:focus-visible { outline: 2px solid var(--arch-blue); outline-offset: 2px; color: #ededef; }
+

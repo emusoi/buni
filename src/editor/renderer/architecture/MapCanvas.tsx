@@ -1,9 +1,9 @@
 // The architecture map: cards absolutely placed from the layout, one SVG of links under them, panned and zoomed.
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Maximize, Minus, Plus } from "lucide-react";
 import type { Id } from "buni/format/doc.ts";
 import type { Card } from "./model.ts";
-import type { MapBox, MapLayout, Point, RoutedLink } from "./layout.ts";
+import { nearestBox, revealBy, tabOrder, type Direction, type MapBox, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
 
 /** How a flow shows the map: what is lit now, what stays shown, and whether the rest dims. */
 export interface Look {
@@ -56,6 +56,8 @@ function arrow(pts: readonly Point[]): string {
 }
 
 const strokeOf = (l: RoutedLink, s: State) => (s === "lit" ? (l.tone === "deploy" ? "#e8c46a" : STROKE.lit) : STROKE[l.tone === "live" ? "live" : l.tone]);
+
+const ARROWS: Partial<Record<string, Direction>> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
 
 export interface MapCanvasProps {
   layout: MapLayout;
@@ -117,6 +119,16 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
     const k = Math.min(2.5, Math.max(0.3, v.k * f));
     return { k, x: px - ((px - v.x) * k) / v.k, y: py - ((py - v.y) * k) / v.k };
   });
+  // Pans so `el` (a card, a title, a label) shows; what focus would scroll the clipped canvas to, the view does instead.
+  const reveal = (el: Element) => {
+    const host_ = host.current;
+    if (!host_) return;
+    host_.scrollLeft = host_.scrollTop = 0;
+    const [h, r] = [host_.getBoundingClientRect(), el.getBoundingClientRect()];
+    const [dx, dy] = [revealBy(r.left - h.left, r.width, h.width), revealBy(r.top - h.top, r.height, h.height)];
+    if (dx || dy) setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+  };
+  const order = useMemo(() => tabOrder(layout), [layout]);
   const linkState = (l: RoutedLink): State => (l.ids[0] !== undefined && l.ids[0] === selected ? "lit" : stateOf(look, l.ids, l.context));
   // A link being drawn: from a card's handle to the pointer, in the plane's coordinates.
   const [drawing, setDrawing] = useState<{ from: MapBox; x: number; y: number }>();
@@ -145,6 +157,7 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
     <div
       ref={host}
       className="arch-canvas"
+      onFocus={(e) => { if (e.target !== host.current && !e.target.closest(".arch-zoom")) reveal(e.target); }}
       onPointerDown={(e) => {
         if ((e.target as Element).closest(".arch-card, .arch-zoom, .arch-hit, .arch-frame-title, .arch-link-label")) return;
         drag.current = { x: e.clientX, y: e.clientY, moved: false };
@@ -183,15 +196,22 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
             <path className="arch-drawing" d={`M${drawing.from.x + drawing.from.w} ${drawing.from.y + drawing.from.h / 2} L${drawing.x} ${drawing.y}`} />
           )}
         </svg>
-        {layout.frames.map((f) => (
-          <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}${f.ids[0] !== undefined && f.ids[0] === selected ? " selected" : ""}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
-            <span className={`arch-frame-title${onSelect && f.ids[0] !== undefined ? " pickable" : ""}`} onClick={onSelect && f.ids[0] !== undefined ? () => onSelect(f.ids[0]) : undefined}>
-              {f.title.lead}<b>{f.title.bold}</b>{f.title.rest}{f.title.link && <span className="arch-link-text">{f.title.link}</span>}
-            </span>
-          </div>
-        ))}
         {layout.captions.map((c) => <span key={`${c.text} ${c.x} ${c.y}`} className="arch-caption" style={{ left: c.x, top: c.y }}>{c.text}</span>)}
-        {layout.boxes.map((b) => {
+        {/* Frames and cards in reading order, so Tab goes a frame's title, then its cards, then the next frame. */}
+        {order.map((stop) => {
+          if ("frame" in stop) {
+            const f = stop.frame;
+            const id = onSelect ? f.ids[0] : undefined;
+            const title = <>{f.title.lead}<b>{f.title.bold}</b>{f.title.rest}{f.title.link && <span className="arch-link-text">{f.title.link}</span>}</>;
+            return (
+              <div key={f.key} className={`arch-frame ${stateOf(look, f.ids)}${f.ids[0] !== undefined && f.ids[0] === selected ? " selected" : ""}`} style={{ left: f.x, top: f.y, width: f.w, height: f.h }}>
+                {id !== undefined
+                  ? <button type="button" className="arch-frame-title pickable" onClick={() => onSelect?.(id)}>{title}</button>
+                  : <span className="arch-frame-title">{title}</span>}
+              </div>
+            );
+          }
+          const b = stop.box;
           const s = stateOf(look, b.ids, b.context);
           const own = b.ids[0] ?? b.context?.[0];
           const badge = badges?.get(b.key);
@@ -203,7 +223,16 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
               className={`arch-card tone-${b.card.tone} ${s}${b.ids[0] !== undefined && b.ids[0] === selected ? " selected" : ""}`}
               style={{ left: b.x, top: b.y, width: b.w, minHeight: b.h }}
               onClick={() => onSelect?.(own)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(own); } }}
+              data-key={b.key}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(own); return; }
+                // Arrows move to the nearest card that way.
+                const dir = ARROWS[e.key];
+                const to = dir && nearestBox(layout.boxes, b, dir);
+                if (!to) return;
+                e.preventDefault();
+                host.current?.querySelector<HTMLElement>(`.arch-card[data-key="${CSS.escape(to.key)}"]`)?.focus({ preventScroll: true });
+              }}
             >
               {render?.(b, s) ?? <CardBody card={b.card} />}
               {badge !== undefined && <span className="arch-badge">{badge}</span>}
@@ -214,8 +243,9 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
         {layout.links.filter((l) => l.at && l.label).map((l) => {
           const s = linkState(l);
           return (
-            <span key={l.key} className={`arch-link-label ${s} tone-${l.tone}${onSelect && l.ids[0] !== undefined ? " pickable" : ""}`} style={{ left: l.at![0], top: l.at![1] }}
-              onClick={onSelect && l.ids[0] !== undefined ? () => onSelect(l.ids[0]) : undefined}>{l.label}</span>
+            onSelect && l.ids[0] !== undefined
+              ? <button key={l.key} type="button" className={`arch-link-label ${s} tone-${l.tone} pickable`} style={{ left: l.at![0], top: l.at![1] }} onClick={() => onSelect(l.ids[0])}>{l.label}</button>
+              : <span key={l.key} className={`arch-link-label ${s} tone-${l.tone}`} style={{ left: l.at![0], top: l.at![1] }}>{l.label}</span>
           );
         })}
         {bubble && (() => {

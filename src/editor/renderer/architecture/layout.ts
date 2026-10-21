@@ -516,3 +516,53 @@ export function codeLayout(arch: Architecture, env: Environment | undefined): Ma
 export function layoutFor(arch: Architecture, level: Level, env: Environment | undefined, taller?: ReadonlyMap<Id, number>): MapLayout {
   return level === "system" ? systemLayout(arch) : level === "runtime" ? runtimeLayout(arch, env, taller) : codeLayout(arch, env);
 }
+
+// ---- Keyboard: the order Tab reads the map in, and where an arrow goes from a card. ----
+
+export type MapStop = { frame: MapFrame } | { box: MapBox };
+const inside = (a: Rect, b: Rect) => a !== b && a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+/** The map reads in columns, as its links run: left to right, then down a column (a column's edges within 16px). */
+const reading = (a: Rect, b: Rect) => (Math.abs(a.x - b.x) < 16 ? a.y - b.y : a.x - b.x);
+
+/** Frames and cards in reading order, each frame followed by what is inside it: a title, its cards, the next title. */
+export function tabOrder(layout: Pick<MapLayout, "frames" | "boxes">): MapStop[] {
+  const area = (r: Rect) => r.w * r.h;
+  const parentOf = (r: Rect) => layout.frames.filter((f) => inside(r, f)).sort((a, b) => area(a) - area(b))[0];
+  const stops: { rect: Rect; stop: MapStop; parent: MapFrame | undefined }[] = [
+    ...layout.frames.map((f) => ({ rect: f, stop: { frame: f }, parent: parentOf(f) })),
+    ...layout.boxes.map((b) => ({ rect: b, stop: { box: b }, parent: parentOf(b) })),
+  ];
+  const out: MapStop[] = [];
+  const walk = (parent: MapFrame | undefined) => {
+    for (const s of stops.filter((x) => x.parent === parent).sort((a, b) => reading(a.rect, b.rect))) {
+      out.push(s.stop);
+      if ("frame" in s.stop) walk(s.stop.frame);
+    }
+  };
+  walk(undefined);
+  return out;
+}
+
+export type Direction = "left" | "right" | "up" | "down";
+/** The card an arrow key moves to from `from`: the nearest one that way, a step aside costing twice a step ahead. */
+export function nearestBox(boxes: readonly MapBox[], from: MapBox, dir: Direction): MapBox | undefined {
+  const mid = (r: Rect): Point => [r.x + r.w / 2, r.y + r.h / 2];
+  const [fx, fy] = mid(from);
+  let best: { box: MapBox; cost: number } | undefined;
+  for (const b of boxes) {
+    if (b === from) continue;
+    const [x, y] = mid(b);
+    const [ahead, aside] = dir === "right" ? [x - fx, y - fy] : dir === "left" ? [fx - x, y - fy] : dir === "down" ? [y - fy, x - fx] : [fy - y, x - fx];
+    if (ahead <= 0) continue;
+    const cost = ahead + 2 * Math.abs(aside);
+    if (!best || cost < best.cost) best = { box: b, cost };
+  }
+  return best?.box;
+}
+
+/** How far to pan, on one axis, so a span at `start` (`len` long) shows in a view `size` long with `pad` to spare. */
+export function revealBy(start: number, len: number, size: number, pad = 24): number {
+  if (start < pad || len > size - 2 * pad) return pad - start;
+  if (start + len > size - pad) return size - pad - (start + len);
+  return 0;
+}

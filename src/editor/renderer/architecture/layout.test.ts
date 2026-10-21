@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
-import { codeLayout, columnsOf, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { codeLayout, columnsOf, nearestBox, revealBy, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
 import { planChanges } from "./Proposals.tsx";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
@@ -123,4 +123,40 @@ test("a part just added, in no group and linked to nothing, still shows on the S
   expect(box(systemLayout(fresh), "lone")).toBeDefined();
   // Managed services nothing links to (the registry, the vault) stay off it, as before.
   expect(box(systemLayout(arch), "ecr")).toBeUndefined();
+});
+
+test("Tab reads the map frame by frame: each title, then what is inside it, column by column", () => {
+  const l = runtimeLayout(arch, prod);
+  const order = tabOrder(l);
+  expect(order.length).toBe(l.frames.length + l.boxes.length);
+  const rectOf = (s: (typeof order)[number]) => ("frame" in s ? s.frame : s.box);
+  // Whatever is inside a frame comes after its title and before anything outside it.
+  for (const [i, s] of order.entries()) {
+    if (!("frame" in s)) continue;
+    const f = s.frame;
+    const within = (r: Rect) => r !== f && r.x >= f.x && r.y >= f.y && r.x + r.w <= f.x + f.w && r.y + r.h <= f.y + f.h;
+    const at = order.map((x, k) => (within(rectOf(x)) ? k : -1)).filter((k) => k >= 0);
+    if (!at.length) continue;
+    expect(Math.min(...at)).toBe(i + 1);
+    expect(Math.max(...at)).toBe(i + at.length);
+  }
+});
+
+test("an arrow moves to the nearest card that way, and nowhere past the edge", () => {
+  const a: MapBox = { key: "a", ids: [], x: 0, y: 0, w: 100, h: 50, card: { tone: "live", label: "", name: "a" } };
+  const right = { ...a, key: "r", x: 200 };
+  const farDiag = { ...a, key: "d", x: 150, y: 300 };
+  const below = { ...a, key: "b", y: 120 };
+  const boxes = [a, right, farDiag, below];
+  expect(nearestBox(boxes, a, "right")?.key).toBe("r");
+  expect(nearestBox(boxes, a, "down")?.key).toBe("b");
+  expect(nearestBox(boxes, a, "left")).toBeUndefined();
+  expect(nearestBox(boxes, below, "up")?.key).toBe("a");
+});
+
+test("revealing pans only as far as it takes, and shows the start of what can't fit", () => {
+  expect(revealBy(100, 50, 800)).toBe(0);
+  expect(revealBy(-40, 50, 800)).toBe(64);
+  expect(revealBy(780, 50, 800)).toBe(-54);
+  expect(revealBy(300, 900, 800)).toBe(-276);
 });
