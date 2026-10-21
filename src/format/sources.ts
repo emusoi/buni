@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Doc } from "./doc.ts";
+import type { Architecture, Doc } from "./doc.ts";
 
 /** Links to implementation or capture context; paths are relative to the named repository when possible. */
 export const sourceRef = z.object({
@@ -18,12 +18,21 @@ export type SourceRef = z.infer<typeof sourceRef>;
 export interface SourceOwner { sources?: SourceRef[] }
 
 export const SOURCE_COLLECTIONS = ["nodes", "pages", "shared", "connections", "flows", "journeys", "sections", "rules", "attachments", "comments"] as const;
+/** The architecture's things that are built from code: parts, what they run as, how they ship, and plans. */
+export const ARCH_SOURCE_COLLECTIONS = ["parts", "workloads", "releases", "plans"] as const;
 export type SourceCollection = (typeof SOURCE_COLLECTIONS)[number];
-export type SourceTarget = { [C in SourceCollection]: { collection: C; entity: Doc[C][string] } }[SourceCollection];
+type ArchSourceCollection = (typeof ARCH_SOURCE_COLLECTIONS)[number];
+export type SourceTarget =
+  | { [C in SourceCollection]: { collection: C; entity: Doc[C][string] } }[SourceCollection]
+  | { [C in ArchSourceCollection]: { collection: C; entity: Architecture[C][string] } }[ArchSourceCollection];
 
 export function sourceTarget(doc: Doc, id: string): SourceTarget | undefined {
   for (const collection of SOURCE_COLLECTIONS) {
     const entity = doc[collection][id];
+    if (entity) return { collection, entity } as SourceTarget;
+  }
+  for (const collection of ARCH_SOURCE_COLLECTIONS) {
+    const entity = doc.architecture && Object.hasOwn(doc.architecture[collection], id) ? doc.architecture[collection][id] : undefined;
     if (entity) return { collection, entity } as SourceTarget;
   }
   return undefined;

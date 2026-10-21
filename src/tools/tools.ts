@@ -6,11 +6,12 @@ import { pagesTools } from "./areas/pages.ts";
 import { componentsTools } from "./areas/components.ts";
 import { docTools } from "./areas/doc.ts";
 import { flowsTools } from "./areas/flows.ts";
+import { architectureTools } from "./areas/architecture.ts";
 
 export { ToolError, type Tool, type ToolContext, type ToolOutput } from "./kit.ts";
 
 /** Every design tool, by name, area by area. */
-export const tools = { ...readTools, ...pagesTools, ...componentsTools, ...docTools, ...flowsTools } satisfies Record<string, Tool>;
+export const tools = { ...readTools, ...pagesTools, ...componentsTools, ...docTools, ...flowsTools, ...architectureTools } satisfies Record<string, Tool>;
 
 export type ToolName = keyof typeof tools;
 export const toolNames = Object.keys(tools).filter((k): k is ToolName => k in tools);

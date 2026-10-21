@@ -24,7 +24,7 @@ are the normative definition; this page is the map.
   reads any layout and writes its own on the first save.)
 - The screen collections are always present, even when empty: `tokens`, `pages`, `nodes`, `shared`,
   `connections`, `flows`, `journeys`, `comments`, `rules`, `attachments`. `sections` may be left out, and a
-  missing one reads as empty.
+  missing one reads as empty. `architecture` is there only when the design has one.
 
 ## Collections
 
@@ -56,6 +56,38 @@ buni once also designed the system behind the screens and the agents around them
 `evals`, the design doc's `decisions`, a layer's `bind`, a page's `client` and a connection's `endpoint` are accepted
 and never read, so the next save drops them. The format version stays `1`: no file that opened before fails to open
 now.
+
+## Architecture
+
+`architecture` holds how the app behind the screens is built and shipped: code → build → release → Kubernetes → run.
+buni designs it, before and while it is built; nothing in it is live state. It is one object of twelve collections,
+each keyed by id like the rest (one left out reads as empty), and an id names one thing across all twelve.
+
+| Key | What it holds |
+|---|---|
+| `parts` | The app's parts: `kind` `client`, `service`, `worker`, `job`, `store`, `cache`, `queue`, `external` or `edge`; `tech`, `about`, `group`, `owners`; `build` `{repo, path, dockerfile, steps, artifact, registry}`; `managed` when it runs as a cloud service rather than a workload. |
+| `links` | How two parts talk: `from`, `to`, `kind` (`calls`, `reads`, `writes`, `publishes`, `subscribes`, `routes`), `carries`. |
+| `groups` | Boundaries parts sit in: a `system`, `domain` or `team`, with an optional `parent`. |
+| `environments` | Where releases go, by `order` (preview, staging, prod), with the `cluster` it runs on, `provider`, `region`, `preview`. |
+| `clusters` | Kubernetes clusters: `provider` (`eks`, `gke`, `aks`, `k3s`, `kind`, `other`), `version`, `zones`, node `pools`, `addons`, `gitops` `{tool: argocd or flux, repo, path}`. |
+| `namespaces` | A `cluster`'s namespaces, by Kubernetes `name`, with `owners`. |
+| `workloads` | What a `part` runs as in an `environment`: `namespace`, `kind` (`Deployment`, `Rollout`, `StatefulSet`, `Job`, `CronJob`, `DaemonSet`), `name`, `image`, `replicas`, `scale`, `keep` (disruption budget), `resources`, `probes`, `service`, `ingress`, `config`, `secrets`, `account`, `egress` (parts its network policy allows), `schedule`, `before` (a Job run before each sync), `nodes` (a pool). |
+| `releases` | How parts ship: `parts`, `path` (environments in order), `manifests`, `strategy` `{kind: rolling, canary or blue-green, steps, hold}`, `checks`, `rollback`, `before` (Jobs that run first). |
+| `migrations` | A change to a `store` part, the `release` it goes with, `change`, and `safe`: `additive` or `breaking`. |
+| `plans` | A planned change: `issue`, `about`, the `releases` it ships in. |
+| `stages` | The software path, idea to respond, by `order`: `tools`, `steps`, `makes`, `gate`. |
+| `plays` | A `request`, `release` or `failure` played step by step: each step `touches` architecture ids and may name a `check`; `fails` `{at, then}` is the failure play that follows when step `at` (from 1) fails its check. |
+
+Parts, links, workloads and migrations carry an optional `status` (`live` when absent, `planned`, `deprecated`,
+`removed`) and `plan`: what a plan adds is `planned`, what it takes out is `removed`. Merging a plan makes what it
+adds live and deletes what it removes, then the plan goes; discarding it (deleting the plan) deletes what it would
+have added. Parts, workloads, releases and plans take `sources`.
+
+The reader checks every reference, the enums, Kubernetes names (lowercase letters, digits and `-`, up to 63), that a
+workload's namespace is in its environment's cluster, that only a CronJob has a `schedule` and only a Job runs
+`before`, that a canary's steps rise to 100, that a migration changes a store, that a managed part is no workload, and
+that a release's `before` are Jobs. The keys of buni's earlier system model (`parts`, `clusters`… at the top level)
+are not these: they stay ignored (Files from before, above).
 
 ## Terminal screens
 
@@ -122,4 +154,4 @@ Design records can carry an optional `sources` array. It is context for people a
 "sources": [{ "file": "src/components/Header.tsx", "symbol": "Header", "repository": "web", "line": 20, "endLine": 64, "url": "http://localhost:3000/home", "selector": "header" }]
 ```
 
-Each reference needs a `file` or an HTTP(S) `url`. Other fields are optional; positive line numbers refer to a file. `endLine` requires `line` and cannot precede it. Pages, layers, components, links, flows, journeys, doc sections, rules, attachments and comments use the same shape. `set_sources {ids, sources}` replaces the links; an empty array removes them. Manual editor controls use the same undoable operation. `create_page`, `create_component` and `write_html` also accept `sources` during creation. HTML may attach per-element references with a JSON `data-buni-sources` attribute. `read_tree`, `get_node` and `read_context` expose the stored context. Source links do not imply automatic synchronization with the implementation.
+Each reference needs a `file` or an HTTP(S) `url`. Other fields are optional; positive line numbers refer to a file. `endLine` requires `line` and cannot precede it. Pages, layers, components, links, flows, journeys, doc sections, rules, attachments and comments use the same shape, and so do the architecture's parts, workloads, releases and plans. `set_sources {ids, sources}` replaces the links; an empty array removes them. Manual editor controls use the same undoable operation. `create_page`, `create_component` and `write_html` also accept `sources` during creation. HTML may attach per-element references with a JSON `data-buni-sources` attribute. `read_tree`, `get_node` and `read_context` expose the stored context. Source links do not imply automatic synchronization with the implementation.

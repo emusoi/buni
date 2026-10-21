@@ -37,6 +37,37 @@ import {
   type TerminalColors,
   type TerminalScreen,
   type TerminalSurface,
+  ARCH_COLLECTIONS,
+  ARCH_STATUSES,
+  CLUSTER_PROVIDERS,
+  GITOPS_TOOLS,
+  GROUP_KINDS,
+  K8S_NAME,
+  LINK_KINDS,
+  MIGRATION_SAFETY,
+  PART_KINDS,
+  PLAY_KINDS,
+  SCALE_BY,
+  STRATEGIES,
+  WORKLOAD_KINDS,
+  workloadName,
+  type ArchCollection,
+  type ArchLink,
+  type ArchStatus,
+  type Architecture,
+  type Build,
+  type Cluster,
+  type Environment,
+  type Group,
+  type Migration,
+  type Namespace,
+  type NodePool,
+  type Part,
+  type Plan,
+  type Play,
+  type Release,
+  type Stage,
+  type Workload,
 } from "./doc.ts";
 
 export interface FormatError {
@@ -91,7 +122,7 @@ export const TAGS: ReadonlySet<string> = new Set([
 ]);
 
 /** Reads raw JSON into typed values, recording every problem instead of stopping at the first. */
-class Reader {
+export class Reader {
   readonly errors: FormatError[] = [];
   private readonly strings = new Map<string, string>();
 
@@ -501,10 +532,296 @@ class Reader {
     };
   }
 
+  // ---- Architecture: how the app is built and shipped. ----
+
+  strs(v: unknown, path: string): string[] {
+    return this.list(v, path, (x, p) => this.str(x, p));
+  }
+
+  /** A whole number, from `min`. */
+  int(v: unknown, path: string, min = 0): number {
+    const n = this.num(v, path);
+    if (!Number.isInteger(n) || n < min) this.fail(path, `expected a whole number, ${min} or more`);
+    return n;
+  }
+
+  /** The status and plan every plannable thing has; given the object already checked for unknown keys. */
+  planned(o: Json, path: string): { status?: ArchStatus; plan?: Id } {
+    return {
+      ...(o.status !== undefined ? { status: this.oneOf(o.status, join(path, "status"), ARCH_STATUSES) } : {}),
+      ...(o.plan !== undefined ? { plan: this.str(o.plan, join(path, "plan")) } : {}),
+    };
+  }
+
+  /** Keeps the optional string fields `keys` that are present. */
+  optStrs<K extends string>(o: Json, path: string, keys: readonly K[]): Partial<Record<K, string>> {
+    const out: Partial<Record<K, string>> = {};
+    for (const k of keys) if (o[k] !== undefined) out[k] = this.str(o[k], join(path, k));
+    return out;
+  }
+
+  architecture(v: unknown, path: string): Architecture {
+    const o = this.obj(v, path, ARCH_COLLECTIONS);
+    // A collection with nothing in it may be left out.
+    const read = <T extends { id: Id }>(k: ArchCollection, item: (v: unknown, path: string) => T): Record<Id, T> =>
+      o[k] === undefined ? {} : this.byId(o[k], join(path, k), item);
+    return {
+      parts: read("parts", (x, p) => this.part(x, p)),
+      links: read("links", (x, p) => this.archLink(x, p)),
+      groups: read("groups", (x, p) => this.group(x, p)),
+      environments: read("environments", (x, p) => this.environment(x, p)),
+      clusters: read("clusters", (x, p) => this.cluster(x, p)),
+      namespaces: read("namespaces", (x, p) => this.namespace(x, p)),
+      workloads: read("workloads", (x, p) => this.workload(x, p)),
+      releases: read("releases", (x, p) => this.release(x, p)),
+      migrations: read("migrations", (x, p) => this.migration(x, p)),
+      plans: read("plans", (x, p) => this.plan(x, p)),
+      stages: read("stages", (x, p) => this.stage(x, p)),
+      plays: read("plays", (x, p) => this.play(x, p)),
+    };
+  }
+
+  part(v: unknown, path: string): Part {
+    const o = this.obj(v, path, ["id", "name", "kind", "tech", "about", "status", "plan", "group", "owners", "build", "managed"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      kind: this.oneOf(o.kind, join(path, "kind"), PART_KINDS),
+      ...this.optStrs(o, path, ["tech", "about", "group", "owners", "managed"]),
+      ...this.planned(o, path),
+      ...(o.build !== undefined ? { build: this.build(o.build, join(path, "build")) } : {}),
+    };
+  }
+
+  build(v: unknown, path: string): Build {
+    const o = this.obj(v, path, ["repo", "path", "dockerfile", "steps", "artifact", "registry"]);
+    return {
+      repo: this.str(o.repo, join(path, "repo")),
+      ...this.optStrs(o, path, ["path", "dockerfile", "artifact", "registry"]),
+      ...(o.steps !== undefined ? { steps: this.strs(o.steps, join(path, "steps")) } : {}),
+    };
+  }
+
+  archLink(v: unknown, path: string): ArchLink {
+    const o = this.obj(v, path, ["id", "from", "to", "kind", "carries", "status", "plan"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      from: this.str(o.from, join(path, "from")),
+      to: this.str(o.to, join(path, "to")),
+      kind: this.oneOf(o.kind, join(path, "kind"), LINK_KINDS),
+      ...this.optStrs(o, path, ["carries"]),
+      ...this.planned(o, path),
+    };
+  }
+
+  group(v: unknown, path: string): Group {
+    const o = this.obj(v, path, ["id", "name", "kind", "parent"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      kind: this.oneOf(o.kind, join(path, "kind"), GROUP_KINDS),
+      ...this.optStrs(o, path, ["parent"]),
+    };
+  }
+
+  environment(v: unknown, path: string): Environment {
+    const o = this.obj(v, path, ["id", "name", "order", "cluster", "provider", "region", "preview"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      order: this.num(o.order, join(path, "order")),
+      ...this.optStrs(o, path, ["cluster", "provider", "region"]),
+      ...(this.flag(o.preview, join(path, "preview")) ? { preview: true } : {}),
+    };
+  }
+
+  cluster(v: unknown, path: string): Cluster {
+    const o = this.obj(v, path, ["id", "name", "provider", "version", "zones", "pools", "addons", "gitops"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      provider: this.oneOf(o.provider, join(path, "provider"), CLUSTER_PROVIDERS),
+      ...this.optStrs(o, path, ["version"]),
+      ...(o.zones !== undefined ? { zones: this.int(o.zones, join(path, "zones"), 1) } : {}),
+      ...(o.pools !== undefined ? { pools: this.list(o.pools, join(path, "pools"), (x, p) => this.pool(x, p)) } : {}),
+      ...(o.addons !== undefined ? { addons: this.strs(o.addons, join(path, "addons")) } : {}),
+      ...(o.gitops !== undefined ? { gitops: this.gitops(o.gitops, join(path, "gitops")) } : {}),
+    };
+  }
+
+  pool(v: unknown, path: string): NodePool {
+    const o = this.obj(v, path, ["name", "machine", "min", "max", "spot", "taint"]);
+    const pool: NodePool = {
+      name: this.k8s(o.name, join(path, "name")),
+      ...this.optStrs(o, path, ["machine", "taint"]),
+      min: this.int(o.min, join(path, "min")),
+      max: this.int(o.max, join(path, "max")),
+      ...(this.flag(o.spot, join(path, "spot")) ? { spot: true } : {}),
+    };
+    if (pool.max < pool.min) this.fail(join(path, "max"), "max is at least min");
+    return pool;
+  }
+
+  gitops(v: unknown, path: string): NonNullable<Cluster["gitops"]> {
+    const o = this.obj(v, path, ["tool", "repo", "path"]);
+    return { tool: this.oneOf(o.tool, join(path, "tool"), GITOPS_TOOLS), repo: this.str(o.repo, join(path, "repo")), ...this.optStrs(o, path, ["path"]) };
+  }
+
+  /** A name the cluster takes: lowercase letters, digits and -, up to 63. */
+  k8s(v: unknown, path: string): string {
+    const s = this.str(v, path);
+    if (!K8S_NAME.test(s) || s.length > 63) this.fail(path, `"${s.slice(0, 70)}" isn't a Kubernetes name: lowercase letters, digits and -, starting and ending with a letter or digit, up to 63`);
+    return s;
+  }
+
+  namespace(v: unknown, path: string): Namespace {
+    const o = this.obj(v, path, ["id", "cluster", "name", "owners"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      cluster: this.str(o.cluster, join(path, "cluster")),
+      name: this.k8s(o.name, join(path, "name")),
+      ...this.optStrs(o, path, ["owners"]),
+    };
+  }
+
+  workload(v: unknown, path: string): Workload {
+    const o = this.obj(v, path, [
+      "id", "part", "environment", "namespace", "kind", "name", "image", "replicas", "scale", "keep", "resources", "probes", "service",
+      "ingress", "config", "secrets", "account", "egress", "schedule", "before", "nodes", "status", "plan",
+    ]);
+    const at = (k: string) => join(path, k);
+    const w: Workload = {
+      id: this.str(o.id, at("id")),
+      part: this.str(o.part, at("part")),
+      environment: this.str(o.environment, at("environment")),
+      namespace: this.str(o.namespace, at("namespace")),
+      kind: this.oneOf(o.kind, at("kind"), WORKLOAD_KINDS),
+      ...(o.name !== undefined ? { name: this.k8s(o.name, at("name")) } : {}),
+      ...this.optStrs(o, path, ["image", "schedule", "nodes"]),
+      ...this.planned(o, path),
+    };
+    if (o.replicas !== undefined) {
+      const r = this.obj(o.replicas, at("replicas"), ["min", "max"]);
+      w.replicas = { min: this.int(r.min, join(at("replicas"), "min")), ...(r.max !== undefined ? { max: this.int(r.max, join(at("replicas"), "max")) } : {}) };
+      if (w.replicas.max !== undefined && w.replicas.max < w.replicas.min) this.fail(join(at("replicas"), "max"), "max is at least min");
+    }
+    if (o.scale !== undefined) {
+      const s = this.obj(o.scale, at("scale"), ["by", "target"]);
+      w.scale = { by: this.oneOf(s.by, join(at("scale"), "by"), SCALE_BY), target: this.str(s.target, join(at("scale"), "target")) };
+    }
+    if (o.keep !== undefined) w.keep = this.int(o.keep, at("keep"));
+    if (o.resources !== undefined) w.resources = this.optStrs(this.obj(o.resources, at("resources"), ["cpu", "memory", "limitCpu", "limitMemory"]), at("resources"), ["cpu", "memory", "limitCpu", "limitMemory"]);
+    if (o.probes !== undefined) w.probes = this.optStrs(this.obj(o.probes, at("probes"), ["ready", "live"]), at("probes"), ["ready", "live"]);
+    if (o.service !== undefined) {
+      const s = this.obj(o.service, at("service"), ["port"]);
+      const port = this.int(s.port, join(at("service"), "port"), 1);
+      if (port > 65535) this.fail(join(at("service"), "port"), "a port is 1 to 65535");
+      w.service = { port };
+    }
+    if (o.ingress !== undefined) {
+      const i = this.obj(o.ingress, at("ingress"), ["host", "path"]);
+      w.ingress = { host: this.str(i.host, join(at("ingress"), "host")), ...this.optStrs(i, at("ingress"), ["path"]) };
+    }
+    if (o.config !== undefined) w.config = this.strs(o.config, at("config"));
+    if (o.secrets !== undefined) w.secrets = this.strs(o.secrets, at("secrets"));
+    if (o.account !== undefined) {
+      const a = this.obj(o.account, at("account"), ["name", "role"]);
+      w.account = { name: this.k8s(a.name, join(at("account"), "name")), ...this.optStrs(a, at("account"), ["role"]) };
+    }
+    if (o.egress !== undefined) w.egress = this.strs(o.egress, at("egress"));
+    if (this.flag(o.before, at("before"))) w.before = true;
+    // A schedule is what makes a CronJob; running before each sync is what a Job does.
+    if ((w.kind === "CronJob") !== (w.schedule !== undefined)) this.fail(at("schedule"), w.kind === "CronJob" ? 'a CronJob needs a schedule, e.g. "0 2 * * *"' : "only a CronJob has a schedule");
+    if (w.before && w.kind !== "Job") this.fail(at("before"), "only a Job runs before each sync");
+    return w;
+  }
+
+  release(v: unknown, path: string): Release {
+    const o = this.obj(v, path, ["id", "name", "parts", "path", "manifests", "strategy", "checks", "rollback", "before", "plan"]);
+    const at = (k: string) => join(path, k);
+    const s = this.obj(o.strategy, at("strategy"), ["kind", "steps", "hold"]);
+    const strategy: Release["strategy"] = {
+      kind: this.oneOf(s.kind, join(at("strategy"), "kind"), STRATEGIES),
+      ...(s.steps !== undefined ? { steps: this.list(s.steps, join(at("strategy"), "steps"), (x, p) => this.num(x, p)) } : {}),
+      ...this.optStrs(s, at("strategy"), ["hold"]),
+    };
+    const steps = strategy.steps;
+    if (steps && (steps.some((n, i) => n <= 0 || n > 100 || (i > 0 && n <= (steps[i - 1] ?? 0))) || steps.at(-1) !== 100)) {
+      this.fail(join(at("strategy"), "steps"), "steps are percentages of traffic, rising, ending at 100");
+    }
+    if (steps && strategy.kind !== "canary") this.fail(join(at("strategy"), "steps"), "only a canary has traffic steps");
+    return {
+      id: this.str(o.id, at("id")),
+      name: this.str(o.name, at("name")),
+      parts: this.strs(o.parts, at("parts")),
+      path: this.strs(o.path, at("path")),
+      strategy,
+      ...this.optStrs(o, path, ["manifests", "rollback", "plan"]),
+      ...(o.checks !== undefined ? { checks: this.strs(o.checks, at("checks")) } : {}),
+      ...(o.before !== undefined ? { before: this.strs(o.before, at("before")) } : {}),
+    };
+  }
+
+  migration(v: unknown, path: string): Migration {
+    const o = this.obj(v, path, ["id", "name", "store", "release", "change", "safe", "status", "plan"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      store: this.str(o.store, join(path, "store")),
+      change: this.str(o.change, join(path, "change")),
+      safe: this.oneOf(o.safe, join(path, "safe"), MIGRATION_SAFETY),
+      ...this.optStrs(o, path, ["release"]),
+      ...this.planned(o, path),
+    };
+  }
+
+  plan(v: unknown, path: string): Plan {
+    const o = this.obj(v, path, ["id", "name", "issue", "about", "releases"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      ...this.optStrs(o, path, ["issue", "about"]),
+      ...(o.releases !== undefined ? { releases: this.strs(o.releases, join(path, "releases")) } : {}),
+    };
+  }
+
+  stage(v: unknown, path: string): Stage {
+    const o = this.obj(v, path, ["id", "name", "order", "tools", "steps", "makes", "gate", "about"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      order: this.num(o.order, join(path, "order")),
+      ...this.optStrs(o, path, ["tools", "gate", "about"]),
+      ...(o.steps !== undefined ? { steps: this.strs(o.steps, join(path, "steps")) } : {}),
+      ...(o.makes !== undefined ? { makes: this.strs(o.makes, join(path, "makes")) } : {}),
+    };
+  }
+
+  play(v: unknown, path: string): Play {
+    const o = this.obj(v, path, ["id", "name", "kind", "release", "steps", "fails"]);
+    const play: Play = {
+      id: this.str(o.id, join(path, "id")),
+      name: this.str(o.name, join(path, "name")),
+      kind: this.oneOf(o.kind, join(path, "kind"), PLAY_KINDS),
+      ...this.optStrs(o, path, ["release"]),
+      steps: this.list(o.steps, join(path, "steps"), (x, p) => {
+        const s = this.obj(x, p, ["name", "about", "touches", "check"]);
+        return { name: this.str(s.name, join(p, "name")), touches: this.strs(s.touches, join(p, "touches")), ...this.optStrs(s, p, ["about", "check"]) };
+      }),
+    };
+    if (o.fails !== undefined) {
+      const f = this.obj(o.fails, join(path, "fails"), ["at", "then"]);
+      play.fails = { at: this.int(f.at, join(join(path, "fails"), "at"), 1), then: this.str(f.then, join(join(path, "fails"), "then")) };
+      if (play.fails.at > play.steps.length) this.fail(join(join(path, "fails"), "at"), `the play has ${play.steps.length} steps; at is a step number from 1`);
+    }
+    if (play.steps.length === 0) this.fail(join(path, "steps"), "a play needs at least one step");
+    return play;
+  }
+
   doc(v: unknown): Doc {
     const o = this.obj(v, "", [
       "buni", "imports", "tokensRef", "tokens", "pages", "nodes", "shared", "connections",
-      "flows", "journeys", "comments", "sections", "rules", "attachments",
+      "flows", "journeys", "comments", "sections", "rules", "attachments", "architecture",
       ...LEGACY_COLLECTIONS,
     ]);
     if (o.buni !== FORMAT_VERSION) this.fail("buni", `unsupported format version (expected ${FORMAT_VERSION})`);
@@ -527,6 +844,7 @@ class Reader {
     doc.sections = o.sections === undefined ? {} : this.byId(o.sections, "sections", (x, p) => this.section(x, p));
     doc.rules = this.byId(o.rules, "rules", (x, p) => this.rule(x, p));
     doc.attachments = this.byId(o.attachments, "attachments", (x, p) => this.attachment(x, p));
+    if (o.architecture !== undefined) doc.architecture = this.architecture(o.architecture, "architecture");
     return doc;
   }
 }
@@ -803,6 +1121,118 @@ function checkRefs(doc: Doc, r: Reader): void {
 }
 
 /**
+ * The architecture's shape and references. Its shape is read again here, so an edit that built a wrong shape is
+ * refused rather than saved into a file that won't open.
+ */
+function checkArchitecture(doc: Doc, r: Reader): void {
+  if (doc.architecture === undefined) return;
+  const a = r.architecture(doc.architecture, "architecture");
+  const p = (c: ArchCollection, id: Id, k: string) => `architecture.${c}.${id}.${k}`;
+  // Own keys only: an id such as "toString" is missing, never a method every object has.
+  const has = (c: ArchCollection, id: Id) => Object.hasOwn(a[c], id);
+  const ref = (c: ArchCollection, id: Id | undefined, path: string, what: string) => {
+    if (id !== undefined && !has(c, id)) r.fail(path, `${what} "${id}" does not exist`);
+  };
+  // Every id names one thing, so delete_architecture and touches know what it is.
+  const seen = new Map<Id, ArchCollection>();
+  for (const c of ARCH_COLLECTIONS) for (const id of Object.keys(a[c])) {
+    const prior = seen.get(id);
+    if (prior) r.fail(`architecture.${c}.${id}`, `"${id}" is already in ${prior}; ids are unique across the architecture`);
+    seen.set(id, c);
+  }
+  const planned = (c: ArchCollection, x: { id: Id; plan?: Id }) => ref("plans", x.plan, p(c, x.id, "plan"), "plan");
+
+  for (const x of Object.values(a.parts)) {
+    planned("parts", x);
+    ref("groups", x.group, p("parts", x.id, "group"), "group");
+  }
+  for (const x of Object.values(a.links)) {
+    planned("links", x);
+    ref("parts", x.from, p("links", x.id, "from"), "part");
+    ref("parts", x.to, p("links", x.id, "to"), "part");
+    if (x.from === x.to) r.fail(p("links", x.id, "to"), "a part doesn't link to itself");
+  }
+  for (const x of Object.values(a.groups)) {
+    ref("groups", x.parent, p("groups", x.id, "parent"), "group");
+    // A group sits inside others, never inside itself however far up.
+    const up = new Set([x.id]);
+    for (let g = x.parent; g !== undefined && has("groups", g); g = a.groups[g]?.parent) {
+      if (up.has(g)) { r.fail(p("groups", x.id, "parent"), "groups can't hold themselves"); break; }
+      up.add(g);
+    }
+  }
+  for (const x of Object.values(a.environments)) ref("clusters", x.cluster, p("environments", x.id, "cluster"), "cluster");
+  for (const x of Object.values(a.clusters)) {
+    const names = (x.pools ?? []).map((pool) => pool.name);
+    if (new Set(names).size !== names.length) r.fail(p("clusters", x.id, "pools"), "each node pool's name once");
+  }
+  const namespaces = new Map<string, Id>();
+  for (const x of Object.values(a.namespaces)) {
+    ref("clusters", x.cluster, p("namespaces", x.id, "cluster"), "cluster");
+    const key = `${x.cluster}/${x.name}`;
+    const dup = namespaces.get(key);
+    if (dup) r.fail(p("namespaces", x.id, "name"), `cluster "${x.cluster}" already has namespace "${x.name}": ${dup}`);
+    namespaces.set(key, x.id);
+  }
+  const workloads = new Map<string, Id>();
+  for (const x of Object.values(a.workloads)) {
+    planned("workloads", x);
+    ref("parts", x.part, p("workloads", x.id, "part"), "part");
+    ref("environments", x.environment, p("workloads", x.id, "environment"), "environment");
+    ref("namespaces", x.namespace, p("workloads", x.id, "namespace"), "namespace");
+    for (const e of x.egress ?? []) ref("parts", e, p("workloads", x.id, "egress"), "part");
+    const ns = a.namespaces[x.namespace];
+    const env = a.environments[x.environment];
+    // The namespace is in a cluster; the environment runs on one. They must be the same one.
+    if (ns && env?.cluster !== undefined && ns.cluster !== env.cluster) {
+      r.fail(p("workloads", x.id, "namespace"), `namespace "${ns.name}" is in cluster "${ns.cluster}", but ${env.name} runs on "${env.cluster}"`);
+    }
+    const pools = ns ? a.clusters[ns.cluster]?.pools : undefined;
+    if (x.nodes !== undefined && pools && !pools.some((pool) => pool.name === x.nodes)) r.fail(p("workloads", x.id, "nodes"), `cluster "${ns?.cluster}" has no node pool "${x.nodes}"`);
+    const part = a.parts[x.part];
+    if (part?.managed !== undefined) r.fail(p("workloads", x.id, "part"), `"${part.name}" is managed (${part.managed}): it runs outside the cluster, not as a workload`);
+    const name = workloadName(a, x);
+    if (x.name === undefined && part && !K8S_NAME.test(name)) r.fail(p("workloads", x.id, "name"), `"${part.name}" makes no Kubernetes name; give the workload a name`);
+    const key = `${x.namespace}/${name}`;
+    const dup = workloads.get(key);
+    if (dup) r.fail(p("workloads", x.id, "name"), `namespace "${ns?.name ?? x.namespace}" already has a workload "${name}": ${dup}`);
+    workloads.set(key, x.id);
+  }
+  for (const x of Object.values(a.releases)) {
+    ref("plans", x.plan, p("releases", x.id, "plan"), "plan");
+    if (x.parts.length === 0) r.fail(p("releases", x.id, "parts"), "a release ships at least one part");
+    for (const id of x.parts) ref("parts", id, p("releases", x.id, "parts"), "part");
+    if (x.path.length === 0) r.fail(p("releases", x.id, "path"), "a release goes through at least one environment");
+    if (new Set(x.path).size !== x.path.length) r.fail(p("releases", x.id, "path"), "each environment once");
+    for (const id of x.path) ref("environments", id, p("releases", x.id, "path"), "environment");
+    for (const id of x.before ?? []) {
+      ref("workloads", id, p("releases", x.id, "before"), "workload");
+      const w = a.workloads[id];
+      if (w && w.kind !== "Job") r.fail(p("releases", x.id, "before"), `"${workloadName(a, w)}" is a ${w.kind}; what runs before a release is a Job`);
+    }
+  }
+  for (const x of Object.values(a.migrations)) {
+    planned("migrations", x);
+    ref("parts", x.store, p("migrations", x.id, "store"), "part");
+    ref("releases", x.release, p("migrations", x.id, "release"), "release");
+    const store = a.parts[x.store];
+    if (store && store.kind !== "store") r.fail(p("migrations", x.id, "store"), `"${store.name}" is a ${store.kind}; migrations change a store`);
+  }
+  for (const x of Object.values(a.plans)) for (const id of x.releases ?? []) ref("releases", id, p("plans", x.id, "releases"), "release");
+  for (const x of Object.values(a.plays)) {
+    ref("releases", x.release, p("plays", x.id, "release"), "release");
+    x.steps.forEach((s, i) => {
+      for (const id of s.touches) if (!seen.has(id)) r.fail(`architecture.plays.${x.id}.steps[${i}].touches`, `"${id}" is nothing in the architecture`);
+    });
+    if (x.fails) {
+      const then = a.plays[x.fails.then];
+      ref("plays", x.fails.then, p("plays", x.id, "fails"), "play");
+      if (then && then.kind !== "failure") r.fail(p("plays", x.id, "fails"), `"${then.name}" is a ${then.kind} play; what follows a failed check is a failure play`);
+    }
+  }
+}
+
+/**
  * The document with each collection on a null prototype, so a reference such as "toString" or "constructor" finds
  * nothing rather than a method every object has, and is reported as missing.
  */
@@ -832,6 +1262,7 @@ export function validateDoc(given: Doc, givenContext?: Doc): FormatError[] {
   const context = givenContext && ownOnly(givenContext);
   const r = new Reader();
   checkTags(doc, r);
+  checkArchitecture(doc, r);
   if (!context) {
     checkRefs(doc, r);
     return r.errors;

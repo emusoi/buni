@@ -33,7 +33,8 @@ export class Ids {
   constructor(doc: Doc, private readonly ctx: ToolContext) {
     // Every collection's ids, so a new one never lands on an entry of any kind (a list here fell behind once and new
     // entries replaced old ones).
-    this.taken = new Set(Object.entries(doc).flatMap(([k, v]) => (k !== "tokens" && typeof v === "object" && v !== null && !Array.isArray(v) ? Object.keys(v) : [])));
+    this.taken = new Set(Object.entries(doc).flatMap(([k, v]) => (k !== "tokens" && k !== "architecture" && typeof v === "object" && v !== null && !Array.isArray(v) ? Object.keys(v) : [])));
+    for (const bag of Object.values(doc.architecture ?? {})) for (const id of Object.keys(bag)) this.taken.add(id);
   }
   /** A readable id from a name ("Quote API" → "quote-api"), random when that is taken. */
   slug(name: string): Id {

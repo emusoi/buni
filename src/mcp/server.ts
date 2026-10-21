@@ -19,6 +19,7 @@ Multi-screen work: link screens with connect, name the path with set_flow, and d
 Icons: <buni-icon name="search" size="16" style="color:…"> in write_html draws a Lucide icon; find_icons searches names.
 Reuse: make_component turns a layer into a component (nav bars, cards, footers); place_component uses it elsewhere; override changes one use's text. Edit the component itself to change every use.
 When a choice is the person's to make (copy, a direction, a trade-off), ask_person asks them in the editor and waits for the answer; don't ask about each step.
+Architecture (how the app is built and shipped, designed before it is built): set_part, link_parts, set_build, set_environment, set_cluster, set_namespace, set_workload, set_release, set_migration, set_stage and set_play; read_architecture gives the brief (level system, runtime or code; environment; focus). Plan a change with set_plan and mark what it adds status "planned" with plan; merge_plan is the person's to run.
 If an edit is refused, the reply says which reference or rule it broke; fix the call and retry.`;
 
 /**

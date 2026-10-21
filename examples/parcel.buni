@@ -1,4 +1,1008 @@
 {
+  "architecture": {
+    "clusters": {
+      "eks-prod": {
+        "addons": [
+          "Karpenter",
+          "AWS LB controller",
+          "external-dns",
+          "cert-manager",
+          "External Secrets",
+          "Argo CD",
+          "Argo Rollouts",
+          "KEDA",
+          "Datadog agent"
+        ],
+        "gitops": {
+          "path": "prod",
+          "repo": "parcel-deploy",
+          "tool": "argocd"
+        },
+        "id": "eks-prod",
+        "name": "EKS prod",
+        "pools": [
+          {
+            "machine": "m6i.large",
+            "max": 8,
+            "min": 3,
+            "name": "general"
+          },
+          {
+            "machine": "m6i.large",
+            "max": 6,
+            "min": 0,
+            "name": "spot",
+            "spot": true,
+            "taint": "spot=true"
+          }
+        ],
+        "provider": "eks",
+        "version": "1.30",
+        "zones": 3
+      },
+      "eks-staging": {
+        "addons": [
+          "Karpenter",
+          "AWS LB controller",
+          "external-dns",
+          "cert-manager",
+          "External Secrets",
+          "Argo CD",
+          "Argo Rollouts",
+          "KEDA",
+          "Datadog agent"
+        ],
+        "gitops": {
+          "path": "staging",
+          "repo": "parcel-deploy",
+          "tool": "argocd"
+        },
+        "id": "eks-staging",
+        "name": "EKS staging",
+        "pools": [
+          {
+            "machine": "m6i.large",
+            "max": 3,
+            "min": 1,
+            "name": "general"
+          }
+        ],
+        "provider": "eks",
+        "version": "1.30",
+        "zones": 2
+      }
+    },
+    "environments": {
+      "preview": {
+        "id": "preview",
+        "name": "preview",
+        "order": 1,
+        "preview": true,
+        "provider": "Vercel + Fly"
+      },
+      "prod": {
+        "cluster": "eks-prod",
+        "id": "prod",
+        "name": "prod",
+        "order": 3,
+        "provider": "AWS",
+        "region": "us-east-1"
+      },
+      "staging": {
+        "cluster": "eks-staging",
+        "id": "staging",
+        "name": "staging",
+        "order": 2,
+        "provider": "AWS",
+        "region": "us-east-1"
+      }
+    },
+    "groups": {
+      "parcel-returns": {
+        "id": "parcel-returns",
+        "kind": "system",
+        "name": "Parcel returns"
+      }
+    },
+    "links": {
+      "alb-routes-returns-api": {
+        "carries": "HTTPS",
+        "from": "alb",
+        "id": "alb-routes-returns-api",
+        "kind": "routes",
+        "to": "returns-api"
+      },
+      "buyer-portal-calls-returns-api": {
+        "carries": "ReturnPage",
+        "from": "buyer-portal",
+        "id": "buyer-portal-calls-returns-api",
+        "kind": "calls",
+        "to": "returns-api"
+      },
+      "cloudfront-routes-waf": {
+        "from": "cloudfront",
+        "id": "cloudfront-routes-waf",
+        "kind": "routes",
+        "to": "waf"
+      },
+      "credit-ledger-subscribes-jobs": {
+        "carries": "RefundJob",
+        "from": "credit-ledger",
+        "id": "credit-ledger-subscribes-jobs",
+        "kind": "subscribes",
+        "plan": "store-credit",
+        "status": "planned",
+        "to": "jobs"
+      },
+      "credit-ledger-writes-main-database": {
+        "carries": "CreditEntry",
+        "from": "credit-ledger",
+        "id": "credit-ledger-writes-main-database",
+        "kind": "writes",
+        "plan": "store-credit",
+        "status": "planned",
+        "to": "main-database"
+      },
+      "merchant-dashboard-calls-returns-api": {
+        "carries": "Return",
+        "from": "merchant-dashboard",
+        "id": "merchant-dashboard-calls-returns-api",
+        "kind": "calls",
+        "to": "returns-api"
+      },
+      "returns-api-publishes-jobs": {
+        "carries": "RefundJob",
+        "from": "returns-api",
+        "id": "returns-api-publishes-jobs",
+        "kind": "publishes",
+        "to": "jobs"
+      },
+      "returns-api-writes-main-database": {
+        "carries": "Return",
+        "from": "returns-api",
+        "id": "returns-api-writes-main-database",
+        "kind": "writes",
+        "to": "main-database"
+      },
+      "returns-parcel-app-routes-cloudfront": {
+        "from": "returns-parcel-app",
+        "id": "returns-parcel-app-routes-cloudfront",
+        "kind": "routes",
+        "to": "cloudfront"
+      },
+      "waf-routes-alb": {
+        "from": "waf",
+        "id": "waf-routes-alb",
+        "kind": "routes",
+        "to": "alb"
+      },
+      "worker-calls-resend": {
+        "carries": "Email",
+        "from": "worker",
+        "id": "worker-calls-resend",
+        "kind": "calls",
+        "to": "resend"
+      },
+      "worker-calls-shippo": {
+        "carries": "Label",
+        "from": "worker",
+        "id": "worker-calls-shippo",
+        "kind": "calls",
+        "to": "shippo"
+      },
+      "worker-calls-shopify": {
+        "carries": "Refund",
+        "from": "worker",
+        "id": "worker-calls-shopify",
+        "kind": "calls",
+        "to": "shopify"
+      },
+      "worker-subscribes-jobs": {
+        "carries": "RefundJob",
+        "from": "worker",
+        "id": "worker-subscribes-jobs",
+        "kind": "subscribes",
+        "to": "jobs"
+      },
+      "worker-writes-labels": {
+        "carries": "Label PDF",
+        "from": "worker",
+        "id": "worker-writes-labels",
+        "kind": "writes",
+        "to": "labels"
+      },
+      "worker-writes-main-database": {
+        "carries": "Refund",
+        "from": "worker",
+        "id": "worker-writes-main-database",
+        "kind": "writes",
+        "to": "main-database"
+      }
+    },
+    "migrations": {
+      "0042-store-credit": {
+        "change": "Adds the credit_ledger table.",
+        "id": "0042-store-credit",
+        "name": "0042_store_credit",
+        "plan": "store-credit",
+        "release": "v42",
+        "safe": "additive",
+        "status": "planned",
+        "store": "main-database"
+      }
+    },
+    "namespaces": {
+      "eks-prod-jobs": {
+        "cluster": "eks-prod",
+        "id": "eks-prod-jobs",
+        "name": "jobs",
+        "owners": "returns team"
+      },
+      "eks-prod-returns": {
+        "cluster": "eks-prod",
+        "id": "eks-prod-returns",
+        "name": "returns",
+        "owners": "returns team"
+      },
+      "eks-prod-worker": {
+        "cluster": "eks-prod",
+        "id": "eks-prod-worker",
+        "name": "worker",
+        "owners": "returns team"
+      },
+      "eks-staging-jobs": {
+        "cluster": "eks-staging",
+        "id": "eks-staging-jobs",
+        "name": "jobs",
+        "owners": "returns team"
+      },
+      "eks-staging-returns": {
+        "cluster": "eks-staging",
+        "id": "eks-staging-returns",
+        "name": "returns",
+        "owners": "returns team"
+      },
+      "eks-staging-worker": {
+        "cluster": "eks-staging",
+        "id": "eks-staging-worker",
+        "name": "worker",
+        "owners": "returns team"
+      }
+    },
+    "parts": {
+      "alb": {
+        "about": "TLS · ACM certificate.",
+        "id": "alb",
+        "kind": "edge",
+        "name": "ALB",
+        "tech": "Load balancer"
+      },
+      "buyer-portal": {
+        "about": "Buyers start and track returns.",
+        "build": {
+          "artifact": "web bundle",
+          "path": "web/buyer/",
+          "repo": "github.com/acme/parcel",
+          "steps": [
+            "install",
+            "typecheck",
+            "unit tests",
+            "build (Next.js)"
+          ]
+        },
+        "group": "parcel-returns",
+        "id": "buyer-portal",
+        "kind": "client",
+        "name": "Buyer portal",
+        "owners": "returns team",
+        "tech": "Next.js · 8 pages"
+      },
+      "cloudfront": {
+        "about": "Static assets cached.",
+        "id": "cloudfront",
+        "kind": "edge",
+        "name": "CloudFront",
+        "tech": "CDN"
+      },
+      "credit-ledger": {
+        "about": "Keeps store credit: reads RefundJob and writes the credit ledger.",
+        "build": {
+          "artifact": "ledger image",
+          "dockerfile": "Dockerfile",
+          "path": "ledger/",
+          "registry": "ECR",
+          "repo": "github.com/acme/parcel",
+          "steps": [
+            "lint",
+            "test",
+            "build",
+            "scan",
+            "sign"
+          ]
+        },
+        "group": "parcel-returns",
+        "id": "credit-ledger",
+        "kind": "service",
+        "name": "Credit ledger",
+        "owners": "returns team",
+        "plan": "store-credit",
+        "status": "planned",
+        "tech": "Node 22"
+      },
+      "ecr": {
+        "about": "api and worker images, signed at build.",
+        "id": "ecr",
+        "kind": "store",
+        "managed": "ECR",
+        "name": "ECR",
+        "tech": "Registry"
+      },
+      "jobs": {
+        "about": "returns-jobs: RefundJob, with dead letters.",
+        "group": "parcel-returns",
+        "id": "jobs",
+        "kind": "queue",
+        "managed": "SQS",
+        "name": "Jobs",
+        "tech": "SQS · 3 events"
+      },
+      "labels": {
+        "about": "Label PDFs.",
+        "id": "labels",
+        "kind": "store",
+        "managed": "S3",
+        "name": "Labels",
+        "tech": "S3"
+      },
+      "main-database": {
+        "about": "Returns, refunds, labels.",
+        "group": "parcel-returns",
+        "id": "main-database",
+        "kind": "store",
+        "managed": "RDS Postgres Multi-AZ · db.r6g.large",
+        "name": "Main database",
+        "tech": "Postgres 16 · 5 tables"
+      },
+      "merchant-dashboard": {
+        "about": "Merchants approve returns and see refunds.",
+        "build": {
+          "artifact": "web bundle",
+          "path": "web/merchant/",
+          "repo": "github.com/acme/parcel",
+          "steps": [
+            "install",
+            "typecheck",
+            "unit tests",
+            "build (Next.js)"
+          ]
+        },
+        "group": "parcel-returns",
+        "id": "merchant-dashboard",
+        "kind": "client",
+        "name": "Merchant dashboard",
+        "owners": "returns team",
+        "tech": "Next.js · 10 pages"
+      },
+      "resend": {
+        "about": "Return emails.",
+        "id": "resend",
+        "kind": "external",
+        "name": "Resend",
+        "tech": "Email"
+      },
+      "returns-api": {
+        "about": "Takes return and refund requests from the buyer portal and merchant dashboard; writes to the main database and queues refunds.",
+        "build": {
+          "artifact": "api image",
+          "dockerfile": "Dockerfile",
+          "path": "api/",
+          "registry": "ECR",
+          "repo": "github.com/acme/parcel",
+          "steps": [
+            "lint",
+            "test",
+            "build",
+            "scan",
+            "sign"
+          ]
+        },
+        "group": "parcel-returns",
+        "id": "returns-api",
+        "kind": "service",
+        "name": "Returns API",
+        "owners": "returns team",
+        "tech": "Node 22 · REST · 11 endpoints"
+      },
+      "returns-parcel-app": {
+        "about": "DNS.",
+        "id": "returns-parcel-app",
+        "kind": "edge",
+        "name": "returns.parcel.app",
+        "tech": "Route 53"
+      },
+      "secrets-manager": {
+        "about": "shippo-key, shopify-token; synced in by External Secrets.",
+        "id": "secrets-manager",
+        "kind": "store",
+        "managed": "Secrets Manager",
+        "name": "Secrets Manager",
+        "tech": "AWS Secrets Manager"
+      },
+      "shippo": {
+        "about": "Label purchase.",
+        "id": "shippo",
+        "kind": "external",
+        "name": "Shippo",
+        "tech": "Labels"
+      },
+      "shopify": {
+        "about": "Refunds the order.",
+        "id": "shopify",
+        "kind": "external",
+        "name": "Shopify",
+        "tech": "Admin API"
+      },
+      "waf": {
+        "about": "Rate limits · bot rules.",
+        "id": "waf",
+        "kind": "edge",
+        "name": "WAF",
+        "tech": "Firewall"
+      },
+      "worker": {
+        "about": "Buys return labels and refunds orders, one RefundJob at a time.",
+        "build": {
+          "artifact": "worker image",
+          "dockerfile": "Dockerfile",
+          "path": "worker/",
+          "registry": "ECR",
+          "repo": "github.com/acme/parcel",
+          "steps": [
+            "lint",
+            "test",
+            "build",
+            "scan",
+            "sign"
+          ]
+        },
+        "group": "parcel-returns",
+        "id": "worker",
+        "kind": "worker",
+        "name": "Worker",
+        "owners": "returns team",
+        "tech": "Node 22 · jobs"
+      }
+    },
+    "plans": {
+      "store-credit": {
+        "about": "Refund to store credit. Adds credit-ledger and a credit_ledger table; returns-api gains POST /credits. Ships as v42 (api + migration), then v43 (credit-ledger).",
+        "id": "store-credit",
+        "issue": "RET-214",
+        "name": "Store credit",
+        "releases": [
+          "v42",
+          "v43"
+        ]
+      }
+    },
+    "plays": {
+      "buyer-starts-a-return": {
+        "id": "buyer-starts-a-return",
+        "kind": "request",
+        "name": "Buyer starts a return",
+        "steps": [
+          {
+            "about": "POST /returns · ReturnRequest",
+            "name": "Buyer portal → Returns API",
+            "touches": [
+              "buyer-portal",
+              "buyer-portal-calls-returns-api",
+              "returns-api"
+            ]
+          },
+          {
+            "about": "writes Return",
+            "name": "Returns API → Main database",
+            "touches": [
+              "returns-api",
+              "returns-api-writes-main-database",
+              "main-database"
+            ]
+          },
+          {
+            "about": "publishes RefundJob { returnId, amount, reason }",
+            "name": "Returns API → Jobs",
+            "touches": [
+              "returns-api",
+              "returns-api-publishes-jobs",
+              "jobs"
+            ]
+          },
+          {
+            "about": "subscribes RefundJob",
+            "name": "Jobs → Worker",
+            "touches": [
+              "jobs",
+              "worker-subscribes-jobs",
+              "worker"
+            ]
+          },
+          {
+            "about": "calls Label · buys the return label",
+            "name": "Worker → Shippo",
+            "touches": [
+              "worker",
+              "worker-calls-shippo",
+              "shippo"
+            ]
+          }
+        ]
+      },
+      "release-v42": {
+        "fails": {
+          "at": 5,
+          "then": "v42-canary-fails"
+        },
+        "id": "release-v42",
+        "kind": "release",
+        "name": "Release v42",
+        "release": "v42",
+        "steps": [
+          {
+            "about": "GitHub Actions: lint, test, build api image",
+            "name": "Build",
+            "touches": [
+              "returns-api"
+            ]
+          },
+          {
+            "about": "api:7d1e5b2 to ECR, scanned, signed",
+            "name": "Sign and push",
+            "touches": [
+              "returns-api",
+              "ecr"
+            ]
+          },
+          {
+            "about": "tag change merged; Argo CD syncs prod",
+            "name": "Bump parcel-deploy",
+            "touches": [
+              "eks-prod"
+            ]
+          },
+          {
+            "about": "db-migrate Job runs 0042_store_credit; additive, old code still works",
+            "name": "Migrate first",
+            "touches": [
+              "db-migrate-prod",
+              "0042-store-credit",
+              "main-database"
+            ]
+          },
+          {
+            "about": "1 new pod beside 3 old; holds 15 min",
+            "check": "error rate < 1% · p95 < 400 ms",
+            "name": "Canary 10%",
+            "touches": [
+              "returns-api-prod"
+            ]
+          },
+          {
+            "about": "same checks, 15 min",
+            "check": "error rate < 1% · p95 < 400 ms",
+            "name": "Canary 50%",
+            "touches": [
+              "returns-api-prod"
+            ]
+          },
+          {
+            "about": "old pods drained, keeps 2 ready",
+            "name": "Full rollout",
+            "touches": [
+              "returns-api-prod"
+            ]
+          }
+        ]
+      },
+      "v42-canary-fails": {
+        "id": "v42-canary-fails",
+        "kind": "failure",
+        "name": "v42 canary fails",
+        "release": "v42",
+        "steps": [
+          {
+            "about": "error rate passes 1% on the canary",
+            "check": "error rate < 1%",
+            "name": "A check fails",
+            "touches": [
+              "returns-api-prod"
+            ]
+          },
+          {
+            "about": "traffic back to v41 in under 2 min",
+            "name": "Argo Rollouts aborts",
+            "touches": [
+              "returns-api-prod",
+              "eks-prod"
+            ]
+          },
+          {
+            "about": "0042_store_credit only adds, so v41 still works",
+            "name": "The migration stays",
+            "touches": [
+              "0042-store-credit",
+              "main-database"
+            ]
+          }
+        ]
+      }
+    },
+    "releases": {
+      "v42": {
+        "before": [
+          "db-migrate-staging",
+          "db-migrate-prod"
+        ],
+        "checks": [
+          "error rate < 1%",
+          "p95 latency < 400 ms",
+          "every new pod ready"
+        ],
+        "id": "v42",
+        "manifests": "parcel-deploy/apps/returns-api",
+        "name": "v42",
+        "parts": [
+          "returns-api"
+        ],
+        "path": [
+          "preview",
+          "staging",
+          "prod"
+        ],
+        "plan": "store-credit",
+        "rollback": "Argo Rollouts aborts: traffic back to v41 in under 2 min. The migration stays: it only adds.",
+        "strategy": {
+          "hold": "15 min",
+          "kind": "canary",
+          "steps": [
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "v43": {
+        "checks": [
+          "error rate < 1%",
+          "every new pod ready"
+        ],
+        "id": "v43",
+        "manifests": "parcel-deploy/apps/credit-ledger",
+        "name": "v43",
+        "parts": [
+          "credit-ledger"
+        ],
+        "path": [
+          "staging",
+          "prod"
+        ],
+        "plan": "store-credit",
+        "rollback": "Argo CD syncs the previous tag.",
+        "strategy": {
+          "kind": "rolling"
+        }
+      }
+    },
+    "stages": {
+      "build": {
+        "gate": "signed, no critical CVEs",
+        "id": "build",
+        "makes": [
+          "api:sha",
+          "worker:sha",
+          "web bundle"
+        ],
+        "name": "Build",
+        "order": 4,
+        "steps": [
+          "Build images: api, worker",
+          "SBOM + vulnerability scan",
+          "Sign (cosign)",
+          "Push to ECR"
+        ],
+        "tools": "GitHub Actions"
+      },
+      "code": {
+        "gate": "pull request opened",
+        "id": "code",
+        "makes": [
+          "commits"
+        ],
+        "name": "Code",
+        "order": 2,
+        "steps": [
+          "Branch from main",
+          "Run locally: docker compose",
+          "Same images as prod",
+          "Seed data from fixtures"
+        ],
+        "tools": "branch · local"
+      },
+      "idea": {
+        "gate": "design reviewed",
+        "id": "idea",
+        "makes": [
+          "issue",
+          "design",
+          "acceptance checks"
+        ],
+        "name": "Idea",
+        "order": 1,
+        "steps": [
+          "RET-214: refund to store credit, owner returns team",
+          "Design in buni: returns.buni, refund flow · Next"
+        ],
+        "tools": "Linear · buni"
+      },
+      "respond": {
+        "about": "Loops back to Idea: every incident and every alert that needed a human becomes an issue.",
+        "id": "respond",
+        "name": "Respond",
+        "order": 8,
+        "steps": [
+          "Roll back: Argo Rollouts abort → last good image",
+          "Fix forward: hotfix branch, same path, fast lane",
+          "Postmortem → new issue in Idea"
+        ],
+        "tools": "on-call"
+      },
+      "review": {
+        "gate": "checks + review",
+        "id": "review",
+        "makes": [
+          "preview URL"
+        ],
+        "name": "Review",
+        "order": 3,
+        "steps": [
+          "Lint, typecheck, unit tests",
+          "Preview env per PR",
+          "Design check against buni",
+          "One approving review"
+        ],
+        "tools": "pull request"
+      },
+      "run": {
+        "about": "Edge returns.parcel.app → CloudFront → WAF → ALB; workloads returns-api ×3–10, worker ×2–6; managed RDS, SQS, S3, Secrets Manager.",
+        "id": "run",
+        "name": "Run",
+        "order": 6,
+        "tools": "EKS prod · us-east-1"
+      },
+      "ship": {
+        "gate": "canary healthy 15 min",
+        "id": "ship",
+        "name": "Ship",
+        "order": 5,
+        "steps": [
+          "Bump tags in parcel-deploy",
+          "Migrate DB (pre-sync)",
+          "Staging sync, e2e tests",
+          "Approve → prod canary"
+        ],
+        "tools": "Argo CD · GitOps"
+      },
+      "watch": {
+        "gate": "SLO burn → incident",
+        "id": "watch",
+        "name": "Watch",
+        "order": 7,
+        "steps": [
+          "Logs, metrics, traces",
+          "SLO 99.9% · 5xx < 1%",
+          "Alert pages on-call",
+          "Dashboard per service"
+        ],
+        "tools": "Datadog · PagerDuty"
+      }
+    },
+    "workloads": {
+      "credit-ledger-prod": {
+        "egress": [
+          "main-database",
+          "jobs"
+        ],
+        "environment": "prod",
+        "id": "credit-ledger-prod",
+        "kind": "Deployment",
+        "namespace": "eks-prod-returns",
+        "part": "credit-ledger",
+        "plan": "store-credit",
+        "probes": {
+          "live": "/live",
+          "ready": "/health"
+        },
+        "replicas": {
+          "max": 4,
+          "min": 2
+        },
+        "resources": {
+          "cpu": "250m",
+          "limitCpu": "500m",
+          "limitMemory": "512Mi",
+          "memory": "256Mi"
+        },
+        "status": "planned"
+      },
+      "db-migrate-prod": {
+        "before": true,
+        "egress": [
+          "main-database"
+        ],
+        "environment": "prod",
+        "id": "db-migrate-prod",
+        "image": "api:4f2c9a1",
+        "kind": "Job",
+        "name": "db-migrate",
+        "namespace": "eks-prod-jobs",
+        "part": "returns-api"
+      },
+      "db-migrate-staging": {
+        "before": true,
+        "environment": "staging",
+        "id": "db-migrate-staging",
+        "image": "api:4f2c9a1",
+        "kind": "Job",
+        "name": "db-migrate",
+        "namespace": "eks-staging-jobs",
+        "part": "returns-api"
+      },
+      "nightly-labels-prod": {
+        "egress": [
+          "main-database",
+          "shippo"
+        ],
+        "environment": "prod",
+        "id": "nightly-labels-prod",
+        "image": "worker:91be03d",
+        "kind": "CronJob",
+        "name": "nightly-labels",
+        "namespace": "eks-prod-jobs",
+        "part": "worker",
+        "schedule": "0 2 * * *"
+      },
+      "returns-api-prod": {
+        "account": {
+          "name": "returns-api",
+          "role": "IAM role returns-api (IRSA)"
+        },
+        "config": [
+          "api-config"
+        ],
+        "egress": [
+          "main-database",
+          "jobs"
+        ],
+        "environment": "prod",
+        "id": "returns-api-prod",
+        "image": "api:4f2c9a1",
+        "ingress": {
+          "host": "returns.parcel.app",
+          "path": "/"
+        },
+        "keep": 2,
+        "kind": "Rollout",
+        "namespace": "eks-prod-returns",
+        "nodes": "general",
+        "part": "returns-api",
+        "probes": {
+          "live": "/live",
+          "ready": "/health"
+        },
+        "replicas": {
+          "max": 10,
+          "min": 3
+        },
+        "resources": {
+          "cpu": "250m",
+          "limitCpu": "1",
+          "limitMemory": "1Gi",
+          "memory": "512Mi"
+        },
+        "scale": {
+          "by": "cpu",
+          "target": "70%"
+        },
+        "secrets": [
+          "shippo-key"
+        ],
+        "service": {
+          "port": 8080
+        }
+      },
+      "returns-api-staging": {
+        "config": [
+          "api-config"
+        ],
+        "environment": "staging",
+        "id": "returns-api-staging",
+        "image": "api:4f2c9a1",
+        "ingress": {
+          "host": "staging.returns.parcel.app",
+          "path": "/"
+        },
+        "kind": "Deployment",
+        "namespace": "eks-staging-returns",
+        "part": "returns-api",
+        "probes": {
+          "live": "/live",
+          "ready": "/health"
+        },
+        "replicas": {
+          "min": 1
+        },
+        "secrets": [
+          "shippo-key"
+        ],
+        "service": {
+          "port": 8080
+        }
+      },
+      "worker-prod": {
+        "account": {
+          "name": "worker",
+          "role": "IAM: SQS, S3"
+        },
+        "egress": [
+          "main-database",
+          "jobs",
+          "labels",
+          "shopify",
+          "shippo",
+          "resend"
+        ],
+        "environment": "prod",
+        "id": "worker-prod",
+        "image": "worker:91be03d",
+        "kind": "Deployment",
+        "namespace": "eks-prod-worker",
+        "nodes": "spot",
+        "part": "worker",
+        "probes": {
+          "live": "/live"
+        },
+        "replicas": {
+          "max": 6,
+          "min": 2
+        },
+        "resources": {
+          "cpu": "500m",
+          "memory": "1Gi"
+        },
+        "scale": {
+          "by": "queue",
+          "target": "SQS depth > 100"
+        },
+        "secrets": [
+          "shopify-token"
+        ]
+      },
+      "worker-staging": {
+        "environment": "staging",
+        "id": "worker-staging",
+        "image": "worker:91be03d",
+        "kind": "Deployment",
+        "namespace": "eks-staging-worker",
+        "part": "worker",
+        "replicas": {
+          "min": 1
+        },
+        "secrets": [
+          "shopify-token"
+        ]
+      }
+    }
+  },
   "attachments": {},
   "buni": 1,
   "comments": {},

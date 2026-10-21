@@ -2,10 +2,13 @@ import { emptyDoc, type Doc } from "./doc.ts";
 
 /** The fields of a document that hold entries by key: tokens and every collection. */
 type BagKey = Exclude<keyof Doc, "buni" | "imports" | "tokensRef">;
-/** A document seen as its bags of entries, whatever each entry is; `elsewhere` only on a document with its imports. */
+/**
+ * A document seen as its bags of entries, whatever each entry is; `elsewhere` only on a document with its imports.
+ * The architecture is one bag whose entries are its collections.
+ */
 type Bags = Partial<Record<BagKey, Record<string, unknown>>>;
 
-const BAGS: BagKey[] = [...Object.keys(emptyDoc()).filter((k): k is BagKey => k !== "buni"), "elsewhere"];
+const BAGS: BagKey[] = [...Object.keys(emptyDoc()).filter((k): k is BagKey => k !== "buni"), "elsewhere", "architecture"];
 const NONE: Record<string, unknown> = {};
 
 /**
@@ -45,7 +48,9 @@ export function applyPatch(doc: Doc, patch: DocPatch): Doc {
     if (!p) continue;
     const next = { ...(bags[k] ?? NONE), ...p.put };
     for (const id of p.removed) delete next[id];
-    bags[k] = next;
+    // An architecture with every collection gone is none at all.
+    if (k === "architecture" && Object.keys(next).length === 0) delete bags[k];
+    else bags[k] = next;
   }
   return out;
 }

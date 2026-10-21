@@ -10,7 +10,7 @@ import { Ids, type Tool, ToolError, tool } from "../kit.ts";
 
 export const docTools = {
   set_sources: tool({
-    description: "Link any page, layer, component, link, flow, journey, doc section, rule, attachment or comment to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
+    description: "Link any page, layer, component, link, flow, journey, doc section, rule, attachment or comment, or an architecture part, workload, release or plan, to its implementation files and symbols. Works for manually designed and imported items. Give repository-relative paths where possible. Empty sources removes links; this records context and does not change source code.",
     input: { ids: z.array(z.string()).min(1), sources: sourceRefs },
     run: async (doc, a) => {
       const ops: Op[] = a.ids.map((id) => {

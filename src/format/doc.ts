@@ -360,6 +360,258 @@ export function statesOf(doc: Doc, screen: Page): Page[] {
   return pagesInOrder(doc).filter((p) => p.state !== undefined && p.route === screen.route);
 }
 
+// How the app behind the screens is built and shipped: code → build → release → Kubernetes → run. buni designs it
+// (before and while it is built); it is not monitoring. All of it lives under the document's one `architecture` key.
+
+/** Whether a thing exists yet: planned and removed are a plan's proposal (merge_plan makes them so). */
+export const ARCH_STATUSES = ["live", "planned", "deprecated", "removed"] as const;
+export type ArchStatus = (typeof ARCH_STATUSES)[number];
+export const PART_KINDS = ["client", "service", "worker", "job", "store", "cache", "queue", "external", "edge"] as const;
+export type PartKind = (typeof PART_KINDS)[number];
+export const LINK_KINDS = ["calls", "reads", "writes", "publishes", "subscribes", "routes"] as const;
+export const GROUP_KINDS = ["system", "domain", "team"] as const;
+export const CLUSTER_PROVIDERS = ["eks", "gke", "aks", "k3s", "kind", "other"] as const;
+export const GITOPS_TOOLS = ["argocd", "flux"] as const;
+export const WORKLOAD_KINDS = ["Deployment", "Rollout", "StatefulSet", "Job", "CronJob", "DaemonSet"] as const;
+export type WorkloadKind = (typeof WORKLOAD_KINDS)[number];
+export const SCALE_BY = ["cpu", "memory", "queue"] as const;
+export const STRATEGIES = ["rolling", "canary", "blue-green"] as const;
+export const MIGRATION_SAFETY = ["additive", "breaking"] as const;
+export const PLAY_KINDS = ["request", "release", "failure"] as const;
+/** A Kubernetes object name (RFC 1123 label): what namespaces, workloads and node pools are called in the cluster. */
+export const K8S_NAME = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+
+/** What a part, link, workload or migration's plan says about it, and the plan it belongs to. */
+interface Planned {
+  status?: ArchStatus;
+  /** The Plan this belongs to: planned, it is added on merge; removed, it goes. */
+  plan?: Id;
+}
+
+export interface Build {
+  repo: string;
+  path?: string;
+  dockerfile?: string;
+  steps?: string[];
+  /** What it makes: "api image", "web bundle". */
+  artifact?: string;
+  registry?: string;
+}
+
+export interface Part extends Planned, SourceOwner {
+  id: Id;
+  name: string;
+  kind: PartKind;
+  /** "Next.js", "Postgres 16", "CloudFront". */
+  tech?: string;
+  about?: string;
+  group?: Id;
+  owners?: string;
+  build?: Build;
+  /** "RDS Postgres Multi-AZ": runs as a managed service, not a workload. */
+  managed?: string;
+}
+
+export interface ArchLink extends Planned {
+  id: Id;
+  from: Id;
+  to: Id;
+  kind: (typeof LINK_KINDS)[number];
+  /** What passes along it: "RefundJob", "Return". */
+  carries?: string;
+}
+
+export interface Group {
+  id: Id;
+  name: string;
+  kind: (typeof GROUP_KINDS)[number];
+  parent?: Id;
+}
+
+export interface Environment {
+  id: Id;
+  name: string;
+  /** Where it comes on the way to production: lower ships first. */
+  order: number;
+  cluster?: Id;
+  provider?: string;
+  region?: string;
+  /** One per pull request. */
+  preview?: boolean;
+}
+
+export interface NodePool {
+  name: string;
+  machine?: string;
+  min: number;
+  max: number;
+  spot?: boolean;
+  taint?: string;
+}
+
+export interface Cluster {
+  id: Id;
+  name: string;
+  provider: (typeof CLUSTER_PROVIDERS)[number];
+  version?: string;
+  zones?: number;
+  pools?: NodePool[];
+  addons?: string[];
+  gitops?: { tool: (typeof GITOPS_TOOLS)[number]; repo: string; path?: string };
+}
+
+export interface Namespace {
+  id: Id;
+  cluster: Id;
+  name: string;
+  owners?: string;
+}
+
+export interface Workload extends Planned, SourceOwner {
+  id: Id;
+  part: Id;
+  environment: Id;
+  namespace: Id;
+  kind: WorkloadKind;
+  /** Its name in the cluster; the part's name made Kubernetes-safe when absent. */
+  name?: string;
+  image?: string;
+  replicas?: { min: number; max?: number };
+  /** "70%", "depth > 100". */
+  scale?: { by: (typeof SCALE_BY)[number]; target: string };
+  /** Pods kept during disruptions (a PodDisruptionBudget's minAvailable). */
+  keep?: number;
+  resources?: { cpu?: string; memory?: string; limitCpu?: string; limitMemory?: string };
+  probes?: { ready?: string; live?: string };
+  service?: { port: number };
+  ingress?: { host: string; path?: string };
+  config?: string[];
+  /** Secret names; where they come from is a part (external, or managed like "Secrets Manager"). */
+  secrets?: string[];
+  account?: { name: string; role?: string };
+  /** Parts its NetworkPolicy lets it reach. */
+  egress?: Id[];
+  /** A CronJob's schedule. */
+  schedule?: string;
+  /** A Job that runs before each sync (migrations). */
+  before?: boolean;
+  /** The node pool it runs on. */
+  nodes?: string;
+}
+
+export interface Release extends SourceOwner {
+  id: Id;
+  /** "v42", or a path's name. */
+  name: string;
+  parts: Id[];
+  /** Environment ids, in the order it ships through them. */
+  path: Id[];
+  /** Where the manifests live: "parcel-deploy/apps/returns-api". */
+  manifests?: string;
+  /** Canary steps are percentages of traffic, ending at 100; hold is how long each step waits ("15 min"). */
+  strategy: { kind: (typeof STRATEGIES)[number]; steps?: number[]; hold?: string };
+  /** What each step must pass: "error rate < 1%". */
+  checks?: string[];
+  rollback?: string;
+  /** Workloads (Jobs) that run first: migrations. */
+  before?: Id[];
+  plan?: Id;
+}
+
+export interface Migration extends Planned {
+  id: Id;
+  /** "0042_store_credit". */
+  name: string;
+  /** The store part it changes. */
+  store: Id;
+  release?: Id;
+  change: string;
+  /** Additive keeps the running code working; breaking needs it gone first. */
+  safe: (typeof MIGRATION_SAFETY)[number];
+}
+
+export interface Plan extends SourceOwner {
+  id: Id;
+  name: string;
+  /** "RET-214". */
+  issue?: string;
+  about?: string;
+  /** Release ids it ships in, in order. */
+  releases?: Id[];
+}
+
+/** A stage of the software path, idea to respond, and the gate to the next. */
+export interface Stage {
+  id: Id;
+  name: string;
+  order: number;
+  tools?: string;
+  steps?: string[];
+  makes?: string[];
+  gate?: string;
+  about?: string;
+}
+
+export interface PlayStep {
+  name: string;
+  about?: string;
+  /** Any architecture ids: what this step lights. */
+  touches: Id[];
+  check?: string;
+}
+
+/** A request, a release or a failure, played step by step over the architecture. */
+export interface Play {
+  id: Id;
+  name: string;
+  kind: (typeof PLAY_KINDS)[number];
+  release?: Id;
+  steps: PlayStep[];
+  /** Where a check can fail (a step number, from 1) and the failure play that follows. */
+  fails?: { at: number; then: Id };
+}
+
+// A type, not an interface: a document's bags are read as plain records (patch.ts).
+export type Architecture = {
+  parts: Record<Id, Part>;
+  links: Record<Id, ArchLink>;
+  groups: Record<Id, Group>;
+  environments: Record<Id, Environment>;
+  clusters: Record<Id, Cluster>;
+  namespaces: Record<Id, Namespace>;
+  workloads: Record<Id, Workload>;
+  releases: Record<Id, Release>;
+  migrations: Record<Id, Migration>;
+  plans: Record<Id, Plan>;
+  stages: Record<Id, Stage>;
+  plays: Record<Id, Play>;
+};
+export type ArchCollection = keyof Architecture;
+export const ARCH_COLLECTIONS = [
+  "parts", "links", "groups", "environments", "clusters", "namespaces", "workloads", "releases", "migrations", "plans", "stages", "plays",
+] as const satisfies readonly ArchCollection[];
+
+export function emptyArchitecture(): Architecture {
+  return { parts: {}, links: {}, groups: {}, environments: {}, clusters: {}, namespaces: {}, workloads: {}, releases: {}, migrations: {}, plans: {}, stages: {}, plays: {} };
+}
+
+/** The document's architecture, every collection there (empty when it has none). */
+export function architectureOf(doc: Pick<Doc, "architecture">): Architecture {
+  return { ...emptyArchitecture(), ...doc.architecture };
+}
+
+/** Which collection holds an architecture id, if any. */
+export function archCollectionOf(arch: Architecture, id: Id): ArchCollection | undefined {
+  return ARCH_COLLECTIONS.find((c) => Object.hasOwn(arch[c], id));
+}
+
+/** A workload's name in the cluster: its own, or its part's made Kubernetes-safe. */
+export function workloadName(arch: Architecture, w: Workload): string {
+  return w.name ?? k8sName(arch.parts[w.part]?.name ?? w.part);
+}
+
+export const k8sName = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
+
 export const FORMAT_VERSION = 1;
 
 export interface Doc {
@@ -389,6 +641,8 @@ export interface Doc {
   sections: Record<Id, Section>;
   rules: Record<Id, Rule>;
   attachments: Record<Id, Attachment>;
+  /** How the app is built and shipped; absent while it has none. */
+  architecture?: Architecture;
 }
 
 export function emptyDoc(): Doc {

@@ -5,6 +5,13 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: architecture, rebuilt as its own model under one `architecture` key: parts and links, groups, how each part
+  is built, environments, Kubernetes clusters, namespaces and workloads, releases and migrations, plans (planned
+  changes, merged by a person), the software path's stages, and plays (a request, release or failure step by step).
+  Tools `set_part`, `set_build`, `link_parts`, `unlink`, `set_group`, `set_environment`, `set_cluster`,
+  `set_namespace`, `set_workload`, `set_release`, `set_migration`, `set_plan`, `set_stage`, `set_play`,
+  `delete_architecture`, `merge_plan` and `read_architecture`; `buni arch FILE [--level] [--env] [--focus]` prints the
+  brief. examples/parcel.buni has a full one. Format version stays 1.
 - Removed: buni designs UI and UX only now. The system behind the screens (parts, links, endpoints, operations,
   tables, shapes, events, traces, where it runs), the plan (requirements, phases, questions, roles, access, review,
   discussion threads) and designed agents and their evals are gone, with their tools (`set_part`, `set_endpoint`,

@@ -1,16 +1,18 @@
-import type { Doc, Id } from "../format/doc.ts";
+import { ARCH_COLLECTIONS, emptyArchitecture, type ArchCollection, type Architecture, type Doc, type Id } from "../format/doc.ts";
 import { validateDoc, type FormatError } from "../format/parse.ts";
 
-export type Collection =
+export type DocCollection =
   | "pages" | "nodes" | "shared" | "connections" | "flows"
   | "journeys" | "comments" | "sections" | "rules" | "attachments";
+/** A collection of the document, or of its architecture (doc.architecture.parts, …). */
+export type Collection = DocCollection | ArchCollection;
 
-export type EntityOf<C extends Collection> = Doc[C][Id];
+export type EntityOf<C extends Collection> = C extends ArchCollection ? Architecture[C][Id] : C extends DocCollection ? Doc[C][Id] : never;
 
 /** The only ways a document changes. Richer edits are built from these by the tool layer. */
 export type Op =
   | { [C in Collection]: { kind: "put"; collection: C; value: EntityOf<C> } }[Collection]
-  | { [C in Collection]: { kind: "delete"; collection: C; id: Id } }[Collection]
+  | { kind: "delete"; collection: Collection; id: Id }
   | { kind: "token"; name: string; value?: string }
   | { kind: "imports"; value: string[] };
 
@@ -43,20 +45,54 @@ export interface Rejected {
   errors: FormatError[];
 }
 
-type Bags = { [C in Collection]: Record<Id, EntityOf<C>> };
+type Bags = { [C in DocCollection]: Record<Id, EntityOf<C>> };
+type ArchBags = { [C in ArchCollection]: Record<Id, Architecture[C][Id]> };
+type ArchOp = Extract<Op, { kind: "put"; collection: ArchCollection }> | { kind: "delete"; collection: ArchCollection; id: Id };
 
-function put<C extends Collection>(doc: Doc, collection: C, value: EntityOf<C>): void {
+export const isArchCollection = (c: Collection): c is ArchCollection => ARCH_COLLECTIONS.some((x) => x === c);
+const isArchOp = (op: Op): op is ArchOp => (op.kind === "put" || op.kind === "delete") && isArchCollection(op.collection);
+
+/** An op that puts an architecture entity, for code that holds a collection's name as a variable. */
+export const ARCH_PUT: { [C in ArchCollection]: (value: Architecture[C][Id]) => Op } = {
+  parts: (value) => ({ kind: "put", collection: "parts", value }),
+  links: (value) => ({ kind: "put", collection: "links", value }),
+  groups: (value) => ({ kind: "put", collection: "groups", value }),
+  environments: (value) => ({ kind: "put", collection: "environments", value }),
+  clusters: (value) => ({ kind: "put", collection: "clusters", value }),
+  namespaces: (value) => ({ kind: "put", collection: "namespaces", value }),
+  workloads: (value) => ({ kind: "put", collection: "workloads", value }),
+  releases: (value) => ({ kind: "put", collection: "releases", value }),
+  migrations: (value) => ({ kind: "put", collection: "migrations", value }),
+  plans: (value) => ({ kind: "put", collection: "plans", value }),
+  stages: (value) => ({ kind: "put", collection: "stages", value }),
+  plays: (value) => ({ kind: "put", collection: "plays", value }),
+};
+
+function put<C extends DocCollection>(doc: Doc, collection: C, value: EntityOf<C>): void {
   const bags: Bags = doc;
   const bag: Record<Id, EntityOf<C>> = bags[collection];
   bag[value.id] = value;
 }
 
+function putArch<C extends ArchCollection>(arch: ArchBags, collection: C, value: Architecture[C][Id]): void {
+  const bag: Record<Id, Architecture[C][Id]> = arch[collection];
+  bag[value.id] = value;
+}
+
+function applyArchOp(doc: Doc, op: ArchOp): void {
+  // copyFor gave this document its own architecture to change.
+  const arch = (doc.architecture ??= emptyArchitecture());
+  if (op.kind === "delete") delete arch[op.collection][op.id];
+  else putArch(arch, op.collection, op.value);
+}
+
 function applyOp(doc: Doc, op: Op): void {
+  if (isArchOp(op)) return applyArchOp(doc, op);
   switch (op.kind) {
     case "put":
       return put(doc, op.collection, op.value);
     case "delete":
-      delete doc[op.collection][op.id];
+      if (!isArchCollection(op.collection)) delete doc[op.collection][op.id];
       return;
     case "token":
       if (op.value === undefined) delete doc.tokens[op.name];
@@ -75,7 +111,13 @@ export type ApplyResult = { ok: true; doc: Doc } | { ok: false; errors: FormatEr
 export function applyOps(doc: Doc, ops: readonly Op[]): Doc {
   const next = copyFor(doc, ops);
   for (const op of ops) applyOp(next, op);
-  return next;
+  return tidy(next);
+}
+
+/** A document whose architecture holds nothing has none: the key is left out of the file. */
+function tidy(doc: Doc): Doc {
+  if (doc.architecture && ARCH_COLLECTIONS.every((c) => Object.keys(doc.architecture?.[c] ?? {}).length === 0)) delete doc.architecture;
+  return doc;
 }
 
 /**
@@ -85,12 +127,22 @@ export function applyOps(doc: Doc, ops: readonly Op[]): Doc {
 function copyFor(doc: Doc, ops: readonly Op[]): Doc {
   const next: Doc = { ...doc, tokens: ops.some((op) => op.kind === "token") ? { ...doc.tokens } : doc.tokens };
   const touched = new Set(ops.flatMap((op) => (op.kind === "put" || op.kind === "delete" ? [op.collection] : [])));
-  for (const c of touched) copyBag(next, doc, c);
+  const arch = [...touched].filter(isArchCollection);
+  if (arch.length) {
+    const own = { ...emptyArchitecture(), ...doc.architecture };
+    for (const c of arch) copyArchBag(own, c);
+    next.architecture = own;
+  }
+  for (const c of touched) if (!isArchCollection(c)) copyBag(next, doc, c);
   return next;
 }
 
-function copyBag<C extends Collection>(next: Bags, doc: Bags, c: C): void {
+function copyBag<C extends DocCollection>(next: Bags, doc: Bags, c: C): void {
   next[c] = { ...doc[c] };
+}
+
+function copyArchBag<C extends ArchCollection>(arch: ArchBags, c: C): void {
+  arch[c] = { ...arch[c] };
 }
 
 /** Applies a change to a copy of the document; the result must still be a valid document. */
@@ -98,6 +150,7 @@ export function applyChange(doc: Doc, change: Change, context?: Doc): ApplyResul
   // Revalidates the whole doc per change; fine for thousands of nodes, validate only touched refs if it gets slow
   const next = copyFor(doc, change.ops);
   for (const op of change.ops) applyOp(next, op);
+  tidy(next);
   const errors = validateDoc(next, context);
   return errors.length === 0 ? { ok: true, doc: next } : { ok: false, errors };
 }
@@ -180,8 +233,15 @@ export function settle(session: Session, setId: Id, keep: readonly Id[]): Settle
   };
 }
 
+function restoreArch<C extends ArchCollection>(doc: Doc, collection: C, id: Id): Op {
+  const bags: ArchBags | undefined = doc.architecture;
+  const v = bags?.[collection][id];
+  return v ? ARCH_PUT[collection](v) : { kind: "delete", collection, id };
+}
+
 /** The op that puts back whatever `doc` holds at `collection`/`id`, or removes it if nothing. */
 function restore(doc: Doc, collection: Collection, id: Id): Op {
+  if (isArchCollection(collection)) return restoreArch(doc, collection, id);
   switch (collection) {
     case "pages": {
       const v = doc.pages[id];
@@ -238,22 +298,30 @@ export function invert(doc: Doc, ops: readonly Op[]): Op[] {
     .reverse();
 }
 
-const COLLECTIONS: readonly Collection[] = [
+const COLLECTIONS: readonly DocCollection[] = [
   "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "sections", "rules", "attachments",
 ];
 
 // The casts below: TypeScript can't tie a generic collection to its own value inside the Op union, though they match.
-function bagDiff<C extends Collection>(c: C, from: Bags, to: Bags, out: Op[]): void {
+function bagDiff<C extends DocCollection>(c: C, from: Bags, to: Bags, out: Op[]): void {
   const a: Record<Id, EntityOf<C>> = from[c];
   const b: Record<Id, EntityOf<C>> = to[c];
   for (const id of Object.keys(a)) if (!(id in b)) out.push({ kind: "delete", collection: c, id } as Op);
   for (const [id, value] of Object.entries(b)) if (JSON.stringify(a[id]) !== JSON.stringify(value)) out.push({ kind: "put", collection: c, value } as Op);
 }
 
+function archDiff<C extends ArchCollection>(c: C, from: ArchBags | undefined, to: ArchBags | undefined, out: Op[]): void {
+  const a: Record<Id, Architecture[C][Id]> = from?.[c] ?? {};
+  const b: Record<Id, Architecture[C][Id]> = to?.[c] ?? {};
+  for (const id of Object.keys(a)) if (!(id in b)) out.push({ kind: "delete", collection: c, id });
+  for (const [id, value] of Object.entries(b)) if (JSON.stringify(a[id]) !== JSON.stringify(value)) out.push(ARCH_PUT[c](value));
+}
+
 /** The ops that turn one document into another: what restoring a saved version applies, so it can be undone. */
 export function diffOps(from: Doc, to: Doc): Op[] {
   const out: Op[] = [];
   for (const c of COLLECTIONS) bagDiff(c, from, to, out);
+  for (const c of ARCH_COLLECTIONS) archDiff(c, from.architecture, to.architecture, out);
   for (const name of Object.keys(from.tokens)) if (!(name in to.tokens)) out.push({ kind: "token", name });
   for (const [name, value] of Object.entries(to.tokens)) if (from.tokens[name] !== value) out.push({ kind: "token", name, value });
   if (JSON.stringify(from.imports ?? []) !== JSON.stringify(to.imports ?? [])) out.push({ kind: "imports", value: to.imports ?? [] });

@@ -42,6 +42,8 @@ usage: buni <command> [args] [--as <name>] [--json]
       [--port N] [--no-open]          its port; print the address instead
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
+  arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
+                                    the architecture as a brief: how the app is built, shipped and run
   call <file.buni> <tool> [json|-]  run one tool; "-" reads the JSON from stdin
   shot <file.buni> <page> <out>     draw a page (id, name or route) to .png (--scale 2; --frames 6 for its motion), .pdf, or .svg (a graphic
                                     that is one svg), with the Chrome, Chromium or Edge on this machine; a terminal
@@ -157,17 +159,31 @@ Improving a product that already ships (read buni skills critique first):
    compare_options reviews them side by side, ask_person when the choice is theirs, pick_option {option, why} makes one live.
 
 Motion: set_motion on the layer (read buni skills motion); buni shot FILE PAGE out.png --frames 6 shows it as moments
-side by side, so check order and pace there. Imported pages keep their motion.`;
+side by side, so check order and pace there. Imported pages keep their motion.
+
+Architecture: how the app behind the screens is built and shipped (code → build → release → Kubernetes → run), designed
+before and while it is built; not monitoring.
+- Parts and links: set_part {name, kind, tech, managed}, link_parts {from, to, kind, carries}, set_group; set_build {part, repo, path, steps}.
+- Where it runs: set_environment {name, order, cluster}, set_cluster {name, provider, pools, addons, gitops}, set_namespace
+  {cluster, name}, set_workload {part, environment, namespace, kind, replicas, scale, probes, resources, …}.
+- How it ships: set_release {name, parts, path, strategy, checks, rollback, before}, set_migration {name, store, release, change, safe}.
+- set_stage writes the software path (idea → respond); set_play plays a request, release or failure step by step.
+- Plan a change before code: set_plan {name, issue}, then mark what it adds status "planned" (or "removed") with plan; the
+  person merges it (merge_plan) or discards it (delete_architecture). Every set_ tool changes a thing when given its id;
+  null removes a field.
+- Read it: buni arch FILE [--level system|runtime|code] [--env prod] [--focus ID] (read_architecture).`;
 
 /** The guide in the SKILL.md shape shared by pi, Codex and Claude Code. */
 const SKILL = `---
 name: buni
 description: >-
   Design desktop web pages, app flows, UX journeys and terminal screens in buni (.buni files) through the buni
-  CLI: pages, components, tokens, motion, links, flows and journeys. Also snapshots a live app to improve it,
+  CLI: pages, components, tokens, motion, links, flows and journeys, and the architecture behind them: parts,
+  builds, Kubernetes workloads, releases, plans and plays. Also snapshots a live app to improve it,
   reviews pages (motion, contrast, type, targets, generated-look tells), and tries options of a page to compare and
   pick from. Use when asked to design, mock up, lay out or restyle a screen, page, site or app flow, to improve or
-  review an existing UI, to try alternatives of a page, to build from a design, or when a .buni file is involved.
+  review an existing UI, to try alternatives of a page, to design how an app is built and shipped, to build from a
+  design, or when a .buni file is involved.
 ---
 
 ${GUIDE.replace("# Designing with buni", "# buni")}
@@ -317,6 +333,18 @@ async function run(file: string, as: string, name: string, args: unknown): Promi
 }
 
 /** `context` arguments: what to focus on, "page:ID" or "flow:ID". */
+/** buni arch's flags as read_architecture's arguments. */
+function archArgs(args: readonly string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  const names: Record<string, string> = { "--level": "level", "--env": "environment", "--focus": "focus" };
+  for (let i = 0; i < args.length; i++) {
+    const key = names[args[i] ?? ""];
+    const value = args[i + 1];
+    if (key && value !== undefined) { out[key] = value; i++; }
+  }
+  return out;
+}
+
 function contextArgs(args: readonly string[]): { focus?: string } {
   const focus = args[0];
   return focus ? { focus } : {};
@@ -353,6 +381,8 @@ async function remoteCommand(cmd: string | undefined, name: string, args: readon
       return out(await tool("read_tree", args[0] ? { root: args[0] } : {}));
     case "context":
       return out(await tool("read_context", contextArgs(args)));
+    case "arch":
+      return out(await tool("read_architecture", archArgs(args)));
     case "call": {
       const [name, arg] = args;
       if (!name) {
@@ -614,6 +644,8 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       return out(await run(file, as, "read_tree", args[0] ? { root: args[0] } : {}));
     case "context":
       return out(await run(file, as, "read_context", contextArgs(args)));
+    case "arch":
+      return out(await run(file, as, "read_architecture", archArgs(args)));
     case "call": {
       const [name, arg] = args;
       if (!name) {
