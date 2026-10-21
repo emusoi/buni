@@ -9,6 +9,7 @@ import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
 import { ADDABLE, addFor, savedId, type AddContext, type Addable } from "./edit.ts";
 import { useDismiss } from "../useDismiss.ts";
+import { TextPane } from "./TextPane.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
 import { ArchInspector, plansAbout, selectionOf } from "./Inspector.tsx";
 import { DeployPath, SoftwarePath } from "./Paths.tsx";
@@ -102,6 +103,9 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const [fresh, setFresh] = useState<Id>();
   const [deleting, setDeleting] = useState(false);
   const [linking, setLinking] = useState<{ from: Id; to: Id; x: number; y: number }>();
+  // The architecture as text, in a pane beside the view (in place of the inspector).
+  const [text, setText] = useState(false);
+  const textPane = text && <TextPane version={doc.architecture} onClose={() => setText(false)} onToast={onToast} />;
   const select = useCallback((id: Id | undefined) => { setSelected(id); setFresh(undefined); setDeleting(false); }, []);
   const env = environmentOf(arch, envId);
   const envs = environmentsInOrder(arch);
@@ -148,13 +152,17 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
 
   if (!Object.keys(arch.parts).length) {
     return (
-      <div className="arch arch-empty">
+      <div className={`arch arch-empty${text ? " with-text" : ""}`}>
         <div>
           <b>No architecture yet</b>
           <p>How the app behind these screens is built and shipped: its parts, where their code lives, how each is built, how it ships to Kubernetes and what it runs as.</p>
-          <p><button type="button" className="arch-btn primary" onClick={() => void add("parts")}>Add your first part</button></p>
+          <p className="arch-empty-actions">
+            <button type="button" className="arch-btn primary" onClick={() => void add("parts")}>Add your first part</button>
+            <button type="button" className="arch-btn" aria-pressed={text} onClick={() => setText((t) => !t)}>Write it as text</button>
+          </p>
           <p>Or ask your coding agent to describe it. It has the architecture tools (<code>set_part</code>, <code>link_parts</code>, <code>set_build</code>, <code>set_environment</code>, <code>set_cluster</code>, <code>set_workload</code>, <code>set_release</code>, <code>set_plan</code>…). From a terminal, <code>buni arch {name}</code> prints what is there.</p>
         </div>
+        {textPane}
       </div>
     );
   }
@@ -198,7 +206,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     />
   );
   // Beside a view that isn't the map, the inspector shows only while something is selected.
-  const aside = selected && archCollectionOf(arch, selected) ? inspector(() => select(undefined)) : undefined;
+  const aside = textPane || (selected && archCollectionOf(arch, selected) ? inspector(() => select(undefined)) : undefined);
 
   return (
     <div className="arch">
@@ -211,6 +219,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
         <span className="grow" />
         {(view === "map" || view === "flows") && <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />}
         {envs.length > 0 && view !== "proposals" && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
+        <button type="button" className={`arch-btn${text ? " on" : ""}`} aria-pressed={text} onClick={() => setText((t) => !t)} title="The whole architecture as YAML, to read and write">Text</button>
         <AddMenu arch={arch} view={view} ctx={ctx} onAdd={(what) => void add(what)} />
       </div>
       <div className="arch-body">
@@ -249,7 +258,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             </div>
           }
         />
-        {inspector()}
+        {textPane || inspector()}
         </>}
       </div>
       {linking && <LinkKind at={linking} from={arch.parts[linking.from]?.name ?? linking.from} to={arch.parts[linking.to]?.name ?? linking.to} onPick={(k) => void link(k)} onCancel={() => setLinking(undefined)} />}

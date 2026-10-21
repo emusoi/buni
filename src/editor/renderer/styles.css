@@ -1905,6 +1905,26 @@ button.arch-pill:hover { border-color: rgba(138, 174, 255, 0.5); }
 .arch-empty > div { max-width: 520px; font-size: 13px; line-height: 1.55; color: #a1a1aa; }
 .arch-empty b { display: block; margin-bottom: 8px; font-size: 16px; color: #ededef; }
 .arch-empty code { font: 12px var(--mono); color: #ededef; }
+.arch-empty-actions { display: flex; gap: 8px; }
+.arch-empty.with-text { grid-template-columns: 1fr auto; place-items: stretch; padding: 0; }
+.arch-empty.with-text > div:first-child { align-self: center; justify-self: center; padding: 24px; }
+
+/* The architecture as text: a quiet monospace editor with line numbers, the refusal above it naming lines. */
+.arch-btn.on { background: #27272a; border-color: var(--line-2); }
+.arch-btn:disabled { opacity: 0.4; cursor: default; }
+.arch-btn.primary:disabled:hover { background: #ededef; }
+.arch-text { flex: none; width: min(520px, 45vw); box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--arch-line); background: #111113; }
+.arch-text-head { flex: none; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--arch-line); font-size: 13px; }
+.arch-text-head .grow { flex: 1; }
+.arch-text-head .arch-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-text-errors { flex: none; max-height: 30%; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-bottom: 1px solid rgba(255, 138, 128, 0.35); background: rgba(255, 138, 128, 0.06); font: 12px/1.45 var(--mono); color: var(--arch-red); }
+.arch-text-errors button { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.arch-text-errors button:hover, .arch-text-errors button:focus-visible { text-decoration: underline; outline: none; }
+.arch-text-editor { flex: 1; min-height: 0; display: flex; font: 12px/18px var(--mono); }
+.arch-text-gutter { flex: none; overflow: hidden; padding: 10px 8px 10px 0; min-width: 34px; text-align: right; color: #52525b; user-select: none; display: flex; flex-direction: column; }
+.arch-text-gutter span { height: 18px; }
+.arch-text-gutter span.bad { color: var(--arch-red); }
+.arch-text-editor textarea { flex: 1; min-width: 0; margin: 0; padding: 10px 12px 10px 6px; border: 0; outline: none; resize: none; background: none; color: #ededef; font: inherit; tab-size: 2; white-space: pre; overflow: auto; }
 
 /* Narrow (a side panel, ?compact=1): the map takes the width; the inspector comes up over it when something is picked. */
 @media (max-width: 900px) {
