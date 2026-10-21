@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
-import { between, boxesIn, codeLayout, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { between, boxesIn, codeLayout, labelBox, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
 import { planChanges } from "./Proposals.tsx";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
@@ -203,4 +203,29 @@ test("a marquee picks the cards it touches, drawn either way round", () => {
   expect(got).toContain(a.key);
   expect(got).toContain(b.key);
   expect(boxesIn(l.boxes, between([-50, -50], [-10, -10]))).toEqual([]);
+});
+
+test("link labels sit clear of every card and of each other, at every level and in every environment", () => {
+  for (const env of Object.keys(arch.environments)) {
+    for (const l of [systemLayout(arch), runtimeLayout(arch, environmentOf(arch, env)), codeLayout(arch, environmentOf(arch, env))]) {
+      const labels = l.links.filter((x) => x.label && x.at).map((x) => labelBox(x.label!, x.at!));
+      for (const [i, r] of labels.entries()) {
+        expect(l.boxes.filter((b) => overlap(r, b))).toEqual([]);
+        expect(labels.slice(i + 1).filter((q) => overlap(r, q))).toEqual([]);
+      }
+    }
+  }
+});
+
+test("frames are drawn round what they hold, with even room on every side but the title's", () => {
+  for (const l of [systemLayout(arch), runtimeLayout(arch, prod)]) {
+    for (const f of l.frames) {
+      const inner = f.holds.map((k) => box(l, k) ?? l.frames.find((x) => x.key === k)!).filter(Boolean);
+      if (!inner.length) continue;
+      expect(Math.min(...inner.map((r) => r.x)) - f.x).toBe(16);
+      expect(f.x + f.w - Math.max(...inner.map((r) => r.x + r.w))).toBe(16);
+      expect(Math.min(...inner.map((r) => r.y)) - f.y).toBe(32);
+      expect(f.y + f.h - Math.max(...inner.map((r) => r.y + r.h))).toBe(16);
+    }
+  }
 });

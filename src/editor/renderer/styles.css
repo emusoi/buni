@@ -1653,7 +1653,7 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .arch-canvas:active { cursor: grabbing; }
 .arch-plane { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .arch-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.arch-card { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; padding: 9px 10px; border-radius: 8px; background: var(--arch-card); border: 1px solid var(--arch-line); line-height: 1.15; cursor: pointer; transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s; }
+.arch-card { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border-radius: 8px; background: var(--arch-card); border: 1px solid var(--arch-line); line-height: 1.15; cursor: pointer; transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s, left 0.2s ease-out, top 0.2s ease-out, transform 0.1s; }
 .arch-card:hover { border-color: rgba(255, 255, 255, 0.2); }
 .arch-card:focus-visible { outline: 2px solid var(--arch-blue); outline-offset: 2px; }
 .arch-lbl { font-size: 11px; color: #8b8b94; }
@@ -1677,7 +1677,7 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .arch-card.lit .arch-chip.add { color: var(--arch-gold); border: 1px solid rgba(232, 196, 106, 0.7); }
 .arch-badge { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; border-radius: 9999px; background: var(--arch-blue); color: #111113; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
 .arch-frame { position: absolute; box-sizing: border-box; border-radius: 14px; border: 1px dashed rgba(255, 255, 255, 0.14); pointer-events: none; transition: opacity 0.2s; }
-.arch-frame-title { position: absolute; left: 14px; top: -9px; padding: 0 6px; background: #111113; font-size: 12px; line-height: 16px; color: #a1a1aa; white-space: nowrap; }
+.arch-frame-title { position: absolute; left: 12px; top: -8px; padding: 0 4px; background: #111113; font-size: 12px; line-height: 16px; color: #a1a1aa; white-space: nowrap; }
 .arch-frame-title b { color: #ededef; }
 .arch-link-text { color: var(--arch-blue); }
 .arch-caption { position: absolute; padding: 0 4px; background: #111113; font-size: 11px; color: #8b8b94; white-space: nowrap; }
@@ -1702,13 +1702,13 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .arch-zoom button:hover { background: #27272a; color: #ededef; }
 
 /* The inspector: what the selection is built from, how it ships, what it runs as, what is planned. */
-.arch-inspector { flex: none; width: 340px; box-sizing: border-box; padding: 18px 20px; border-left: 1px solid var(--arch-line); display: flex; flex-direction: column; overflow-y: auto; }
+.arch-inspector { flex: none; width: 340px; box-sizing: border-box; padding: 16px 24px; border-left: 1px solid var(--arch-line); display: flex; flex-direction: column; overflow-y: auto; }
 .arch-inspector .arch-lbl { line-height: 1.3; }
 .arch-inspector-name { font-size: 18px; font-weight: 700; margin-top: 2px; }
-.arch-about { margin: 6px 0 12px; font-size: 12px; line-height: 1.45; color: #a1a1aa; }
-.arch-section { display: flex; flex-direction: column; gap: 6px; padding: 14px 0; border-top: 1px solid var(--arch-line); }
+.arch-about { margin: 8px 0 16px; font-size: 12px; line-height: 1.45; color: #a1a1aa; }
+.arch-section { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-top: 1px solid var(--arch-line); }
 .arch-section-title { font-size: 11px; color: #8b8b94; text-transform: uppercase; letter-spacing: 0.6px; }
-.arch-row { display: flex; gap: 10px; font-size: 12px; line-height: 1.4; }
+.arch-row { display: flex; gap: 8px; font-size: 12px; line-height: 1.4; }
 .arch-row-key { flex: none; width: 84px; color: #a1a1aa; }
 .arch-row-value { min-width: 0; color: #ededef; overflow-wrap: anywhere; }
 .arch-gold { color: var(--arch-gold); }
@@ -1726,7 +1726,7 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 
 /* Writing the architecture: quiet fields that read like the rows they replace until hovered or focused. */
 .arch-title-field { margin: 2px 0 6px; }
-.arch-field { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; line-height: 1.4; }
+.arch-field { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.4; }
 .arch-field-key { flex: none; width: 84px; padding-top: 5px; color: #a1a1aa; }
 .arch-field-value { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .arch-input { box-sizing: border-box; width: 100%; min-width: 0; height: 26px; padding: 0 6px; margin-left: -6px; border-radius: 6px; border: 1px solid transparent; background: none; color: #ededef; font: inherit; font-size: 12px; outline: none; }
@@ -1970,3 +1970,12 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .arch-canvas.panning, .arch-canvas.panning .arch-card { cursor: grab; }
 .arch-picked-list { list-style: none; margin: 8px 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
 .arch-picked-list li { display: flex; justify-content: space-between; gap: 8px; }
+
+/* Polish: a card lifts under the pointer and gives under a press; cards and frames glide when moved by undo or Tidy,
+   never while dragged; discrete zooms (buttons, Fit, ⌘0, ⌘1) ease. */
+.arch-card:hover:not(.moving) { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+.arch-card:active:not(.moving) { transform: scale(0.99); }
+.arch-card.moving, .arch-canvas.dragging .arch-card, .arch-canvas.dragging .arch-frame { transition: opacity 0.2s, border-color 0.2s, box-shadow 0.2s; }
+.arch-frame { transition: opacity 0.2s, left 0.2s ease-out, top 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out; }
+.arch-plane.easing { transition: transform 0.2s ease-out; }
+.arch-zoom button:active { transform: scale(0.94); }

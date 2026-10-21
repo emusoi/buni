@@ -107,7 +107,10 @@ export function route(s: Point, t: Point, side: Side, mid: number, obstacles: re
     : r.y < Math.max(s[1], t[1]) && r.y + r.h > Math.min(s[1], t[1]));
   const lo = Math.min(...inside.map((r) => (across ? r.y : r.x)), across ? Math.min(s[1], t[1]) : Math.min(s[0], t[0])) - 16;
   const hi = Math.max(...inside.map((r) => (across ? r.y + r.h : r.x + r.w)), across ? Math.max(s[1], t[1]) : Math.max(s[0], t[0])) + 16;
-  for (const lane of [lo, hi]) {
+  // Round the whole lot, or, nearer first, just past one of the boxes in the way (a far lane can meet other boxes).
+  const middle = across ? (s[1] + t[1]) / 2 : (s[0] + t[0]) / 2;
+  const near = inside.flatMap((r) => (across ? [r.y - 16, r.y + r.h + 16] : [r.x - 16, r.x + r.w + 16])).sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle) || a - b);
+  for (const lane of [lo, hi, ...near]) {
     const pts = corners(across
       ? [s, [s[0] + out, s[1]], [s[0] + out, lane], [t[0] - out, lane], [t[0] - out, t[1]], t]
       : [s, [s[0], s[1] + out], [lane, s[1] + out], [lane, t[1] - out], [t[0], t[1] - out], t]);
@@ -188,9 +191,8 @@ const bounds = (rects: readonly Rect[]): { width: number; height: number } => ({
 
 /** `at`: where a person put a card, by key; the rest stay where the layout put them. */
 function finish(boxes: MapBox[], frames: MapFrame[], captions: Caption[], links: MapLink[], at: (key: string) => Point | undefined = () => undefined): MapLayout {
-  const auto: MapLayout = { boxes, frames, captions, links: [], ...bounds([...boxes, ...frames]) };
   const placed = new Map(boxes.flatMap((b) => { const p = at(b.key); return p ? [[b.key, p] as const] : []; }));
-  return placed.size ? moved({ ...auto, links: links.map((l) => ({ ...l, points: [] })) }, placed) : { ...auto, links: routeLinks(boxes, links) };
+  return arranged({ boxes, frames, captions, links: links.map((l) => ({ ...l, points: [] })), width: 0, height: 0 }, placed);
 }
 
 /** Room a frame keeps round what it holds: its title above, even padding on the other sides. */
@@ -198,10 +200,14 @@ const FRAME = { pad: 16, top: 32 } as const;
 
 /**
  * `layout` with cards moved to `to` (top-left, by key): a workload's Ingress and Service go along with it, each frame
- * holding a moved card is drawn round what it holds again, and every link is routed again round the cards.
+ * is drawn round what it holds again, and every link is routed again round the cards.
  */
 export function moved(layout: MapLayout, to: ReadonlyMap<string, Point>): MapLayout {
-  if (!to.size) return layout;
+  return to.size ? arranged(layout, to) : layout;
+}
+
+/** Cards where they go, frames round what they hold (inner ones first), links routed and labelled clear of it all. */
+function arranged(layout: MapLayout, to: ReadonlyMap<string, Point>): MapLayout {
   const delta = new Map<string, Point>();
   for (const b of layout.boxes) {
     const p = to.get(b.key);
@@ -212,20 +218,55 @@ export function moved(layout: MapLayout, to: ReadonlyMap<string, Point>): MapLay
     return d && (d[0] || d[1]) ? { ...b, x: b.x + d[0], y: b.y + d[1] } : b;
   });
   const rects = new Map<string, Rect>(boxes.map((b) => [b.key, b]));
-  const changed = new Set(boxes.filter((b, i) => b !== layout.boxes[i]).map((b) => b.key));
-  // Inner frames first, so an outer one is drawn round them as they now are.
+  const frameKeys = new Set(layout.frames.map((f) => f.key));
   const frames = layout.frames.map((f) => ({ ...f }));
-  for (const f of [...frames].sort((a, b) => a.w * a.h - b.w * b.h)) {
+  for (const f of [...frames].sort((p, q) => Number(p.holds.some((k) => frameKeys.has(k))) - Number(q.holds.some((k) => frameKeys.has(k))))) {
     const inner = f.holds.flatMap((k) => rects.get(k) ?? []);
-    if (inner.length && f.holds.some((k) => changed.has(k))) {
+    if (inner.length) {
       const [x0, y0] = [Math.min(...inner.map((r) => r.x)), Math.min(...inner.map((r) => r.y))];
       const [x1, y1] = [Math.max(...inner.map((r) => r.x + r.w)), Math.max(...inner.map((r) => r.y + r.h))];
       Object.assign(f, { x: x0 - FRAME.pad, y: y0 - FRAME.top, w: x1 - x0 + 2 * FRAME.pad, h: y1 - y0 + FRAME.top + FRAME.pad });
-      changed.add(f.key);
     }
     rects.set(f.key, f);
   }
-  return { ...layout, boxes, frames, links: routeLinks(boxes, layout.links), ...bounds([...boxes, ...frames]) };
+  return { ...layout, boxes, frames, links: labelled(routeLinks(boxes, layout.links), boxes), ...bounds([...boxes, ...frames]) };
+}
+
+// ---- Link labels: each where it reads clear of the cards and of the other labels. ----
+
+/** A label's box around its middle, about as wide as its text at 11px. */
+export const labelBox = (text: string, at: Point): Rect => {
+  const w = Math.ceil(text.length * 6.2) + 8;
+  return { x: at[0] - w / 2, y: at[1] - 8, w, h: 16 };
+};
+const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Each label nudged along its own route to the first place it overlaps neither a card nor a label already placed:
+ * the middle of its longest crossing first, then further along it, then its other segments, then just beside the
+ * line. One with nowhere clear keeps the middle.
+ */
+// From the middle out: 0.5, 0.45, 0.55, 0.4, … 0.05, 0.95.
+const ALONG = Array.from({ length: 19 }, (_, i) => 0.5 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.05);
+export function labelled(links: readonly RoutedLink[], boxes: readonly Rect[]): RoutedLink[] {
+  const taken: Rect[] = [];
+  return links.map((l) => {
+    if (!l.label || !l.at) return l;
+    const segs = l.points.slice(1).map((b, i): [Point, Point] => [l.points[i]!, b])
+      .sort(([a, b], [c, d]) => Number(c[1] === d[1]) - Number(a[1] === b[1]) || (Math.abs(c[0] - d[0]) + Math.abs(c[1] - d[1])) - (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1])));
+    const on: Point[] = segs.flatMap(([a, b]) => ALONG.map((t): Point => [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t)]));
+    // Nowhere on the line: just beside it, either side of an upright segment, above or below a flat one.
+    const w = labelBox(l.label, [0, 0]).w;
+    const beside = [1, -1].flatMap((side) => segs.flatMap(([a, b]) => ALONG.map((t): Point => {
+      const p: Point = [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t)];
+      return a[0] === b[0] ? [p[0] + side * (w / 2 + 4), p[1]] : [p[0], p[1] - side * 12];
+    })));
+    const tries: Point[] = [l.at, ...on, ...beside];
+    const clear = (p: Point) => { const r = labelBox(l.label!, p); return !boxes.some((b) => overlaps(r, b)) && !taken.some((t) => overlaps(r, t)); };
+    const at = tries.find(clear) ?? l.at;
+    taken.push(labelBox(l.label, at));
+    return { ...l, at };
+  });
 }
 
 const xyOf = (p: { x: number; y: number } | undefined): Point | undefined => (p ? [p.x, p.y] : undefined);
@@ -235,7 +276,8 @@ const byKind = (a: Part, b: Part) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || 
 
 // ---- System: parts in layered columns by which way their links go, inside their groups; outside services below. ----
 
-const SYS = { w: 170, colGap: 140, rowGap: 44, pad: 20 } as const;
+// Every gap a multiple of 8, so cards, frames and the grid a person drags on keep one rhythm.
+const SYS = { w: 168, colGap: 144, rowGap: 40, pad: 16 } as const;
 
 /**
  * Columns for parts, left to right the way data flows: a link's reader after its writer, a subscriber after its
@@ -326,7 +368,7 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
   const groups = Object.values(arch.groups).filter((g) => grouped.some((p) => p.group === g.id)).sort((a, b) => a.name.localeCompare(b.name));
   for (const g of groups) {
     const mine = grouped.filter((p) => p.group === g.id);
-    const placed = placeColumns(mine, links, M + SYS.pad, y + SYS.pad + 10, card);
+    const placed = placeColumns(mine, links, M + SYS.pad, y + FRAME.top, card);
     const right = Math.max(...placed.map((b) => b.x + b.w)) + SYS.pad;
     const bottom = Math.max(...placed.map((b) => b.y + b.h)) + SYS.pad;
     frames.push({ key: g.id, ids: [g.id], holds: placed.map((b) => b.key), x: M, y, w: right - M, h: bottom - y, title: { bold: g.name, rest: ` · ${mine.length} part${mine.length === 1 ? "" : "s"} inside` } });
@@ -341,7 +383,7 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
     };
     const top = boxes.length ? y + 34 : y;
     const items = outside.map((p) => ({ key: p.id, want: want(p), w: SYS.w }));
-    const at = spreadRow(items, 75, M);
+    const at = spreadRow(items, 72, M);
     // The row as a whole centres on what it links to, as far left as the margin allows.
     const middle = items.reduce((a, b) => a + b.want, 0) / items.length;
     const shift = Math.max(M - Math.min(...at.values()), middle - (Math.min(...at.values()) + Math.max(...at.values()) + SYS.w) / 2);
@@ -399,7 +441,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
     const c = edgeCard(p);
     const h = Math.max(64, cardHeight(c, RT.edgeW));
     boxes.push({ key: p.id, ids: [p.id], card: c, x: M, y: ey, w: RT.edgeW, h });
-    ey += h + 20;
+    ey += h + 24;
   }
   // The cluster, its namespaces as rows: one with traffic coming in takes the whole width, the rest go two by two.
   const cluster = env?.cluster ? arch.clusters[env.cluster] : undefined;
@@ -423,14 +465,14 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
       let rowBottom = y;
       row.forEach((ns, i) => {
         const x = left + 20 + i * (w + RT.gap);
-        let wy = y + 36;
+        let wy = y + FRAME.top;
         const list = mine(ns.id);
         // A workload that takes traffic gets its Ingress and Service drawn in front of it.
         const front = list.find((x) => x.ingress || x.service);
         const cardX = front && w === inner ? x + 200 : x + 20;
         const cardW = front && w === inner ? w - 220 : w - 40;
         if (front && w === inner) {
-          let fy = y + 36;
+          let fy = y + FRAME.top;
           const fronts: [string, Card][] = [
             ...(front.ingress ? [["ingress", { label: "Ingress", name: ns.name, sub: `routes ${front.ingress.path ?? "/"} to :${front.service?.port ?? 80}`, tone: toneOf(front.status) }] as [string, Card]] : []),
             ...(front.service ? [["service", { label: "Service", name: workloadName(arch, front), sub: `ClusterIP :${front.service.port}`, tone: toneOf(front.status) }] as [string, Card]] : []),
@@ -438,24 +480,24 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
           fronts.forEach(([what, c], k) => {
             boxes.push({ key: `${front.id}#${what}`, ids: [], context: [front.id, front.part], card: c, x: x + 20, y: fy, w: 150, h: 62 });
             if (k > 0) links.push({ key: `${front.id}#${what}-in`, ids: [], context: [front.id], from: `${front.id}#${fronts[k - 1]![0]}`, to: `${front.id}#${what}`, tone: "live" });
-            fy += 62 + 36;
+            fy += 62 + 32;
           });
           const last = fronts.at(-1);
           if (last) links.push({ key: `${front.id}#to`, ids: [], context: [front.id], from: `${front.id}#${last[0]}`, to: front.id, tone: "live" });
-          rowBottom = Math.max(rowBottom, fy - 36 + 20);
+          rowBottom = Math.max(rowBottom, fy - 32 + FRAME.pad);
         }
         for (const wl of list) {
           const c = workloadCard(arch, wl);
           const h = Math.max(cardHeight(c, cardW), taller.get(wl.id) ?? 0);
           const primary = workloadsOf(arch, wl.part, env?.id).find((x) => !x.before)?.id === wl.id;
           boxes.push({ key: wl.id, ids: primary ? [wl.id, wl.part] : [wl.id], context: [wl.part], card: c, x: cardX, y: wy, w: cardW, h });
-          wy += h + 14;
+          wy += h + 16;
         }
-        rowBottom = Math.max(rowBottom, wy - 14 + 20, y + 80);
+        rowBottom = Math.max(rowBottom, wy - 16 + FRAME.pad, y + 80);
         frames.push({ key: ns.id, ids: [ns.id], holds: boxes.filter((b) => list.some((wl) => b.key === wl.id || b.key.startsWith(`${wl.id}#`))).map((b) => b.key), x, y, w, h: 0, title: { lead: "namespace ", bold: ns.name, ...(ns.owners ? { rest: ` · ${ns.owners}` } : {}) } });
       });
       for (const f of frames.slice(-row.length)) f.h = rowBottom - y;
-      y = rowBottom + 20;
+      y = rowBottom + 24;
     }
     bottom = Math.max(y, M + 120);
     const git = cluster.gitops;
@@ -466,12 +508,13 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
   } else if (env) {
     // No cluster here: what is built runs on the environment's provider.
     const built = parts.filter((p) => p.build && !p.managed);
-    let y = M + 36;
+    let y = M + FRAME.top;
     for (const p of built) {
       const c = partCard(p);
       const h = cardHeight(c, inner - 40);
       boxes.push({ key: p.id, ids: [p.id], card: c, x: left + 20, y, w: inner - 40, h });
-      y += h + 14;
+      // Room between them for the links that run from one to the next.
+      y += h + 32;
     }
     bottom = y + 6;
     frames.push({ key: `env-${env.id}`, ids: [env.id], holds: built.map((p) => p.id), x: left, y: M, w: RT.clusterW, h: bottom - M, title: { bold: env.name, rest: env.provider ? ` · runs on ${env.provider}` : "" } });
@@ -482,7 +525,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined, 
   const managed = parts.filter((p) => p.managed !== undefined).sort((a, b) => degree(b) - degree(a) || HOLDS[a.kind] - HOLDS[b.kind] || a.name.localeCompare(b.name));
   const outside = parts.filter((p) => p.kind === "external");
   let sy = M;
-  for (const [caption, list, gap] of [[`${env?.provider ?? "Cloud"} managed`, managed, 16], ["Outside services", outside, 14]] as const) {
+  for (const [caption, list, gap] of [[`${env?.provider ?? "Cloud"} managed`, managed, 16], ["Outside services", outside, 16]] as const) {
     if (!list.length) continue;
     captions.push({ x: sideX, y: sy, text: caption });
     sy += 26;

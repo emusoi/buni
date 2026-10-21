@@ -3,7 +3,7 @@ import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, 
 import { Maximize, Minus, Plus } from "lucide-react";
 import type { Id } from "buni/format/doc.ts";
 import type { Card } from "./model.ts";
-import { between, boxesIn, moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapFrame, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
+import { between, boxesIn, moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapStop, type MapFrame, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
 
 /** How a flow shows the map: what is lit now, what stays shown, and whether the rest dims. */
 export interface Look {
@@ -162,6 +162,33 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
+  // A discrete zoom (a button, Fit, ⌘0, ⌘1) eases; the wheel and dragging follow the hand exactly.
+  const [easing, setEasing] = useState(false);
+  const easeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const eased = (f: () => void) => {
+    setEasing(true);
+    f();
+    clearTimeout(easeTimer.current);
+    easeTimer.current = setTimeout(() => setEasing(false), 220);
+  };
+  const zoomTo = (k: number) => setView((v) => {
+    const r = host.current?.getBoundingClientRect();
+    const [px, py] = r ? [r.width / 2, r.height / 2] : [0, 0];
+    return { k, x: px - ((px - v.x) * k) / v.k, y: py - ((py - v.y) * k) / v.k };
+  });
+  // ⌘0 fits the map, ⌘1 shows it at 100%.
+  const onZoomKey = useEffectEvent((e: KeyboardEvent) => {
+    if (!(e.metaKey || e.ctrlKey) || (e.key !== "0" && e.key !== "1")) return;
+    const t = e.target;
+    if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)) return;
+    e.preventDefault();
+    eased(() => (e.key === "0" ? fit() : zoomTo(1)));
+  });
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => onZoomKey(e);
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
   const zoomBy = (f: number) => setView((v) => {
     const r = host.current?.getBoundingClientRect();
     const [px, py] = r ? [r.width / 2, r.height / 2] : [0, 0];
@@ -177,7 +204,17 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
     const [dx, dy] = [revealBy(r.left - h.left, r.width, h.width), revealBy(r.top - h.top, r.height, h.height)];
     if (dx || dy) setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
   };
-  const order = useMemo(() => tabOrder(layout), [layout]);
+  // Reading order is worked out when the cards shown change, not when one moves: a card moved in the DOM can't glide.
+  const shownKeys = `${given.frames.map((f) => f.key).join(" ")}|${given.boxes.map((b) => b.key).join(" ")}`;
+  const readOrder = useMemo(() => tabOrder(given).map((s): { frame: string } | { box: string } => ("frame" in s ? { frame: s.frame.key } : { box: s.box.key })), [shownKeys]);
+  const order = useMemo(() => {
+    const [frames, boxes] = [new Map(layout.frames.map((f) => [f.key, f])), new Map(layout.boxes.map((b) => [b.key, b]))];
+    return readOrder.flatMap((s): MapStop[] => {
+      const frame = "frame" in s ? frames.get(s.frame) : undefined;
+      const box = "box" in s ? boxes.get(s.box) : undefined;
+      return frame ? [{ frame }] : box ? [{ box }] : [];
+    });
+  }, [readOrder, layout]);
   const linkState = (l: RoutedLink): State => (l.ids[0] !== undefined && l.ids[0] === selected ? "lit" : stateOf(look, l.ids, l.context));
   // A link being drawn: from a card's handle to the pointer, in the plane's coordinates.
   const [drawing, setDrawing] = useState<{ from: MapBox; x: number; y: number }>();
@@ -240,7 +277,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
   return (
     <div
       ref={host}
-      className="arch-canvas"
+      className={`arch-canvas${moving && !moving.done ? " dragging" : ""}`}
       onFocus={(e) => { if (e.target !== host.current && !e.target.closest(".arch-zoom")) reveal(e.target); }}
       onPointerDown={(e) => {
         const panning = space.current || e.button === 1 || !onMarquee;
@@ -274,7 +311,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
         }
       }}
     >
-      <div className="arch-plane" style={{ width: layout.width, height: layout.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }}>
+      <div className={`arch-plane${easing ? " easing" : ""}`} style={{ width: layout.width, height: layout.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }}>
         <svg className="arch-links" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden>
           {[...layout.links].sort((a, b) => Number(linkState(a) === "lit") - Number(linkState(b) === "lit")).map((l) => {
             const s = linkState(l);
@@ -363,10 +400,10 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
       </div>
       {footer}
       <div className="arch-zoom" style={{ bottom: 16 + bottomInset }}>
-        <button type="button" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={13} /></button>
-        <button type="button" aria-label="Fit" title="Fit" onClick={() => fit()}><span>{Math.round(view.k * 100)}%</span></button>
-        <button type="button" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={13} /></button>
-        <button type="button" aria-label="Fit the map" title="Fit the map" onClick={() => fit()}><Maximize size={12} /></button>
+        <button type="button" aria-label="Zoom out" onClick={() => eased(() => zoomBy(1 / 1.2))}><Minus size={13} /></button>
+        <button type="button" aria-label="Fit" title="Fit (⌘0)" onClick={() => eased(() => fit())}><span>{Math.round(view.k * 100)}%</span></button>
+        <button type="button" aria-label="Zoom in" onClick={() => eased(() => zoomBy(1.2))}><Plus size={13} /></button>
+        <button type="button" aria-label="Fit the map" title="Fit the map (⌘0)" onClick={() => eased(() => fit())}><Maximize size={12} /></button>
       </div>
     </div>
   );

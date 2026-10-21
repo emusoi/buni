@@ -105,7 +105,7 @@ export function workloadCard(arch: Architecture, w: Workload): Card {
   };
 }
 
-// Card sizes, as drawn (styles.css .arch-card): 9px padding, 3px between rows.
+// Card sizes, as drawn (styles.css .arch-card): 8px padding above and below, 12px beside, 4px between rows.
 const ROW = { label: 13, name: 15, sub: 14, replicas: 20, note: 14, chips: 18, adds: 24 } as const;
 const CHIP_CHAR = 5.6;
 
@@ -114,7 +114,7 @@ export function chipLines(chips: readonly string[], width: number): number {
   let lines = 1, at = 0;
   for (const c of chips) {
     const w = c.length * CHIP_CHAR + 15;
-    if (at > 0 && at + 6 + w > width - 20) { lines++; at = w; } else at += (at > 0 ? 6 : 0) + w;
+    if (at > 0 && at + 6 + w > width - 26) { lines++; at = w; } else at += (at > 0 ? 6 : 0) + w;
   }
   return lines;
 }
@@ -123,7 +123,7 @@ export function chipLines(chips: readonly string[], width: number): number {
 export function cardHeight(c: Card, width: number): number {
   const rows = [ROW.label, ROW.name, ...(c.sub ? [ROW.sub] : []), ...(c.replicas ? [ROW.replicas] : []), ...(c.note ? [ROW.note] : []),
     ...(c.chips ?? []).map((row) => 6 + chipLines(row, width) * (ROW.chips + 6) - 6), ...(c.adds ? [ROW.adds] : [])];
-  return Math.ceil(20 + rows.reduce((a, b) => a + b, 0) + 3 * (rows.length - 1));
+  return Math.ceil(18 + rows.reduce((a, b) => a + b, 0) + 4 * (rows.length - 1));
 }
 
 /** The version a release replaces: v41 before v42; "stable" when its name doesn't count. */
