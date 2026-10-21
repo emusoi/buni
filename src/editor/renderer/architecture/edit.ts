@@ -5,6 +5,7 @@ import {
   archCollectionOf, workloadName, type ArchCollection, type Architecture, type Id, type Part, type Workload,
 } from "buni/format/doc.ts";
 import type { EditTool } from "../../api.ts";
+import { archCascade } from "buni/tools/areas/architecture.ts";
 import { environmentsInOrder, workloadsOf } from "./model.ts";
 
 export type FieldKind = "text" | "long" | "number" | "numbers" | "select" | "ref" | "list" | "refs" | "bool" | "plan" | "pool";
@@ -295,26 +296,8 @@ export function addFor(arch: Architecture, what: Addable, ctx: AddContext): Call
 
 // ---- Delete ----
 
-/**
- * Everything deleting `ids` takes with it (not `ids` themselves), the way delete_architecture decides: a part's links,
- * workloads and migrations; an environment's or namespace's workloads; a cluster's namespaces; a plan's planned things;
- * a release left with no parts or no environments.
- */
-export function cascadeOf(arch: Architecture, ids: readonly Id[]): Id[] {
-  const gone = new Set(ids);
-  for (let size = -1; size !== gone.size;) {
-    size = gone.size;
-    const inPlan = (x: { plan?: Id; status?: string }) => x.plan !== undefined && gone.has(x.plan) && x.status !== "removed";
-    const add = (x: { id: Id }, when: boolean) => { if (when) gone.add(x.id); };
-    for (const x of Object.values(arch.parts)) add(x, inPlan(x));
-    for (const x of Object.values(arch.links)) add(x, gone.has(x.from) || gone.has(x.to) || inPlan(x));
-    for (const x of Object.values(arch.namespaces)) add(x, gone.has(x.cluster));
-    for (const x of Object.values(arch.workloads)) add(x, gone.has(x.part) || gone.has(x.environment) || gone.has(x.namespace) || inPlan(x));
-    for (const x of Object.values(arch.migrations)) add(x, gone.has(x.store) || inPlan(x));
-    for (const x of Object.values(arch.releases)) add(x, x.parts.every((p) => gone.has(p)) || x.path.every((e) => gone.has(e)) || (x.plan !== undefined && gone.has(x.plan)));
-  }
-  return [...gone].filter((id) => !ids.includes(id));
-}
+/** Everything deleting `ids` takes with it (not `ids` themselves): delete_architecture's own cascade. */
+export const cascadeOf = (arch: Architecture, ids: readonly Id[]): Id[] => [...archCascade(arch, ids)].filter((id) => !ids.includes(id));
 
 /** "Also deletes 2 links and 1 workload: api calls db, …": the one line said before a delete. */
 export function cascadeText(arch: Architecture, ids: readonly Id[]): string {

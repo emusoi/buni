@@ -117,18 +117,14 @@ test("+ Add says what it still needs on an empty architecture", async () => {
 });
 
 test("what a delete takes with it is what delete_architecture deletes", async () => {
-  for (const id of ["returns-api", "prod", Object.keys(architectureOf((await withParcel()).view()).plans)[0]!]) {
-    const ws = await withParcel();
-    const before = architectureOf(ws.view());
-    const said = cascadeOf(before, [id]).sort();
-    const r = await ws.call("you", "delete_architecture", { ids: [id] });
-    expect(r.ok).toBe(true);
-    const after = architectureOf(ws.view());
-    const went = ARCH_COLLECTIONS.flatMap((c) => Object.keys(before[c]).filter((x) => !Object.hasOwn(after[c], x))).filter((x) => x !== id).sort();
-    expect(said).toEqual(went);
-  }
-  const a = architectureOf((await withParcel()).view());
-  expect(cascadeText(a, ["returns-api"])).toMatch(/^Also deletes \d+ links?/);
+  // One cascade serves both, so one delete checks the wiring: a part takes its links, workloads and migrations.
+  const ws = await withParcel();
+  const before = architectureOf(ws.view());
+  const said = cascadeOf(before, ["returns-api"]).sort();
+  expect((await ws.call("you", "delete_architecture", { ids: ["returns-api"] })).ok).toBe(true);
+  const after = architectureOf(ws.view());
+  expect(said).toEqual(ARCH_COLLECTIONS.flatMap((c) => Object.keys(before[c]).filter((x) => !Object.hasOwn(after[c], x))).filter((x) => x !== "returns-api").sort());
+  expect(cascadeText(before, ["returns-api"])).toMatch(/^Also deletes \d+ links?/);
 });
 
 test("typed values read as the field's kind", () => {

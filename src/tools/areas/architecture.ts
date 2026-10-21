@@ -101,11 +101,11 @@ function settled<T extends { plan?: Id; status?: string }>(x: T): Omit<T, "plan"
 }
 
 /**
- * The architecture without `ids` and what can't be without them: a part's links, workloads and migrations; an
- * environment's or namespace's workloads; a cluster's namespaces; a plan's planned things (what it would remove stays,
- * live); a release left with no parts or no environments. Everything else that named them just stops naming them.
+ * `ids` and everything that can't be without them: a part's links, workloads and migrations; an environment's or
+ * namespace's workloads; a cluster's namespaces; a plan's planned things (what it would remove stays, live); a release
+ * left with no parts or no environments. Pure, so the editor says before a delete exactly what this one takes.
  */
-function without(arch: Architecture, ids: Iterable<Id>): { next: Architecture; gone: Set<Id> } {
+export function archCascade(arch: Architecture, ids: Iterable<Id>): Set<Id> {
   const gone = new Set(ids);
   for (let size = -1; size !== gone.size;) {
     size = gone.size;
@@ -118,6 +118,12 @@ function without(arch: Architecture, ids: Iterable<Id>): { next: Architecture; g
     for (const x of Object.values(arch.migrations)) add(x, gone.has(x.store) || inPlan(x));
     for (const x of Object.values(arch.releases)) add(x, x.parts.every((p) => gone.has(p)) || x.path.every((e) => gone.has(e)) || (x.plan !== undefined && gone.has(x.plan)));
   }
+  return gone;
+}
+
+/** The architecture without `ids` and their cascade; everything else that named them just stops naming them. */
+function without(arch: Architecture, ids: Iterable<Id>): { next: Architecture; gone: Set<Id> } {
+  const gone = archCascade(arch, ids);
   const next = draftOf(arch);
   for (const id of gone) {
     const c = archCollectionOf(arch, id);
