@@ -1945,3 +1945,5 @@ button.arch-pill:hover { border-color: rgba(138, 174, 255, 0.5); }
 button.arch-frame-title, button.arch-link-label { border: 0; margin: 0; font-family: inherit; text-align: left; }
 .arch-frame-title:focus-visible, .arch-link-label:focus-visible, .arch-zoom button:focus-visible { outline: 2px solid var(--arch-blue); outline-offset: 2px; color: #ededef; }
 
+/* Text with the inspector beside it: the text gives up some width so the map keeps room. */
+.arch-body > .arch-text:not(:last-child) { width: min(440px, 34vw); }

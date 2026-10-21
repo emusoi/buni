@@ -83,14 +83,35 @@ export interface MapCanvasProps {
 export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, render, bubble, bottomInset = 0, footer, canLink, onLink }: MapCanvasProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
-  const fit = () => {
+  const fit = (keep?: Id) => {
     const r = host.current?.getBoundingClientRect();
     if (!r || !r.width) return;
     // The whole width, at no more than 100%; a tall map scrolls (or pans) rather than shrinking out of reading.
     const k = Math.max(0.4, Math.min(1, r.width / layout.width));
-    setView({ k, x: Math.max(0, (r.width - layout.width * k) / 2), y: 0 });
+    const v = { k, x: Math.max(0, (r.width - layout.width * k) / 2), y: 0 };
+    // What is selected stays in sight.
+    const b = keep === undefined ? undefined : [...layout.boxes, ...layout.frames].find((x) => x.ids[0] === keep);
+    if (b) {
+      v.x += revealBy(v.x + b.x * k, b.w * k, r.width);
+      v.y += revealBy(v.y + b.y * k, b.h * k, r.height);
+    }
+    setView(v);
   };
-  useLayoutEffect(fit, [fitKey]);
+  useLayoutEffect(() => fit(selected), [fitKey]);
+  // The canvas narrows when a pane opens beside it and widens when one closes (or the window resizes): fit again.
+  const refit = useEffectEvent(() => fit(selected));
+  useEffect(() => {
+    const el = host.current;
+    if (!el) return;
+    let width = el.clientWidth;
+    const watch = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      refit();
+    });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
   const onWheel = useEffectEvent((e: WheelEvent) => {
     e.preventDefault();
     const r = host.current?.getBoundingClientRect();
@@ -256,9 +277,9 @@ export function MapCanvas({ layout, fitKey, look, selected, onSelect, badges, re
       {footer}
       <div className="arch-zoom" style={{ bottom: 16 + bottomInset }}>
         <button type="button" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.2)}><Minus size={13} /></button>
-        <button type="button" aria-label="Fit" title="Fit" onClick={fit}><span>{Math.round(view.k * 100)}%</span></button>
+        <button type="button" aria-label="Fit" title="Fit" onClick={() => fit()}><span>{Math.round(view.k * 100)}%</span></button>
         <button type="button" aria-label="Zoom in" onClick={() => zoomBy(1.2)}><Plus size={13} /></button>
-        <button type="button" aria-label="Fit the map" title="Fit the map" onClick={fit}><Maximize size={12} /></button>
+        <button type="button" aria-label="Fit the map" title="Fit the map" onClick={() => fit()}><Maximize size={12} /></button>
       </div>
     </div>
   );

@@ -113,7 +113,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     const r = (anchor ?? document.querySelector(".arch-card.selected"))?.getBoundingClientRect();
     setPicking({ from: linkFrom, x: r ? Math.min(r.left, innerWidth - 260) : innerWidth / 2 - 120, y: r ? Math.min(r.bottom + 6, innerHeight - 320) : innerHeight / 3 });
   };
-  // The architecture as text, in a pane beside the view (in place of the inspector).
+  // The architecture as text, in a pane beside the view; what is selected keeps its inspector beside it.
   const [text, setText] = useState(false);
   const textPane = text && <TextPane version={doc.architecture} onClose={() => setText(false)} onToast={onToast} />;
   const select = useCallback((id: Id | undefined) => { setSelected(id); setFresh(undefined); setDeleting(false); }, []);
@@ -218,8 +218,9 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
       </>}
     />
   );
-  // Beside a view that isn't the map, the inspector shows only while something is selected.
-  const aside = textPane || (selected && archCollectionOf(arch, selected) ? inspector(() => select(undefined)) : undefined);
+  // Beside a view that isn't the map (or beside the text), the inspector shows only while something is selected.
+  const picked = selected !== undefined && archCollectionOf(arch, selected) !== undefined;
+  const aside = <>{textPane}{picked && inspector(() => select(undefined))}</>;
 
   return (
     <div className="arch">
@@ -271,7 +272,8 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
             </div>
           }
         />
-        {textPane || inspector()}
+        {textPane}
+        {(!text || picked) && inspector()}
         </>}
       </div>
       {picking && (
