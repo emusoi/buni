@@ -207,9 +207,6 @@ export function labelOf(arch: Architecture, id: Id): string {
   return thing && "name" in thing ? thing.name : id;
 }
 
-/** The id a set_ tool's reply names: "Created part returns-api.", "Changed link api-calls-db." */
-export const savedId = (reply: string): Id | undefined => reply.match(/^(?:Created|Changed) [a-z]+ (\S+?)\.$/)?.[1];
-
 // ---- + Add ----
 
 export const ADDABLE = ["parts", "links", "environments", "clusters", "namespaces", "workloads", "releases", "migrations", "plans", "stages", "plays"] as const satisfies readonly ArchCollection[];

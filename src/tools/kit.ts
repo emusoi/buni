@@ -10,6 +10,8 @@ export interface ToolOutput {
   label: string;
   ops: Op[];
   reply: string;
+  /** The id a set_ tool created or changed, for a window to select; the reply says it in words. */
+  saved?: Id;
 }
 
 export interface ToolContext {

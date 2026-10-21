@@ -36,6 +36,8 @@ export type EditTool = (typeof EDIT_TOOLS)[number];
 export interface EditResult {
   ok: boolean;
   reply: string;
+  /** The id a set_ tool created or changed: what Architecture mode selects after + Add or a link. */
+  saved?: Id;
 }
 
 /** The only bridge between the sandboxed window and the file. */

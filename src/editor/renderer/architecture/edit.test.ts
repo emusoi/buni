@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ARCH_COLLECTIONS, architectureOf, emptyDoc, type Architecture } from "buni/format/doc.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { Workspace } from "buni/tools/workspace.ts";
-import { ADDABLE, FORMS, addFor, cascadeOf, cascadeText, changeFor, planChange, readInput, savedId, valueOf, type Call, type Field } from "./edit.ts";
+import { ADDABLE, FORMS, addFor, cascadeOf, cascadeText, changeFor, planChange, readInput, valueOf, type Call, type Field } from "./edit.ts";
 
 const parcelPath = new URL(import.meta.resolve("buni/examples/parcel.buni")).pathname;
 const withParcel = async () => {
@@ -100,7 +100,7 @@ test("+ Add makes each thing where the person is, and every default is one the t
     const call = addFor(architectureOf(ws.view()), what, { env: "prod", selected: "returns-api" });
     const r = await run(ws, call);
     expect(`${what}: ${r.ok ? "ok" : r.reply}`).toBe(`${what}: ok`);
-    expect(savedId(r.reply)).toBeDefined();
+    expect(r.saved).toBeDefined();
   }
 });
 
@@ -113,7 +113,8 @@ test("+ Add says what it still needs on an empty architecture", async () => {
   await writeFile(file, serializeDoc(emptyDoc()));
   const ws = await Workspace.open(file);
   const r = await run(ws, addFor(empty, "parts", {}));
-  expect(savedId(r.reply)).toBe("new-part");
+  expect(r.saved).toBe("new-part");
+  expect(r.reply).toBe("Created part new-part.");
 });
 
 test("what a delete takes with it is what delete_architecture deletes", async () => {

@@ -39,6 +39,8 @@ export const isEdit = (v: unknown): v is Edit =>
 export interface CallResult {
   ok: boolean;
   reply: string;
+  /** The tool's saved id (ToolOutput.saved), passed through. */
+  saved?: Id;
 }
 
 /** Where .buni files live: the disk here, the browser's storage on the web. */
@@ -378,7 +380,8 @@ export class Workspace {
       // Tools see imported components and tokens; their edits are checked against this file's own, so an imported thing stays read-only here.
       const out = await this.plan(name, args, this.system(), author);
       if (!("ops" in out)) return out;
-      if (out.ops.length === 0) return { ok: true, reply: out.reply };
+      const saved = out.saved !== undefined ? { saved: out.saved } : {};
+      if (out.ops.length === 0) return { ok: true, reply: out.reply, ...saved };
       const undo = invert(this.view(), out.ops);
       const r = await this.write(author, out.label, out.ops);
       if (!r.ok) return r;
@@ -399,7 +402,7 @@ export class Workspace {
         ...(grid.length ? [`On the terminal grid:\n${[...grid.slice(0, 12), ...more].map((g) => `- ${g}`).join("\n")}`] : []),
         ...(copies.length ? [`Copied, not reused:\n${copies.map((c) => `- ${c}`).join("\n")}`] : []),
       ];
-      return { ok: true, reply: [out.reply, ...notes].join("\n") };
+      return { ok: true, reply: [out.reply, ...notes].join("\n"), ...saved };
     });
   }
 

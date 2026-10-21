@@ -55,7 +55,8 @@ const idFor = (doc: Doc, ctx: ToolContext, old: { id: Id } | undefined, name: st
 
 const keepSources = <T extends SourceOwner>(old: T | undefined, value: T): T => (old?.sources ? { ...value, sources: old.sources } : value);
 
-const saved = (verb: boolean, noun: string, id: Id) => `${verb ? "Changed" : "Created"} ${noun} ${id}.`;
+/** A set_ tool's reply, and the id it saved for a window to select. */
+const saved = (verb: boolean, noun: string, id: Id) => ({ reply: `${verb ? "Changed" : "Created"} ${noun} ${id}.`, saved: id });
 
 /** One more than the last, so a new environment or stage comes after the others. */
 const nextOrder = (bag: Record<Id, { order: number }>) => Math.max(0, ...Object.values(bag).map((x) => x.order)) + 1;
@@ -366,7 +367,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.kind === undefined)) throw new ToolError("a new part needs a name and a kind");
       const pid = idFor(doc, ctx, old, a.name ?? "part");
       const value = keepSources(old, shaped("part", (r) => r.part(edited(old ?? { id: pid }, changes), `parts.${pid}`)));
-      return { label: `${old ? "Change" : "Add"} ${value.kind} ${value.name}`, ops: [ARCH_PUT.parts(value)], reply: saved(!!old, "part", value.id) };
+      return { label: `${old ? "Change" : "Add"} ${value.kind} ${value.name}`, ops: [ARCH_PUT.parts(value)], ...saved(!!old, "part", value.id) };
     },
   }),
 
@@ -414,7 +415,7 @@ export const architectureTools = {
       if (!old && (a.from === undefined || a.to === undefined || a.kind === undefined)) throw new ToolError("a new link needs from, to and kind");
       const lid = idFor(doc, ctx, old, `${a.from}-${a.kind}-${a.to}`);
       const value = shaped("link", (r) => r.archLink(edited(old ?? { id: lid }, changes), `links.${lid}`));
-      return { label: `${value.from} ${value.kind} ${value.to}`, ops: [ARCH_PUT.links(value)], reply: saved(!!old, "link", value.id) };
+      return { label: `${value.from} ${value.kind} ${value.to}`, ops: [ARCH_PUT.links(value)], ...saved(!!old, "link", value.id) };
     },
   }),
 
@@ -438,7 +439,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.kind === undefined)) throw new ToolError("a new group needs a name and a kind");
       const gid = idFor(doc, ctx, old, a.name ?? "group");
       const value = shaped("group", (r) => r.group(edited(old ?? { id: gid }, changes), `groups.${gid}`));
-      return { label: `${old ? "Change" : "Add"} group ${value.name}`, ops: [ARCH_PUT.groups(value)], reply: saved(!!old, "group", value.id) };
+      return { label: `${old ? "Change" : "Add"} group ${value.name}`, ops: [ARCH_PUT.groups(value)], ...saved(!!old, "group", value.id) };
     },
   }),
 
@@ -461,7 +462,7 @@ export const architectureTools = {
       const eid = idFor(doc, ctx, old, a.name ?? "environment");
       const base = old ?? { id: eid, order: nextOrder(arch.environments) };
       const value = shaped("environment", (r) => r.environment(edited(base, { ...changes, preview: preview === false ? null : preview }), `environments.${eid}`));
-      return { label: `${old ? "Change" : "Add"} environment ${value.name}`, ops: [ARCH_PUT.environments(value)], reply: saved(!!old, "environment", value.id) };
+      return { label: `${old ? "Change" : "Add"} environment ${value.name}`, ops: [ARCH_PUT.environments(value)], ...saved(!!old, "environment", value.id) };
     },
   }),
 
@@ -486,7 +487,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.provider === undefined)) throw new ToolError("a new cluster needs a name and a provider");
       const cid = idFor(doc, ctx, old, a.name ?? "cluster");
       const value = shaped("cluster", (r) => r.cluster(edited(old ?? { id: cid }, changes), `clusters.${cid}`));
-      return { label: `${old ? "Change" : "Add"} cluster ${value.name}`, ops: [ARCH_PUT.clusters(value)], reply: saved(!!old, "cluster", value.id) };
+      return { label: `${old ? "Change" : "Add"} cluster ${value.name}`, ops: [ARCH_PUT.clusters(value)], ...saved(!!old, "cluster", value.id) };
     },
   }),
 
@@ -500,7 +501,7 @@ export const architectureTools = {
       if (!old && (a.cluster === undefined || a.name === undefined)) throw new ToolError("a new namespace needs a cluster and a name");
       const nid = idFor(doc, ctx, old, `${a.cluster}-${a.name}`);
       const value = shaped("namespace", (r) => r.namespace(edited(old ?? { id: nid }, changes), `namespaces.${nid}`));
-      return { label: `${old ? "Change" : "Add"} namespace ${value.name}`, ops: [ARCH_PUT.namespaces(value)], reply: saved(!!old, "namespace", value.id) };
+      return { label: `${old ? "Change" : "Add"} namespace ${value.name}`, ops: [ARCH_PUT.namespaces(value)], ...saved(!!old, "namespace", value.id) };
     },
   }),
 
@@ -544,7 +545,7 @@ export const architectureTools = {
       }
       const wid = idFor(doc, ctx, old, `${a.name ?? a.part}-${a.environment}`);
       const value = keepSources(old, shaped("workload", (r) => r.workload(edited(old ?? { id: wid }, { ...changes, before: before === false ? null : before }), `workloads.${wid}`)));
-      return { label: `${old ? "Change" : "Add"} workload ${workloadName(arch, value)}`, ops: [ARCH_PUT.workloads(value)], reply: saved(!!old, "workload", value.id) };
+      return { label: `${old ? "Change" : "Add"} workload ${workloadName(arch, value)}`, ops: [ARCH_PUT.workloads(value)], ...saved(!!old, "workload", value.id) };
     },
   }),
 
@@ -571,7 +572,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.parts === undefined || a.path === undefined || a.strategy === undefined)) throw new ToolError("a new release needs a name, parts, path and strategy");
       const rid = idFor(doc, ctx, old, a.name ?? "release");
       const value = keepSources(old, shaped("release", (r) => r.release(edited(old ?? { id: rid }, changes), `releases.${rid}`)));
-      return { label: `${old ? "Change" : "Add"} release ${value.name}`, ops: [ARCH_PUT.releases(value)], reply: saved(!!old, "release", value.id) };
+      return { label: `${old ? "Change" : "Add"} release ${value.name}`, ops: [ARCH_PUT.releases(value)], ...saved(!!old, "release", value.id) };
     },
   }),
 
@@ -594,7 +595,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.store === undefined || a.change === undefined || a.safe === undefined)) throw new ToolError("a new migration needs a name, store, change and safe");
       const mid = idFor(doc, ctx, old, a.name ?? "migration");
       const value = shaped("migration", (r) => r.migration(edited(old ?? { id: mid }, changes), `migrations.${mid}`));
-      return { label: `${old ? "Change" : "Add"} migration ${value.name}`, ops: [ARCH_PUT.migrations(value)], reply: saved(!!old, "migration", value.id) };
+      return { label: `${old ? "Change" : "Add"} migration ${value.name}`, ops: [ARCH_PUT.migrations(value)], ...saved(!!old, "migration", value.id) };
     },
   }),
 
@@ -610,7 +611,7 @@ export const architectureTools = {
       if (!old && a.name === undefined) throw new ToolError("a new plan needs a name");
       const pid = idFor(doc, ctx, old, a.name ?? "plan");
       const value = keepSources(old, shaped("plan", (r) => r.plan(edited(old ?? { id: pid }, changes), `plans.${pid}`)));
-      return { label: `${old ? "Change" : "Add"} plan ${value.name}`, ops: [ARCH_PUT.plans(value)], reply: saved(!!old, "plan", value.id) };
+      return { label: `${old ? "Change" : "Add"} plan ${value.name}`, ops: [ARCH_PUT.plans(value)], ...saved(!!old, "plan", value.id) };
     },
   }),
 
@@ -633,7 +634,7 @@ export const architectureTools = {
       if (!old && a.name === undefined) throw new ToolError("a new stage needs a name");
       const sid = idFor(doc, ctx, old, a.name ?? "stage");
       const value = shaped("stage", (r) => r.stage(edited(old ?? { id: sid, order: nextOrder(arch.stages) }, changes), `stages.${sid}`));
-      return { label: `${old ? "Change" : "Add"} stage ${value.name}`, ops: [ARCH_PUT.stages(value)], reply: saved(!!old, "stage", value.id) };
+      return { label: `${old ? "Change" : "Add"} stage ${value.name}`, ops: [ARCH_PUT.stages(value)], ...saved(!!old, "stage", value.id) };
     },
   }),
 
@@ -656,7 +657,7 @@ export const architectureTools = {
       if (!old && (a.name === undefined || a.kind === undefined || a.steps === undefined)) throw new ToolError("a new play needs a name, kind and steps");
       const pid = idFor(doc, ctx, old, a.name ?? "play");
       const value = shaped("play", (r) => r.play(edited(old ?? { id: pid }, changes), `plays.${pid}`));
-      return { label: `${old ? "Change" : "Add"} play ${value.name}`, ops: [ARCH_PUT.plays(value)], reply: saved(!!old, "play", value.id) };
+      return { label: `${old ? "Change" : "Add"} play ${value.name}`, ops: [ARCH_PUT.plays(value)], ...saved(!!old, "play", value.id) };
     },
   }),
 

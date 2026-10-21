@@ -7,7 +7,7 @@ import { LINK_KINDS, archCollectionOf, architectureOf, type Architecture, type D
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
-import { ADDABLE, addFor, savedId, type AddContext, type Addable } from "./edit.ts";
+import { ADDABLE, addFor, type AddContext, type Addable } from "./edit.ts";
 import { useDismiss } from "../useDismiss.ts";
 import { TextPane } from "./TextPane.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
@@ -132,7 +132,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     const call = addFor(arch, what, ctx);
     if ("error" in call) return onToast(call.error);
     const r = await window.buni.edit(call.tool, call.args);
-    const id = r.ok ? savedId(r.reply) : undefined;
+    const id = r.ok ? r.saved : undefined;
     if (!id) return onToast(r.reply);
     if (what === "plays") { setPlayId(id); setStep(0); }
     if (what === "plans") setPlanId(id);
@@ -144,7 +144,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     if (!linking) return;
     setLinking(undefined);
     const r = await window.buni.edit("link_parts", { from: linking.from, to: linking.to, kind });
-    const id = r.ok ? savedId(r.reply) : undefined;
+    const id = r.ok ? r.saved : undefined;
     if (!id) return onToast(r.reply);
     setSelected(id);
     setFresh(undefined);
