@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
 import { codeLayout, columnsOf, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
-import { canaryAt, cardHeight, cronText, environmentOf, previousVersion } from "./model.ts";
+import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
 const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/parcel.buni")), "utf8"));
 if (!r.ok) throw new Error("example does not parse");
@@ -90,4 +90,18 @@ test("model text: cron, versions, canary steps, card heights", () => {
   expect(canaryAt(arch, play, 0)).toBeUndefined();
   const small = cardHeight({ label: "x", name: "y", tone: "live" }, 200);
   expect(cardHeight({ label: "x", name: "y", chips: [["a", "b"]], tone: "live" }, 200)).toBeGreaterThan(small);
+});
+
+test("a request lights its whole path, numbered where each hop lands; a release lights only the step it is on", () => {
+  const req = flowLook(arch, arch.plays["buyer-starts-a-return"]!, 2, true);
+  expect(req.lit.has("worker-calls-shippo")).toBe(true);
+  expect(req.badges.get("jobs")).toBe(3);
+  expect(req.badges.get("shippo")).toBe(5);
+  const rel = flowLook(arch, arch.plays["release-v42"]!, 4, false);
+  expect([...rel.lit]).toEqual(["returns-api-prod"]);
+  expect(rel.shown.has("db-migrate-prod")).toBe(true);
+  expect(rel.shown.has("worker-prod")).toBe(false);
+  // On the System map a touched workload lights its part.
+  expect(flowLook(arch, arch.plays["release-v42"]!, 4, true).lit.has("returns-api")).toBe(true);
+  expect(payloadOf("publishes RefundJob { returnId, amount, reason }")).toBe("RefundJob { returnId, amount, reason }");
 });

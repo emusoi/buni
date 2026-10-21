@@ -339,7 +339,8 @@ function edgeChain(arch: Architecture): Part[] {
   return edge.sort((a, b) => col.get(a.id)! - col.get(b.id)! || byKind(a, b));
 }
 
-export function runtimeLayout(arch: Architecture, env: Environment | undefined): MapLayout {
+/** `taller`: workloads drawn taller than their card (a release's canary split), at least this high. */
+export function runtimeLayout(arch: Architecture, env: Environment | undefined, taller: ReadonlyMap<Id, number> = new Map()): MapLayout {
   const boxes: MapBox[] = [];
   const frames: MapFrame[] = [];
   const captions: Caption[] = [];
@@ -400,7 +401,7 @@ export function runtimeLayout(arch: Architecture, env: Environment | undefined):
         }
         for (const wl of list) {
           const c = workloadCard(arch, wl);
-          const h = cardHeight(c, cardW);
+          const h = Math.max(cardHeight(c, cardW), taller.get(wl.id) ?? 0);
           const primary = workloadsOf(arch, wl.part, env?.id).find((x) => !x.before)?.id === wl.id;
           boxes.push({ key: wl.id, ids: primary ? [wl.id, wl.part] : [wl.id], context: [wl.part], card: c, x: cardX, y: wy, w: cardW, h });
           wy += h + 14;
@@ -508,6 +509,6 @@ export function codeLayout(arch: Architecture, env: Environment | undefined): Ma
   return finish(boxes, [], captions, links);
 }
 
-export function layoutFor(arch: Architecture, level: Level, env: Environment | undefined): MapLayout {
-  return level === "system" ? systemLayout(arch) : level === "runtime" ? runtimeLayout(arch, env) : codeLayout(arch, env);
+export function layoutFor(arch: Architecture, level: Level, env: Environment | undefined, taller?: ReadonlyMap<Id, number>): MapLayout {
+  return level === "system" ? systemLayout(arch) : level === "runtime" ? runtimeLayout(arch, env, taller) : codeLayout(arch, env);
 }

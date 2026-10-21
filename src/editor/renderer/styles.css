@@ -1720,6 +1720,65 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .arch-btn.primary { border-color: transparent; background: #ededef; color: #111113; font-weight: 600; }
 .arch-btn.primary:hover { background: #ffffff; }
 
+/* Flows: the steps on the left, the map lighting what each touches, a timeline over the map for a release. */
+.arch-flows { flex: 1; min-width: 0; display: flex; }
+.arch-flows-empty { flex: 1; display: grid; place-items: center; font-size: 13px; color: #a1a1aa; }
+.arch-flows-empty p { max-width: 460px; line-height: 1.55; }
+.arch-steps { flex: none; width: 300px; box-sizing: border-box; padding: 16px 14px; border-right: 1px solid var(--arch-line); display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.arch-steps-head { padding: 0 6px 10px; display: flex; flex-direction: column; gap: 10px; }
+.arch-steps-head .arch-seg { align-self: stretch; }
+.arch-steps-head .arch-seg button { flex: 1; }
+.arch-play-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.arch-play-pick button { height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--arch-line); background: none; font-size: 11px; color: #a1a1aa; }
+.arch-play-pick button.on { color: #ededef; border-color: rgba(138, 174, 255, 0.5); }
+.arch-play-title { display: flex; flex-direction: column; gap: 2px; }
+.arch-play-title b { font-size: 16px; }
+.arch-step-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.arch-step { width: 100%; display: flex; gap: 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; background: none; text-align: left; }
+.arch-step:hover { background: #18181b; }
+.arch-step.current { background: #1c1c20; border-color: rgba(138, 174, 255, 0.35); }
+.arch-step-n { flex: none; width: 20px; height: 20px; border-radius: 9999px; display: grid; place-items: center; font-size: 11px; font-weight: 700; border: 1px solid #52525b; color: #52525b; box-sizing: border-box; }
+.arch-step.done .arch-step-n { border: 0; background: var(--arch-green); color: #111113; }
+.arch-step.current .arch-step-n, .arch-step.lit .arch-step-n { border: 0; background: var(--arch-blue); color: #111113; }
+.arch-step-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 12px; line-height: 1.4; color: #a1a1aa; }
+.arch-step-text b { font-size: 13px; color: #ededef; }
+.arch-step.todo:not(.lit) .arch-step-text b { color: #a1a1aa; }
+.arch-step-text .arch-gold { margin-top: 4px; }
+.arch-fails { margin: 8px 6px 0; padding: 10px; border-radius: 10px; border: 1px dashed rgba(255, 138, 128, 0.45); display: flex; flex-direction: column; gap: 3px; font-size: 12px; line-height: 1.45; color: #a1a1aa; }
+.arch-fails b { color: var(--arch-red); }
+.arch-fails button { align-self: flex-start; margin-top: 2px; padding: 0; border: 0; background: none; color: #ededef; font-size: 12px; }
+.arch-fails button:hover { text-decoration: underline; }
+.arch-step-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 12px 6px 0; border-top: 1px solid var(--arch-line); font-size: 13px; }
+.arch-step-foot button { width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: #ededef; }
+.arch-step-foot button:disabled { color: #52525b; }
+.arch-step-foot .grow { flex: 1; }
+.arch-split { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; font-size: 12px; color: #a1a1aa; }
+.arch-split-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.arch-split-row .arch-reps { margin: 0; }
+.arch-split .new { color: var(--arch-blue); }
+.arch-traffic { display: flex; height: 6px; border-radius: 9999px; overflow: hidden; margin-top: 2px; }
+.arch-traffic span { display: block; background: #52525b; transition: width 0.4s; }
+.arch-traffic span.new { background: var(--arch-blue); }
+.arch-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--arch-line); color: #ededef; }
+.arch-timeline { position: absolute; left: 20px; right: 20px; bottom: 20px; height: 76px; box-sizing: border-box; padding: 12px 16px; border-radius: 12px; background: #18181bee; border: 1px solid var(--arch-line); display: flex; align-items: center; gap: 16px; }
+.arch-play-btn { flex: none; width: 32px; height: 32px; border-radius: 9999px; border: 0; background: #ededef; display: grid; place-items: center; }
+.arch .arch-play-btn { color: #111113; }
+.arch-timeline-where { flex: none; width: 140px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.arch-timeline-where .arch-sub { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-timeline-steps { flex: 1; min-width: 0; display: flex; gap: 4px; }
+.arch-timeline-steps button { min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 0; border: 0; background: none; text-align: left; }
+.arch-timeline-steps .bar { display: block; height: 6px; border-radius: 9999px; background: #3f3f46; }
+.arch-timeline-steps .done .bar { background: var(--arch-green); }
+.arch-timeline-steps .current .bar { background: linear-gradient(90deg, var(--arch-blue) 45%, #3f3f46 45%); }
+.arch-timeline-steps .name { font-size: 11px; color: #8b8b94; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-timeline-steps .done .name, .arch-timeline-steps .current .name { color: #ededef; }
+@media (max-width: 900px) {
+  .arch-flows { flex-direction: column; }
+  .arch-steps { width: auto; max-height: 40%; border-right: 0; border-bottom: 1px solid var(--arch-line); }
+  .arch-timeline-where { display: none; }
+  .arch-timeline > .arch-btn { display: none; }
+}
+
 .arch-empty { display: grid; place-items: center; padding: 24px; }
 .arch-empty > div { max-width: 520px; font-size: 13px; line-height: 1.55; color: #a1a1aa; }
 .arch-empty b { display: block; margin-bottom: 8px; font-size: 16px; color: #ededef; }

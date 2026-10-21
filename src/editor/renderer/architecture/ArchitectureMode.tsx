@@ -3,22 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { architectureOf, type Doc, type Id } from "buni/format/doc.ts";
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
-import { environmentOf, environmentsInOrder } from "./model.ts";
+import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level } from "./layout.ts";
 import { MapCanvas } from "./MapCanvas.tsx";
 import { ArchInspector, selectionOf } from "./Inspector.tsx";
+import { CANARY_HEIGHT, Flows, levelFor } from "./Flows.tsx";
 
-export const ARCH_VIEWS = [["map", "Map"]] as const;
+export const ARCH_VIEWS = [["map", "Map"], ["flows", "Flows"]] as const;
 export type ArchView = (typeof ARCH_VIEWS)[number][0];
 const LEVELS: [Level, string][] = [["system", "System"], ["runtime", "Runtime"], ["code", "Code"]];
 
-/** Where a link opens architecture mode: ?arch=map&level=runtime&env=prod&select=returns-api. */
-export function archParams(search: string): { view: ArchView; level?: Level; env?: Id; select?: Id } | undefined {
+/** Where a link opens architecture mode: ?arch=map&level=runtime&env=prod&select=returns-api, ?arch=flows&play=…&step=5. */
+export function archParams(search: string): { view: ArchView; level?: Level; env?: Id; select?: Id; play?: Id; step?: number } | undefined {
   const q = new URLSearchParams(search);
   const view = ARCH_VIEWS.find(([v]) => v === q.get("arch"))?.[0];
   if (!view) return undefined;
   const level = LEVELS.find(([l]) => l === q.get("level"))?.[0];
-  return { view, ...(level ? { level } : {}), ...(q.get("env") ? { env: q.get("env")! } : {}), ...(q.get("select") ? { select: q.get("select")! } : {}) };
+  return { view, ...(level ? { level } : {}), ...(q.get("env") ? { env: q.get("env")! } : {}), ...(q.get("select") ? { select: q.get("select")! } : {}),
+    ...(q.get("play") ? { play: q.get("play")! } : {}), ...(Number(q.get("step")) > 0 ? { step: Number(q.get("step")) - 1 } : {}) };
 }
 
 export function Segmented<T extends string>({ options, value, onChange, label }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; label: string }) {
@@ -35,12 +37,25 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const arch = useMemo(() => architectureOf(doc), [doc]);
   const start = useMemo(() => archParams(location.search), []);
   const [view, setView] = useState<ArchView>(start?.view ?? "map");
-  const [level, setLevel] = useState<Level>(start?.level ?? "runtime");
+  const [playId, setPlayId] = useState<Id | undefined>(start?.play);
+  const [step, setStep] = useState(start?.step ?? 0);
+  const startPlay = playId ? arch.plays[playId] : Object.values(arch.plays).sort((a, b) => a.name.localeCompare(b.name))[0];
+  const [level, setLevel] = useState<Level>(start?.level ?? (start?.view === "flows" && startPlay ? levelFor(startPlay.kind) : "runtime"));
+  const playOn = (id: Id) => {
+    const p = arch.plays[id];
+    if (!p) return;
+    setPlayId(id);
+    setStep(0);
+    setLevel(levelFor(p.kind));
+  };
   const [envId, setEnvId] = useState<Id | undefined>(start?.env);
   const [selected, setSelected] = useState<Id | undefined>(start?.select);
   const env = environmentOf(arch, envId);
   const envs = environmentsInOrder(arch);
-  const layout = useMemo(() => layoutFor(arch, level, env), [arch, level, env]);
+  // A release's canary split is drawn in its workload's card, which takes the room for it.
+  const shownPlay = playId ? arch.plays[playId] : startPlay;
+  const canary = view === "flows" && shownPlay?.kind === "release" ? canaryAt(arch, shownPlay, step) : undefined;
+  const layout = useMemo(() => layoutFor(arch, level, env, canary ? new Map([[canary.workload, CANARY_HEIGHT]]) : undefined), [arch, level, env, canary?.workload]);
   // A selection the architecture no longer has (an agent deleted it) goes.
   useEffect(() => { if (selected && !Object.values(arch).some((bag) => Object.hasOwn(bag, selected))) setSelected(undefined); }, [arch, selected]);
 
@@ -77,6 +92,10 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
         {envs.length > 0 && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
       </div>
       <div className="arch-body">
+        {view === "flows" ? (
+          <Flows arch={arch} layout={layout} level={level} env={env} play={playId} step={step} onPlay={playOn} onStep={setStep}
+            onAsk={(text) => void navigator.clipboard.writeText(text).then(() => onToast("Copied the request; paste it to your coding agent."), () => onToast("Couldn't copy the request."))} />
+        ) : <>
         <MapCanvas
           layout={layout}
           fitKey={`${level} ${env?.id}`}
@@ -111,8 +130,16 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
               <p className="arch-about">Click a part to see how it is built, how it ships, what it runs as and what is planned for it. Drag to pan; ⌘-scroll zooms.</p>
             </>
           ) : <p className="arch-about">Click a part to see how it is built, how it ships and what it runs as.</p>}
-          actions={<button type="button" className="arch-btn primary" onClick={copyBrief} title="The architecture as text, focused on what's selected">Copy brief for Claude</button>}
+          actions={<>
+            {(() => {
+              // The release that ships the selection, played; and the plan that changes it.
+              const rel = part && Object.values(arch.plays).find((p) => p.kind === "release" && p.release && arch.releases[p.release]?.parts.includes(part.id));
+              return rel && <button type="button" className="arch-btn primary" onClick={() => { playOn(rel.id); setView("flows"); }}>Play the release</button>;
+            })()}
+            <button type="button" className={`arch-btn${part ? "" : " primary"}`} onClick={copyBrief} title="The architecture as text, focused on what's selected">Copy brief for Claude</button>
+          </>}
         />
+        </>}
       </div>
     </div>
   );

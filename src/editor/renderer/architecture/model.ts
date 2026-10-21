@@ -146,3 +146,24 @@ export function canaryAt(arch: Architecture, play: Play, at: number): { workload
   const next = steps[nth + 1];
   return { workload, percent, ...(next !== undefined ? { next } : {}), release };
 }
+
+/**
+ * What a play shows at step `at` (0-based). A request lights its whole path, each hop numbered where it lands; a
+ * release or a failure lights the step it is on, keeps what it already did shown, and dims the rest.
+ * `system` reads a workload as its part (the System map draws parts, not workloads).
+ */
+export function flowLook(arch: Architecture, play: Play, at: number, system: boolean): { lit: Set<Id>; shown: Set<Id>; badges: Map<Id, number> } {
+  const widen = (ids: readonly Id[]) => ids.flatMap((id) => (system && arch.workloads[id] ? [id, arch.workloads[id].part] : [id]));
+  const badges = new Map<Id, number>();
+  if (play.kind === "request") {
+    play.steps.forEach((s, i) => {
+      const lands = [...s.touches].reverse().find((id) => arch.parts[id] || arch.workloads[id]);
+      if (lands && !badges.has(lands)) badges.set(lands, i + 1);
+    });
+    return { lit: new Set(widen(play.steps.flatMap((s) => s.touches))), shown: new Set(), badges };
+  }
+  return { lit: new Set(widen(play.steps[at]?.touches ?? [])), shown: new Set(widen(play.steps.slice(0, at).flatMap((s) => s.touches))), badges };
+}
+
+/** "RefundJob { returnId, amount, reason }": what a step says it carries, when it spells the payload out. */
+export const payloadOf = (about: string | undefined): string | undefined => about?.match(/\S+\s*\{[^}]*\}/)?.[0];
