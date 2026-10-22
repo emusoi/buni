@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { ARCH_COLLECTIONS, type ArchCollection, type Architecture, type Cluster, type Id, type NodePool, type Play, type PlayStep, type Workload } from "buni/format/doc.ts";
-import { FORMS, PLANNABLE, TOOL, changeFor, labelOf, moveItem, planChange, poolOptions, readInput, refOptions, valueOf, type Call, type Field, type FieldValue } from "./edit.ts";
+import { FORMS, PLANNABLE, TOOL, changeFor, labelOf, moveItem, planChange, poolOptions, readInput, refOptions, shows, valueOf, type Call, type Field, type FieldValue } from "./edit.ts";
 import { useReorder } from "./useReorder.ts";
 
 /** Runs a call; resolves to the refusal, or undefined when it went in. */
@@ -213,14 +213,18 @@ export function ThingForm({ arch, c, id, focus, sections, heading = true }: {
   return (
     <>
       {titled && <FieldRow key={`${id} title`} arch={arch} c={c} thing={thing} field={first} title autoFocus={focus} />}
-      {all.map(([s, i]) => (
-        <section key={i} className="arch-section">
-          {s.title && <span className="arch-section-title">{s.title}</span>}
-          {s.fields.filter((f) => !(titled && f === first) && (f.kind !== "plan" || PLANNABLE.includes(c))).map((f, k) => (
-            <FieldRow key={`${id} ${f.key}`} arch={arch} c={c} thing={thing} field={f} autoFocus={focus && !titled && i === 0 && k === 0} />
-          ))}
-        </section>
-      ))}
+      {all.map(([s, i]) => {
+        const fields = s.fields.filter((f) => !(titled && f === first) && (f.kind !== "plan" || PLANNABLE.includes(c)) && shows(c, thing, f));
+        if (!fields.length) return null;
+        return (
+          <section key={i} className="arch-section">
+            {s.title && <span className="arch-section-title">{s.title}</span>}
+            {fields.map((f, k) => (
+              <FieldRow key={`${id} ${f.key}`} arch={arch} c={c} thing={thing} field={f} autoFocus={focus && !titled && i === 0 && k === 0} />
+            ))}
+          </section>
+        );
+      })}
       {c === "clusters" && <Pools cluster={thing as Cluster} />}
       {c === "plays" && <Steps arch={arch} play={thing as Play} />}
     </>

@@ -16,6 +16,9 @@ import {
   type Attachment,
   type Comment,
   type CommentState,
+  type Stroke,
+  INK_TOOLS,
+  INK_VIEWS,
   type Section,
   type Confidence,
   type Connection,
@@ -37,11 +40,14 @@ import {
   type TerminalColors,
   type TerminalScreen,
   type TerminalSurface,
+  API_KINDS,
   ARCH_COLLECTIONS,
   ARCH_STATUSES,
   CLUSTER_PROVIDERS,
   GITOPS_TOOLS,
+  GRAPHQL_TYPES,
   GROUP_KINDS,
+  HTTP_METHODS,
   K8S_NAME,
   LINK_KINDS,
   MAP_LEVELS,
@@ -52,6 +58,7 @@ import {
   STRATEGIES,
   WORKLOAD_KINDS,
   workloadName,
+  type Api,
   type ArchCollection,
   type ArchLink,
   type ArchStatus,
@@ -64,6 +71,7 @@ import {
   type Migration,
   type Namespace,
   type NodePool,
+  type Operation,
   type Part,
   type Plan,
   type Play,
@@ -486,12 +494,44 @@ export class Reader {
   }
 
   comment(v: unknown, path: string): Comment {
-    const o = this.obj(v, path, ["id", "node", "state", "posts"]);
+    const o = this.obj(v, path, ["id", "node", "state", "posts", "ink"]);
     return {
       id: this.str(o.id, join(path, "id")),
       node: this.str(o.node, join(path, "node")),
       state: this.oneOf(o.state, join(path, "state"), COMMENT_STATES),
       posts: this.list(o.posts, join(path, "posts"), (x, p) => this.post(x, p)),
+      ...(o.ink !== undefined ? { ink: this.ink(o.ink, join(path, "ink")) } : {}),
+    };
+  }
+
+  ink(v: unknown, path: string): NonNullable<Comment["ink"]> {
+    const o = this.obj(v, path, ["page", "view", "flow", "sketch", "strokes", "from"]);
+    const from = this.optStr(o.from, join(path, "from"));
+    const page = this.optStr(o.page, join(path, "page"));
+    const view = o.view === undefined ? undefined : this.oneOf(o.view, join(path, "view"), INK_VIEWS);
+    const flow = this.optStr(o.flow, join(path, "flow"));
+    if (o.sketch !== undefined && o.sketch !== true) this.fail(join(path, "sketch"), "expected true");
+    const sketch = o.sketch === true ? true : undefined;
+    if ([page, view, flow, sketch].filter((x) => x !== undefined).length !== 1) this.fail(path, "a mark is on a page, an architecture view or a flow, or is a sketch on the canvas: one of them");
+    return {
+      ...(page !== undefined ? { page } : {}),
+      ...(view !== undefined ? { view } : {}),
+      ...(flow !== undefined ? { flow } : {}),
+      ...(sketch ? { sketch } : {}),
+      strokes: this.list(o.strokes, join(path, "strokes"), (x, p) => this.stroke(x, p)),
+      ...(from !== undefined ? { from } : {}),
+    };
+  }
+
+  stroke(v: unknown, path: string): Stroke {
+    const o = this.obj(v, path, ["tool", "color", "width", "points"]);
+    const points = this.list(o.points, join(path, "points"), (x, p) => this.num(x, p));
+    if (points.length < 2 || points.length % 2 !== 0) this.fail(join(path, "points"), "expected x, y pairs");
+    return {
+      tool: this.oneOf(o.tool, join(path, "tool"), INK_TOOLS),
+      color: this.str(o.color, join(path, "color")),
+      width: this.num(o.width, join(path, "width")),
+      points,
     };
   }
 
@@ -584,7 +624,7 @@ export class Reader {
   }
 
   part(v: unknown, path: string): Part {
-    const o = this.obj(v, path, ["id", "name", "kind", "tech", "about", "status", "plan", "group", "owners", "build", "managed", "place"]);
+    const o = this.obj(v, path, ["id", "name", "kind", "tech", "about", "status", "plan", "group", "owners", "build", "managed", "place", "api"]);
     return {
       id: this.str(o.id, join(path, "id")),
       name: this.str(o.name, join(path, "name")),
@@ -593,6 +633,35 @@ export class Reader {
       ...this.planned(o, path),
       ...(o.build !== undefined ? { build: this.build(o.build, join(path, "build")) } : {}),
       ...(o.place !== undefined ? { place: this.place(o.place, join(path, "place")) } : {}),
+      ...(o.api !== undefined ? { api: this.api(o.api, join(path, "api")) } : {}),
+    };
+  }
+
+  /** A part's API: REST operations need a method and path, GraphQL ones a type and field. */
+  api(v: unknown, path: string): Api {
+    const o = this.obj(v, path, ["kind", "spec", "operations"]);
+    const kind = this.oneOf(o.kind, join(path, "kind"), API_KINDS);
+    return {
+      kind,
+      ...this.optStrs(o, path, ["spec"]),
+      operations: o.operations === undefined ? [] : this.list(o.operations, join(path, "operations"), (x, p) => this.operation(x, p, kind)),
+    };
+  }
+
+  operation(v: unknown, path: string, kind: Api["kind"]): Operation {
+    const o = this.obj(v, path, ["id", "method", "path", "type", "field", "returns", "about", "request", "responses", "resolves"]);
+    const rest = kind === "rest";
+    if (rest && (o.type !== undefined || o.field !== undefined)) this.fail(path, "a REST operation has a method and path, not a type and field");
+    if (!rest && (o.method !== undefined || o.path !== undefined)) this.fail(path, "a GraphQL operation has a type and field, not a method and path");
+    if (rest && o.path === undefined) this.fail(join(path, "path"), "a REST operation needs its path");
+    if (!rest && o.field === undefined) this.fail(join(path, "field"), "a GraphQL operation needs its field");
+    if (rest && typeof o.path === "string" && !o.path.startsWith("/")) this.fail(join(path, "path"), 'a path starts with "/"');
+    return {
+      id: this.str(o.id, join(path, "id")),
+      ...(o.method !== undefined ? { method: this.oneOf(o.method, join(path, "method"), HTTP_METHODS) } : {}),
+      ...(o.type !== undefined ? { type: this.oneOf(o.type, join(path, "type"), GRAPHQL_TYPES) } : {}),
+      ...this.optStrs(o, path, ["path", "field", "returns", "about", "request", "resolves"]),
+      ...(o.responses !== undefined ? { responses: this.strs(o.responses, join(path, "responses")) } : {}),
     };
   }
 
@@ -1123,8 +1192,11 @@ function checkRefs(doc: Doc, r: Reader): void {
 
   for (const c of Object.values(doc.comments)) {
     const p = join("comments", c.id);
-    if (!nodes[c.node]) r.fail(join(p, "node"), `node "${c.node}" does not exist`);
+    // A mark on the architecture points at a part or link, which may since have gone: its picture still says what it meant.
+    if (!c.ink?.view && !c.ink?.sketch && !nodes[c.node]) r.fail(join(p, "node"), `node "${c.node}" does not exist`);
     if (c.posts.length === 0) r.fail(join(p, "posts"), "a comment thread needs at least one post");
+    if (c.ink?.page !== undefined && !doc.pages[c.ink.page]) r.fail(join(join(p, "ink"), "page"), `page "${c.ink.page}" does not exist`);
+    if (c.ink?.flow !== undefined && !doc.flows[c.ink.flow]) r.fail(join(join(p, "ink"), "flow"), `flow "${c.ink.flow}" does not exist`);
   }
 
   for (const rule of Object.values(doc.rules)) {
@@ -1161,6 +1233,18 @@ function checkArchitecture(doc: Doc, r: Reader): void {
   for (const x of Object.values(a.parts)) {
     planned("parts", x);
     ref("groups", x.group, p("parts", x.id, "group"), "group");
+  }
+  // Operation ids are unique across parts, and an operation resolves to one on another part.
+  const ops = new Map<Id, Id>();
+  for (const x of Object.values(a.parts)) for (const op of x.api?.operations ?? []) {
+    if (ops.has(op.id)) r.fail(p("parts", x.id, "api"), `operation "${op.id}" is already on ${ops.get(op.id)}; operation ids are unique`);
+    ops.set(op.id, x.id);
+  }
+  for (const x of Object.values(a.parts)) for (const op of x.api?.operations ?? []) {
+    if (op.resolves === undefined) continue;
+    const at = ops.get(op.resolves);
+    if (at === undefined) r.fail(p("parts", x.id, "api"), `operation "${op.id}" resolves to "${op.resolves}", which does not exist`);
+    else if (at === x.id) r.fail(p("parts", x.id, "api"), `operation "${op.id}" resolves to one on its own part`);
   }
   for (const x of Object.values(a.links)) {
     planned("links", x);

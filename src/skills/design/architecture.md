@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Designing how an app is built and shipped — parts and links, builds, environments, Kubernetes clusters, namespaces and workloads, releases and migrations, planned changes and plays — with buni's architecture tools, then checking it and exporting drafts (manifests, Argo CD, CI, a brief). Read before designing a system, its deploy path, or a change to either.
+description: Designing a system before it is built and how it ships — who uses it, parts and links, API contracts (REST and GraphQL), builds, environments, Kubernetes clusters, namespaces and workloads, releases and migrations, planned changes and plays — with buni's architecture tools, then checking it and exporting drafts (manifests, Argo CD, CI, a brief). Read before designing a system, its deploy path, or a change to either.
 ---
 # Designing the software path
 
@@ -17,11 +17,17 @@ rule. People may sketch the system this way and hand it over; you may too, when 
 clearer than many calls: read the text first, change it, write it back.
 
 ## Order of work
+0. **Context.** Who uses it and what it relies on: a `person` part per kind of user (buyer, merchant) and an
+   `external` part per outside service, each linked to the parts they talk to. The map's Context level draws them
+   round the system as one box; it is the first thing a person reads.
 1. **Parts and links.** `set_part` for every client, service, worker, store, queue, outside service and edge piece
    (DNS, CDN, firewall, load balancer). A database or queue the cloud runs gets `managed` ("RDS Postgres Multi-AZ") and
    never a workload. `link_parts` says who starts each conversation (`calls`, `reads`, `writes`, `publishes`,
    `subscribes`; edge → what it fronts is `routes`) and what passes along it (`carries`). `set_group` draws the system
    or team boundary. Stop here and read `read_architecture {level:"system"}`: every part should have a reason to exist.
+1b. **API contracts.** Before code, say what each service offers: `set_api {part, kind: "rest"|"graphql", spec}`, then
+   `set_operation` per REST operation (`method`, `path`, `about`, `request`, `responses`) or GraphQL field (`type`,
+   `field`, `returns`). A GraphQL field served by a REST call names it in `resolves`. The editor's API view draws them.
 2. **Builds.** `set_build` on each part that is built: repo, path, Dockerfile, steps in order, what it makes, where it
    goes. Parts that run in the cluster need one.
 3. **Environments.** `set_environment` preview, staging, prod by `order`; the cluster each runs on.
@@ -43,13 +49,18 @@ clearer than many calls: read the text first, change it, write it back.
    fixes it. Fix P1 and P2; a P3 you keep on purpose, say why in the doc.
 9. **Export drafts.** `export_architecture {format}`: `manifests` (Kubernetes YAML per workload and a kustomization per
    namespace), `argocd` (an Application per part per environment), `ci` (a GitHub Actions workflow per built part),
-   `brief` (Markdown). They land in `architecture/FORMAT/` next to the design and say they are drafts: hand them over
+   `brief` (Markdown), `openapi` (an OpenAPI 3.1 openapi.yaml per REST API), `graphql` (a schema.graphql per GraphQL
+   API). They land in `architecture/FORMAT/` next to the design and say they are drafts: hand them over
    for review, never apply them.
 
 ## Compact example
 ```
 set_part {"name":"Returns API","kind":"service","tech":"Node 22"}
 set_part {"name":"Main database","kind":"store","tech":"Postgres 16","managed":"RDS Postgres"}
+set_part {"name":"Buyer","kind":"person","about":"Returns items from an order"}
+link_parts {"from":"buyer","to":"returns-api","kind":"calls","carries":"Return"}
+set_api {"part":"returns-api","kind":"rest","spec":"openapi.yaml"}
+set_operation {"part":"returns-api","method":"POST","path":"/returns/{id}/refund","about":"Refunds a return once the parcel is scanned","request":"RefundRequest { amount, reason }","responses":["202 Refund queued","409 Not scanned yet"]}
 link_parts {"from":"returns-api","to":"main-database","kind":"writes","carries":"Return"}
 set_build {"part":"returns-api","repo":"github.com/acme/parcel","path":"api/","dockerfile":"Dockerfile","steps":["lint","test","build","scan","sign"],"artifact":"api image","registry":"ECR"}
 set_cluster {"name":"EKS prod","provider":"eks","addons":["Argo CD","Argo Rollouts","External Secrets"],"gitops":{"tool":"argocd","repo":"parcel-deploy"}}

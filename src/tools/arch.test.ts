@@ -83,6 +83,10 @@ describe("check_architecture", () => {
       "p2 egress-blocked worker-prod", "p2 ingress-no-edge returns-api-prod", "p2 no-probes returns-api-prod", "p2 no-rollback v43",
     ]));
     for (const f of found) expect(toolNames).toContain(f.fix.split(" ")[0] as (typeof toolNames)[number]);
+    const egress = found.find((f) => f.rule === "egress-blocked")!;
+    expect(egress.apply).toEqual({ tool: "set_workload", args: JSON.parse(egress.fix.slice("set_workload ".length)) });
+    expect(found.find((f) => f.rule === "no-cluster")!.apply).toBeUndefined();
+    expect(found.find((f) => f.rule === "breaking-migration")!.apply).toBeUndefined();
     const text = checkText(a, found);
     expect(text).toStartWith(`Architecture: ${found.length} findings (4 P1,`);
     expect(text).toContain('P2 egress-blocked · worker-prod: Worker calls Resend, calls Shippo, calls Shopify, writes Labels, but the NetworkPolicy of Deployment worker in prod doesn\'t let it out there.\n   Fix: set_workload {"id":"worker-prod","egress":["main-database","jobs","resend","shippo","shopify","labels"]}');
@@ -291,3 +295,29 @@ describe("place_architecture", () => {
     expect(JSON.stringify(arch())).not.toContain('"x":240');
   });
 });
+
+test("openapi and graphql export one draft spec per API part", () => {
+  const doc = shop();
+  const a = doc.architecture!;
+  a.parts.api = { ...a.parts.api!, about: "Prices jobs.", api: { kind: "rest", operations: [
+    { id: "quote", method: "POST", path: "/quotes/{id}", about: "Prices a job", request: "QuoteRequest { size }", responses: ["201 Quoted", "Too big"] },
+  ] } };
+  a.parts.gw = { id: "gw", name: "Gateway", kind: "service", api: { kind: "graphql", spec: "gateway.graphql", operations: [
+    { id: "q", type: "query", field: "quote(id: ID!)", returns: "Quote", resolves: "quote", about: "A job's price" },
+    { id: "m", type: "mutation", field: "cancel(quoteId: ID!): Boolean" },
+  ] } };
+  const rest = exportArchitecture(doc, "openapi", undefined, noBrief);
+  expect([...rest.keys()]).toEqual(["quote-api/openapi.yaml"]);
+  const spec = rest.get("quote-api/openapi.yaml")!;
+  expect(spec.startsWith(`# ${DRAFT}`)).toBe(true);
+  expect(spec).toContain('openapi: 3.1.0');
+  expect(spec).toContain("operationId: quote");
+  expect(spec).toMatch(/"?201"?:\n\s+description: Quoted/);
+  expect(spec).toMatch(/"?200"?:\n\s+description: Too big/);
+  expect(spec).toContain("in: path");
+  const gql = exportArchitecture(doc, "graphql", undefined, noBrief);
+  expect([...gql.keys()]).toEqual(["gateway/gateway.graphql"]);
+  expect(gql.get("gateway/gateway.graphql")).toBe(`# ${DRAFT}\n# Gateway's GraphQL schema as designed.\n# Define these types: Quote.\n\ntype Query {\n  """A job's price · served by quote"""\n  quote(id: ID!): Quote\n}\n\ntype Mutation {\n  cancel(quoteId: ID!): Boolean\n}\n`);
+  expect(exportArchitecture(shop(), "openapi", undefined, noBrief).size).toBe(0);
+});
+

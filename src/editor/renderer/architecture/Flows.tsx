@@ -6,6 +6,7 @@ import { PLAY_KINDS, workloadName, type Architecture, type Environment, type Id,
 import { canaryAt, flowLook, payloadOf, previousVersion } from "./model.ts";
 import type { Level, MapBox, MapLayout } from "./layout.ts";
 import { MapCanvas, Replicas } from "./MapCanvas.tsx";
+import type { Notice } from "./checks.ts";
 import { Segmented } from "./ArchitectureMode.tsx";
 
 type Kind = (typeof PLAY_KINDS)[number];
@@ -16,12 +17,13 @@ const HEADING: Record<Kind, string> = { request: "Flow", release: "Release", fai
 export const CANARY_HEIGHT = 222;
 export const levelFor = (kind: Kind): Level => (kind === "request" ? "system" : "runtime");
 
-export function Flows({ arch, layout, level, env, play: playId, step, onPlay, onStep, onSelect }: {
+export function Flows({ arch, layout, level, env, play: playId, step, onPlay, onStep, onSelect, notices }: {
   arch: Architecture; layout: MapLayout; level: Level; env: Environment | undefined;
   play: Id | undefined; step: number;
   onPlay: (id: Id) => void; onStep: (i: number) => void;
   /** Opens a play or a release in the inspector. */
   onSelect: (id: Id) => void;
+  notices?: ReadonlyMap<string, Notice>;
 }) {
   const plays = Object.values(arch.plays).sort((a, b) => a.name.localeCompare(b.name));
   const play = (playId ? arch.plays[playId] : undefined) ?? plays[0];
@@ -76,8 +78,8 @@ export function Flows({ arch, layout, level, env, play: playId, step, onPlay, on
         <span className="arch-lbl">{w.kind} · canary</span>
         <b className="arch-name">{workloadName(arch, w)}</b>
         <div className="arch-split">
-          <div className="arch-split-row"><span>{previousVersion(canary.release.name)} stable</span><Replicas min={old} max={old} color="#52525b" /></div>
-          <div className="arch-split-row new"><span>{canary.release.name} canary</span><Replicas min={fresh} max={fresh} color="#8aaeff" /></div>
+          <div className="arch-split-row"><span>{previousVersion(canary.release.name)} stable</span><Replicas min={old} max={old} color="var(--arch-muted)" /></div>
+          <div className="arch-split-row new"><span>{canary.release.name} canary</span><Replicas min={fresh} max={fresh} color="var(--arch-blue)" /></div>
           <div className="arch-traffic"><span style={{ width: `${100 - canary.percent}%` }} /><span className="new" style={{ width: `${canary.percent}%` }} /></div>
           <div className="arch-split-row"><span>{100 - canary.percent}% of traffic</span><span className="new">{canary.percent}%</span></div>
           {canary.release.checks?.length ? (
@@ -148,6 +150,7 @@ export function Flows({ arch, layout, level, env, play: playId, step, onPlay, on
         fitKey={`${level} ${env?.id} ${play.id}`}
         {...(look ? { look: { lit: look.lit, shown: look.shown, dimRest: true } } : {})}
         badges={badges}
+        {...(notices ? { notices } : {})}
         render={renderCanary}
         bubble={payload && lands ? { key: layout.boxes.find((b) => b.ids.includes(lands))?.key ?? lands, text: payload } : undefined}
         bottomInset={timeline ? 96 : 0}

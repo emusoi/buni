@@ -20,7 +20,7 @@ export interface Card {
 }
 
 export const KIND_LABEL: Record<PartKind, string> = {
-  client: "Client", service: "Service", worker: "Worker", job: "Job", store: "Store", cache: "Cache", queue: "Queue", external: "External", edge: "Edge",
+  client: "Client", service: "Service", worker: "Worker", job: "Job", store: "Store", cache: "Cache", queue: "Queue", external: "External", edge: "Edge", person: "Person",
 };
 
 export const toneOf = (status: ArchStatus | undefined): Tone => (status === "planned" ? "planned" : status === "removed" ? "removed" : "live");

@@ -4,7 +4,7 @@ import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts"
 import { checkImage } from "buni/tools/assets.ts";
 import { fontSlug } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins } from "./guard.ts";
 import { rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -34,12 +34,21 @@ import example from "../../examples/portal.buni" with { type: "text" };
 import exampleImage from "../../examples/assets/steel-rack.jpg" with { type: "file" };
 import exampleNotes from "../../examples/assets/usability-0917.md" with { type: "file" };
 import { keepBrowserWarm } from "buni/term/chrome.ts";
+import { DEVICE_COOKIE, Tablets } from "./usb.ts";
+import { marksOn, marksOnFlow, marksOnView, sketchesOpen } from "buni/tools/ink.ts";
+import { pageTag, tabletCanvas, tabletDesign, tabletPages } from "./tablet-api.ts";
+import { captureDocument, captureShot, type Shot } from "buni/term/capture.ts";
+import { ARCH_COLLECTIONS, architectureOf, INK_VIEWS, type InkView } from "buni/format/doc.ts";
+import type { Device } from "./usb.ts";
+import { spawn } from "node:child_process";
 
 export interface EditorOptions {
   store: EditorStore;
   origin: string;
   localFile?: string;
   assets?: () => Built;
+  /** Tablets on a USB cable: only `buni open` on this machine offers them. */
+  tablets?: Tablets;
 }
 
 /** The same editor and design API, with the host choosing storage and who may reach it. */
@@ -47,6 +56,10 @@ export interface Editor {
   fetch(req: Request, dir?: string): Promise<Response>;
   /** The design a WebSocket upgrade for the live feed may watch, or undefined when it isn't allowed. */
   socketFile(req: Request, dir?: string): string | undefined;
+  /** A request on the listener only a tablet on the cable reaches; everything a tablet may do goes through here. */
+  tabletFetch(req: Request, dir?: string): Promise<Response>;
+  /** The design a tablet's WebSocket may watch, or undefined. */
+  tabletSocket(req: Request, dir?: string): string | undefined;
   /** Sends `file`'s changes to `send` as they happen; returns how to stop. */
   watch(file: string, send: (data: string) => void): Promise<() => void>;
   stop(): void;
@@ -158,7 +171,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     const tell = () => o.listeners.forEach((fn) => fn());
     if (!t && req.method === "POST" && isInitializeRequest(body)) {
       // Screenshots use the browser available to this host.
-      const server = createMcpServer(o.ws, { screenshot: (page) => renderAway(o, page), edited: (author, before) => keepBefore(o, author, before), ask: (author, q) => askPerson(o, author, q) });
+      const server = createMcpServer(o.ws, { screenshot: (page, marks) => renderAway(o, page, marks), edited: (author, before) => keepBefore(o, author, before), ask: (author, q) => askPerson(o, author, q) });
       const made = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID(), onsessioninitialized: (id) => void o.mcp.set(id, { transport: made, server, seen: Date.now() }) });
       made.onclose = () => {
         if (made.sessionId) o.mcp.delete(made.sessionId);
@@ -274,27 +287,43 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
    * ponytail: images the design uploaded aren't copied alongside, so they draw as empty boxes.
    */
   let drawing: Promise<unknown> = Promise.resolve();
-  /** One draw at a time: a burst of agent screenshots shouldn't start a browser each at once. */
-  function renderAway(o: Open, page: string): Promise<string> {
-    const next = drawing.then(() => drawAway(o, page));
+  /**
+   * One draw at a time. Tabs of the one warm browser drawing at once come out wrong (a page's top repeated down it),
+   * and a burst of agent screenshots shouldn't start a browser each.
+   */
+  function queued<T>(work: () => Promise<T>): Promise<T> {
+    const next = drawing.then(work);
     drawing = next.catch(() => undefined);
     return next;
   }
+  function renderAway(o: Open, page: string, marks = false): Promise<string> {
+    return queued(() => onDisk(o, async (file, dir) => {
+      // The agent reads layout and type at 1×; 2× sends four times the pixels for nothing it can use.
+      const out = join(dir, "page.png");
+      const r = await renderHeadless({ file, page, out, format: "png", scale: 1, ...(marks ? { marks } : {}) }, undefined);
+      if (!r.ok) throw new Error(r.text);
+      return (await readFile(out)).toString("base64");
+    }));
+  }
+  /** A page for the tablet: its picture, how tall it is, and where its layers sit, so links start where they're tapped. */
+  function shootAway(o: Open, page: string): Promise<Shot> {
+    return queued(() => onDisk(o, async (file) => captureShot(await captureDocument(file, page))));
+  }
 
-  async function drawAway(o: Open, page: string): Promise<string> {
+  /**
+   * `work` on the design as a file. A design on this disk is drawn where it is (every edit is already written), so its
+   * images are found; one in a store is copied out, laid out as on disk with its imports beside it, so relative imports
+   * resolve.
+   */
+  async function onDisk<T>(o: Open, work: (file: string, dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(join(tmpdir(), "buni-draw-"));
     try {
-      // Laid out as on disk, the imports beside it, so its relative imports resolve in the copy.
-      const file = join(dir, o.ws.path);
-      const out = join(dir, "page.png");
-      for (const f of [{ path: o.ws.path, doc: o.ws.view() }, ...o.ws.imports()]) {
+      const file = disk ? disk.real(o.ws.path) : join(dir, o.ws.path);
+      if (!disk) for (const f of [{ path: o.ws.path, doc: o.ws.view() }, ...o.ws.imports()]) {
         await mkdir(dirname(join(dir, f.path)), { recursive: true });
         await writeFile(join(dir, f.path), serializeDoc(f.doc), "utf8");
       }
-      // The agent reads layout and type at 1×; 2× sends four times the pixels for nothing it can use.
-      const r = await renderHeadless({ file, page, out, format: "png", scale: 1 }, undefined);
-      if (!r.ok) throw new Error(r.text);
-      return (await readFile(out)).toString("base64");
+      return await work(file, dir);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -439,7 +468,66 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     fileText: async (file) => serializeDoc((await need(file)).view()),
     undo: async (file) => (await need(file)).undo(),
     redo: async (file) => (await need(file)).redo(),
+    /** Tablets on the cable, or why there are none. */
+    tablets: async () => options.tablets?.list() ?? { error: "Tablets connect to buni open on your Mac, with a USB cable." },
+    /** Opens this design on a tablet on the cable, in its Chrome. */
+    openOnTablet: async (file, serial) => {
+      if (!options.tablets) throw new Error("Tablets connect to buni open on your Mac, with a USB cable.");
+      return options.tablets.open(str(serial, "openOnTablet"), str(file, "openOnTablet"));
+    },
+    /** Builds the buni app and installs it on a tablet on the cable. */
+    installTabletApp: async (_file, serial) => {
+      if (!options.tablets) throw new Error("Tablets connect to buni open on your Mac, with a USB cable.");
+      return options.tablets.install(str(serial, "installTabletApp"));
+    },
+    devices: async () => options.tablets?.paired() ?? [],
+    forgetDevice: async (_file, id) => { options.tablets?.forget(str(id, "forgetDevice")); },
+    /**
+     * The page's marks as a request for the coding agent: on this Mac's clipboard, ready to paste into Claude Code or
+     * Codex, so sending from the tablet needs nothing more on the Mac.
+     */
+    sendMarks: async (file, page) => marksRequest(await need(file), { page: str(page, "sendMarks") }),
+    sendViewMarks: async (file, view) => {
+      const v = INK_VIEWS.find((x) => x === view);
+      if (!v) throw new Error("view is context, system or api");
+      return marksRequest(await need(file), { view: v });
+    },
   });
+
+  /**
+   * A page's or an architecture view's marks as a request for the coding agent, on this Mac's clipboard (only on the
+   * person's own Mac: a hosted buni's clipboard isn't theirs). `picture` is what the tablet showed, ink and all.
+   */
+  async function marksRequest(ws: Workspace, where: { page: string } | { view: InkView } | { flow: string } | { screens: true }, picture?: string): Promise<{ count: number; copied: boolean; request: string }> {
+    const doc = ws.view();
+    const file = LOCAL ?? ws.path;
+    const design = basename(ws.path, ".buni");
+    const seeIt = (shot: string) => (picture ? `look at them in ${picture} (what the tablet showed; the handwriting is only in the picture)` : shot);
+    let request: string, n: number;
+    if ("page" in where) {
+      const p = doc.pages[where.page];
+      if (!p) throw new Error("No such page");
+      n = marksOn(doc, p.id).length;
+      request = `On ${p.name} in ${design} I drew ${n} mark${n === 1 ? "" : "s"} with a pen. Read them with buni call ${file} read_marks '{"page":"${p.id}"}' and ${seeIt(`look at them with buni shot ${file} ${p.id} marks.png --marks (handwriting is only in the picture)`)}. Make the changes, ask me about anything unclear, and reply on each mark's thread with comment {thread, body, addressed: true} when it's handled.`;
+    } else if ("screens" in where) {
+      // The Screens canvas: every page with open marks, in one request.
+      const marked = pagesInOrder(doc).filter((p) => marksOn(doc, p.id).length);
+      const sketches = sketchesOpen(doc).filter((c) => c.state === "open").length;
+      n = marked.reduce((k, p) => k + marksOn(doc, p.id).length, 0) + sketches;
+      const what = [marked.length ? `marks on ${marked.map((p) => p.name).join(", ")}` : "", sketches ? `${sketches} sketch${sketches === 1 ? "" : "es"} of new screens on the canvas` : ""].filter(Boolean).join(", and ");
+      request = `On the screens of ${design} I drew with a pen: ${what}. Read them with buni call ${file} read_marks and ${seeIt(`look at each page with buni shot ${file} PAGE marks.png --marks (handwriting is only in the picture)`)}. ${sketches ? "Build each sketched screen as a real page where I drew it, in the design's style, and link it as my arrows show; make the other changes too. " : "Make the changes, "}Ask me about anything unclear, and reply on each thread with comment {thread, body, addressed: true} when it's handled.`;
+    } else if ("flow" in where) {
+      const f = doc.flows[where.flow];
+      if (!f) throw new Error("No such flow");
+      n = marksOnFlow(doc, f.id).length;
+      request = `On the flow ${f.name} in ${design} I drew ${n} mark${n === 1 ? "" : "s"} with a pen, about how people move through it. Read them with buni call ${file} read_marks and the flow with buni call ${file} read_flows, and ${seeIt("ask me to send a picture from the tablet")}. Change the screens, links and journey to answer them, ask me about anything unclear, and reply on each mark's thread with comment {thread, body, addressed: true} when it's handled.`;
+    } else {
+      n = marksOnView(doc, where.view).length;
+      request = `On the ${where.view} view of ${design}'s architecture I sketched ${n} mark${n === 1 ? "" : "s"} with a pen. Read them with buni call ${file} read_marks and ${seeIt("ask me to send a picture from the tablet")}. Answer with a plan, not edits: set_plan {name, about} (about says how you read my sketch), then the parts and links it adds with status planned and that plan. I accept or discard it on the tablet. Reply on each mark's thread with comment {thread, body, addressed: true}.`;
+    }
+    if (!n) return { count: 0, copied: false, request: "" };
+    return { count: n, copied: options.tablets ? await toClipboard(request) : false, request };
+  }
 
   /**
    * A tab's live feed of its file: changes only, from the file as it is now. The tab fetches the whole file (compressed)
@@ -501,6 +589,196 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     const text = JSON.stringify(value);
     if (text.length < 1024 || !(req.headers.get("accept-encoding") ?? "").includes("gzip")) return new Response(text, { headers: { "content-type": "application/json" } });
     return new Response(Bun.gzipSync(text, { level: 6 }), { headers: { "content-type": "application/json", "content-encoding": "gzip", vary: "accept-encoding" } });
+  }
+
+  /** Pages drawn for the tablet, by design and page, with the version they show. */
+  /** The tablet's page pictures, by file and page, at the tag they were drawn for; a draw under way is shared. */
+  const drawn = new Map<string, { tag: string; shot: Promise<Shot> }>();
+  function pageShot(o: Open, file: string, page: string): { tag: string; shot: Promise<Shot> } {
+    const tag = pageTag(o.ws.view(), page), key = `${file}#${page}`;
+    const kept = drawn.get(key);
+    if (kept?.tag === tag) return kept;
+    const shot = shootAway(o, page);
+    drawn.set(key, { tag, shot });
+    // A failed draw isn't kept: the next ask tries again.
+    shot.catch(() => { if (drawn.get(key)?.shot === shot) drawn.delete(key); });
+    return { tag, shot };
+  }
+  const PICTURE_BYTES = 4 * 1024 * 1024;
+
+  /** The tablet app's API (docs/tablet-api.md): read the design, draw marks, send them, decide on plans. Nothing else. */
+  async function tabletV1(req: Request, url: URL, device: Device, file: string | undefined): Promise<Response> {
+    const route = url.pathname.slice("/tablet/v1/".length);
+    if (!file) return Response.json({ error: "Which design? Pass ?file=." }, { status: 400 });
+    const o = await load(file);
+    const get = req.method === "GET", post = req.method === "POST";
+    const body = async (): Promise<Record<string, unknown>> => {
+      const b: unknown = await req.json().catch(() => undefined);
+      return typeof b === "object" && b !== null && !Array.isArray(b) ? Object.fromEntries(Object.entries(b)) : {};
+    };
+    const text = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+    const fail = (error: string, status = 400) => Response.json({ error }, { status });
+    try {
+      if (route === "design" && get) {
+        const d = tabletDesign(o.ws.view(), file);
+        // Draw its pictures now, while the app reads this, so they're ready when it asks for them.
+        for (const page of tabletPages(o.ws.view(), d)) pageShot(o, file, page).shot.catch(() => undefined);
+        return json(d, req);
+      }
+      if (route === "page.png" && get) {
+        const page = url.searchParams.get("page") ?? "";
+        if (!o.ws.view().pages[page]) return fail("No such page", 404);
+        const tag = pageTag(o.ws.view(), page);
+        if (req.headers.get("if-none-match") === tag) return new Response(null, { status: 304, headers: { etag: tag } });
+        const drawing = pageShot(o, file, page);
+        return new Response(new Uint8Array((await drawing.shot).png), { headers: { "content-type": "image/png", etag: drawing.tag, "cache-control": "no-cache" } });
+      }
+      if (route === "canvas" && get) {
+        // The Screens canvas as the editor lays it out, from every page's drawing: their heights place the rows.
+        const doc = o.ws.view();
+        const shots = new Map<string, Shot>();
+        for (const p of pagesInOrder(doc)) shots.set(p.id, await pageShot(o, file, p.id).shot);
+        return json(tabletCanvas(doc, shots), req);
+      }
+      if (route === "events" && get) {
+        let stop: (() => void) | undefined, ping: ReturnType<typeof setInterval> | undefined;
+        const enc = new TextEncoder();
+        const stream = new ReadableStream<Uint8Array>({
+          async start(c) {
+            c.enqueue(enc.encode(": open\n\n"));
+            stop = await watch(file, () => c.enqueue(enc.encode("data: changed\n\n")));
+            ping = setInterval(() => c.enqueue(enc.encode(": ping\n\n")), 15_000);
+          },
+          cancel() { stop?.(); clearInterval(ping); },
+        });
+        return new Response(stream, { headers: { "content-type": "text/event-stream", "cache-control": "no-cache" } });
+      }
+      if (route === "marks" && post) {
+        const b = await body();
+        const view = text(b.view);
+        const where = view === "page" ? { page: text(b.page) } : view === "flow" ? { flow: text(b.flow) } : view === "sketch" ? { sketch: true } : INK_VIEWS.find((v) => v === view) ? { view } : undefined;
+        if (!where) return fail("view is context, system, api, page, flow or sketch");
+        const on = text(b.on), said = text(b.body);
+        const r = await o.ws.call(device.name, "mark", { ...where, ...(on ? { node: on } : {}), strokes: b.strokes, ...(said ? { body: said } : {}), from: device.name });
+        if (!r.ok) return fail(r.reply);
+        return Response.json({ id: r.reply.match(/thread (\S+)\)/)?.[1] ?? null });
+      }
+      if (route === "marks/erase" && post) {
+        const id = text((await body()).id);
+        const r = await o.ws.call(device.name, "mark", { remove: id ?? "" });
+        return r.ok ? Response.json({ ok: true }) : fail(r.reply);
+      }
+      if (route === "send" && post) {
+        const b = await body();
+        const view = text(b.view);
+        const where = view === "page" ? { page: text(b.page) ?? "" } : view === "flow" ? { flow: text(b.flow) ?? "" } : view === "screens" ? { screens: true as const } : INK_VIEWS.find((v) => v === view) ? { view: INK_VIEWS.find((v) => v === view) ?? "system" } : undefined;
+        if (!where) return fail("view is context, system, api, page, flow or screens");
+        // What the tablet showed, kept beside the other drawings buni makes, for the agent to look at.
+        let picture: string | undefined;
+        const b64 = text(b.picture);
+        if (b64) {
+          const bytes = Buffer.from(b64, "base64");
+          if (bytes.length > PICTURE_BYTES || bytes.subarray(1, 4).toString() !== "PNG") return fail("The picture is a PNG of up to 4 MB.");
+          const at = join(tmpdir(), "buni-marks");
+          await mkdir(at, { recursive: true });
+          picture = join(at, `${basename(file, ".buni")}-${"page" in where ? where.page : "flow" in where ? where.flow : "screens" in where ? "screens" : where.view}-${Date.now()}.png`);
+          await writeFile(picture, bytes);
+        }
+        const r = await marksRequest(o.ws, where, picture);
+        return Response.json({ count: r.count, copied: r.copied, ...(picture ? { picture } : {}) });
+      }
+      if (route === "plan" && post) {
+        const b = await body();
+        const plan = text(b.plan) ?? "";
+        const arch = architectureOf(o.ws.view());
+        if (!arch.plans[plan]) return fail("No such plan", 404);
+        // Changes the person unticked are left out of a merge: what they would add is dropped first.
+        const skip = Array.isArray(b.skip) ? b.skip.filter((x): x is string => typeof x === "string") : [];
+        if (b.action === "merge" && skip.length) {
+          const mine = (id: string) => ARCH_COLLECTIONS.map((c) => (arch[c] as Record<string, { plan?: string; status?: string }>)[id]).find((x) => x?.plan === plan);
+          const wrong = skip.find((id) => mine(id)?.status !== "planned");
+          if (wrong) return fail(`"${wrong}" isn't something this plan adds; only additions can be left out.`);
+          const dropped = await o.ws.call(device.name, "delete_architecture", { ids: skip });
+          if (!dropped.ok) return fail(dropped.reply);
+        }
+        const r = b.action === "merge" ? await o.ws.call(device.name, "merge_plan", { plan })
+          : b.action === "discard" ? await o.ws.call(device.name, "delete_architecture", { ids: [plan] })
+          : undefined;
+        if (!r) return fail("action is merge or discard");
+        return r.ok ? Response.json({ ok: true, reply: r.reply }) : fail(r.reply);
+      }
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+    return fail("Not part of the tablet API.", 404);
+  }
+
+  /** The tablet listener's own names and origins: what its requests carry, over the cable's tunnel. */
+  const tabletHosts = () => { const p = options.tablets?.port; return p ? [`localhost:${p}`, `127.0.0.1:${p}`] : []; };
+
+  /** What a paired tablet may reach: the editor, its files, the feed, and drawing marks. Anything else is refused. */
+  const TABLET_RPC = new Set(["snapshot", "build", "edit", "sendMarks", "documents"]);
+  const TABLET_TOOLS = ["mark", "comment"] as const;
+  async function tabletFetch(req: Request, dir = "/designs"): Promise<Response> {
+    const url = new URL(req.url);
+    const pairing = options.tablets;
+    const host = req.headers.get("host") ?? "";
+    if (!pairing || !tabletHosts().includes(host)) return new Response("forbidden host", { status: 403 });
+    if (url.pathname === "/pair" && req.method === "GET") {
+      const got = pairing.redeem(url.searchParams.get("code") ?? "");
+      if (!got) return notice("This link was used already or is too old. On your Mac, choose Open on tablet again.", 403);
+      return new Response(null, { status: 303, headers: {
+        location: `/?file=${encodeURIComponent(got.file)}&tablet=1`,
+        // Lax, not Strict: the page opens from outside the browser (adb), and Chrome holds a Strict cookie back from the
+        // navigation that follows. Other sites still can't send it with their requests.
+        "set-cookie": `${DEVICE_COOKIE}=${got.token}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+      } });
+    }
+    // The app trades its code for a token (docs/tablet-api.md); a browser, above, for a cookie.
+    if (url.pathname === "/tablet/v1/pair" && req.method === "POST") {
+      const code: unknown = await req.json().then((b: unknown) => (typeof b === "object" && b !== null && "code" in b ? b.code : undefined), () => undefined);
+      const got = typeof code === "string" ? pairing.redeem(code) : undefined;
+      if (!got) return Response.json({ error: "This code was used already or is too old. On your Mac, choose Open on tablet again." }, { status: 403 });
+      return Response.json({ token: got.token, file: got.file, device: got.name });
+    }
+    const device = pairing.device(req);
+    const api = url.pathname.startsWith("/tablet/v1/");
+    if (!device) {
+      const why = "This tablet isn't connected. Plug it into your Mac with a USB cable, then choose Open on tablet there.";
+      return api ? Response.json({ error: why }, { status: 401 }) : notice(why, 401);
+    }
+    const file = url.searchParams.get("file") ?? undefined;
+    if (file !== undefined && !isDesignPath(file, dir)) return Response.json({ error: "No such design" }, { status: 404 });
+    if (api) return tabletV1(req, url, device, file);
+    const own = new Set(tabletHosts().map((h) => `http://${h}`));
+    const name = url.pathname.startsWith("/rpc/") ? url.pathname.slice(5) : "";
+    if (name) {
+      if (!TABLET_RPC.has(name) || req.method !== "POST" || !allowedCall(req, own)) return Response.json({ error: "forbidden" }, { status: 403 });
+      try {
+        const args: unknown = await req.json();
+        if (!Array.isArray(args)) return Response.json({ error: "arguments are a list" }, { status: 400 });
+        const a = args.map((x: unknown) => (x === null ? undefined : x));
+        if (name === "edit") {
+          const tool = TABLET_TOOLS.find((t) => t === a[0]);
+          if (!tool) return Response.json({ error: "A tablet draws marks and leaves notes; edit the design on your Mac." }, { status: 403 });
+          // A mark says which tablet drew it, as the cable knows it, whatever the page sent.
+          const args = tool === "mark" && typeof a[1] === "object" && a[1] !== null && !("remove" in a[1]) ? { ...a[1], from: device.name } : a[1];
+          return json({ value: await (await need(file)).call(device.name, tool, args) }, req);
+        }
+        return json({ value: await rpcFor(dir)[name]?.(file, ...a) }, req);
+      } catch (e) {
+        return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 400 });
+      }
+    }
+    const asset = assets().files.get(url.pathname);
+    if (asset) return serveAsset(asset, req);
+    if (url.pathname === "/events" && file && req.method === "GET") return await events(file);
+    if (url.pathname === "/" || Object.hasOwn(FONTS, url.pathname) || url.pathname.startsWith("/files/")) {
+      // The same answers this Mac gets: the editor page, fonts, and the design's own files.
+      const here = [...HOSTS][0] ?? "localhost";
+      return fetch(new Request(new URL(url.pathname + url.search, `http://${here}`), { headers: { host: here, "accept-encoding": req.headers.get("accept-encoding") ?? "" } }), dir);
+    }
+    return new Response("not found", { status: 404 });
   }
 
   const FONTS: Record<string, string> = Object.fromEntries(FONT_FAMILIES.map((family) => [`/fonts/${fontSlug(family)}.woff2`, family]));
@@ -568,7 +846,33 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
 
   if (LOCAL_PATH) await load(LOCAL_PATH);
   const stop = () => { for (const live of lives) rmSync(live, { force: true }); lives.clear(); };
-  return { fetch, socketFile, watch, stop };
+  /** A tablet's live feed: its own host, its cookie, and a design. */
+  function tabletSocket(req: Request, dir = "/designs"): string | undefined {
+    const url = new URL(req.url);
+    const file = url.searchParams.get("file") ?? undefined;
+    if (url.pathname !== "/events" || !isDesignPath(file, dir)) return undefined;
+    if (!tabletHosts().includes(req.headers.get("host") ?? "") || !options.tablets?.device(req)) return undefined;
+    return allowedOrigin(req, new Set(tabletHosts().map((h) => `http://${h}`))) ? file : undefined;
+  }
+
+  return { fetch, socketFile, tabletFetch, tabletSocket, watch, stop };
+}
+
+/** A short page a tablet sees when it can't come in, saying what to do. */
+function notice(text: string, status: number): Response {
+  const safe = text.replace(/[<>&]/g, "");
+  return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>buni</title><body style="font:17px/1.5 -apple-system,system-ui,sans-serif;max-width:440px;margin:20vh auto;padding:0 24px;color:#18181b">${safe}</body>`, { status, headers: { "content-type": "text/html; charset=utf-8" } });
+}
+
+/** Puts text on this Mac's clipboard; false where there is no pbcopy (not a Mac). */
+function toClipboard(text: string): Promise<boolean> {
+  if (process.platform !== "darwin") return Promise.resolve(false);
+  return new Promise((done) => {
+    const p = spawn("pbcopy", [], { stdio: ["pipe", "ignore", "ignore"] });
+    p.once("error", () => done(false));
+    p.once("exit", (code) => done(code === 0));
+    p.stdin.end(text);
+  });
 }
 
 /** The full editor on files in place, served only on this machine. */
@@ -580,7 +884,8 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
   const ready = Promise.withResolvers<Editor>();
   // Each tab's live feed is a WebSocket here: an event stream holds one of the six HTTP/1.1 connections Chrome allows
   // per host, so with six tabs open on this buni a seventh never loads. Sockets don't count against that limit.
-  const server = Bun.serve<{ file: string; stop?: () => void; closed?: boolean }>({
+  type Feed = { file: string; stop?: () => void; closed?: boolean };
+  const server = Bun.serve<Feed>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,
     fetch: async (req, srv) => {
       const editor = await ready.promise;
@@ -591,7 +896,25 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
       }
       return editor.fetch(req);
     },
-    websocket: {
+    websocket: feeds(),
+  });
+  // The tablet's own door, also only on 127.0.0.1: adb reverse brings a tablet on the cable here, and nothing else
+  // does. Everything through it goes through the tablet's guard (tabletFetch), never the Mac's.
+  const tabletServer = Bun.serve<Feed>({
+    port: 0, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 4 * 1024 * 1024,
+    fetch: async (req, srv) => {
+      const editor = await ready.promise;
+      if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+        const file = editor.tabletSocket(req);
+        if (!file) return new Response("forbidden", { status: 403 });
+        return srv.upgrade(req, { data: { file } }) ? undefined : new Response("upgrade failed", { status: 400 });
+      }
+      return editor.tabletFetch(req);
+    },
+    websocket: feeds(),
+  });
+  function feeds(): Bun.WebSocketHandler<Feed> {
+    return {
       async open(ws) {
         const stop = await (await ready.promise).watch(ws.data.file, (data) => ws.send(data));
         // Closed while the file was loading: stop at once rather than feed a socket that's gone.
@@ -603,16 +926,19 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
         ws.data.closed = true;
         ws.data.stop?.();
       },
-    },
-  });
+    };
+  }
   try {
-    const editor = await createEditor({ store: new DiskStore(dirname(dirname(localFile))), origin: `http://localhost:${server.port}`, localFile, assets: () => assets });
+    const tablets = new Tablets(join(homedir(), ".buni", "devices.json"));
+    tablets.port = tabletServer.port ?? 0;
+    const editor = await createEditor({ store: new DiskStore(dirname(dirname(localFile))), origin: `http://localhost:${server.port}`, localFile, assets: () => assets, tablets });
     ready.resolve(editor);
     const url = `http://localhost:${server.port}/?file=${encodeURIComponent(`/designs/${basename(dirname(localFile))}/${basename(localFile)}`)}`;
-    const stop = () => { editor.stop(); void server.stop(true); };
+    const stop = () => { editor.stop(); tablets.stop(); void server.stop(true); void tabletServer.stop(true); };
     return { url, stop };
   } catch (error) {
     void server.stop(true);
+    void tabletServer.stop(true);
     throw error;
   }
 }

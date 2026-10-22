@@ -1,0 +1,4419 @@
+{
+  "attachments": {},
+  "buni": 1,
+  "comments": {},
+  "connections": {
+    "0f4defcd": {
+      "durationMs": 200,
+      "id": "0f4defcd",
+      "node": "76aa20d8",
+      "page": "08c862fe",
+      "to": "62f865df",
+      "transition": "none",
+      "trigger": "click"
+    },
+    "3a5009d5": {
+      "durationMs": 200,
+      "id": "3a5009d5",
+      "node": "2b6082ad",
+      "page": "62f865df",
+      "to": "08c862fe",
+      "transition": "none",
+      "trigger": "click"
+    },
+    "c64f3031": {
+      "durationMs": 200,
+      "id": "c64f3031",
+      "node": "d37c03a7",
+      "page": "08c862fe",
+      "to": "62f865df",
+      "transition": "none",
+      "trigger": "click"
+    },
+    "c83cdf9c": {
+      "durationMs": 200,
+      "id": "c83cdf9c",
+      "node": "97ddd36e",
+      "page": "3305257d",
+      "to": "08c862fe",
+      "transition": "none",
+      "trigger": "click"
+    }
+  },
+  "flows": {
+    "f00fea0a": {
+      "id": "f00fea0a",
+      "index": "a0",
+      "name": "Import, then keep in step",
+      "start": "3305257d"
+    }
+  },
+  "journeys": {},
+  "nodes": {
+    "16521714": {
+      "id": "16521714",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Actions",
+      "parent": "499200d9",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "16px"
+      },
+      "tag": "div"
+    },
+    "16794509": {
+      "id": "16794509",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Diff",
+      "parent": "448e6370",
+      "style": {
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gap": "12px",
+        "gridTemplateColumns": "22px 1fr",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "23531159": {
+      "id": "23531159",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Not drawn",
+      "parent": "08feac61",
+      "style": {
+        "background": "var(--paper)",
+        "borderTop": "1px solid var(--line)",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "flexDirection": "column",
+        "fontSize": "13px",
+        "gap": "6px",
+        "lineHeight": "20px",
+        "marginTop": "0",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "26990889": {
+      "id": "26990889",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "0a6c63c8",
+      "style": {
+        "borderTop": "1.5px solid var(--red)",
+        "height": "0",
+        "width": "14px"
+      },
+      "tag": "span"
+    },
+    "39334450": {
+      "id": "39334450",
+      "index": "a2",
+      "kind": "text",
+      "name": "Job · before each sync",
+      "parent": "012a90a0",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Job · before each sync"
+    },
+    "55801040": {
+      "id": "55801040",
+      "index": "a0",
+      "kind": "text",
+      "name": "Draw it from what alread…",
+      "parent": "125aaf02",
+      "style": {
+        "fontSize": "32px",
+        "fontWeight": "600",
+        "letterSpacing": "-0.01em",
+        "lineHeight": "40px",
+        "margin": "0"
+      },
+      "tag": "h1",
+      "text": "Draw it from what already runs"
+    },
+    "63386096": {
+      "id": "63386096",
+      "index": "a0",
+      "kind": "text",
+      "name": "Planned, RET-214",
+      "parent": "2c8434b7",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Planned, RET-214"
+    },
+    "70300681": {
+      "id": "70300681",
+      "index": "a0",
+      "kind": "text",
+      "name": "Migrate",
+      "parent": "81fab010",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Migrate"
+    },
+    "70324910": {
+      "id": "70324910",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Columns",
+      "parent": "61b1c6f7",
+      "style": {
+        "background": "var(--paper)",
+        "borderBottom": "1px solid var(--line)",
+        "display": "grid",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "81307149": {
+      "id": "81307149",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
+      "name": "check",
+      "parent": "469a04f9",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "86716993": {
+      "id": "86716993",
+      "index": "a2",
+      "kind": "text",
+      "name": "A draft is written for y…",
+      "parent": "16521714",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "A draft is written for you to review; nothing is applied to the cluster."
+    },
+    "89610272": {
+      "id": "89610272",
+      "index": "a1",
+      "kind": "text",
+      "name": "httpGet: { path: /health…",
+      "parent": "d5bbabbc",
+      "style": {
+        "marginLeft": "10ch"
+      },
+      "tag": "span",
+      "text": "httpGet: { path: /healthz, port: 8080 }"
+    },
+    "008ee574": {
+      "id": "008ee574",
+      "index": "a1",
+      "kind": "text",
+      "name": "3 to 12, CPU 70%",
+      "parent": "d8a2045a",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "3 to 12, CPU 70%"
+    },
+    "012a90a0": {
+      "id": "012a90a0",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "01367882": {
+      "id": "01367882",
+      "index": "a1",
+      "kind": "text",
+      "name": "- secretRef: { name: str…",
+      "parent": "7f592be5",
+      "style": {
+        "marginLeft": "10ch"
+      },
+      "tag": "span",
+      "text": "- secretRef: { name: stripe-key }"
+    },
+    "01524cf8": {
+      "id": "01524cf8",
+      "index": "a4",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "017ddc46": {
+      "id": "017ddc46",
+      "index": "a8",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "01c9a1d3": {
+      "id": "01c9a1d3",
+      "index": "a0",
+      "kind": "text",
+      "name": "19",
+      "parent": "1a47723d",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "19"
+    },
+    "0403ea44": {
+      "id": "0403ea44",
+      "index": "a2",
+      "kind": "text",
+      "name": "Repo",
+      "parent": "70324910",
+      "style": {},
+      "tag": "span",
+      "text": "Repo"
+    },
+    "04b9434b": {
+      "id": "04b9434b",
+      "index": "a1",
+      "kind": "text",
+      "name": "8080",
+      "parent": "f48a7cfb",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "8080"
+    },
+    "0731a9d7": {
+      "id": "0731a9d7",
+      "index": "a0",
+      "kind": "text",
+      "name": "1",
+      "parent": "76aa20d8",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "1"
+    },
+    "08cba30e": {
+      "id": "08cba30e",
+      "index": "a1",
+      "kind": "frame",
+      "name": "p",
+      "parent": "3a46d105",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "08feac61": {
+      "id": "08feac61",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Found",
+      "parent": "22e872d0",
+      "style": {
+        "alignSelf": "flex-start",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "8px",
+        "display": "flex",
+        "flex": "1",
+        "flexDirection": "column",
+        "overflow": "hidden"
+      },
+      "tag": "div"
+    },
+    "092666f8": {
+      "id": "092666f8",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Environment",
+      "parent": "288c6972",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "0a6c63c8": {
+      "id": "0a6c63c8",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "8bf926aa",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "0afaa440": {
+      "id": "0afaa440",
+      "index": "a0",
+      "kind": "instance",
+      "name": "Shell / Top bar",
+      "overrides": {
+        "82e531f1": {
+          "text": "overlays/prod · 4 differences"
+        }
+      },
+      "parent": "118c099a",
+      "shared": "b9d9f118",
+      "style": {}
+    },
+    "0cdeb132": {
+      "id": "0cdeb132",
+      "index": "a2",
+      "kind": "text",
+      "name": "New env",
+      "parent": "37e4cce2",
+      "style": {
+        "alignItems": "center",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "36px",
+        "padding": "0 14px"
+      },
+      "tag": "span",
+      "text": "New environment"
+    },
+    "0ce9e2a7": {
+      "id": "0ce9e2a7",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "0e678409": {
+      "id": "0e678409",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Views",
+      "parent": "2d10b870",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "fontSize": "14px",
+        "gap": "24px"
+      },
+      "tag": "nav"
+    },
+    "0e741789": {
+      "id": "0e741789",
+      "index": "a0",
+      "kind": "text",
+      "name": "Ingress",
+      "parent": "6e152779",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Ingress"
+    },
+    "113eb122": {
+      "id": "113eb122",
+      "index": "a1",
+      "kind": "text",
+      "name": "Still to build? Mark it …",
+      "parent": "cec0cdb6",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Still to build? Mark it planned. Gone? Remove it."
+    },
+    "118c099a": {
+      "id": "118c099a",
+      "index": "a0",
+      "kind": "frame",
+      "name": "03 · Part",
+      "style": {
+        "background": "var(--paper)",
+        "color": "var(--ink)",
+        "display": "flex",
+        "flexDirection": "column",
+        "fontFamily": "var(--font)",
+        "height": "900px",
+        "overflow": "hidden",
+        "width": "1440px"
+      }
+    },
+    "11db8922": {
+      "id": "11db8922",
+      "index": "a2",
+      "kind": "text",
+      "name": "Service · Rollout",
+      "parent": "bf062a63",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Service · Rollout"
+    },
+    "11e89c79": {
+      "id": "11e89c79",
+      "index": "a1",
+      "kind": "text",
+      "name": "- name: api",
+      "parent": "210562c1",
+      "style": {
+        "marginLeft": "6ch"
+      },
+      "tag": "span",
+      "text": "- name: api"
+    },
+    "1235017a": {
+      "id": "1235017a",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns-config",
+      "parent": "cee26fe2",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "returns-config"
+    },
+    "125aaf02": {
+      "id": "125aaf02",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Intro",
+      "parent": "288c6972",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px"
+      },
+      "tag": "div"
+    },
+    "12d10136": {
+      "id": "12d10136",
+      "index": "a0",
+      "kind": "text",
+      "name": "Parcel",
+      "parent": "f14d5ad1",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Parcel"
+    },
+    "135d1f79": {
+      "id": "135d1f79",
+      "index": "a1",
+      "kind": "text",
+      "name": "Export",
+      "parent": "16521714",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "display": "flex",
+        "flexShrink": "0",
+        "fontSize": "14px",
+        "height": "40px",
+        "padding": "0 18px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "span",
+      "text": "Keep the design, draft a manifest"
+    },
+    "13cfe359": {
+      "id": "13cfe359",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns-db",
+      "parent": "883bd781",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "returns-db"
+    },
+    "142b651b": {
+      "id": "142b651b",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Path field",
+      "parent": "7ff27511",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--ink)",
+        "borderRadius": "6px",
+        "display": "flex",
+        "flex": "1",
+        "gap": "8px",
+        "height": "40px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "15bed288": {
+      "id": "15bed288",
+      "index": "a0",
+      "kind": "text",
+      "name": "RDS, managed",
+      "parent": "c3a7f36c",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "RDS, managed"
+    },
+    "15ef4f44": {
+      "id": "15ef4f44",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Foot",
+      "parent": "a021e952",
+      "style": {
+        "background": "var(--paper)",
+        "borderTop": "1px solid var(--line)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "12px",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "1952468f": {
+      "id": "1952468f",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Image",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "background": "var(--red-wash)",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "19d43ed2": {
+      "id": "19d43ed2",
+      "index": "a0",
+      "kind": "text",
+      "name": "Refund worker",
+      "parent": "3bbdda73",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Refund worker"
+    },
+    "1a473d58": {
+      "id": "1a473d58",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>",
+      "name": "clock",
+      "parent": "e40aee59",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "1a47723d": {
+      "id": "1a47723d",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "1cc40215": {
+      "id": "1cc40215",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Cluster",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "rgba(255,255,255,.45)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "height": "660px",
+        "left": "280px",
+        "position": "absolute",
+        "top": "72px",
+        "width": "540px"
+      },
+      "tag": "div"
+    },
+    "1dc53b3d": {
+      "id": "1dc53b3d",
+      "index": "a1",
+      "kind": "text",
+      "name": "api:v41",
+      "parent": "1952468f",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px",
+        "textDecoration": "line-through"
+      },
+      "tag": "span",
+      "text": "api:v41"
+    },
+    "1ef196c0": {
+      "id": "1ef196c0",
+      "index": "a0",
+      "kind": "text",
+      "name": "deploy/k8s/overlays/prod…",
+      "parent": "ef7c6af4",
+      "style": {},
+      "tag": "span",
+      "text": "deploy/k8s/overlays/prod/api/rollout.yaml"
+    },
+    "206ce47c": {
+      "id": "206ce47c",
+      "index": "a1",
+      "kind": "text",
+      "name": "spec:",
+      "parent": "0ce9e2a7",
+      "style": {
+        "marginLeft": "2ch"
+      },
+      "tag": "span",
+      "text": "spec:"
+    },
+    "210562c1": {
+      "id": "210562c1",
+      "index": "a3",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "21d6e896": {
+      "id": "21d6e896",
+      "index": "a1",
+      "kind": "text",
+      "name": "250m · 512Mi",
+      "parent": "430aa45c",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "250m · 512Mi"
+    },
+    "22e872d0": {
+      "id": "22e872d0",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Start",
+      "parent": "6a143af4",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "gap": "64px",
+        "padding": "72px 96px"
+      },
+      "tag": "div"
+    },
+    "23e13159": {
+      "id": "23e13159",
+      "index": "a1",
+      "kind": "text",
+      "name": "planned",
+      "parent": "6f8590db",
+      "style": {},
+      "tag": "span",
+      "text": "planned"
+    },
+    "2700c1ad": {
+      "id": "2700c1ad",
+      "index": "a0",
+      "kind": "frame",
+      "name": "02 · Map",
+      "style": {
+        "background": "var(--paper)",
+        "color": "var(--ink)",
+        "display": "flex",
+        "flexDirection": "column",
+        "fontFamily": "var(--font)",
+        "height": "900px",
+        "overflow": "hidden",
+        "width": "1440px"
+      }
+    },
+    "274099d4": {
+      "id": "274099d4",
+      "index": "a0",
+      "kind": "text",
+      "name": "returns.parcel.app",
+      "parent": "4f821771",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "returns.parcel.app"
+    },
+    "27aadd1b": {
+      "id": "27aadd1b",
+      "index": "a1",
+      "kind": "text",
+      "name": "containers:",
+      "parent": "f0f902ba",
+      "style": {
+        "marginLeft": "4ch"
+      },
+      "tag": "span",
+      "text": "containers:"
+    },
+    "27d24b1d": {
+      "id": "27d24b1d",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Rows",
+      "parent": "08feac61",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "fontSize": "14px"
+      },
+      "tag": "div"
+    },
+    "288c6972": {
+      "id": "288c6972",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Import",
+      "parent": "22e872d0",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "gap": "32px",
+        "width": "560px"
+      },
+      "tag": "div"
+    },
+    "29b6b129": {
+      "id": "29b6b129",
+      "index": "a0",
+      "kind": "text",
+      "name": "Health",
+      "parent": "9f0bb267",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Health"
+    },
+    "29e88ec7": {
+      "id": "29e88ec7",
+      "index": "a2",
+      "kind": "text",
+      "name": "Job · CronJob 02:00",
+      "parent": "e40aee59",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Job · CronJob 02:00"
+    },
+    "2b6082ad": {
+      "id": "2b6082ad",
+      "index": "a0",
+      "kind": "text",
+      "name": "Map",
+      "parent": "655dacac",
+      "style": {
+        "color": "var(--ink-2)",
+        "textDecoration": "underline",
+        "textUnderlineOffset": "3px"
+      },
+      "tag": "span",
+      "text": "Map"
+    },
+    "2baeb528": {
+      "id": "2baeb528",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 19a5 5 0 0 1-5-5v8\"/><path d=\"M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5\"/><circle cx=\"13\" cy=\"12\" r=\"2\"/><circle cx=\"20\" cy=\"19\" r=\"2\"/></svg>",
+      "name": "folder-git-2",
+      "parent": "2bf63cc5",
+      "style": {
+        "color": "var(--ink-3)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "2bf63cc5": {
+      "id": "2bf63cc5",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Sync",
+      "parent": "2d10b870",
+      "style": {
+        "alignItems": "center",
+        "color": "var(--ink-3)",
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "8px",
+        "marginLeft": "auto"
+      },
+      "tag": "div"
+    },
+    "2c6a5ca6": {
+      "id": "2c6a5ca6",
+      "index": "a1",
+      "kind": "text",
+      "name": "only in design",
+      "parent": "0a6c63c8",
+      "style": {},
+      "tag": "span",
+      "text": "only in design"
+    },
+    "2c8434b7": {
+      "id": "2c8434b7",
+      "index": "aB",
+      "kind": "frame",
+      "name": "Store credit",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "transparent",
+        "border": "1.5px dashed var(--ink-3)",
+        "borderRadius": "6px",
+        "boxShadow": "none",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "310px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "604px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "2cfdf871": {
+      "id": "2cfdf871",
+      "index": "a1",
+      "kind": "text",
+      "name": "api:v42",
+      "parent": "30a6af03",
+      "style": {
+        "color": "var(--red)",
+        "fontWeight": "600"
+      },
+      "tag": "span",
+      "text": "api:v42"
+    },
+    "2d10b870": {
+      "id": "2d10b870",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Top bar",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "borderBottom": "1px solid var(--line)",
+        "display": "flex",
+        "flexShrink": "0",
+        "gap": "32px",
+        "height": "52px",
+        "padding": "0 20px"
+      },
+      "tag": "header"
+    },
+    "2ef5335c": {
+      "id": "2ef5335c",
+      "index": "a0",
+      "kind": "text",
+      "name": "4 differences with the r…",
+      "parent": "3a46d105",
+      "style": {
+        "fontSize": "17px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "4 differences with the repo"
+    },
+    "2f778404": {
+      "id": "2f778404",
+      "index": "a2",
+      "kind": "text",
+      "name": "api:v42",
+      "parent": "1952468f",
+      "style": {
+        "color": "var(--red)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "span",
+      "text": "api:v42"
+    },
+    "30588f17": {
+      "id": "30588f17",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Source",
+      "parent": "a4d4e6bd",
+      "style": {
+        "alignSelf": "flex-start",
+        "background": "#1d2320",
+        "borderRadius": "8px",
+        "color": "#d6ddd8",
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "overflow": "hidden",
+        "width": "480px"
+      },
+      "tag": "aside"
+    },
+    "30a6af03": {
+      "id": "30a6af03",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Redline",
+      "parent": "d37c03a7",
+      "style": {
+        "alignItems": "baseline",
+        "borderTop": "1px dashed var(--red)",
+        "display": "flex",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "gap": "8px",
+        "marginTop": "6px",
+        "paddingTop": "6px"
+      },
+      "tag": "div"
+    },
+    "3145572f": {
+      "id": "3145572f",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Actions",
+      "parent": "288c6972",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "16px",
+        "marginTop": "8px"
+      },
+      "tag": "div"
+    },
+    "32075fdc": {
+      "id": "32075fdc",
+      "index": "a0",
+      "kind": "text",
+      "name": "Worker, scales on queue",
+      "parent": "7583cc53",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Worker, scales on queue"
+    },
+    "340d88e0": {
+      "id": "340d88e0",
+      "index": "a1",
+      "kind": "text",
+      "name": "redis/statefulset.yaml",
+      "parent": "54212b48",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "redis/statefulset.yaml"
+    },
+    "34c1dd32": {
+      "id": "34c1dd32",
+      "index": "a5",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "353d6bb1": {
+      "id": "353d6bb1",
+      "index": "a1",
+      "kind": "text",
+      "name": "Links between parts. Man…",
+      "parent": "23531159",
+      "style": {},
+      "tag": "span",
+      "text": "Links between parts. Manifests don't say who calls whom, so buni won't guess; draw them on the map."
+    },
+    "35c7be21": {
+      "id": "35c7be21",
+      "index": "a1",
+      "kind": "text",
+      "name": "image: registry/api:v42",
+      "parent": "4b1fa418",
+      "style": {
+        "marginLeft": "8ch"
+      },
+      "tag": "span",
+      "text": "image: registry/api:v42"
+    },
+    "37e4cce2": {
+      "id": "37e4cce2",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "092666f8",
+      "style": {
+        "display": "flex",
+        "fontSize": "14px",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "38456ff2": {
+      "id": "38456ff2",
+      "index": "a1",
+      "kind": "text",
+      "name": "- containerPort: 8080",
+      "parent": "4a607e99",
+      "style": {
+        "marginLeft": "10ch"
+      },
+      "tag": "span",
+      "text": "- containerPort: 8080"
+    },
+    "3a46d105": {
+      "id": "3a46d105",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Head",
+      "parent": "a021e952",
+      "style": {
+        "borderBottom": "1px solid var(--line)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "padding": "20px 20px 16px"
+      },
+      "tag": "div"
+    },
+    "3a817135": {
+      "id": "3a817135",
+      "index": "a0",
+      "kind": "text",
+      "name": "Service, canary rollout",
+      "parent": "d37c03a7",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Service, canary rollout"
+    },
+    "3ad29b6b": {
+      "id": "3ad29b6b",
+      "index": "a0",
+      "kind": "text",
+      "name": "It runs as",
+      "parent": "092666f8",
+      "style": {
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "label",
+      "text": "It runs as"
+    },
+    "3b3d458b": {
+      "id": "3b3d458b",
+      "index": "a0",
+      "kind": "instance",
+      "name": "Shell / Top bar",
+      "overrides": {
+        "82e531f1": {
+          "text": "overlays/prod · 4 differences"
+        }
+      },
+      "parent": "2700c1ad",
+      "shared": "b9d9f118",
+      "style": {}
+    },
+    "3bbdda73": {
+      "id": "3bbdda73",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "f167b905",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "3d9ad117": {
+      "id": "3d9ad117",
+      "index": "a1",
+      "kind": "text",
+      "name": "payouts/cronjob.yaml",
+      "parent": "7eb63a1a",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "payouts/cronjob.yaml"
+    },
+    "3de66393": {
+      "id": "3de66393",
+      "index": "a0",
+      "kind": "text",
+      "name": "Manifests folder",
+      "parent": "d299e513",
+      "style": {
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "label",
+      "text": "Manifests folder"
+    },
+    "3df13b93": {
+      "id": "3df13b93",
+      "index": "aB",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "3eacf757": {
+      "id": "3eacf757",
+      "index": "a3",
+      "kind": "text",
+      "name": "Mark",
+      "parent": "7583cc53",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "position": "absolute",
+        "right": "-10px",
+        "top": "-10px",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "2"
+    },
+    "405263fa": {
+      "id": "405263fa",
+      "index": "a1",
+      "kind": "text",
+      "name": "serviceAccountName: retu…",
+      "parent": "1a47723d",
+      "style": {
+        "marginLeft": "4ch"
+      },
+      "tag": "span",
+      "text": "serviceAccountName: returns-api"
+    },
+    "430aa45c": {
+      "id": "430aa45c",
+      "index": "a4",
+      "kind": "frame",
+      "name": "Resources",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "435d66c1": {
+      "id": "435d66c1",
+      "index": "a1",
+      "kind": "text",
+      "name": "api/rollout.yaml · servi…",
+      "parent": "801e27fa",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "api/rollout.yaml · service.yaml · hpa.yaml"
+    },
+    "448e6370": {
+      "id": "448e6370",
+      "index": "a1",
+      "kind": "frame",
+      "name": "List",
+      "parent": "a021e952",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "flexDirection": "column"
+      },
+      "tag": "div"
+    },
+    "44bea805": {
+      "id": "44bea805",
+      "index": "a2",
+      "kind": "text",
+      "name": "Cache · StatefulSet",
+      "parent": "01524cf8",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Cache · StatefulSet"
+    },
+    "44c68e73": {
+      "id": "44c68e73",
+      "index": "a3",
+      "kind": "text",
+      "name": "Mark",
+      "parent": "a1a6de3f",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "position": "absolute",
+        "right": "-10px",
+        "top": "-10px",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "3"
+    },
+    "469a04f9": {
+      "id": "469a04f9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Prod",
+      "parent": "37e4cce2",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--ink)",
+        "borderRadius": "6px",
+        "display": "flex",
+        "fontWeight": "600",
+        "gap": "8px",
+        "height": "36px",
+        "padding": "0 14px"
+      },
+      "tag": "span"
+    },
+    "47fd9737": {
+      "id": "47fd9737",
+      "index": "a0",
+      "kind": "text",
+      "name": "30",
+      "parent": "d5bbabbc",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "30"
+    },
+    "499200d9": {
+      "id": "499200d9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Compare",
+      "parent": "a4d4e6bd",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "flexDirection": "column",
+        "gap": "24px"
+      },
+      "tag": "div"
+    },
+    "4a0edfb4": {
+      "id": "4a0edfb4",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "76aa20d8",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "4a607e99": {
+      "id": "4a607e99",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "4b1fa418": {
+      "id": "4b1fa418",
+      "index": "a6",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "background": "rgba(224,96,79,.16)",
+        "borderLeft": "3px solid #e0604f",
+        "color": "#fff",
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "paddingLeft": "13px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "4b4c5edb": {
+      "id": "4b4c5edb",
+      "index": "a1",
+      "kind": "text",
+      "name": "api/rollout.yaml:24",
+      "parent": "4a0edfb4",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "api/rollout.yaml:24"
+    },
+    "4bd230cd": {
+      "id": "4bd230cd",
+      "index": "a0",
+      "kind": "text",
+      "name": "22",
+      "parent": "a43b370d",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "22"
+    },
+    "4bf1b886": {
+      "id": "4bf1b886",
+      "index": "a2",
+      "kind": "text",
+      "name": "Only in the repo",
+      "parent": "a1a6de3f",
+      "style": {
+        "color": "var(--red)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Only in the repo"
+    },
+    "4e091a40": {
+      "id": "4e091a40",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns",
+      "parent": "f14d5ad1",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "14px"
+      },
+      "tag": "span",
+      "text": "returns"
+    },
+    "4e1778f3": {
+      "id": "4e1778f3",
+      "index": "a1",
+      "kind": "text",
+      "name": "Blank",
+      "parent": "3145572f",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "14px",
+        "textDecoration": "underline",
+        "textUnderlineOffset": "3px"
+      },
+      "tag": "span",
+      "text": "Start from a blank map"
+    },
+    "4f821771": {
+      "id": "4f821771",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "34c1dd32",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "537fec9d": {
+      "id": "537fec9d",
+      "index": "a0",
+      "kind": "text",
+      "name": "4",
+      "parent": "f7e90032",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "4"
+    },
+    "54212b48": {
+      "id": "54212b48",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "01524cf8",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "54be8b40": {
+      "id": "54be8b40",
+      "index": "a0",
+      "kind": "text",
+      "name": "Refund worker",
+      "parent": "5d6a2174",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Refund worker"
+    },
+    "562e0d4b": {
+      "id": "562e0d4b",
+      "index": "a5",
+      "kind": "text",
+      "name": "subscribes",
+      "parent": "e2883ff0",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "left": "774px",
+        "position": "absolute",
+        "top": "452px"
+      },
+      "tag": "span",
+      "text": "subscribes"
+    },
+    "56b85886": {
+      "id": "56b85886",
+      "index": "a0",
+      "kind": "text",
+      "name": "Cache",
+      "parent": "54212b48",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Cache"
+    },
+    "58f0c0e9": {
+      "id": "58f0c0e9",
+      "index": "a1",
+      "kind": "text",
+      "name": "payouts/cronjob.yaml",
+      "parent": "f6613cdc",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "payouts/cronjob.yaml"
+    },
+    "592d514e": {
+      "id": "592d514e",
+      "index": "a0",
+      "kind": "text",
+      "name": "Use repo",
+      "parent": "16521714",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--ink)",
+        "borderRadius": "6px",
+        "color": "var(--sheet)",
+        "display": "flex",
+        "flexShrink": "0",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "height": "40px",
+        "padding": "0 18px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "span",
+      "text": "Use the repo's 2 values"
+    },
+    "5ae5b968": {
+      "id": "5ae5b968",
+      "index": "a0",
+      "kind": "text",
+      "name": "18",
+      "parent": "0ce9e2a7",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "18"
+    },
+    "5c7ec98a": {
+      "id": "5c7ec98a",
+      "index": "a0",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "b9d2ecce",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Returns API"
+    },
+    "5cd91def": {
+      "id": "5cd91def",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5V19A9 3 0 0 0 21 19V5\"/><path d=\"M3 12A9 3 0 0 0 21 12\"/></svg>",
+      "name": "database",
+      "parent": "01524cf8",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "5d6a2174": {
+      "id": "5d6a2174",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "c317bd78",
+      "style": {
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "604da9cd": {
+      "id": "604da9cd",
+      "index": "aD",
+      "kind": "frame",
+      "name": "Jobs queue",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "boxShadow": "0 1px 2px rgba(26,31,28,.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "860px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "386px",
+        "width": "190px"
+      },
+      "tag": "article"
+    },
+    "61b1c6f7": {
+      "id": "61b1c6f7",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Table",
+      "parent": "499200d9",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "8px",
+        "overflow": "hidden"
+      },
+      "tag": "div"
+    },
+    "621c8168": {
+      "id": "621c8168",
+      "index": "a1",
+      "kind": "text",
+      "name": "- configMapRef: { name: …",
+      "parent": "017ddc46",
+      "style": {
+        "marginLeft": "10ch"
+      },
+      "tag": "span",
+      "text": "- configMapRef: { name: returns-config }"
+    },
+    "621cc150": {
+      "id": "621cc150",
+      "index": "a0",
+      "kind": "text",
+      "name": "SQS, managed",
+      "parent": "604da9cd",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "SQS, managed"
+    },
+    "623107db": {
+      "id": "623107db",
+      "index": "a1",
+      "kind": "text",
+      "name": " / prod",
+      "parent": "655dacac",
+      "style": {},
+      "tag": "span",
+      "text": " / prod"
+    },
+    "63c681f5": {
+      "id": "63c681f5",
+      "index": "a0",
+      "kind": "text",
+      "name": "Image",
+      "parent": "1952468f",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Image"
+    },
+    "646ab63a": {
+      "id": "646ab63a",
+      "index": "a1",
+      "kind": "text",
+      "name": "Staging",
+      "parent": "37e4cce2",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "36px",
+        "padding": "0 14px"
+      },
+      "tag": "span",
+      "text": "staging"
+    },
+    "65426ce7": {
+      "id": "65426ce7",
+      "index": "a0",
+      "kind": "text",
+      "name": "prod",
+      "parent": "d77e2dc9",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "prod"
+    },
+    "655dacac": {
+      "id": "655dacac",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "684a6fb2",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "65a01622": {
+      "id": "65a01622",
+      "index": "a0",
+      "kind": "text",
+      "name": "Rollout in namespace ",
+      "parent": "692250d2",
+      "style": {},
+      "tag": "span",
+      "text": "Rollout in namespace "
+    },
+    "684a6fb2": {
+      "id": "684a6fb2",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Head",
+      "parent": "499200d9",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "692250d2": {
+      "id": "692250d2",
+      "index": "a2",
+      "kind": "frame",
+      "name": "p",
+      "parent": "684a6fb2",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "14px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "6930f905": {
+      "id": "6930f905",
+      "index": "a2",
+      "kind": "text",
+      "name": ", matched to ",
+      "parent": "692250d2",
+      "style": {},
+      "tag": "span",
+      "text": ", matched to "
+    },
+    "694d562e": {
+      "id": "694d562e",
+      "index": "a2",
+      "kind": "text",
+      "name": "RefundJob",
+      "parent": "604da9cd",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "RefundJob"
+    },
+    "6a143af4": {
+      "id": "6a143af4",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Body",
+      "parent": "e8c4d06d",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "minHeight": "0"
+      },
+      "tag": "div"
+    },
+    "6b75458d": {
+      "id": "6b75458d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "01 · Start",
+      "style": {
+        "height": "900px",
+        "overflow": "hidden",
+        "width": "1440px"
+      }
+    },
+    "6d3f1db6": {
+      "id": "6d3f1db6",
+      "index": "a1",
+      "kind": "text",
+      "name": "/healthz",
+      "parent": "9f0bb267",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "/healthz"
+    },
+    "6e152779": {
+      "id": "6e152779",
+      "index": "a6",
+      "kind": "frame",
+      "name": "Edge",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "boxShadow": "0 1px 2px rgba(26,31,28,.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "40px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "180px",
+        "width": "200px"
+      },
+      "tag": "article"
+    },
+    "6e7d907d": {
+      "id": "6e7d907d",
+      "index": "a2",
+      "kind": "text",
+      "name": "Edge · Ingress",
+      "parent": "34c1dd32",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Edge · Ingress"
+    },
+    "6e86a68f": {
+      "id": "6e86a68f",
+      "index": "a0",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "801e27fa",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Returns API"
+    },
+    "6f8590db": {
+      "id": "6f8590db",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "8bf926aa",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "6fe458de": {
+      "id": "6fe458de",
+      "index": "a1",
+      "kind": "text",
+      "name": "Jobs",
+      "parent": "604da9cd",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Jobs"
+    },
+    "70fd7ec3": {
+      "id": "70fd7ec3",
+      "index": "a4",
+      "kind": "text",
+      "name": "Mark",
+      "parent": "d37c03a7",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "position": "absolute",
+        "right": "-10px",
+        "top": "-10px",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "1"
+    },
+    "71439cfd": {
+      "id": "71439cfd",
+      "index": "a1",
+      "kind": "text",
+      "name": "worker/deployment.yaml ·…",
+      "parent": "3bbdda73",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "worker/deployment.yaml · keda.yaml"
+    },
+    "72f756be": {
+      "id": "72f756be",
+      "index": "a1",
+      "kind": "text",
+      "name": " scales to 20 in the rep…",
+      "parent": "5d6a2174",
+      "style": {},
+      "tag": "span",
+      "text": " scales to 20 in the repo, 10 in the design."
+    },
+    "74deabb8": {
+      "id": "74deabb8",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Kind",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "74f3bcdf": {
+      "id": "74f3bcdf",
+      "index": "a0",
+      "kind": "text",
+      "name": "28",
+      "parent": "7f592be5",
+      "style": {
+        "color": "#d0d7d2",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "28"
+    },
+    "75367d08": {
+      "id": "75367d08",
+      "index": "a1",
+      "kind": "text",
+      "name": " is in the design, but n…",
+      "parent": "af07f9ee",
+      "style": {},
+      "tag": "span",
+      "text": " is in the design, but no manifest runs it."
+    },
+    "7583cc53": {
+      "id": "7583cc53",
+      "index": "a8",
+      "kind": "frame",
+      "name": "Refund worker",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "boxShadow": "0 1px 2px rgba(26,31,28,.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "310px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "392px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "75ce17c9": {
+      "id": "75ce17c9",
+      "index": "a0",
+      "kind": "text",
+      "name": "Helm or Kustomize? Rende…",
+      "parent": "fc89f49e",
+      "style": {},
+      "tag": "span",
+      "text": "Helm or Kustomize? Render it first: "
+    },
+    "76aa20d8": {
+      "id": "76aa20d8",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Diff",
+      "parent": "448e6370",
+      "style": {
+        "background": "var(--red-wash)",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gap": "12px",
+        "gridTemplateColumns": "22px 1fr",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "76fad5a1": {
+      "id": "76fad5a1",
+      "index": "a0",
+      "kind": "text",
+      "name": "Store credit is planned …",
+      "parent": "15ef4f44",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Store credit is planned for RET-214, so its missing manifest isn't counted."
+    },
+    "7785b8a2": {
+      "id": "7785b8a2",
+      "index": "a1",
+      "kind": "text",
+      "name": "Fraud check",
+      "parent": "f155a09e",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0",
+        "textDecoration": "line-through",
+        "textDecorationColor": "var(--red)"
+      },
+      "tag": "h2",
+      "text": "Fraud check"
+    },
+    "7a7fe9de": {
+      "id": "7a7fe9de",
+      "index": "a2",
+      "kind": "text",
+      "name": "returns",
+      "parent": "d77e2dc9",
+      "style": {
+        "fontFamily": "var(--mono)"
+      },
+      "tag": "span",
+      "text": "returns"
+    },
+    "7eb63a1a": {
+      "id": "7eb63a1a",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "f95fc7f9",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "7f592be5": {
+      "id": "7f592be5",
+      "index": "aA",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "background": "rgba(224,96,79,.16)",
+        "borderLeft": "3px solid #e0604f",
+        "color": "#fff",
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "paddingLeft": "13px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "7ff27511": {
+      "id": "7ff27511",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Path row",
+      "parent": "d299e513",
+      "style": {
+        "display": "flex",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "801e27fa": {
+      "id": "801e27fa",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "bf062a63",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "812438dd": {
+      "id": "812438dd",
+      "index": "a1",
+      "kind": "text",
+      "name": "ports:",
+      "parent": "a43b370d",
+      "style": {
+        "marginLeft": "8ch"
+      },
+      "tag": "span",
+      "text": "ports:"
+    },
+    "814e9166": {
+      "id": "814e9166",
+      "index": "a9",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "81fab010": {
+      "id": "81fab010",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "012a90a0",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "821b074e": {
+      "id": "821b074e",
+      "index": "a1",
+      "kind": "text",
+      "name": "worker/keda.yaml:12",
+      "parent": "c317bd78",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "worker/keda.yaml:12"
+    },
+    "82a76425": {
+      "id": "82a76425",
+      "index": "a2",
+      "kind": "text",
+      "name": "returns-db, stripe-key",
+      "parent": "883bd781",
+      "style": {
+        "color": "var(--red)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "span",
+      "text": "returns-db, stripe-key"
+    },
+    "82e531f1": {
+      "id": "82e531f1",
+      "index": "a1",
+      "kind": "text",
+      "name": "Sync text",
+      "parent": "2bf63cc5",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "No source yet"
+    },
+    "835ed532": {
+      "id": "835ed532",
+      "index": "a0",
+      "kind": "text",
+      "name": "Config",
+      "parent": "cee26fe2",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Config"
+    },
+    "83ac594c": {
+      "id": "83ac594c",
+      "index": "a1",
+      "kind": "text",
+      "name": "Open file",
+      "parent": "fb39955c",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 0"
+      },
+      "tag": "span",
+      "text": "Open file"
+    },
+    "8430ab7a": {
+      "id": "8430ab7a",
+      "index": "a0",
+      "kind": "text",
+      "name": "3",
+      "parent": "f95fc7f9",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "3"
+    },
+    "8462e611": {
+      "id": "8462e611",
+      "index": "a2",
+      "kind": "text",
+      "name": "Plans",
+      "parent": "0e678409",
+      "style": {},
+      "tag": "span",
+      "text": "Plans"
+    },
+    "848c855d": {
+      "id": "848c855d",
+      "index": "a0",
+      "kind": "text",
+      "name": "Nightly payouts",
+      "parent": "f6613cdc",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Nightly payouts"
+    },
+    "8544d728": {
+      "id": "8544d728",
+      "index": "a0",
+      "kind": "text",
+      "name": "Read ",
+      "parent": "08cba30e",
+      "style": {},
+      "tag": "span",
+      "text": "Read "
+    },
+    "86d73da9": {
+      "id": "86d73da9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "7eb63a1a",
+      "style": {
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "87fb9d00": {
+      "id": "87fb9d00",
+      "index": "a1",
+      "kind": "text",
+      "name": "parcel/deploy/k8s/overla…",
+      "parent": "142b651b",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "parcel/deploy/k8s/overlays/prod"
+    },
+    "883bd781": {
+      "id": "883bd781",
+      "index": "a7",
+      "kind": "frame",
+      "name": "Secrets",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "background": "var(--red-wash)",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "8bf0f389": {
+      "id": "8bf0f389",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "cec0cdb6",
+      "style": {
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "12px",
+        "marginTop": "2px"
+      },
+      "tag": "div"
+    },
+    "8bf926aa": {
+      "id": "8bf926aa",
+      "index": "aE",
+      "kind": "frame",
+      "name": "Legend",
+      "parent": "e2883ff0",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "bottom": "20px",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "20px",
+        "left": "24px",
+        "padding": "8px 14px",
+        "position": "absolute"
+      },
+      "tag": "div"
+    },
+    "8c68bde5": {
+      "id": "8c68bde5",
+      "index": "a1",
+      "kind": "text",
+      "name": "Nightly payouts",
+      "parent": "a1a6de3f",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Nightly payouts"
+    },
+    "8ce16482": {
+      "id": "8ce16482",
+      "index": "a1",
+      "kind": "text",
+      "name": "ingress.yaml",
+      "parent": "4f821771",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "ingress.yaml"
+    },
+    "8f0ae7cb": {
+      "id": "8f0ae7cb",
+      "index": "a1",
+      "kind": "text",
+      "name": "2 to 20",
+      "parent": "b60b11f6",
+      "style": {
+        "color": "var(--red)",
+        "fontWeight": "600"
+      },
+      "tag": "span",
+      "text": "2 to 20"
+    },
+    "904c1098": {
+      "id": "904c1098",
+      "index": "a0",
+      "kind": "text",
+      "name": "Map",
+      "parent": "0e678409",
+      "style": {
+        "color": "var(--ink)",
+        "fontWeight": "600"
+      },
+      "tag": "span",
+      "text": "Map"
+    },
+    "917dc5c0": {
+      "id": "917dc5c0",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "6f8590db",
+      "style": {
+        "border": "1.5px dashed var(--ink-3)",
+        "borderRadius": "2px",
+        "height": "10px",
+        "width": "14px"
+      },
+      "tag": "span"
+    },
+    "91f6cb0d": {
+      "id": "91f6cb0d",
+      "index": "a1",
+      "kind": "text",
+      "name": "Choose",
+      "parent": "7ff27511",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "display": "flex",
+        "fontSize": "14px",
+        "height": "40px",
+        "padding": "0 16px"
+      },
+      "tag": "span",
+      "text": "Choose…"
+    },
+    "9224ada2": {
+      "id": "9224ada2",
+      "index": "a0",
+      "kind": "text",
+      "name": "29",
+      "parent": "3df13b93",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "29"
+    },
+    "949c9f46": {
+      "id": "949c9f46",
+      "index": "a0",
+      "kind": "text",
+      "name": "Add to design",
+      "parent": "fb39955c",
+      "style": {
+        "border": "1px solid var(--ink)",
+        "borderRadius": "5px",
+        "fontWeight": "600",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Add to design"
+    },
+    "9623d7f0": {
+      "id": "9623d7f0",
+      "index": "a1",
+      "kind": "text",
+      "name": "overlays/prod",
+      "parent": "08cba30e",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "overlays/prod"
+    },
+    "9758251e": {
+      "id": "9758251e",
+      "index": "a0",
+      "kind": "text",
+      "name": "2",
+      "parent": "16794509",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "2"
+    },
+    "97ddd36e": {
+      "id": "97ddd36e",
+      "index": "a0",
+      "kind": "text",
+      "name": "Import button",
+      "parent": "3145572f",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--ink)",
+        "borderRadius": "6px",
+        "color": "var(--sheet)",
+        "display": "flex",
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "height": "44px",
+        "padding": "0 20px"
+      },
+      "tag": "span",
+      "text": "Draw 6 parts"
+    },
+    "980fee42": {
+      "id": "980fee42",
+      "index": "a0",
+      "kind": "text",
+      "name": "Use 20",
+      "parent": "bb875557",
+      "style": {
+        "border": "1px solid var(--ink)",
+        "borderRadius": "5px",
+        "fontWeight": "600",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Use 20"
+    },
+    "9935f359": {
+      "id": "9935f359",
+      "index": "a1",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "d37c03a7",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Returns API"
+    },
+    "9b4725c1": {
+      "id": "9b4725c1",
+      "index": "a3",
+      "kind": "text",
+      "name": "Mark",
+      "parent": "f155a09e",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--red)",
+        "borderRadius": "11px",
+        "color": "#fff",
+        "display": "flex",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "height": "22px",
+        "justifyContent": "center",
+        "position": "absolute",
+        "right": "-10px",
+        "top": "-10px",
+        "width": "22px"
+      },
+      "tag": "span",
+      "text": "4"
+    },
+    "9cb62aa2": {
+      "id": "9cb62aa2",
+      "index": "a0",
+      "kind": "text",
+      "name": "CronJob, 02:00 UTC",
+      "parent": "a1a6de3f",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "CronJob, 02:00 UTC"
+    },
+    "9cf807fe": {
+      "id": "9cf807fe",
+      "index": "a0",
+      "kind": "text",
+      "name": "Use api:v42",
+      "parent": "ecb88304",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--ink)",
+        "borderRadius": "5px",
+        "fontWeight": "600",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Use api:v42"
+    },
+    "9f0bb267": {
+      "id": "9f0bb267",
+      "index": "a5",
+      "kind": "frame",
+      "name": "Health",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "a021e952": {
+      "id": "a021e952",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Differences",
+      "parent": "e4ab2a92",
+      "style": {
+        "background": "var(--sheet)",
+        "borderLeft": "1px solid var(--line)",
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "width": "360px"
+      },
+      "tag": "aside"
+    },
+    "a02c05d4": {
+      "id": "a02c05d4",
+      "index": "a1",
+      "kind": "text",
+      "name": "helm template . | buni a…",
+      "parent": "fc89f49e",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "helm template . | buni arch import -"
+    },
+    "a14a32ee": {
+      "id": "a14a32ee",
+      "index": "a1",
+      "kind": "text",
+      "name": "nothing is written yet",
+      "parent": "f44bf10e",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "nothing is written yet"
+    },
+    "a1a6de3f": {
+      "id": "a1a6de3f",
+      "index": "aA",
+      "kind": "frame",
+      "name": "Nightly payouts",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--red-wash)",
+        "border": "1.5px dashed var(--red)",
+        "borderRadius": "6px",
+        "boxShadow": "none",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "570px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "500px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "a4011f71": {
+      "id": "a4011f71",
+      "index": "a0",
+      "kind": "instance",
+      "name": "Shell / Top bar",
+      "overrides": {},
+      "parent": "e8c4d06d",
+      "shared": "b9d9f118",
+      "style": {}
+    },
+    "a43b370d": {
+      "id": "a43b370d",
+      "index": "a4",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "a45de8e7": {
+      "id": "a45de8e7",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "ac7e0476",
+      "style": {
+        "background": "var(--red-wash)",
+        "border": "1.5px dashed var(--red)",
+        "borderRadius": "2px",
+        "height": "10px",
+        "width": "14px"
+      },
+      "tag": "span"
+    },
+    "a4d4e6bd": {
+      "id": "a4d4e6bd",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Part",
+      "parent": "118c099a",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "gap": "32px",
+        "minHeight": "0",
+        "padding": "32px 48px"
+      },
+      "tag": "div"
+    },
+    "a8de4edb": {
+      "id": "a8de4edb",
+      "index": "a2",
+      "kind": "text",
+      "name": "3 to 12, CPU 70%",
+      "parent": "d8a2045a",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "3 to 12, CPU 70%"
+    },
+    "aa09552e": {
+      "id": "aa09552e",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20\"/><path d=\"M2 12h20\"/></svg>",
+      "name": "globe",
+      "parent": "34c1dd32",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "ab1c09be": {
+      "id": "ab1c09be",
+      "index": "a1",
+      "kind": "text",
+      "name": "Point buni at the folder…",
+      "parent": "125aaf02",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "16px",
+        "lineHeight": "24px",
+        "margin": "0",
+        "maxWidth": "500px"
+      },
+      "tag": "p",
+      "text": "Point buni at the folder that holds your Kubernetes manifests. It drafts the map from them and keeps checking the two against each other."
+    },
+    "ab37ef37": {
+      "id": "ab37ef37",
+      "index": "a1",
+      "kind": "text",
+      "name": "prod",
+      "parent": "469a04f9",
+      "style": {},
+      "tag": "span",
+      "text": "prod"
+    },
+    "abcafd3b": {
+      "id": "abcafd3b",
+      "index": "a1",
+      "kind": "text",
+      "name": "envFrom:",
+      "parent": "fc13e4e6",
+      "style": {
+        "marginLeft": "8ch"
+      },
+      "tag": "span",
+      "text": "envFrom:"
+    },
+    "ac7e0476": {
+      "id": "ac7e0476",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "8bf926aa",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "af07f9ee": {
+      "id": "af07f9ee",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "cec0cdb6",
+      "style": {
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "b1234e43": {
+      "id": "b1234e43",
+      "index": "a3",
+      "kind": "text",
+      "name": "writes",
+      "parent": "e2883ff0",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "left": "800px",
+        "position": "absolute",
+        "top": "178px"
+      },
+      "tag": "span",
+      "text": "writes"
+    },
+    "b166f7c2": {
+      "id": "b166f7c2",
+      "index": "a0",
+      "kind": "text",
+      "name": "Port",
+      "parent": "f48a7cfb",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Port"
+    },
+    "b1eaef05": {
+      "id": "b1eaef05",
+      "index": "a0",
+      "kind": "text",
+      "name": "20",
+      "parent": "f0f902ba",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "20"
+    },
+    "b3b082e3": {
+      "id": "b3b082e3",
+      "index": "a1",
+      "kind": "text",
+      "name": "Remove",
+      "parent": "8bf0f389",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 0"
+      },
+      "tag": "span",
+      "text": "Remove"
+    },
+    "b40443b8": {
+      "id": "b40443b8",
+      "index": "a0",
+      "kind": "text",
+      "name": "Fraud check",
+      "parent": "af07f9ee",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Fraud check"
+    },
+    "b483f6de": {
+      "id": "b483f6de",
+      "index": "a4",
+      "kind": "text",
+      "name": "publishes",
+      "parent": "e2883ff0",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "left": "782px",
+        "position": "absolute",
+        "top": "392px"
+      },
+      "tag": "span",
+      "text": "publishes"
+    },
+    "b60b11f6": {
+      "id": "b60b11f6",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Redline",
+      "parent": "7583cc53",
+      "style": {
+        "alignItems": "baseline",
+        "borderTop": "1px dashed var(--red)",
+        "display": "flex",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "gap": "8px",
+        "marginTop": "6px",
+        "paddingTop": "6px"
+      },
+      "tag": "div"
+    },
+    "b6849c8b": {
+      "id": "b6849c8b",
+      "index": "a0",
+      "kind": "text",
+      "name": "Replicas",
+      "parent": "d8a2045a",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Replicas"
+    },
+    "b719ba01": {
+      "id": "b719ba01",
+      "index": "a2",
+      "kind": "text",
+      "name": "3 to 12 replicas",
+      "parent": "d37c03a7",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "3 to 12 replicas"
+    },
+    "b9d2ecce": {
+      "id": "b9d2ecce",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "4a0edfb4",
+      "style": {
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "ba1bea05": {
+      "id": "ba1bea05",
+      "index": "a1",
+      "kind": "text",
+      "name": "readinessProbe:",
+      "parent": "3df13b93",
+      "style": {
+        "marginLeft": "8ch"
+      },
+      "tag": "span",
+      "text": "readinessProbe:"
+    },
+    "bb875557": {
+      "id": "bb875557",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "c317bd78",
+      "style": {
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "12px",
+        "marginTop": "2px"
+      },
+      "tag": "div"
+    },
+    "bc63b1b2": {
+      "id": "bc63b1b2",
+      "index": "a1",
+      "kind": "text",
+      "name": "Open file",
+      "parent": "ecb88304",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 0"
+      },
+      "tag": "span",
+      "text": "Open file"
+    },
+    "bce7f13c": {
+      "id": "bce7f13c",
+      "index": "a1",
+      "kind": "text",
+      "name": "Refund worker",
+      "parent": "7583cc53",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Refund worker"
+    },
+    "be81213b": {
+      "id": "be81213b",
+      "index": "a0",
+      "kind": "text",
+      "name": "27",
+      "parent": "814e9166",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "27"
+    },
+    "bf062a63": {
+      "id": "bf062a63",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "c0ae54a5": {
+      "id": "c0ae54a5",
+      "index": "a2",
+      "kind": "text",
+      "name": "Worker · Deployment",
+      "parent": "f167b905",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Worker · Deployment"
+    },
+    "c1d1deb6": {
+      "id": "c1d1deb6",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg width=\"1080\" height=\"848\" fill=\"none\" stroke-width=\"1.25\"><path d=\"M240 222 H310\" stroke=\"#4f5752\"></path><path d=\"M530 196 H860\" stroke=\"#4f5752\"></path><path d=\"M530 236 H550 V410 H860\" stroke=\"#4f5752\"></path><path d=\"M530 448 H860\" stroke=\"#4f5752\"></path></svg>",
+      "name": "Links",
+      "parent": "e2883ff0",
+      "style": {
+        "left": "0",
+        "position": "absolute",
+        "top": "0"
+      }
+    },
+    "c317bd78": {
+      "id": "c317bd78",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "16794509",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "c3a7f36c": {
+      "id": "c3a7f36c",
+      "index": "aC",
+      "kind": "frame",
+      "name": "Postgres",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "boxShadow": "0 1px 2px rgba(26,31,28,.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "860px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "150px",
+        "width": "190px"
+      },
+      "tag": "article"
+    },
+    "c73bdc96": {
+      "id": "c73bdc96",
+      "index": "a2",
+      "kind": "text",
+      "name": "routes",
+      "parent": "e2883ff0",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "left": "252px",
+        "position": "absolute",
+        "top": "204px"
+      },
+      "tag": "span",
+      "text": "routes"
+    },
+    "c74fc4cd": {
+      "id": "c74fc4cd",
+      "index": "a2",
+      "kind": "text",
+      "name": "returns",
+      "parent": "c3a7f36c",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "returns"
+    },
+    "c84e5c57": {
+      "id": "c84e5c57",
+      "index": "a0",
+      "kind": "text",
+      "name": "api:v41",
+      "parent": "30a6af03",
+      "style": {
+        "color": "var(--ink-3)"
+      },
+      "tag": "s",
+      "text": "api:v41"
+    },
+    "cd05d508": {
+      "id": "cd05d508",
+      "index": "a1",
+      "kind": "text",
+      "name": "Postgres",
+      "parent": "c3a7f36c",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Postgres"
+    },
+    "cec0cdb6": {
+      "id": "cec0cdb6",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "f7e90032",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "cee26fe2": {
+      "id": "cee26fe2",
+      "index": "a8",
+      "kind": "frame",
+      "name": "Config",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "cf523d8b": {
+      "id": "cf523d8b",
+      "index": "a1",
+      "kind": "text",
+      "name": "Ship",
+      "parent": "0e678409",
+      "style": {},
+      "tag": "span",
+      "text": "Ship"
+    },
+    "cfade8c8": {
+      "id": "cfade8c8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "684a6fb2",
+      "style": {
+        "fontSize": "28px",
+        "fontWeight": "600",
+        "lineHeight": "36px",
+        "margin": "0"
+      },
+      "tag": "h1",
+      "text": "Returns API"
+    },
+    "cfec7da9": {
+      "id": "cfec7da9",
+      "index": "a3",
+      "kind": "text",
+      "name": "api/rollout.yaml",
+      "parent": "692250d2",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "api/rollout.yaml"
+    },
+    "d0790819": {
+      "id": "d0790819",
+      "index": "a0",
+      "kind": "text",
+      "name": "Nightly payouts",
+      "parent": "86d73da9",
+      "style": {
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Nightly payouts"
+    },
+    "d15397ab": {
+      "id": "d15397ab",
+      "index": "a0",
+      "kind": "text",
+      "name": "23",
+      "parent": "4a607e99",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "23"
+    },
+    "d299e513": {
+      "id": "d299e513",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Source",
+      "parent": "288c6972",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "d36dba2a": {
+      "id": "d36dba2a",
+      "index": "a1",
+      "kind": "text",
+      "name": " EKS returns-prod, names…",
+      "parent": "d77e2dc9",
+      "style": {},
+      "tag": "span",
+      "text": " EKS returns-prod, namespace "
+    },
+    "d37c03a7": {
+      "id": "d37c03a7",
+      "index": "a7",
+      "kind": "frame",
+      "name": "Returns API",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "var(--sheet)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "6px",
+        "boxShadow": "0 1px 2px rgba(26,31,28,.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "310px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "140px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "d3b9e01a": {
+      "id": "d3b9e01a",
+      "index": "a0",
+      "kind": "text",
+      "name": "Service",
+      "parent": "f155a09e",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Service"
+    },
+    "d48f3b67": {
+      "id": "d48f3b67",
+      "index": "a2",
+      "kind": "text",
+      "name": "returns-config",
+      "parent": "cee26fe2",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "returns-config"
+    },
+    "d5bbabbc": {
+      "id": "d5bbabbc",
+      "index": "aC",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "d6e7d441": {
+      "id": "d6e7d441",
+      "index": "a1",
+      "kind": "text",
+      "name": "Take all",
+      "parent": "15ef4f44",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--ink)",
+        "borderRadius": "6px",
+        "color": "var(--sheet)",
+        "display": "flex",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "height": "40px",
+        "justifyContent": "center"
+      },
+      "tag": "span",
+      "text": "Take all 3 from the repo"
+    },
+    "d77e2dc9": {
+      "id": "d77e2dc9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "p",
+      "parent": "1cc40215",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "left": "16px",
+        "margin": "0",
+        "position": "absolute",
+        "top": "12px"
+      },
+      "tag": "p"
+    },
+    "d83b6b72": {
+      "id": "d83b6b72",
+      "index": "a0",
+      "kind": "text",
+      "name": "Secrets",
+      "parent": "883bd781",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Secrets"
+    },
+    "d8a2045a": {
+      "id": "d8a2045a",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Replicas",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "d9600be6": {
+      "id": "d9600be6",
+      "index": "a0",
+      "kind": "text",
+      "name": "Left for you",
+      "parent": "23531159",
+      "style": {
+        "color": "var(--ink)",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Left for you"
+    },
+    "da090998": {
+      "id": "da090998",
+      "index": "a2",
+      "kind": "text",
+      "name": "Postgres and SQS aren't …",
+      "parent": "23531159",
+      "style": {},
+      "tag": "span",
+      "text": "Postgres and SQS aren't in the cluster. Add them as managed parts."
+    },
+    "da71af2b": {
+      "id": "da71af2b",
+      "index": "a4",
+      "kind": "text",
+      "name": " by its source.",
+      "parent": "692250d2",
+      "style": {},
+      "tag": "span",
+      "text": " by its source."
+    },
+    "db1109c0": {
+      "id": "db1109c0",
+      "index": "a1",
+      "kind": "text",
+      "name": " runs a newer image than…",
+      "parent": "b9d2ecce",
+      "style": {},
+      "tag": "span",
+      "text": " runs a newer image than the design says."
+    },
+    "dbcad8ef": {
+      "id": "dbcad8ef",
+      "index": "a0",
+      "kind": "text",
+      "name": "Resources",
+      "parent": "430aa45c",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Resources"
+    },
+    "dd5ff7e1": {
+      "id": "dd5ff7e1",
+      "index": "a1",
+      "kind": "text",
+      "name": " runs in the repo but is…",
+      "parent": "86d73da9",
+      "style": {},
+      "tag": "span",
+      "text": " runs in the repo but isn't in the design."
+    },
+    "df6b4e04": {
+      "id": "df6b4e04",
+      "index": "a1",
+      "kind": "text",
+      "name": "api/migrate-job.yaml",
+      "parent": "81fab010",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "api/migrate-job.yaml"
+    },
+    "e065aeed": {
+      "id": "e065aeed",
+      "index": "a0",
+      "kind": "text",
+      "name": "Read from 14 files",
+      "parent": "f44bf10e",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Read from 14 files"
+    },
+    "e0e3b80a": {
+      "id": "e0e3b80a",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5V19A9 3 0 0 0 15 21.84\"/><path d=\"M21 5V8\"/><path d=\"M21 12L18 17H22L19 22\"/><path d=\"M3 12A9 3 0 0 0 14.59 14.87\"/></svg>",
+      "name": "database-zap",
+      "parent": "012a90a0",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "e0e7f064": {
+      "id": "e0e7f064",
+      "index": "a2",
+      "kind": "text",
+      "name": "Not built yet, as expect…",
+      "parent": "2c8434b7",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Not built yet, as expected"
+    },
+    "e157ed24": {
+      "id": "e157ed24",
+      "index": "a0",
+      "kind": "text",
+      "name": "2 to 10",
+      "parent": "b60b11f6",
+      "style": {
+        "color": "var(--ink-3)"
+      },
+      "tag": "s",
+      "text": "2 to 10"
+    },
+    "e1b6e040": {
+      "id": "e1b6e040",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns",
+      "parent": "692250d2",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "returns"
+    },
+    "e281185d": {
+      "id": "e281185d",
+      "index": "a0",
+      "kind": "text",
+      "name": "Kind",
+      "parent": "74deabb8",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Kind"
+    },
+    "e2883ff0": {
+      "id": "e2883ff0",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Canvas",
+      "parent": "e4ab2a92",
+      "style": {
+        "backgroundColor": "var(--paper)",
+        "backgroundImage": "radial-gradient(var(--line) 1px, transparent 1px)",
+        "backgroundSize": "16px 16px",
+        "flex": "1",
+        "overflow": "hidden",
+        "position": "relative"
+      },
+      "tag": "div"
+    },
+    "e388ff5c": {
+      "id": "e388ff5c",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "70324910",
+      "style": {},
+      "tag": "span"
+    },
+    "e3ad96ea": {
+      "id": "e3ad96ea",
+      "index": "a2",
+      "kind": "text",
+      "name": "/healthz",
+      "parent": "9f0bb267",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "/healthz"
+    },
+    "e40aee59": {
+      "id": "e40aee59",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "e49bd344": {
+      "id": "e49bd344",
+      "index": "a2",
+      "kind": "text",
+      "name": "No manifest has it",
+      "parent": "f155a09e",
+      "style": {
+        "color": "var(--red)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "No manifest has it"
+    },
+    "e4ab2a92": {
+      "id": "e4ab2a92",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Map",
+      "parent": "2700c1ad",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "minHeight": "0"
+      },
+      "tag": "div"
+    },
+    "e5774b0d": {
+      "id": "e5774b0d",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\"/></svg>",
+      "name": "folder",
+      "parent": "142b651b",
+      "style": {
+        "color": "var(--ink-3)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "e5d2b56c": {
+      "id": "e5d2b56c",
+      "index": "a0",
+      "kind": "text",
+      "name": "25",
+      "parent": "fc13e4e6",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "25"
+    },
+    "e8c4d06d": {
+      "id": "e8c4d06d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "App",
+      "parent": "6b75458d",
+      "style": {
+        "background": "var(--paper)",
+        "color": "var(--ink)",
+        "display": "flex",
+        "flexDirection": "column",
+        "fontFamily": "var(--font)",
+        "height": "900px",
+        "width": "1440px"
+      },
+      "tag": "section"
+    },
+    "e992c76e": {
+      "id": "e992c76e",
+      "index": "a0",
+      "kind": "text",
+      "name": "26",
+      "parent": "017ddc46",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "26"
+    },
+    "eb6c228a": {
+      "id": "eb6c228a",
+      "index": "a2",
+      "kind": "text",
+      "name": "8080",
+      "parent": "f48a7cfb",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "8080"
+    },
+    "eca1222f": {
+      "id": "eca1222f",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Code",
+      "parent": "30588f17",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12.5px",
+        "lineHeight": "21px",
+        "padding": "12px 0"
+      },
+      "tag": "div"
+    },
+    "ecb88304": {
+      "id": "ecb88304",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "4a0edfb4",
+      "style": {
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "12px",
+        "marginTop": "2px"
+      },
+      "tag": "div"
+    },
+    "ece3fc6a": {
+      "id": "ece3fc6a",
+      "index": "a2",
+      "kind": "text",
+      "name": "250m · 512Mi",
+      "parent": "430aa45c",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "250m · 512Mi"
+    },
+    "ed2c90c2": {
+      "id": "ed2c90c2",
+      "index": "a1",
+      "kind": "text",
+      "name": "Store credit",
+      "parent": "2c8434b7",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "Store credit"
+    },
+    "ed9fab05": {
+      "id": "ed9fab05",
+      "index": "a0",
+      "kind": "text",
+      "name": "24",
+      "parent": "4b1fa418",
+      "style": {
+        "color": "#d0d7d2",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "24"
+    },
+    "ef7c6af4": {
+      "id": "ef7c6af4",
+      "index": "a0",
+      "kind": "frame",
+      "name": "File",
+      "parent": "30588f17",
+      "style": {
+        "borderBottom": "1px solid #303833",
+        "display": "flex",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "justifyContent": "space-between",
+        "padding": "12px 16px"
+      },
+      "tag": "div"
+    },
+    "f0055645": {
+      "id": "f0055645",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns.parcel.app",
+      "parent": "6e152779",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "margin": "0"
+      },
+      "tag": "h2",
+      "text": "returns.parcel.app"
+    },
+    "f0bae265": {
+      "id": "f0bae265",
+      "index": "a3",
+      "kind": "text",
+      "name": "Read again",
+      "parent": "08cba30e",
+      "style": {
+        "color": "var(--ink)",
+        "textDecoration": "underline",
+        "textUnderlineOffset": "3px"
+      },
+      "tag": "span",
+      "text": "Read again"
+    },
+    "f0f902ba": {
+      "id": "f0f902ba",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "f14d5ad1": {
+      "id": "f14d5ad1",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Project",
+      "parent": "2d10b870",
+      "style": {
+        "alignItems": "baseline",
+        "display": "flex",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "f155a09e": {
+      "id": "f155a09e",
+      "index": "a9",
+      "kind": "frame",
+      "name": "Fraud check",
+      "parent": "e2883ff0",
+      "style": {
+        "background": "transparent",
+        "border": "1px solid var(--line)",
+        "borderColor": "var(--red)",
+        "borderRadius": "6px",
+        "boxShadow": "none",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px",
+        "left": "570px",
+        "padding": "10px 12px",
+        "position": "absolute",
+        "top": "268px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "f167b905": {
+      "id": "f167b905",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "27d24b1d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gridTemplateColumns": "28px 1fr 180px",
+        "padding": "12px 20px"
+      },
+      "tag": "div"
+    },
+    "f40eabed": {
+      "id": "f40eabed",
+      "index": "a2",
+      "kind": "text",
+      "name": " 2 minutes ago. ",
+      "parent": "08cba30e",
+      "style": {},
+      "tag": "span",
+      "text": " 2 minutes ago. "
+    },
+    "f44bf10e": {
+      "id": "f44bf10e",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Found head",
+      "parent": "08feac61",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--line)",
+        "display": "flex",
+        "justifyContent": "space-between",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "f48a7cfb": {
+      "id": "f48a7cfb",
+      "index": "a6",
+      "kind": "frame",
+      "name": "Port",
+      "parent": "61b1c6f7",
+      "style": {
+        "alignItems": "baseline",
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "fontSize": "14px",
+        "gridTemplateColumns": "140px 1fr 1fr",
+        "padding": "11px 20px"
+      },
+      "tag": "div"
+    },
+    "f53b0a9e": {
+      "id": "f53b0a9e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Design",
+      "parent": "70324910",
+      "style": {},
+      "tag": "span",
+      "text": "Design"
+    },
+    "f5aaaa4c": {
+      "id": "f5aaaa4c",
+      "index": "a0",
+      "kind": "text",
+      "name": "Mark planned",
+      "parent": "8bf0f389",
+      "style": {
+        "border": "1px solid var(--ink)",
+        "borderRadius": "5px",
+        "fontWeight": "600",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Mark planned"
+    },
+    "f6613cdc": {
+      "id": "f6613cdc",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "e40aee59",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "2px"
+      },
+      "tag": "div"
+    },
+    "f678540e": {
+      "id": "f678540e",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 10.27 7 3.34\"/><path d=\"m11 13.73-4 6.93\"/><path d=\"M12 22v-2\"/><path d=\"M12 2v2\"/><path d=\"M14 12h8\"/><path d=\"m17 20.66-1-1.73\"/><path d=\"m17 3.34-1 1.73\"/><path d=\"M2 12h2\"/><path d=\"m20.66 17-1.73-1\"/><path d=\"m20.66 7-1.73 1\"/><path d=\"m3.34 17 1.73-1\"/><path d=\"m3.34 7 1.73 1\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"8\"/></svg>",
+      "name": "cog",
+      "parent": "f167b905",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "f68d28b1": {
+      "id": "f68d28b1",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"8\" x=\"2\" y=\"2\" rx=\"2\" ry=\"2\"/><rect width=\"20\" height=\"8\" x=\"2\" y=\"14\" rx=\"2\" ry=\"2\"/><line x1=\"6\" x2=\"6.01\" y1=\"6\" y2=\"6\"/><line x1=\"6\" x2=\"6.01\" y1=\"18\" y2=\"18\"/></svg>",
+      "name": "server",
+      "parent": "bf062a63",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "f7e90032": {
+      "id": "f7e90032",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Diff",
+      "parent": "448e6370",
+      "style": {
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gap": "12px",
+        "gridTemplateColumns": "22px 1fr",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "f8221d3c": {
+      "id": "f8221d3c",
+      "index": "a2",
+      "kind": "text",
+      "name": "Rollout",
+      "parent": "74deabb8",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "Rollout"
+    },
+    "f8d3ec47": {
+      "id": "f8d3ec47",
+      "index": "a1",
+      "kind": "text",
+      "name": "main · 3f9c2e1",
+      "parent": "ef7c6af4",
+      "style": {
+        "color": "#9aa59e"
+      },
+      "tag": "span",
+      "text": "main · 3f9c2e1"
+    },
+    "f9511989": {
+      "id": "f9511989",
+      "index": "a0",
+      "kind": "text",
+      "name": "21",
+      "parent": "210562c1",
+      "style": {
+        "color": "#8c978f",
+        "flexShrink": "0",
+        "textAlign": "right",
+        "width": "20px"
+      },
+      "tag": "span",
+      "text": "21"
+    },
+    "f95fc7f9": {
+      "id": "f95fc7f9",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Diff",
+      "parent": "448e6370",
+      "style": {
+        "borderBottom": "1px solid var(--grid)",
+        "display": "grid",
+        "gap": "12px",
+        "gridTemplateColumns": "22px 1fr",
+        "padding": "16px 20px"
+      },
+      "tag": "div"
+    },
+    "fa26314d": {
+      "id": "fa26314d",
+      "index": "a1",
+      "kind": "text",
+      "name": "Rollout",
+      "parent": "74deabb8",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "Rollout"
+    },
+    "fa7d76f1": {
+      "id": "fa7d76f1",
+      "index": "a1",
+      "kind": "text",
+      "name": "only in repo",
+      "parent": "ac7e0476",
+      "style": {},
+      "tag": "span",
+      "text": "only in repo"
+    },
+    "faa63139": {
+      "id": "faa63139",
+      "index": "a2",
+      "kind": "text",
+      "name": "/api",
+      "parent": "6e152779",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "/api"
+    },
+    "fb39955c": {
+      "id": "fb39955c",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "7eb63a1a",
+      "style": {
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "12px",
+        "marginTop": "2px"
+      },
+      "tag": "div"
+    },
+    "fc13e4e6": {
+      "id": "fc13e4e6",
+      "index": "a7",
+      "kind": "frame",
+      "name": "div",
+      "parent": "eca1222f",
+      "style": {
+        "display": "flex",
+        "gap": "16px",
+        "padding": "0 16px",
+        "whiteSpace": "pre"
+      },
+      "tag": "div"
+    },
+    "fc6a96fc": {
+      "id": "fc6a96fc",
+      "index": "a1",
+      "kind": "text",
+      "name": "- secretRef: { name: ret…",
+      "parent": "814e9166",
+      "style": {
+        "marginLeft": "10ch"
+      },
+      "tag": "span",
+      "text": "- secretRef: { name: returns-db }"
+    },
+    "fc89f49e": {
+      "id": "fc89f49e",
+      "index": "a2",
+      "kind": "frame",
+      "name": "p",
+      "parent": "d299e513",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px",
+        "lineHeight": "20px",
+        "margin": "0"
+      },
+      "tag": "p"
+    },
+    "ffcdd7e8": {
+      "id": "ffcdd7e8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Open file",
+      "parent": "bb875557",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 0"
+      },
+      "tag": "span",
+      "text": "Open file"
+    }
+  },
+  "pages": {
+    "08c862fe": {
+      "frame": "2700c1ad",
+      "id": "08c862fe",
+      "index": "a1",
+      "name": "02 · Map",
+      "route": "/map"
+    },
+    "3305257d": {
+      "frame": "6b75458d",
+      "id": "3305257d",
+      "index": "a0",
+      "name": "01 · Start",
+      "route": "/"
+    },
+    "62f865df": {
+      "frame": "118c099a",
+      "id": "62f865df",
+      "index": "a2",
+      "name": "03 · Part",
+      "route": "/part"
+    }
+  },
+  "rules": {},
+  "sections": {
+    "bc314ab0": {
+      "body": "Architecture mode, rebuilt from zero around one idea: the design is a drawing checked against the repo, like an as-built drawing in a real architect's office. Operate surface; variance 3, motion 2, density 6. The job: show what runs, and where the design and the repo disagree.\n\nPalette: drafting paper (#f6f7f5) with a cool green-grey temperature, ink for text and for the one primary action. Redline (#c0362c) has one job: a place where the repo and the design differ. Nothing else is red. Instrument Sans for the interface; JetBrains Mono only for things that are literally code: file paths, image tags, k8s names.\n\nThe bold thing: drift drawn on the map as redline markup, a struck value with the repo value written beside it, the way a checker marks up a drawing. A part only in the repo is drawn dashed in red; a part only in the design is struck through.\n\nNever: a monitoring dashboard (no live metrics, no health colours), the SaaS card kit, a blueprint-blue costume.",
+      "heading": "Direction",
+      "id": "bc314ab0",
+      "index": "a0"
+    }
+  },
+  "shared": {
+    "b9d9f118": {
+      "id": "b9d9f118",
+      "name": "Shell / Top bar",
+      "root": "2d10b870"
+    }
+  },
+  "tokens": {
+    "--font": "\"Instrument Sans\", system-ui, sans-serif",
+    "--grid": "#e6eae6",
+    "--ink": "#1a1f1c",
+    "--ink-2": "#4f5752",
+    "--ink-3": "#68706a",
+    "--line": "#d9ded9",
+    "--mono": "\"JetBrains Mono\", ui-monospace, monospace",
+    "--ok": "#2f6b4f",
+    "--paper": "#f6f7f5",
+    "--red": "#c0362c",
+    "--red-wash": "#fbecea",
+    "--sheet": "#ffffff"
+  }
+}

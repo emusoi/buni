@@ -1,0 +1,6655 @@
+{
+  "attachments": {
+    "82772372": {
+      "id": "82772372",
+      "mime": "image/png",
+      "path": "assets/import-cbac1589a5bffceefa094c8c0feef9f0f967faf9dc199f5f824742623d5ff234.png"
+    },
+    "00a339c2": {
+      "id": "00a339c2",
+      "mime": "image/png",
+      "path": "assets/import-50b356b6831e10b1109c5d542523a0e3895a49a157915763191c3d21f5f9e0a8.png"
+    },
+    "4df1fe6c": {
+      "id": "4df1fe6c",
+      "mime": "image/png",
+      "path": "assets/import-c6019e9bb348423ca2420b6aab7988e5e26f65db0a02bde015c3f8abfa70b2d5.png"
+    },
+    "7a356023": {
+      "id": "7a356023",
+      "mime": "image/png",
+      "path": "assets/import-868f41d2ae43809fc01f9ab50577be16b6db8adae803935e5bcba7bd214ffb40.png"
+    },
+    "7f837912": {
+      "id": "7f837912",
+      "mime": "image/png",
+      "path": "assets/import-113b72884b964685eed1bf30ec91e1f9b3ac5c497f3ed5c5707d365ab26ad7fe.png"
+    },
+    "98e8b261": {
+      "id": "98e8b261",
+      "mime": "image/png",
+      "path": "assets/import-243223196bfc3fa8740506df19bf2d4ab7539238babbd5ab6f94003e9e194a4b.png"
+    },
+    "99f39beb": {
+      "id": "99f39beb",
+      "mime": "image/png",
+      "path": "assets/import-c2e17f01d8c3ca474fc7ae9fa6d03f6446d5ae93ede1589ca43772a2a6c95bad.png"
+    },
+    "a2fe830e": {
+      "id": "a2fe830e",
+      "mime": "image/png",
+      "path": "assets/import-f83732adb411656bd396c309bbbfb7c8af1718ab967be4c39e09f430759db667.png"
+    },
+    "a899ba74": {
+      "id": "a899ba74",
+      "mime": "image/png",
+      "path": "assets/import-a6345d28c358e0368e1043af44bc721df12c39b32478fc7c018cc8dc0115db32.png"
+    },
+    "e453c73a": {
+      "id": "e453c73a",
+      "mime": "image/png",
+      "path": "assets/import-2c31e3675f60a9890869c9df9378dbe9bea9bf86794d75b0428dd3be0f371891.png"
+    },
+    "ed74bda1": {
+      "id": "ed74bda1",
+      "mime": "image/png",
+      "path": "assets/import-1cf694c15599b9fcd539c6f35dd6863d339668cc54a8a76c2ab594c4f1d4c5c8.png"
+    }
+  },
+  "buni": 1,
+  "comments": {},
+  "connections": {
+    "3edaf359": {
+      "durationMs": 200,
+      "id": "3edaf359",
+      "node": "918cf982",
+      "page": "c25d6b17",
+      "to": "2fa80ab6",
+      "transition": "none",
+      "trigger": "click"
+    },
+    "b9b9ff8f": {
+      "durationMs": 200,
+      "id": "b9b9ff8f",
+      "node": "7d5f268b",
+      "page": "2fa80ab6",
+      "to": "f1325ab0",
+      "transition": "none",
+      "trigger": "click"
+    }
+  },
+  "flows": {
+    "ec343e8b": {
+      "id": "ec343e8b",
+      "index": "a0",
+      "name": "Design before building",
+      "start": "c25d6b17"
+    }
+  },
+  "journeys": {},
+  "nodes": {
+    "21363862": {
+      "id": "21363862",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns/{id}/refund",
+      "parent": "a8b1d6bb",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "flex": "1",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "/returns/{id}/refund"
+    },
+    "37233089": {
+      "id": "37233089",
+      "index": "a8",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "47239303": {
+      "id": "47239303",
+      "index": "a2",
+      "kind": "text",
+      "name": "Written by Claude from y…",
+      "parent": "b54e0984",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "margin": "8px 0 16px"
+      },
+      "tag": "p",
+      "text": "Written by Claude from your brief. Change anything; the agent reads it back before it builds."
+    },
+    "58839761": {
+      "id": "58839761",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Toolbar",
+      "parent": "7a972791",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexShrink": "0",
+        "gap": "12px",
+        "height": "48px",
+        "margin": "0px",
+        "padding": "0px 24px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "61877545": {
+      "id": "61877545",
+      "index": "a0",
+      "kind": "text",
+      "name": "preview",
+      "parent": "e2f80d11",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "preview"
+    },
+    "78092882": {
+      "id": "78092882",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "ab58773d",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "78888311": {
+      "id": "78888311",
+      "index": "a0",
+      "kind": "text",
+      "name": "GraphQL over HTTPS",
+      "parent": "6746aed4",
+      "style": {},
+      "tag": "span",
+      "text": "GraphQL over HTTPS"
+    },
+    "94347170": {
+      "id": "94347170",
+      "index": "aA",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "transparent",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "236px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "346px"
+      },
+      "tag": "div"
+    },
+    "0016b9f6": {
+      "id": "0016b9f6",
+      "index": "a1",
+      "kind": "text",
+      "name": "(buyer: ID!)",
+      "parent": "b57a6d96",
+      "style": {
+        "color": "#7c7c84"
+      },
+      "tag": "span",
+      "text": "(buyer: ID!)"
+    },
+    "002374bf": {
+      "id": "002374bf",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "c51c2e35",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gap": "6px",
+        "height": "36px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px 8px 0px 6px",
+        "textAlign": "left"
+      },
+      "tag": "button"
+    },
+    "00d6de3a": {
+      "id": "00d6de3a",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Panel",
+      "parent": "015dbecf",
+      "style": {
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto",
+        "padding": "16px 24px",
+        "width": "340px"
+      },
+      "tag": "aside"
+    },
+    "014fac1c": {
+      "id": "014fac1c",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "4971ccea",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "015dbecf": {
+      "id": "015dbecf",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "7a972791",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "03ad86c5": {
+      "id": "03ad86c5",
+      "index": "a5",
+      "kind": "frame",
+      "name": "POST /returns/{id}/refund",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "background": "rgba(47, 107, 255, 0.08)",
+        "boxShadow": "inset 2px 0 0 #2f6bff",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "040553b0": {
+      "id": "040553b0",
+      "index": "a2",
+      "kind": "text",
+      "name": "prod",
+      "parent": "28583aab",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "prod"
+    },
+    "045b345a": {
+      "id": "045b345a",
+      "index": "a1",
+      "kind": "text",
+      "name": "REST API",
+      "parent": "a8bd8e0e",
+      "style": {},
+      "tag": "span",
+      "text": "REST API"
+    },
+    "052a7d77": {
+      "id": "052a7d77",
+      "index": "a0",
+      "kind": "text",
+      "name": "GET",
+      "parent": "d4b73f3f",
+      "style": {
+        "background": "#e3eee7",
+        "borderRadius": "4px",
+        "color": "#3c7856",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "GET"
+    },
+    "0565bebb": {
+      "id": "0565bebb",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "58839761",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "0px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "0640be9e": {
+      "id": "0640be9e",
+      "index": "a2",
+      "kind": "text",
+      "name": "The store's orders and r…",
+      "parent": "5aedde24",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "16px"
+      },
+      "tag": "span",
+      "text": "The store's orders and refunds"
+    },
+    "0840860c": {
+      "id": "0840860c",
+      "index": "a2",
+      "kind": "text",
+      "name": "Lets buyers return items…",
+      "parent": "21db706d",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "17px"
+      },
+      "tag": "span",
+      "text": "Lets buyers return items, buys the label, and refunds the order once the parcel is scanned."
+    },
+    "090234a6": {
+      "id": "090234a6",
+      "index": "a4",
+      "kind": "text",
+      "name": "Kubernetes",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Kubernetes"
+    },
+    "09642608": {
+      "id": "09642608",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-ellipsis lucide-more-horizontal\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><circle cx=\"12\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"19\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"5\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle></svg>",
+      "name": "Icon",
+      "parent": "24caa9eb",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "17px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "17px"
+      }
+    },
+    "0a8c6bae": {
+      "id": "0a8c6bae",
+      "index": "a5",
+      "kind": "text",
+      "name": "Outside services",
+      "parent": "64c3940c",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "left": "860px",
+        "position": "absolute",
+        "top": "64px"
+      },
+      "tag": "span",
+      "text": "Outside services"
+    },
+    "0b6bd7d5": {
+      "id": "0b6bd7d5",
+      "index": "a0V",
+      "kind": "text",
+      "name": "API",
+      "parent": "e410f413",
+      "style": {
+        "background": "transparent",
+        "border": "0",
+        "color": "#18181b",
+        "flexShrink": "0",
+        "fontFamily": "var(--font)",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "32px",
+        "padding": "0"
+      },
+      "tag": "button",
+      "text": "API"
+    },
+    "0bb19f3e": {
+      "id": "0bb19f3e",
+      "index": "a1",
+      "kind": "text",
+      "name": "staging",
+      "parent": "28583aab",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "staging"
+    },
+    "0d68237c": {
+      "id": "0d68237c",
+      "index": "a0",
+      "kind": "text",
+      "name": "parcel-arch",
+      "parent": "455781f5",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontWeight": "600",
+        "margin": "0px"
+      },
+      "tag": "b",
+      "text": "parcel-arch"
+    },
+    "0db48638": {
+      "id": "0db48638",
+      "index": "a1",
+      "kind": "text",
+      "name": "Copy brief for Claude",
+      "parent": "918cf982",
+      "style": {},
+      "tag": "span",
+      "text": "Copy brief for Claude"
+    },
+    "0dbd984b": {
+      "id": "0dbd984b",
+      "index": "a1",
+      "kind": "text",
+      "name": "arch",
+      "parent": "455781f5",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#7c7c84",
+        "display": "block",
+        "fontSize": "13px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "small",
+      "text": "arch"
+    },
+    "0dd7abd8": {
+      "id": "0dd7abd8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Shopify",
+      "parent": "5aedde24",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Shopify"
+    },
+    "0f32d3d0": {
+      "id": "0f32d3d0",
+      "index": "a1",
+      "kind": "text",
+      "name": "Admin REST",
+      "parent": "1d67f1cd",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Admin REST"
+    },
+    "0f9b6540": {
+      "id": "0f9b6540",
+      "index": "a1",
+      "kind": "text",
+      "name": "Buyer portal, then Gatew…",
+      "parent": "dd7341c6",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Buyer portal, then Gateway"
+    },
+    "10c25873": {
+      "id": "10c25873",
+      "index": "a2",
+      "kind": "text",
+      "name": "Gateway",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Gateway"
+    },
+    "116c8f31": {
+      "id": "116c8f31",
+      "index": "a1",
+      "kind": "text",
+      "name": "Query",
+      "parent": "39ff649d",
+      "style": {
+        "boxSizing": "border-box",
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "height": "26px",
+        "padding": "8px 12px 0"
+      },
+      "tag": "div",
+      "text": "Query"
+    },
+    "134b1ece": {
+      "id": "134b1ece",
+      "index": "a0",
+      "kind": "text",
+      "name": "Publishes ",
+      "parent": "4a295721",
+      "style": {},
+      "tag": "span",
+      "text": "Publishes "
+    },
+    "140e0fb3": {
+      "id": "140e0fb3",
+      "index": "a1",
+      "kind": "text",
+      "name": "openapi.yaml",
+      "parent": "c40326d9",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "openapi.yaml"
+    },
+    "151c0f01": {
+      "id": "151c0f01",
+      "index": "a1",
+      "kind": "text",
+      "name": "GraphQL over HTTPS",
+      "parent": "94347170",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "GraphQL over HTTPS"
+    },
+    "1521669e": {
+      "id": "1521669e",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Level",
+      "parent": "68779c0c",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "none",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "15f51362": {
+      "id": "15f51362",
+      "index": "a2",
+      "kind": "text",
+      "name": "prod",
+      "parent": "3c5bb63c",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "prod"
+    },
+    "17b3411e": {
+      "id": "17b3411e",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns/{id}/refund",
+      "parent": "03ad86c5",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/returns/{id}/refund"
+    },
+    "180fabfb": {
+      "id": "180fabfb",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Actions",
+      "parent": "00d6de3a",
+      "style": {
+        "display": "flex",
+        "gap": "8px",
+        "marginTop": "auto"
+      },
+      "tag": "div"
+    },
+    "18a0bcd4": {
+      "id": "18a0bcd4",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d3e2723e",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px 0px 0px 1231.41px"
+      },
+      "tag": "div"
+    },
+    "18cf74fb": {
+      "id": "18cf74fb",
+      "index": "a1",
+      "kind": "text",
+      "name": "Buyer portal",
+      "parent": "e9ff9b4f",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Buyer portal"
+    },
+    "19487f43": {
+      "id": "19487f43",
+      "index": "a0",
+      "kind": "frame",
+      "name": "root",
+      "parent": "5ff49a9c",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "height": "900px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "195738e3": {
+      "id": "195738e3",
+      "index": "a1",
+      "kind": "text",
+      "name": "GraphQL over HTTPS",
+      "parent": "5b2168ee",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "GraphQL over HTTPS"
+    },
+    "1b5dec34": {
+      "id": "1b5dec34",
+      "index": "a1",
+      "kind": "text",
+      "name": "Buyer → Parcel returns",
+      "parent": "95e250be",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "lineHeight": "26px",
+        "margin": "2px 0 0"
+      },
+      "tag": "b",
+      "text": "Buyer → Parcel returns"
+    },
+    "1ca126fc": {
+      "id": "1ca126fc",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "19487f43",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "grid",
+        "gridTemplateColumns": "1440px",
+        "gridTemplateRows": "900px",
+        "height": "900px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "1d67f1cd": {
+      "id": "1d67f1cd",
+      "index": "aB",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#f6f6f4",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "742px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "104px"
+      },
+      "tag": "div"
+    },
+    "1d8c4a22": {
+      "id": "1d8c4a22",
+      "index": "a0",
+      "kind": "text",
+      "name": "Link · person to system",
+      "parent": "95e250be",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Link · person to system"
+    },
+    "1daf36b3": {
+      "id": "1daf36b3",
+      "index": "a0",
+      "kind": "text",
+      "name": "Tracking",
+      "parent": "3b9caa14",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Tracking"
+    },
+    "1dca5de6": {
+      "id": "1dca5de6",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "a7b97b58",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "inline-flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button"
+    },
+    "1e54c057": {
+      "id": "1e54c057",
+      "index": "a0",
+      "kind": "text",
+      "name": "Next.js app",
+      "parent": "b20df0c8",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Next.js app"
+    },
+    "1f00df0b": {
+      "id": "1f00df0b",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Mode",
+      "parent": "d3e2723e",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderRadius": "8px",
+        "borderSpacing": "0px",
+        "bottom": "7px",
+        "display": "flex",
+        "gap": "24px",
+        "height": "32px",
+        "left": "720px",
+        "margin": "0px",
+        "padding": "0px 14px",
+        "position": "absolute",
+        "right": "542.062px",
+        "top": "8px",
+        "transform": "matrix(1, 0, 0, 1, -88.9688, 0)",
+        "transformOrigin": "88.9688px 16px",
+        "width": "177.938px"
+      },
+      "tag": "nav"
+    },
+    "1f39507d": {
+      "id": "1f39507d",
+      "index": "a0",
+      "kind": "text",
+      "name": "parcel-arch",
+      "parent": "bc8d3669",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontWeight": "600",
+        "margin": "0px"
+      },
+      "tag": "b",
+      "text": "parcel-arch"
+    },
+    "1fb25f0c": {
+      "id": "1fb25f0c",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "3c28efe1",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "21b76fa0": {
+      "id": "21b76fa0",
+      "index": "a0",
+      "kind": "text",
+      "name": "startReturn",
+      "parent": "b184a287",
+      "style": {},
+      "tag": "span",
+      "text": "startReturn"
+    },
+    "21bd8521": {
+      "id": "21bd8521",
+      "index": "a8",
+      "kind": "frame",
+      "name": "div",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "6px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "21cd70c9": {
+      "id": "21cd70c9",
+      "index": "a8",
+      "kind": "frame",
+      "name": "Legend",
+      "parent": "2459a0ec",
+      "style": {
+        "alignItems": "center",
+        "bottom": "16px",
+        "color": "#6b6b73",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "16px",
+        "left": "24px",
+        "position": "absolute"
+      },
+      "tag": "div"
+    },
+    "21d6d11e": {
+      "id": "21d6d11e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Copy brief for Claude",
+      "parent": "fe3795b9",
+      "style": {
+        "alignItems": "center",
+        "background": "transparent",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "var(--font)",
+        "fontSize": "12px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "button",
+      "text": "Copy brief for Claude"
+    },
+    "21db706d": {
+      "id": "21db706d",
+      "index": "a4",
+      "kind": "frame",
+      "name": "Parcel returns",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1.5px solid rgba(24, 24, 27, 0.2)",
+        "borderRadius": "12px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px",
+        "height": "370px",
+        "left": "350px",
+        "padding": "16px 18px",
+        "position": "absolute",
+        "top": "150px",
+        "width": "380px"
+      },
+      "tag": "div"
+    },
+    "2459a0ec": {
+      "id": "2459a0ec",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Contracts",
+      "parent": "7257121a",
+      "style": {
+        "height": "803px",
+        "left": "0",
+        "position": "absolute",
+        "top": "0",
+        "width": "1100px"
+      },
+      "tag": "div"
+    },
+    "24caa9eb": {
+      "id": "24caa9eb",
+      "index": "a0",
+      "kind": "frame",
+      "name": "More",
+      "parent": "97b9113d",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "grid",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gridTemplateColumns": "17px",
+        "gridTemplateRows": "26px",
+        "height": "28px",
+        "justifyItems": "center",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "1px 6px",
+        "width": "28px"
+      },
+      "tag": "button"
+    },
+    "24db6cde": {
+      "id": "24db6cde",
+      "index": "a6",
+      "kind": "frame",
+      "name": "div",
+      "parent": "95e250be",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "261c7914": {
+      "id": "261c7914",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-ellipsis lucide-more-horizontal\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><circle cx=\"12\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"19\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"5\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle></svg>",
+      "name": "Icon",
+      "parent": "ad1a497f",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "17px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "17px"
+      }
+    },
+    "26a1cd32": {
+      "id": "26a1cd32",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "a12b97cd",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "2830a1e5": {
+      "id": "2830a1e5",
+      "index": "a1",
+      "kind": "text",
+      "name": "Merchant",
+      "parent": "a95de126",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Merchant"
+    },
+    "2855536d": {
+      "id": "2855536d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "root",
+      "parent": "521e2539",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "height": "900px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "28583aab": {
+      "id": "28583aab",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Environment",
+      "parent": "58839761",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "none",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "285ac77f": {
+      "id": "285ac77f",
+      "index": "a1",
+      "kind": "text",
+      "name": "Add",
+      "parent": "ddbe278d",
+      "style": {},
+      "tag": "span",
+      "text": "Add"
+    },
+    "29d9abf0": {
+      "id": "29d9abf0",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "a67625d4",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gap": "6px",
+        "height": "36px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px 8px 0px 6px",
+        "textAlign": "left"
+      },
+      "tag": "button"
+    },
+    "2a9bfbf8": {
+      "id": "2a9bfbf8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Start a return, print th…",
+      "parent": "5080519c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "46px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "Start a return, print the label, follow the refund."
+    },
+    "2b094215": {
+      "id": "2b094215",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "c34271c1",
+      "style": {
+        "alignItems": "center",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "11px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "2b54ffdb": {
+      "id": "2b54ffdb",
+      "index": "a1",
+      "kind": "text",
+      "name": "Flows",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Flows"
+    },
+    "2bc19fd2": {
+      "id": "2bc19fd2",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5\"/><path d=\"M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244\"/><path d=\"M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05\"/></svg>",
+      "name": "store",
+      "parent": "e7b73023",
+      "style": {
+        "color": "#6b6b73",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "2d72e143": {
+      "id": "2d72e143",
+      "index": "a4",
+      "kind": "text",
+      "name": "Kubernetes",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Kubernetes"
+    },
+    "2dcc2ea8": {
+      "id": "2dcc2ea8",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "c5225360",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "2eafe8c5": {
+      "id": "2eafe8c5",
+      "index": "a0",
+      "kind": "text",
+      "name": "202 Refund queued",
+      "parent": "a7b9ab25",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "202 Refund queued"
+    },
+    "2f45dfa8": {
+      "id": "2f45dfa8",
+      "index": "a0",
+      "kind": "text",
+      "name": "Write openapi.yaml",
+      "parent": "fe3795b9",
+      "style": {
+        "alignItems": "center",
+        "background": "transparent",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "var(--font)",
+        "fontSize": "12px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "button",
+      "text": "Write openapi.yaml"
+    },
+    "2fdf1997": {
+      "id": "2fdf1997",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "defc0efd",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "31a2d8df": {
+      "id": "31a2d8df",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg width=\"1100\" height=\"803\" fill=\"none\"><path d=\"M620 149 C660.0 149 660.0 209 700 209\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M620 179 C660.0 179 660.0 149 700 149\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M620 235 C660.0 235 660.0 179 700 179\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M620 295 C660.0 295 660.0 269 700 269\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M620 265 C660.0 265 660.0 239 700 239\" stroke=\"#6d8fff\" stroke-width=\"1.75\"></path><path d=\"M212 130 H236 V140 H260\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M212 230 H236 V180 H260\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path><path d=\"M790 400 V314\" stroke=\"#5a5a63\" stroke-width=\"1.25\"></path></svg>",
+      "name": "Links",
+      "parent": "2459a0ec",
+      "style": {
+        "left": "0",
+        "position": "absolute",
+        "top": "0"
+      }
+    },
+    "3248f104": {
+      "id": "3248f104",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "535e2dad",
+      "style": {
+        "borderTop": "1.25px solid #b4b4ba",
+        "width": "22px"
+      },
+      "tag": "span"
+    },
+    "328517ec": {
+      "id": "328517ec",
+      "index": "a2",
+      "kind": "text",
+      "name": "Code",
+      "parent": "c4c7243d",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Code"
+    },
+    "3290c512": {
+      "id": "3290c512",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "3fa192b2",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "16px",
+        "width": "520px"
+      },
+      "tag": "div"
+    },
+    "3380a260": {
+      "id": "3380a260",
+      "index": "a0",
+      "kind": "text",
+      "name": "Screens",
+      "parent": "1f00df0b",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Screens"
+    },
+    "33aff1b7": {
+      "id": "33aff1b7",
+      "index": "a1",
+      "kind": "text",
+      "name": "Calls it",
+      "parent": "2459a0ec",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "left": "24px",
+        "position": "absolute",
+        "top": "28px"
+      },
+      "tag": "span",
+      "text": "Calls it"
+    },
+    "341e2d6f": {
+      "id": "341e2d6f",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "af88b732",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "grid",
+        "gridTemplateColumns": "1440px",
+        "gridTemplateRows": "900px",
+        "height": "900px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "344b57ed": {
+      "id": "344b57ed",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg>",
+      "name": "arrow-right",
+      "parent": "744a67ce",
+      "style": {
+        "color": "#18181b",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "35adcc16": {
+      "id": "35adcc16",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Panel",
+      "parent": "78092882",
+      "style": {
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto",
+        "padding": "16px 24px",
+        "width": "340px"
+      },
+      "tag": "aside"
+    },
+    "36c5eabf": {
+      "id": "36c5eabf",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Panel",
+      "parent": "014fac1c",
+      "style": {
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "flexShrink": "0",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto",
+        "padding": "16px 24px",
+        "width": "340px"
+      },
+      "tag": "aside"
+    },
+    "36f6dcf4": {
+      "id": "36f6dcf4",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>",
+      "name": "chevron-down",
+      "parent": "f539ae6f",
+      "style": {
+        "color": "#7c7c84",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "375d3005": {
+      "id": "375d3005",
+      "index": "a0",
+      "kind": "text",
+      "name": "Parcel returns",
+      "parent": "36c5eabf",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "fontSize": "18px",
+        "height": "26.0938px",
+        "lineHeight": "26.1px",
+        "margin": "2px 0px 0px",
+        "width": "291px"
+      },
+      "tag": "b",
+      "text": "Parcel returns"
+    },
+    "376f7f4c": {
+      "id": "376f7f4c",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Mode",
+      "parent": "5342e114",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderRadius": "8px",
+        "borderSpacing": "0px",
+        "bottom": "7px",
+        "display": "flex",
+        "gap": "24px",
+        "height": "32px",
+        "left": "720px",
+        "margin": "0px",
+        "padding": "0px 14px",
+        "position": "absolute",
+        "right": "542.062px",
+        "top": "8px",
+        "transform": "matrix(1, 0, 0, 1, -88.9688, 0)",
+        "transformOrigin": "88.9688px 16px",
+        "width": "177.938px"
+      },
+      "tag": "nav"
+    },
+    "37f6ad69": {
+      "id": "37f6ad69",
+      "index": "a0",
+      "kind": "text",
+      "name": "requestRefund",
+      "parent": "1fb25f0c",
+      "style": {},
+      "tag": "span",
+      "text": "requestRefund"
+    },
+    "387f8a5a": {
+      "id": "387f8a5a",
+      "index": "a1",
+      "kind": "text",
+      "name": "/webhooks/shippo",
+      "parent": "bc879598",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/webhooks/shippo"
+    },
+    "3891bbed": {
+      "id": "3891bbed",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "4b9678e0",
+      "style": {
+        "background": "#e6e9f5",
+        "borderRadius": "4px",
+        "color": "#34458a",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "POST"
+    },
+    "38a45704": {
+      "id": "38a45704",
+      "index": "a1",
+      "kind": "text",
+      "name": "REST",
+      "parent": "64ea0f6e",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "REST"
+    },
+    "38dce15d": {
+      "id": "38dce15d",
+      "index": "a0",
+      "kind": "text",
+      "name": "Copy brief for Claude",
+      "parent": "180fabfb",
+      "style": {
+        "alignItems": "center",
+        "background": "transparent",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "var(--font)",
+        "fontSize": "12px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "button",
+      "text": "Copy brief for Claude"
+    },
+    "39c0abfc": {
+      "id": "39c0abfc",
+      "index": "a7",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "39ff649d": {
+      "id": "39ff649d",
+      "index": "a4",
+      "kind": "frame",
+      "name": "Gateway schema",
+      "parent": "2459a0ec",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "left": "260px",
+        "overflow": "hidden",
+        "position": "absolute",
+        "top": "56px",
+        "width": "360px"
+      },
+      "tag": "div"
+    },
+    "3b899917": {
+      "id": "3b899917",
+      "index": "a4",
+      "kind": "text",
+      "name": "Or add the first part yo…",
+      "parent": "3290c512",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "textDecoration": "underline",
+        "textUnderlineOffset": "3px"
+      },
+      "tag": "span",
+      "text": "Or add the first part yourself"
+    },
+    "3b9caa14": {
+      "id": "3b9caa14",
+      "index": "aD",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#f6f6f4",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "752px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "368px"
+      },
+      "tag": "div"
+    },
+    "3c28efe1": {
+      "id": "3c28efe1",
+      "index": "a6",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "3c33186f": {
+      "id": "3c33186f",
+      "index": "a0",
+      "kind": "text",
+      "name": "Map",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Map"
+    },
+    "3c5bb63c": {
+      "id": "3c5bb63c",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Environment",
+      "parent": "68779c0c",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "none",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "3d039162": {
+      "id": "3d039162",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "39ff649d",
+      "style": {
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "height": "52px",
+        "padding": "8px 12px"
+      },
+      "tag": "div"
+    },
+    "3d6e0237": {
+      "id": "3d6e0237",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "b99f8e50",
+      "style": {
+        "background": "#e6e9f5",
+        "borderRadius": "4px",
+        "color": "#34458a",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "POST"
+    },
+    "3d79077a": {
+      "id": "3d79077a",
+      "index": "aF",
+      "kind": "text",
+      "name": "Context shows who uses t…",
+      "parent": "64c3940c",
+      "style": {
+        "bottom": "16px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "left": "24px",
+        "position": "absolute"
+      },
+      "tag": "div",
+      "text": "Context shows who uses the system and what it relies on. System, Runtime and Code go inside it."
+    },
+    "3e481f2f": {
+      "id": "3e481f2f",
+      "index": "a1",
+      "kind": "text",
+      "name": "Person",
+      "parent": "95fa1a28",
+      "style": {},
+      "tag": "span",
+      "text": "Person"
+    },
+    "3e6a0c25": {
+      "id": "3e6a0c25",
+      "index": "a0",
+      "kind": "text",
+      "name": "Design the system before…",
+      "parent": "3290c512",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "lineHeight": "26px"
+      },
+      "tag": "b",
+      "text": "Design the system before you build it"
+    },
+    "3ee53f39": {
+      "id": "3ee53f39",
+      "index": "a4",
+      "kind": "text",
+      "name": "Worker",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Worker"
+    },
+    "3fa192b2": {
+      "id": "3fa192b2",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Empty",
+      "parent": "94362ccd",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "height": "803px",
+        "justifyContent": "center",
+        "left": "0",
+        "position": "absolute",
+        "top": "0",
+        "width": "1100px"
+      },
+      "tag": "div"
+    },
+    "422dbc67": {
+      "id": "422dbc67",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg>",
+      "name": "arrow-right",
+      "parent": "ee876c03",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "4278d4f5": {
+      "id": "4278d4f5",
+      "index": "a3",
+      "kind": "text",
+      "name": "Inside it, 8 parts",
+      "parent": "21db706d",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "marginTop": "14px"
+      },
+      "tag": "span",
+      "text": "Inside it, 8 parts"
+    },
+    "43f1662c": {
+      "id": "43f1662c",
+      "index": "a0",
+      "kind": "text",
+      "name": "GET",
+      "parent": "bb57e9f4",
+      "style": {
+        "background": "#e3eee7",
+        "borderRadius": "4px",
+        "color": "#3c7856",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "GET"
+    },
+    "455781f5": {
+      "id": "455781f5",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "29d9abf0",
+      "style": {
+        "alignItems": "baseline",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "8px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "461d0d8a": {
+      "id": "461d0d8a",
+      "index": "a0",
+      "kind": "text",
+      "name": "Map",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Map"
+    },
+    "4663eb01": {
+      "id": "4663eb01",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"m6 9 6 6 6-6\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "002374bf",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "13px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "13px"
+      }
+    },
+    "47ac218b": {
+      "id": "47ac218b",
+      "index": "a1",
+      "kind": "text",
+      "name": "System",
+      "parent": "ec59d399",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "System"
+    },
+    "48f0d4e8": {
+      "id": "48f0d4e8",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Canvas",
+      "parent": "015dbecf",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "backgroundImage": "radial-gradient(rgba(24, 24, 27, 0.07) 1px, rgba(0, 0, 0, 0) 1px)",
+        "backgroundSize": "20px 20px",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "803px",
+        "left": "0px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "4971ccea": {
+      "id": "4971ccea",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "544a06c8",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "height": "851px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "49px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "4a0b0510": {
+      "id": "4a0b0510",
+      "index": "a0",
+      "kind": "frame",
+      "name": "header",
+      "parent": "544a06c8",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "bottom": "852px",
+        "display": "flex",
+        "gap": "8px",
+        "height": "48px",
+        "left": "0px",
+        "margin": "0px",
+        "padding": "0px 12px 0px 14px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "0px",
+        "width": "1440px",
+        "zIndex": "7"
+      },
+      "tag": "header"
+    },
+    "4a295721": {
+      "id": "4a295721",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "37233089",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "4a38a98c": {
+      "id": "4a38a98c",
+      "index": "a2",
+      "kind": "text",
+      "name": "Code",
+      "parent": "1521669e",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Code"
+    },
+    "4b3f22f1": {
+      "id": "4b3f22f1",
+      "index": "a6",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "4b9678e0": {
+      "id": "4b9678e0",
+      "index": "a3",
+      "kind": "frame",
+      "name": "POST /returns",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "4bb52558": {
+      "id": "4bb52558",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "4bc1daae": {
+      "id": "4bc1daae",
+      "index": "a1",
+      "kind": "text",
+      "name": "Write what it has to do.…",
+      "parent": "3290c512",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "13px",
+        "lineHeight": "19px",
+        "margin": "0"
+      },
+      "tag": "p",
+      "text": "Write what it has to do. Claude Code or Codex drafts the context, the parts and the API here; you change what it got wrong."
+    },
+    "4c35ba5a": {
+      "id": "4c35ba5a",
+      "index": "a3",
+      "kind": "text",
+      "name": "Deploy path",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Deploy path"
+    },
+    "4da2064e": {
+      "id": "4da2064e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Resend",
+      "parent": "94fac572",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Resend"
+    },
+    "4e9a88ae": {
+      "id": "4e9a88ae",
+      "index": "a2",
+      "kind": "text",
+      "name": "Labels and carrier track…",
+      "parent": "c34271c1",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "16px"
+      },
+      "tag": "span",
+      "text": "Labels and carrier tracking"
+    },
+    "4eb90d3e": {
+      "id": "4eb90d3e",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "defc0efd",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "4f69ad7d": {
+      "id": "4f69ad7d",
+      "index": "a0",
+      "kind": "text",
+      "name": "Request",
+      "parent": "4bb52558",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Request"
+    },
+    "5080519c": {
+      "id": "5080519c",
+      "index": "a3",
+      "kind": "frame",
+      "name": "div",
+      "parent": "95e250be",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "5116321f": {
+      "id": "5116321f",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg>",
+      "name": "copy",
+      "parent": "918cf982",
+      "style": {
+        "color": "#f6f6f4",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "51341bcf": {
+      "id": "51341bcf",
+      "index": "a0",
+      "kind": "text",
+      "name": "schema.graphql",
+      "parent": "63ea9353",
+      "style": {
+        "color": "#18181b",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "schema.graphql"
+    },
+    "521e2539": {
+      "id": "521e2539",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Imported section",
+      "parent": "69f75635",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ],
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontStyle": "normal",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "textAlign": "start",
+        "textTransform": "none",
+        "whiteSpace": "normal",
+        "width": "1440px",
+        "wordBreak": "normal"
+      },
+      "tag": "section"
+    },
+    "5341029e": {
+      "id": "5341029e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Admin API",
+      "parent": "e7b73023",
+      "style": {},
+      "tag": "span",
+      "text": "Admin API"
+    },
+    "5342e114": {
+      "id": "5342e114",
+      "index": "a0",
+      "kind": "frame",
+      "name": "header",
+      "parent": "1ca126fc",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "bottom": "852px",
+        "display": "flex",
+        "gap": "8px",
+        "height": "48px",
+        "left": "0px",
+        "margin": "0px",
+        "padding": "0px 12px 0px 14px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "0px",
+        "width": "1440px",
+        "zIndex": "7"
+      },
+      "tag": "header"
+    },
+    "534e151a": {
+      "id": "534e151a",
+      "index": "a2",
+      "kind": "text",
+      "name": "Software path",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Software path"
+    },
+    "535e2dad": {
+      "id": "535e2dad",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "21cd70c9",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "544a06c8": {
+      "id": "544a06c8",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "2855536d",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "grid",
+        "gridTemplateColumns": "1440px",
+        "gridTemplateRows": "900px",
+        "height": "900px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "5513a01d": {
+      "id": "5513a01d",
+      "index": "a2",
+      "kind": "text",
+      "name": "Starts and follows retur…",
+      "parent": "e9ff9b4f",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Starts and follows returns"
+    },
+    "55ee8563": {
+      "id": "55ee8563",
+      "index": "a0",
+      "kind": "text",
+      "name": "How",
+      "parent": "af69e085",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "How"
+    },
+    "58a4aa29": {
+      "id": "58a4aa29",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "c5225360",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "597393c4": {
+      "id": "597393c4",
+      "index": "a1",
+      "kind": "text",
+      "name": "arch",
+      "parent": "bc8d3669",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#7c7c84",
+        "display": "block",
+        "fontSize": "13px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "small",
+      "text": "arch"
+    },
+    "5aedde24": {
+      "id": "5aedde24",
+      "index": "a6",
+      "kind": "frame",
+      "name": "Shopify",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "860px",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "100px",
+        "width": "210px"
+      },
+      "tag": "div"
+    },
+    "5b2168ee": {
+      "id": "5b2168ee",
+      "index": "a9",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#f6f6f4",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "240px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "96px"
+      },
+      "tag": "div"
+    },
+    "5b4a0d29": {
+      "id": "5b4a0d29",
+      "index": "a0",
+      "kind": "text",
+      "name": "Outside service",
+      "parent": "673d8f80",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Outside service"
+    },
+    "5cf02b9b": {
+      "id": "5cf02b9b",
+      "index": "a6",
+      "kind": "text",
+      "name": "Main database",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Main database"
+    },
+    "5db54cf5": {
+      "id": "5db54cf5",
+      "index": "a1",
+      "kind": "text",
+      "name": "Refund",
+      "parent": "3c28efe1",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "Refund"
+    },
+    "5fe2f1e8": {
+      "id": "5fe2f1e8",
+      "index": "a3",
+      "kind": "text",
+      "name": "Deploy path",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Deploy path"
+    },
+    "5ff49a9c": {
+      "id": "5ff49a9c",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Imported section",
+      "parent": "ed758530",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ],
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontStyle": "normal",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "textAlign": "start",
+        "textTransform": "none",
+        "whiteSpace": "normal",
+        "width": "1440px",
+        "wordBreak": "normal"
+      },
+      "tag": "section"
+    },
+    "618ac232": {
+      "id": "618ac232",
+      "index": "a0",
+      "kind": "text",
+      "name": "Gateway, ",
+      "parent": "26a1cd32",
+      "style": {},
+      "tag": "span",
+      "text": "Gateway, "
+    },
+    "63b6ce02": {
+      "id": "63b6ce02",
+      "index": "a0",
+      "kind": "text",
+      "name": "Starts returns",
+      "parent": "5b2168ee",
+      "style": {
+        "color": "#2f6bff",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Starts returns"
+    },
+    "63ea9353": {
+      "id": "63ea9353",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "24db6cde",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "6442fc58": {
+      "id": "6442fc58",
+      "index": "a1",
+      "kind": "text",
+      "name": "RefundJob",
+      "parent": "4a295721",
+      "style": {
+        "fontFamily": "var(--mono)"
+      },
+      "tag": "span",
+      "text": "RefundJob"
+    },
+    "64c3940c": {
+      "id": "64c3940c",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Context diagram",
+      "parent": "48f0d4e8",
+      "style": {
+        "height": "803px",
+        "left": "0",
+        "position": "absolute",
+        "top": "0",
+        "width": "1100px"
+      },
+      "tag": "div"
+    },
+    "64ea0f6e": {
+      "id": "64ea0f6e",
+      "index": "aE",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#f6f6f4",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "742px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "556px"
+      },
+      "tag": "div"
+    },
+    "6649d4f5": {
+      "id": "6649d4f5",
+      "index": "a0",
+      "kind": "text",
+      "name": "Context",
+      "parent": "ec59d399",
+      "style": {
+        "background": "#ffffff",
+        "border": "0",
+        "borderRadius": "6px",
+        "color": "#18181b",
+        "fontFamily": "var(--font)",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "padding": "0 10px"
+      },
+      "tag": "button",
+      "text": "Context"
+    },
+    "673d8f80": {
+      "id": "673d8f80",
+      "index": "a7",
+      "kind": "frame",
+      "name": "Shippo",
+      "parent": "2459a0ec",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "700px",
+        "overflow": "visible",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "400px",
+        "width": "188px"
+      },
+      "tag": "div"
+    },
+    "6746aed4": {
+      "id": "6746aed4",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "af69e085",
+      "style": {
+        "alignItems": "center",
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "justifyContent": "space-between",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px"
+      },
+      "tag": "span"
+    },
+    "67a6721a": {
+      "id": "67a6721a",
+      "index": "a4",
+      "kind": "text",
+      "name": "Text",
+      "parent": "58839761",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Text"
+    },
+    "6808c848": {
+      "id": "6808c848",
+      "index": "a1",
+      "kind": "text",
+      "name": "(id: ID!)",
+      "parent": "b818a2b8",
+      "style": {
+        "color": "#7c7c84"
+      },
+      "tag": "span",
+      "text": "(id: ID!)"
+    },
+    "68463b55": {
+      "id": "68463b55",
+      "index": "a1",
+      "kind": "text",
+      "name": "[Return!]!",
+      "parent": "7fce8e64",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "[Return!]!"
+    },
+    "68779c0c": {
+      "id": "68779c0c",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Toolbar",
+      "parent": "ab58773d",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexShrink": "0",
+        "gap": "12px",
+        "height": "48px",
+        "margin": "0px",
+        "padding": "0px 24px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "68fd47b6": {
+      "id": "68fd47b6",
+      "index": "a1",
+      "kind": "text",
+      "name": "(input: StartReturn!)",
+      "parent": "b184a287",
+      "style": {
+        "color": "#7c7c84"
+      },
+      "tag": "span",
+      "text": "(input: StartReturn!)"
+    },
+    "69f75635": {
+      "id": "69f75635",
+      "index": "a0",
+      "kind": "frame",
+      "name": "00 · Map · Now",
+      "style": {
+        "width": "1440px"
+      }
+    },
+    "6ab47508": {
+      "id": "6ab47508",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"m6 9 6 6 6-6\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "86bfd164",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "13px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "13px"
+      }
+    },
+    "6b8017d9": {
+      "id": "6b8017d9",
+      "index": "a0",
+      "kind": "text",
+      "name": "Sends emails",
+      "parent": "64ea0f6e",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Sends emails"
+    },
+    "6cc276a3": {
+      "id": "6cc276a3",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg width=\"1100\" height=\"803\" fill=\"none\"><defs><marker id=\"a\" viewBox=\"0 0 8 8\" refX=\"7\" refY=\"4\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M0 0 L8 4 L0 8 z\" fill=\"#5a5a63\"></path></marker><marker id=\"s\" viewBox=\"0 0 8 8\" refX=\"7\" refY=\"4\" markerWidth=\"8\" markerHeight=\"8\" orient=\"auto\"><path d=\"M0 0 L8 4 L0 8 z\" fill=\"#6d8fff\"></path></marker></defs><path d=\"M230 165 H290 V230 H342\" stroke=\"#6d8fff\" stroke-width=\"1.75\" marker-end=\"url(#s)\"></path><path d=\"M230 400 H342\" stroke=\"#5a5a63\" stroke-width=\"1.25\" marker-end=\"url(#a)\"></path><path d=\"M730 200 H795 V145 H852\" stroke=\"#5a5a63\" stroke-width=\"1.25\" marker-end=\"url(#a)\"></path><path d=\"M730 330 H852\" stroke=\"#5a5a63\" stroke-width=\"1.25\" marker-end=\"url(#a)\"></path><path d=\"M860 362 H738\" stroke=\"#5a5a63\" stroke-width=\"1.25\" marker-end=\"url(#a)\"></path><path d=\"M730 470 H795 V545 H852\" stroke=\"#5a5a63\" stroke-width=\"1.25\" marker-end=\"url(#a)\"></path></svg>",
+      "name": "Links",
+      "parent": "64c3940c",
+      "style": {
+        "left": "0",
+        "position": "absolute",
+        "top": "0"
+      }
+    },
+    "6eddf8b6": {
+      "id": "6eddf8b6",
+      "index": "a3",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "6fc1cb12": {
+      "id": "6fc1cb12",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "21cd70c9",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "70a6f364": {
+      "id": "70a6f364",
+      "index": "a0",
+      "kind": "text",
+      "name": "Responses",
+      "parent": "4b3f22f1",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Responses"
+    },
+    "719f3824": {
+      "id": "719f3824",
+      "index": "a1",
+      "kind": "text",
+      "name": "staging",
+      "parent": "3c5bb63c",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "staging"
+    },
+    "7257121a": {
+      "id": "7257121a",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Canvas",
+      "parent": "78092882",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "backgroundImage": "radial-gradient(rgba(24, 24, 27, 0.07) 1px, rgba(0, 0, 0, 0) 1px)",
+        "backgroundSize": "20px 20px",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "803px",
+        "left": "0px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "73ae3548": {
+      "id": "73ae3548",
+      "index": "a0",
+      "kind": "frame",
+      "name": "00 · Map · Now",
+      "style": {
+        "width": "1440px"
+      }
+    },
+    "744a67ce": {
+      "id": "744a67ce",
+      "index": "a5",
+      "kind": "frame",
+      "name": "span",
+      "parent": "21db706d",
+      "style": {
+        "alignItems": "center",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "6px",
+        "marginTop": "auto"
+      },
+      "tag": "span"
+    },
+    "74f7ad44": {
+      "id": "74f7ad44",
+      "index": "a0",
+      "kind": "text",
+      "name": "Open the map",
+      "parent": "744a67ce",
+      "style": {},
+      "tag": "span",
+      "text": "Open the map"
+    },
+    "759a5204": {
+      "id": "759a5204",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "6fc1cb12",
+      "style": {
+        "background": "#e6e9f5",
+        "borderRadius": "4px",
+        "color": "#34458a",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "POST"
+    },
+    "7655825f": {
+      "id": "7655825f",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Mode",
+      "parent": "4a0b0510",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderRadius": "8px",
+        "borderSpacing": "0px",
+        "bottom": "7px",
+        "display": "flex",
+        "gap": "24px",
+        "height": "32px",
+        "left": "720px",
+        "margin": "0px",
+        "padding": "0px 14px",
+        "position": "absolute",
+        "right": "542.062px",
+        "top": "8px",
+        "transform": "matrix(1, 0, 0, 1, -88.9688, 0)",
+        "transformOrigin": "88.9688px 16px",
+        "width": "177.938px"
+      },
+      "tag": "nav"
+    },
+    "76cbbcfd": {
+      "id": "76cbbcfd",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Buyer",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "40px",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "120px",
+        "width": "190px"
+      },
+      "tag": "div"
+    },
+    "77b00e24": {
+      "id": "77b00e24",
+      "index": "a2",
+      "kind": "text",
+      "name": "Brief",
+      "parent": "3290c512",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.14)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontSize": "13px",
+        "lineHeight": "19px",
+        "minHeight": "112px",
+        "padding": "10px 12px"
+      },
+      "tag": "div",
+      "text": "Buyers on a Shopify store return items. They pick what to send back, print a carrier label, and get refunded once the carrier scans the parcel. Merchants see every return and can refund by hand."
+    },
+    "77b2f5b5": {
+      "id": "77b2f5b5",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "defc0efd",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "78f1c545": {
+      "id": "78f1c545",
+      "index": "a0",
+      "kind": "text",
+      "name": "REST operation · Returns…",
+      "parent": "b54e0984",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "REST operation · Returns API"
+    },
+    "79f53bd3": {
+      "id": "79f53bd3",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Architecture views",
+      "parent": "58839761",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "18px",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto"
+      },
+      "tag": "nav"
+    },
+    "7a0d773f": {
+      "id": "7a0d773f",
+      "index": "a0",
+      "kind": "text",
+      "name": "return",
+      "parent": "b818a2b8",
+      "style": {},
+      "tag": "span",
+      "text": "return"
+    },
+    "7a972791": {
+      "id": "7a972791",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "1ca126fc",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "height": "851px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "49px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "7bae2b97": {
+      "id": "7bae2b97",
+      "index": "aC",
+      "kind": "frame",
+      "name": "div",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#f6f6f4",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "1px",
+        "left": "752px",
+        "padding": "2px 4px",
+        "position": "absolute",
+        "top": "284px"
+      },
+      "tag": "div"
+    },
+    "7c1d7fcc": {
+      "id": "7c1d7fcc",
+      "index": "a0",
+      "kind": "text",
+      "name": "Buys labels",
+      "parent": "7bae2b97",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Buys labels"
+    },
+    "7ca932e1": {
+      "id": "7ca932e1",
+      "index": "a0",
+      "kind": "text",
+      "name": "Contract",
+      "parent": "24db6cde",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Contract"
+    },
+    "7ceb82b9": {
+      "id": "7ceb82b9",
+      "index": "a1",
+      "kind": "text",
+      "name": "requestRefund",
+      "parent": "26a1cd32",
+      "style": {
+        "fontFamily": "var(--mono)"
+      },
+      "tag": "span",
+      "text": "requestRefund"
+    },
+    "7d5f268b": {
+      "id": "7d5f268b",
+      "index": "a0",
+      "kind": "text",
+      "name": "Open in API",
+      "parent": "ee876c03",
+      "style": {},
+      "tag": "span",
+      "text": "Open in API"
+    },
+    "7d8cf7a7": {
+      "id": "7d8cf7a7",
+      "index": "a0",
+      "kind": "text",
+      "name": "Then",
+      "parent": "37233089",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Then"
+    },
+    "7eef203f": {
+      "id": "7eef203f",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns",
+      "parent": "8d4a2ff4",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/returns"
+    },
+    "7fce8e64": {
+      "id": "7fce8e64",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "7ff6b5b1": {
+      "id": "7ff6b5b1",
+      "index": "a1",
+      "kind": "text",
+      "name": "schema.graphql",
+      "parent": "3d039162",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "schema.graphql"
+    },
+    "80be4716": {
+      "id": "80be4716",
+      "index": "a1",
+      "kind": "text",
+      "name": "Return",
+      "parent": "cfa003de",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "Return"
+    },
+    "822593f4": {
+      "id": "822593f4",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></svg>",
+      "name": "user",
+      "parent": "ba5dedc5",
+      "style": {
+        "color": "#6b6b73",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "827b3f4d": {
+      "id": "827b3f4d",
+      "index": "a1",
+      "kind": "text",
+      "name": "POST /returns/{id}/refun…",
+      "parent": "b54e0984",
+      "style": {
+        "color": "#18181b",
+        "fontFamily": "var(--mono)",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "lineHeight": "26px",
+        "margin": "2px 0 0"
+      },
+      "tag": "b",
+      "text": "POST /returns/{id}/refund"
+    },
+    "831919fb": {
+      "id": "831919fb",
+      "index": "a1",
+      "kind": "text",
+      "name": "Merchant dashboard",
+      "parent": "b20df0c8",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Merchant dashboard"
+    },
+    "833e349d": {
+      "id": "833e349d",
+      "index": "a1",
+      "kind": "text",
+      "name": "(returnId: ID!)",
+      "parent": "1fb25f0c",
+      "style": {
+        "color": "#7c7c84"
+      },
+      "tag": "span",
+      "text": "(returnId: ID!)"
+    },
+    "86bfd164": {
+      "id": "86bfd164",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "98ad4756",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gap": "6px",
+        "height": "36px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px 8px 0px 6px",
+        "textAlign": "left"
+      },
+      "tag": "button"
+    },
+    "86fdb7b6": {
+      "id": "86fdb7b6",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Imported section",
+      "parent": "73ae3548",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ],
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontStyle": "normal",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "textAlign": "start",
+        "textTransform": "none",
+        "whiteSpace": "normal",
+        "width": "1440px",
+        "wordBreak": "normal"
+      },
+      "tag": "section"
+    },
+    "870641b6": {
+      "id": "870641b6",
+      "index": "a1",
+      "kind": "text",
+      "name": "RefundRequest { amount, …",
+      "parent": "4bb52558",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "RefundRequest { amount, reason }"
+    },
+    "877826ae": {
+      "id": "877826ae",
+      "index": "a0",
+      "kind": "text",
+      "name": "buyLabel",
+      "parent": "8e6dc2a9",
+      "style": {},
+      "tag": "span",
+      "text": "buyLabel"
+    },
+    "879e233a": {
+      "id": "879e233a",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "8a3a8f37": {
+      "id": "8a3a8f37",
+      "index": "a0",
+      "kind": "text",
+      "name": "Map",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "400",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Map"
+    },
+    "8a6b7c52": {
+      "id": "8a6b7c52",
+      "index": "a0",
+      "kind": "text",
+      "name": "Refunds by hand",
+      "parent": "94347170",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Refunds by hand"
+    },
+    "8b73adaf": {
+      "id": "8b73adaf",
+      "index": "a2",
+      "kind": "text",
+      "name": "Your agent drafts the sy…",
+      "parent": "36c5eabf",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontSize": "12px",
+        "height": "auto",
+        "lineHeight": "17.4px",
+        "margin": "8px 0px 16px",
+        "width": "291px"
+      },
+      "tag": "p",
+      "text": "Your agent drafts the system here from a brief: who uses it, the parts inside, and the API between them. Then click anything to change it, before anything is built."
+    },
+    "8be15b6c": {
+      "id": "8be15b6c",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns/{id}",
+      "parent": "bb57e9f4",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/returns/{id}"
+    },
+    "8d4a2ff4": {
+      "id": "8d4a2ff4",
+      "index": "a2",
+      "kind": "frame",
+      "name": "GET /returns",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "8e6dc2a9": {
+      "id": "8e6dc2a9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "39c0abfc",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "8e80cd89": {
+      "id": "8e80cd89",
+      "index": "a1",
+      "kind": "text",
+      "name": "409 Not scanned yet",
+      "parent": "a7b9ab25",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "409 Not scanned yet"
+    },
+    "8f0b6000": {
+      "id": "8f0b6000",
+      "index": "a0",
+      "kind": "text",
+      "name": "GET",
+      "parent": "8d4a2ff4",
+      "style": {
+        "background": "#e3eee7",
+        "borderRadius": "4px",
+        "color": "#3c7856",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "GET"
+    },
+    "8f26bcab": {
+      "id": "8f26bcab",
+      "index": "a3",
+      "kind": "text",
+      "name": "Deploy path",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Deploy path"
+    },
+    "8fd33599": {
+      "id": "8fd33599",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7\"/><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"/></svg>",
+      "name": "mail",
+      "parent": "a8bd8e0e",
+      "style": {
+        "color": "#6b6b73",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "914ce5d6": {
+      "id": "914ce5d6",
+      "index": "a0",
+      "kind": "text",
+      "name": "Through",
+      "parent": "dd7341c6",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Through"
+    },
+    "918cf982": {
+      "id": "918cf982",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Copy brief",
+      "parent": "a24dfb28",
+      "style": {
+        "alignItems": "center",
+        "background": "#18181b",
+        "border": "0",
+        "borderRadius": "8px",
+        "color": "#f6f6f4",
+        "display": "flex",
+        "fontFamily": "var(--font)",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "gap": "6px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "button"
+    },
+    "9229dfb7": {
+      "id": "9229dfb7",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plus\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"M5 12h14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path><path d=\"M12 5v14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "bb260e00",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "12px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "12px"
+      }
+    },
+    "93086cf3": {
+      "id": "93086cf3",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
+      "name": "plus",
+      "parent": "f6f188cf",
+      "style": {
+        "color": "#7c7c84",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "94362ccd": {
+      "id": "94362ccd",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Canvas",
+      "parent": "014fac1c",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "backgroundImage": "radial-gradient(rgba(24, 24, 27, 0.07) 1px, rgba(0, 0, 0, 0) 1px)",
+        "backgroundSize": "20px 20px",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "803px",
+        "left": "0px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "9490a92e": {
+      "id": "9490a92e",
+      "index": "a3",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Returns API"
+    },
+    "94fac572": {
+      "id": "94fac572",
+      "index": "a8",
+      "kind": "frame",
+      "name": "Resend",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "860px",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "500px",
+        "width": "210px"
+      },
+      "tag": "div"
+    },
+    "95b7e1b3": {
+      "id": "95b7e1b3",
+      "index": "a2",
+      "kind": "text",
+      "name": "prod",
+      "parent": "e2f80d11",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "prod"
+    },
+    "95e250be": {
+      "id": "95e250be",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Link",
+      "parent": "00d6de3a",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column"
+      },
+      "tag": "div"
+    },
+    "95fa1a28": {
+      "id": "95fa1a28",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "a95de126",
+      "style": {
+        "alignItems": "center",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "11px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "97b9113d": {
+      "id": "97b9113d",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "18a0bcd4",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "97f86fc2": {
+      "id": "97f86fc2",
+      "index": "a1",
+      "kind": "text",
+      "name": "arch",
+      "parent": "dfacee3d",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#7c7c84",
+        "display": "block",
+        "fontSize": "13px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "small",
+      "text": "arch"
+    },
+    "98298b2b": {
+      "id": "98298b2b",
+      "index": "a1",
+      "kind": "text",
+      "name": "Runtime",
+      "parent": "c4c7243d",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Runtime"
+    },
+    "98ad4756": {
+      "id": "98ad4756",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "ea9048ed",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "9b6f4a5b": {
+      "id": "9b6f4a5b",
+      "index": "a2",
+      "kind": "text",
+      "name": "Runs the store, handles …",
+      "parent": "a95de126",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "16px"
+      },
+      "tag": "span",
+      "text": "Runs the store, handles odd returns"
+    },
+    "9ec24be6": {
+      "id": "9ec24be6",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plus\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"M5 12h14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path><path d=\"M12 5v14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "ddbe278d",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "12px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "12px"
+      }
+    },
+    "9ee13ef5": {
+      "id": "9ee13ef5",
+      "index": "a6",
+      "kind": "text",
+      "name": "webhook",
+      "parent": "2459a0ec",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "left": "798px",
+        "position": "absolute",
+        "top": "352px"
+      },
+      "tag": "span",
+      "text": "webhook"
+    },
+    "9f873991": {
+      "id": "9f873991",
+      "index": "a0",
+      "kind": "text",
+      "name": "Buyer portal",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Buyer portal"
+    },
+    "a03a7eac": {
+      "id": "a03a7eac",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plus\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"M5 12h14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path><path d=\"M12 5v14\" fill=\"none\" stroke=\"rgb(237, 237, 239)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "1dca5de6",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "12px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "12px"
+      }
+    },
+    "a0d4e741": {
+      "id": "a0d4e741",
+      "index": "a0",
+      "kind": "text",
+      "name": "Refunds orders",
+      "parent": "1d67f1cd",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Refunds orders"
+    },
+    "a12b97cd": {
+      "id": "a12b97cd",
+      "index": "a7",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "a24dfb28": {
+      "id": "a24dfb28",
+      "index": "a3",
+      "kind": "frame",
+      "name": "div",
+      "parent": "3290c512",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "8px"
+      },
+      "tag": "div"
+    },
+    "a67625d4": {
+      "id": "a67625d4",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "cd0d1437",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "a6d83541": {
+      "id": "a6d83541",
+      "index": "a1",
+      "kind": "text",
+      "name": "Person",
+      "parent": "ba5dedc5",
+      "style": {},
+      "tag": "span",
+      "text": "Person"
+    },
+    "a7b97b58": {
+      "id": "a7b97b58",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "58839761",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "a7b9ab25": {
+      "id": "a7b9ab25",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "4b3f22f1",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px"
+      },
+      "tag": "div"
+    },
+    "a8b1d6bb": {
+      "id": "a8b1d6bb",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "6eddf8b6",
+      "style": {
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "a8bd8e0e": {
+      "id": "a8bd8e0e",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "94fac572",
+      "style": {
+        "alignItems": "center",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "11px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "a95de126": {
+      "id": "a95de126",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Merchant",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "40px",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "330px",
+        "width": "190px"
+      },
+      "tag": "div"
+    },
+    "ab58773d": {
+      "id": "ab58773d",
+      "index": "a1",
+      "kind": "frame",
+      "name": "div",
+      "parent": "341e2d6f",
+      "style": {
+        "backgroundColor": "#f6f6f4",
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "flexDirection": "column",
+        "height": "851px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "49px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "ad1a497f": {
+      "id": "ad1a497f",
+      "index": "a0",
+      "kind": "frame",
+      "name": "More",
+      "parent": "77b2f5b5",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "grid",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gridTemplateColumns": "17px",
+        "gridTemplateRows": "26px",
+        "height": "28px",
+        "justifyItems": "center",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "1px 6px",
+        "width": "28px"
+      },
+      "tag": "button"
+    },
+    "ad7a22fb": {
+      "id": "ad7a22fb",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "f539ae6f",
+      "style": {},
+      "tag": "span",
+      "text": "POST"
+    },
+    "adcf0ada": {
+      "id": "adcf0ada",
+      "index": "a1",
+      "kind": "text",
+      "name": "Operations",
+      "parent": "bdbcdd33",
+      "style": {
+        "boxSizing": "border-box",
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "height": "26px",
+        "padding": "8px 12px 0"
+      },
+      "tag": "div",
+      "text": "Operations"
+    },
+    "aea9fd1f": {
+      "id": "aea9fd1f",
+      "index": "a2",
+      "kind": "text",
+      "name": "Runtime",
+      "parent": "ec59d399",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Runtime"
+    },
+    "aef31c73": {
+      "id": "aef31c73",
+      "index": "a2",
+      "kind": "text",
+      "name": "202",
+      "parent": "03ad86c5",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "202"
+    },
+    "af2f597d": {
+      "id": "af2f597d",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "68779c0c",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "af69e085": {
+      "id": "af69e085",
+      "index": "a4",
+      "kind": "frame",
+      "name": "div",
+      "parent": "95e250be",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "af88b732": {
+      "id": "af88b732",
+      "index": "a0",
+      "kind": "frame",
+      "name": "root",
+      "parent": "86fdb7b6",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "height": "900px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "b0fae194": {
+      "id": "b0fae194",
+      "index": "a5",
+      "kind": "text",
+      "name": "Proposals",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Proposals"
+    },
+    "b184a287": {
+      "id": "b184a287",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "cfa003de",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "b1c4b67c": {
+      "id": "b1c4b67c",
+      "index": "a2",
+      "kind": "text",
+      "name": "Written by Claude from y…",
+      "parent": "95e250be",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "margin": "8px 0 16px"
+      },
+      "tag": "p",
+      "text": "Written by Claude from your brief. Change anything; the agent reads it back before it builds."
+    },
+    "b20df0c8": {
+      "id": "b20df0c8",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Merchant dashboard",
+      "parent": "2459a0ec",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "24px",
+        "overflow": "visible",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "200px",
+        "width": "188px"
+      },
+      "tag": "div"
+    },
+    "b3b47ddb": {
+      "id": "b3b47ddb",
+      "index": "a1",
+      "kind": "text",
+      "name": "changes",
+      "parent": "6fc1cb12",
+      "style": {},
+      "tag": "span",
+      "text": "changes"
+    },
+    "b46381b4": {
+      "id": "b46381b4",
+      "index": "a1",
+      "kind": "text",
+      "name": "return, returns, startRe…",
+      "parent": "63ea9353",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "return, returns, startReturn, buyLabel"
+    },
+    "b4fc43a8": {
+      "id": "b4fc43a8",
+      "index": "a4",
+      "kind": "text",
+      "name": "Kubernetes",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Kubernetes"
+    },
+    "b4fc7da2": {
+      "id": "b4fc7da2",
+      "index": "a0",
+      "kind": "frame",
+      "name": "More",
+      "parent": "d8bd1cfb",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "grid",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "gridTemplateColumns": "17px",
+        "gridTemplateRows": "26px",
+        "height": "28px",
+        "justifyItems": "center",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "1px 6px",
+        "width": "28px"
+      },
+      "tag": "button"
+    },
+    "b54e0984": {
+      "id": "b54e0984",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Operation",
+      "parent": "35adcc16",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column"
+      },
+      "tag": "div"
+    },
+    "b57a6d96": {
+      "id": "b57a6d96",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "7fce8e64",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "b57ce894": {
+      "id": "b57ce894",
+      "index": "a0",
+      "kind": "text",
+      "name": "System",
+      "parent": "1521669e",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "System"
+    },
+    "b67b3870": {
+      "id": "b67b3870",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
+      "name": "plus",
+      "parent": "21bd8521",
+      "style": {
+        "color": "#7c7c84",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "b7253204": {
+      "id": "b7253204",
+      "index": "a4",
+      "kind": "text",
+      "name": "Text",
+      "parent": "f664b1f7",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Text"
+    },
+    "b7454ab1": {
+      "id": "b7454ab1",
+      "index": "a0",
+      "kind": "text",
+      "name": "The system",
+      "parent": "21db706d",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "The system"
+    },
+    "b818a2b8": {
+      "id": "b818a2b8",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "879e233a",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span"
+    },
+    "b956417b": {
+      "id": "b956417b",
+      "index": "a1",
+      "kind": "text",
+      "name": "reads",
+      "parent": "d4b73f3f",
+      "style": {},
+      "tag": "span",
+      "text": "reads"
+    },
+    "b99f8e50": {
+      "id": "b99f8e50",
+      "index": "a6",
+      "kind": "frame",
+      "name": "POST /returns/{id}/label",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "ba5dedc5": {
+      "id": "ba5dedc5",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "76cbbcfd",
+      "style": {
+        "alignItems": "center",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "11px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "bb260e00": {
+      "id": "bb260e00",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "fb7d3bee",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "inline-flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button"
+    },
+    "bb34475d": {
+      "id": "bb34475d",
+      "index": "a1",
+      "kind": "text",
+      "name": "Architecture",
+      "parent": "7655825f",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Architecture"
+    },
+    "bb57e9f4": {
+      "id": "bb57e9f4",
+      "index": "a4",
+      "kind": "frame",
+      "name": "GET /returns/{id}",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "bc879598": {
+      "id": "bc879598",
+      "index": "a7",
+      "kind": "frame",
+      "name": "POST /webhooks/shippo",
+      "parent": "bdbcdd33",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "bc8d3669": {
+      "id": "bc8d3669",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "86bfd164",
+      "style": {
+        "alignItems": "baseline",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "8px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "bd086005": {
+      "id": "bd086005",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-ellipsis lucide-more-horizontal\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><circle cx=\"12\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"19\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle><circle cx=\"5\" cy=\"12\" r=\"1\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></circle></svg>",
+      "name": "Icon",
+      "parent": "b4fc7da2",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "17px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "17px"
+      }
+    },
+    "bd31b9c6": {
+      "id": "bd31b9c6",
+      "index": "a1",
+      "kind": "text",
+      "name": "Nothing drawn yet.",
+      "parent": "36c5eabf",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontSize": "12px",
+        "height": "auto",
+        "lineHeight": "17.4px",
+        "margin": "8px 0px 16px",
+        "width": "291px"
+      },
+      "tag": "p",
+      "text": "Nothing drawn yet."
+    },
+    "bdbcdd33": {
+      "id": "bdbcdd33",
+      "index": "a5",
+      "kind": "frame",
+      "name": "Returns API operations",
+      "parent": "2459a0ec",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "left": "700px",
+        "overflow": "hidden",
+        "position": "absolute",
+        "top": "56px",
+        "width": "376px"
+      },
+      "tag": "div"
+    },
+    "be5b576a": {
+      "id": "be5b576a",
+      "index": "a0",
+      "kind": "text",
+      "name": "parcel-arch",
+      "parent": "dfacee3d",
+      "style": {
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontWeight": "600",
+        "margin": "0px"
+      },
+      "tag": "b",
+      "text": "parcel-arch"
+    },
+    "bea669d2": {
+      "id": "bea669d2",
+      "index": "a0",
+      "kind": "text",
+      "name": "preview",
+      "parent": "3c5bb63c",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "preview"
+    },
+    "bebfea4f": {
+      "id": "bebfea4f",
+      "index": "a0",
+      "kind": "text",
+      "name": "preview",
+      "parent": "28583aab",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "preview"
+    },
+    "becd7b2e": {
+      "id": "becd7b2e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Merchant dashboard",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Merchant dashboard"
+    },
+    "bed8b777": {
+      "id": "bed8b777",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "bc879598",
+      "style": {
+        "background": "#e6e9f5",
+        "borderRadius": "4px",
+        "color": "#34458a",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "POST"
+    },
+    "c07ab196": {
+      "id": "c07ab196",
+      "index": "a1",
+      "kind": "text",
+      "name": "Architecture",
+      "parent": "1f00df0b",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Architecture"
+    },
+    "c1a6d1e2": {
+      "id": "c1a6d1e2",
+      "index": "a4",
+      "kind": "frame",
+      "name": "div",
+      "parent": "21db706d",
+      "style": {
+        "display": "flex",
+        "flexWrap": "wrap",
+        "gap": "6px"
+      },
+      "tag": "div"
+    },
+    "c34271c1": {
+      "id": "c34271c1",
+      "index": "a7",
+      "kind": "frame",
+      "name": "Shippo",
+      "parent": "64c3940c",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "860px",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "300px",
+        "width": "210px"
+      },
+      "tag": "div"
+    },
+    "c40326d9": {
+      "id": "c40326d9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "bdbcdd33",
+      "style": {
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "height": "52px",
+        "padding": "8px 12px"
+      },
+      "tag": "div"
+    },
+    "c4c7243d": {
+      "id": "c4c7243d",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Level",
+      "parent": "f664b1f7",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "none",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "c5117435": {
+      "id": "c5117435",
+      "index": "a0",
+      "kind": "text",
+      "name": "What they do",
+      "parent": "5080519c",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "What they do"
+    },
+    "c51c2e35": {
+      "id": "c51c2e35",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "cb56f406",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "c5225360": {
+      "id": "c5225360",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "4a0b0510",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px 0px 0px 1231.41px"
+      },
+      "tag": "div"
+    },
+    "c79fc3f0": {
+      "id": "c79fc3f0",
+      "index": "a1",
+      "kind": "text",
+      "name": "Flows",
+      "parent": "f5265795",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Flows"
+    },
+    "c7debf0d": {
+      "id": "c7debf0d",
+      "index": "a2",
+      "kind": "text",
+      "name": "from Shippo",
+      "parent": "bc879598",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "from Shippo"
+    },
+    "c90ed560": {
+      "id": "c90ed560",
+      "index": "a2",
+      "kind": "text",
+      "name": "Shops on a merchant's st…",
+      "parent": "76cbbcfd",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "16px"
+      },
+      "tag": "span",
+      "text": "Shops on a merchant's store, sends items back"
+    },
+    "c94f22e2": {
+      "id": "c94f22e2",
+      "index": "a0",
+      "kind": "text",
+      "name": "GraphQL · Gateway",
+      "parent": "3d039162",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "GraphQL · Gateway"
+    },
+    "c9b49fd9": {
+      "id": "c9b49fd9",
+      "index": "a0",
+      "kind": "text",
+      "name": "Screens",
+      "parent": "376f7f4c",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Screens"
+    },
+    "cb56f406": {
+      "id": "cb56f406",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "d3e2723e",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "cb9e9690": {
+      "id": "cb9e9690",
+      "index": "a5",
+      "kind": "text",
+      "name": "Jobs",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Jobs"
+    },
+    "cc3c6c6b": {
+      "id": "cc3c6c6b",
+      "index": "a1",
+      "kind": "text",
+      "name": "Add",
+      "parent": "1dca5de6",
+      "style": {},
+      "tag": "span",
+      "text": "Add"
+    },
+    "cca6ea63": {
+      "id": "cca6ea63",
+      "index": "a0",
+      "kind": "text",
+      "name": "Method and path",
+      "parent": "6eddf8b6",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Method and path"
+    },
+    "cd02664c": {
+      "id": "cd02664c",
+      "index": "a1",
+      "kind": "text",
+      "name": "REST API",
+      "parent": "2b094215",
+      "style": {},
+      "tag": "span",
+      "text": "REST API"
+    },
+    "cd0d1437": {
+      "id": "cd0d1437",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "5342e114",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "ce358d7c": {
+      "id": "ce358d7c",
+      "index": "a4",
+      "kind": "text",
+      "name": "Text",
+      "parent": "68779c0c",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Text"
+    },
+    "cfa003de": {
+      "id": "cfa003de",
+      "index": "a5",
+      "kind": "frame",
+      "name": "Row",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "8px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "cfc0b436": {
+      "id": "cfc0b436",
+      "index": "a1",
+      "kind": "text",
+      "name": "Parcel returns",
+      "parent": "21db706d",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "lineHeight": "26px"
+      },
+      "tag": "b",
+      "text": "Parcel returns"
+    },
+    "d2637f93": {
+      "id": "d2637f93",
+      "index": "a2",
+      "kind": "text",
+      "name": "Return emails",
+      "parent": "94fac572",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px",
+        "lineHeight": "16px"
+      },
+      "tag": "span",
+      "text": "Return emails"
+    },
+    "d339f6a1": {
+      "id": "d339f6a1",
+      "index": "a2",
+      "kind": "text",
+      "name": "Label purchase, tracking",
+      "parent": "673d8f80",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Label purchase, tracking"
+    },
+    "d3e21e53": {
+      "id": "d3e21e53",
+      "index": "a0",
+      "kind": "text",
+      "name": "Called by",
+      "parent": "a12b97cd",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Called by"
+    },
+    "d3e2723e": {
+      "id": "d3e2723e",
+      "index": "a0",
+      "kind": "frame",
+      "name": "header",
+      "parent": "341e2d6f",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "#f6f6f4",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "bottom": "852px",
+        "display": "flex",
+        "gap": "8px",
+        "height": "48px",
+        "left": "0px",
+        "margin": "0px",
+        "padding": "0px 12px 0px 14px",
+        "position": "absolute",
+        "right": "0px",
+        "top": "0px",
+        "width": "1440px",
+        "zIndex": "7"
+      },
+      "tag": "header"
+    },
+    "d4943d11": {
+      "id": "d4943d11",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></svg>",
+      "name": "user",
+      "parent": "95fa1a28",
+      "style": {
+        "color": "#6b6b73",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "d4b73f3f": {
+      "id": "d4b73f3f",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "21cd70c9",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "d7b58569": {
+      "id": "d7b58569",
+      "index": "a5",
+      "kind": "text",
+      "name": "Proposals",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Proposals"
+    },
+    "d7e44d18": {
+      "id": "d7e44d18",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "18a0bcd4",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "d8bd1cfb": {
+      "id": "d8bd1cfb",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "c5225360",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "d8dea53b": {
+      "id": "d8dea53b",
+      "index": "a1",
+      "kind": "text",
+      "name": "Runtime",
+      "parent": "1521669e",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "0px none #18181b",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Runtime"
+    },
+    "da38b6b6": {
+      "id": "da38b6b6",
+      "index": "a1",
+      "kind": "text",
+      "name": "Refunds a return once th…",
+      "parent": "f974f8e9",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "fontSize": "12px",
+        "lineHeight": "17px",
+        "minHeight": "46px",
+        "padding": "5px 8px"
+      },
+      "tag": "span",
+      "text": "Refunds a return once the carrier has scanned the parcel."
+    },
+    "da3dd095": {
+      "id": "da3dd095",
+      "index": "a0",
+      "kind": "text",
+      "name": "Next.js app",
+      "parent": "e9ff9b4f",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "Next.js app"
+    },
+    "da764493": {
+      "id": "da764493",
+      "index": "a1",
+      "kind": "text",
+      "name": "staging",
+      "parent": "e2f80d11",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "staging"
+    },
+    "db77b535": {
+      "id": "db77b535",
+      "index": "a0",
+      "kind": "text",
+      "name": "returns",
+      "parent": "b57a6d96",
+      "style": {},
+      "tag": "span",
+      "text": "returns"
+    },
+    "db93fa32": {
+      "id": "db93fa32",
+      "index": "a0",
+      "kind": "text",
+      "name": "What it does",
+      "parent": "f974f8e9",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "What it does"
+    },
+    "dd7341c6": {
+      "id": "dd7341c6",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "95e250be",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "ddbe278d": {
+      "id": "ddbe278d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "button",
+      "parent": "af2f597d",
+      "style": {
+        "alignItems": "center",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "color": "#18181b",
+        "display": "inline-flex",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "gap": "5px",
+        "height": "28px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 12px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button"
+    },
+    "defc0efd": {
+      "id": "defc0efd",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "5342e114",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px 0px 0px 1231.41px"
+      },
+      "tag": "div"
+    },
+    "dfacee3d": {
+      "id": "dfacee3d",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "002374bf",
+      "style": {
+        "alignItems": "baseline",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "8px",
+        "lineHeight": "15.6px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "dfe38dcb": {
+      "id": "dfe38dcb",
+      "index": "a1",
+      "kind": "text",
+      "name": "Architecture",
+      "parent": "376f7f4c",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #18181b",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#18181b",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Architecture"
+    },
+    "e1399d1e": {
+      "id": "e1399d1e",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns/{id}/label",
+      "parent": "b99f8e50",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/returns/{id}/label"
+    },
+    "e2f80d11": {
+      "id": "e2f80d11",
+      "index": "a3",
+      "kind": "frame",
+      "name": "Environment",
+      "parent": "f664b1f7",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "none",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "e410f413": {
+      "id": "e410f413",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Architecture views",
+      "parent": "68779c0c",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "18px",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto"
+      },
+      "tag": "nav"
+    },
+    "e4219f52": {
+      "id": "e4219f52",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "68779c0c",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "0px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "e4c56120": {
+      "id": "e4c56120",
+      "index": "a1",
+      "kind": "text",
+      "name": "Shippo",
+      "parent": "c34271c1",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Shippo"
+    },
+    "e502f5c9": {
+      "id": "e502f5c9",
+      "index": "a2",
+      "kind": "text",
+      "name": "Software path",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Software path"
+    },
+    "e7143854": {
+      "id": "e7143854",
+      "index": "a1",
+      "kind": "text",
+      "name": "Label",
+      "parent": "39c0abfc",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "Label"
+    },
+    "e7b73023": {
+      "id": "e7b73023",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "5aedde24",
+      "style": {
+        "alignItems": "center",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "11px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "e8851743": {
+      "id": "e8851743",
+      "index": "a2",
+      "kind": "text",
+      "name": "Sees and refunds returns",
+      "parent": "b20df0c8",
+      "style": {
+        "color": "#6b6b73",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Sees and refunds returns"
+    },
+    "e9ff9b4f": {
+      "id": "e9ff9b4f",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Buyer portal",
+      "parent": "2459a0ec",
+      "style": {
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "boxSizing": "border-box",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "3px",
+        "left": "24px",
+        "overflow": "visible",
+        "padding": "8px 12px",
+        "position": "absolute",
+        "top": "100px",
+        "width": "188px"
+      },
+      "tag": "div"
+    },
+    "ea1d7c69": {
+      "id": "ea1d7c69",
+      "index": "a1",
+      "kind": "text",
+      "name": "/returns",
+      "parent": "4b9678e0",
+      "style": {
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "/returns"
+    },
+    "ea9048ed": {
+      "id": "ea9048ed",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "4a0b0510",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "4px",
+        "margin": "0px"
+      },
+      "tag": "div"
+    },
+    "ebaf2215": {
+      "id": "ebaf2215",
+      "index": "a1",
+      "kind": "text",
+      "name": "Return",
+      "parent": "879e233a",
+      "style": {
+        "color": "#6b6b73",
+        "fontFamily": "var(--mono)",
+        "fontSize": "11px",
+        "marginLeft": "auto"
+      },
+      "tag": "span",
+      "text": "Return"
+    },
+    "ebfa43c0": {
+      "id": "ebfa43c0",
+      "index": "a1",
+      "kind": "text",
+      "name": "REST",
+      "parent": "7bae2b97",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "REST"
+    },
+    "ec2abcb1": {
+      "id": "ec2abcb1",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z\"/><path d=\"M12 22V12\"/><polyline points=\"3.29 7 12 12 20.71 7\"/><path d=\"m7.5 4.27 9 5.15\"/></svg>",
+      "name": "package",
+      "parent": "2b094215",
+      "style": {
+        "color": "#6b6b73",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "ec59d399": {
+      "id": "ec59d399",
+      "index": "a2",
+      "kind": "frame",
+      "name": "Level",
+      "parent": "58839761",
+      "style": {
+        "backgroundColor": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderLeft": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "8px",
+        "borderRight": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "borderTop": "1px solid rgba(24, 24, 27, 0.1)",
+        "display": "flex",
+        "flexShrink": "0",
+        "gap": "2px",
+        "margin": "0px",
+        "padding": "2px"
+      },
+      "tag": "div"
+    },
+    "eca2ab66": {
+      "id": "eca2ab66",
+      "index": "a1",
+      "kind": "text",
+      "name": "field resolves to operat…",
+      "parent": "535e2dad",
+      "style": {},
+      "tag": "span",
+      "text": "field resolves to operation"
+    },
+    "ed758530": {
+      "id": "ed758530",
+      "index": "a0",
+      "kind": "frame",
+      "name": "00 · Map · Now",
+      "style": {
+        "width": "1440px"
+      }
+    },
+    "ee876c03": {
+      "id": "ee876c03",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "63ea9353",
+      "style": {
+        "alignItems": "center",
+        "color": "#18181b",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "6px"
+      },
+      "tag": "span"
+    },
+    "eeac6bf2": {
+      "id": "eeac6bf2",
+      "index": "a3",
+      "kind": "text",
+      "name": "Code",
+      "parent": "ec59d399",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Code"
+    },
+    "ef6c6673": {
+      "id": "ef6c6673",
+      "index": "a2",
+      "kind": "text",
+      "name": "Software path",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Software path"
+    },
+    "efaa2f6e": {
+      "id": "efaa2f6e",
+      "index": "a1",
+      "kind": "text",
+      "name": "Add",
+      "parent": "bb260e00",
+      "style": {},
+      "tag": "span",
+      "text": "Add"
+    },
+    "f02ea4b8": {
+      "id": "f02ea4b8",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "f664b1f7",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexBasis": "0%",
+        "flexGrow": "1",
+        "height": "0px",
+        "margin": "0px"
+      },
+      "tag": "span"
+    },
+    "f03d18b9": {
+      "id": "f03d18b9",
+      "index": "a0",
+      "kind": "text",
+      "name": "Screens",
+      "parent": "7655825f",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "28px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px"
+      },
+      "tag": "button",
+      "text": "Screens"
+    },
+    "f28f1a7a": {
+      "id": "f28f1a7a",
+      "index": "a1",
+      "kind": "text",
+      "name": "Buyer",
+      "parent": "76cbbcfd",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Buyer"
+    },
+    "f2d84126": {
+      "id": "f2d84126",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down\" aria-hidden=\"true\" fill-opacity=\"1\" stroke-opacity=\"1\"><path d=\"m6 9 6 6 6-6\" fill=\"none\" stroke=\"rgb(161, 161, 170)\" stroke-width=\"2px\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill-opacity=\"1\" stroke-opacity=\"1\"></path></svg>",
+      "name": "Icon",
+      "parent": "29d9abf0",
+      "style": {
+        "borderSpacing": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "height": "13px",
+        "margin": "0px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "13px"
+      }
+    },
+    "f2f8efeb": {
+      "id": "f2f8efeb",
+      "index": "a0",
+      "kind": "text",
+      "name": "System",
+      "parent": "c4c7243d",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "6px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "17.4px",
+        "margin": "0px",
+        "padding": "0px 10px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "System"
+    },
+    "f31b4eee": {
+      "id": "f31b4eee",
+      "index": "a1",
+      "kind": "text",
+      "name": "Add field",
+      "parent": "f6f188cf",
+      "style": {},
+      "tag": "span",
+      "text": "Add field"
+    },
+    "f393c9f0": {
+      "id": "f393c9f0",
+      "index": "a0",
+      "kind": "text",
+      "name": "REST · Returns API",
+      "parent": "c40326d9",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "REST · Returns API"
+    },
+    "f5265795": {
+      "id": "f5265795",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Architecture views",
+      "parent": "f664b1f7",
+      "style": {
+        "alignItems": "center",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "gap": "18px",
+        "margin": "0px",
+        "overflowX": "auto",
+        "overflowY": "auto"
+      },
+      "tag": "nav"
+    },
+    "f539ae6f": {
+      "id": "f539ae6f",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "a8b1d6bb",
+      "style": {
+        "alignItems": "center",
+        "background": "#ffffff",
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderRadius": "6px",
+        "boxSizing": "border-box",
+        "color": "#18181b",
+        "display": "flex",
+        "fontFamily": "var(--mono)",
+        "fontSize": "12px",
+        "justifyContent": "space-between",
+        "lineHeight": "17px",
+        "minHeight": "28px",
+        "padding": "5px 8px",
+        "width": "72px"
+      },
+      "tag": "span"
+    },
+    "f5773edb": {
+      "id": "f5773edb",
+      "index": "a1",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>",
+      "name": "chevron-down",
+      "parent": "6746aed4",
+      "style": {
+        "color": "#7c7c84",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "f664b1f7": {
+      "id": "f664b1f7",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Toolbar",
+      "parent": "4971ccea",
+      "style": {
+        "alignItems": "center",
+        "borderBottom": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderSpacing": "0px",
+        "display": "flex",
+        "flexShrink": "0",
+        "gap": "12px",
+        "height": "48px",
+        "margin": "0px",
+        "padding": "0px 24px",
+        "width": "1440px"
+      },
+      "tag": "div"
+    },
+    "f6f188cf": {
+      "id": "f6f188cf",
+      "index": "a8",
+      "kind": "frame",
+      "name": "div",
+      "parent": "39ff649d",
+      "style": {
+        "alignItems": "center",
+        "boxSizing": "border-box",
+        "color": "#7c7c84",
+        "display": "flex",
+        "fontSize": "12px",
+        "gap": "6px",
+        "height": "30px",
+        "padding": "0 12px"
+      },
+      "tag": "div"
+    },
+    "f7ae1501": {
+      "id": "f7ae1501",
+      "index": "a1",
+      "kind": "text",
+      "name": "webhook",
+      "parent": "3b9caa14",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px"
+      },
+      "tag": "span",
+      "text": "webhook"
+    },
+    "f80c1a8d": {
+      "id": "f80c1a8d",
+      "index": "a1",
+      "kind": "text",
+      "name": "Shippo",
+      "parent": "673d8f80",
+      "style": {
+        "color": "#18181b",
+        "fontSize": "13px",
+        "fontWeight": "600"
+      },
+      "tag": "b",
+      "text": "Shippo"
+    },
+    "f842919e": {
+      "id": "f842919e",
+      "index": "a4",
+      "kind": "text",
+      "name": "Mutation",
+      "parent": "39ff649d",
+      "style": {
+        "boxSizing": "border-box",
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "height": "26px",
+        "padding": "8px 12px 0"
+      },
+      "tag": "div",
+      "text": "Mutation"
+    },
+    "f9637281": {
+      "id": "f9637281",
+      "index": "a1",
+      "kind": "text",
+      "name": "People",
+      "parent": "64c3940c",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "11px",
+        "left": "40px",
+        "position": "absolute",
+        "top": "84px"
+      },
+      "tag": "span",
+      "text": "People"
+    },
+    "f974f8e9": {
+      "id": "f974f8e9",
+      "index": "a4",
+      "kind": "frame",
+      "name": "div",
+      "parent": "b54e0984",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "marginBottom": "12px"
+      },
+      "tag": "div"
+    },
+    "f9d54f25": {
+      "id": "f9d54f25",
+      "index": "a1",
+      "kind": "text",
+      "name": "(returnId: ID!)",
+      "parent": "8e6dc2a9",
+      "style": {
+        "color": "#7c7c84"
+      },
+      "tag": "span",
+      "text": "(returnId: ID!)"
+    },
+    "fa265fa9": {
+      "id": "fa265fa9",
+      "index": "a7",
+      "kind": "text",
+      "name": "Credit ledger",
+      "parent": "c1a6d1e2",
+      "style": {
+        "border": "1px solid rgba(24, 24, 27, 0.1)",
+        "borderColor": "#9b5de5",
+        "borderRadius": "6px",
+        "borderStyle": "dashed",
+        "color": "#7a3fc4",
+        "fontSize": "12px",
+        "padding": "2px 8px"
+      },
+      "tag": "span",
+      "text": "Credit ledger"
+    },
+    "fa296d32": {
+      "id": "fa296d32",
+      "index": "a2",
+      "kind": "text",
+      "name": " to Jobs",
+      "parent": "4a295721",
+      "style": {},
+      "tag": "span",
+      "text": " to Jobs"
+    },
+    "fa2d04cf": {
+      "id": "fa2d04cf",
+      "index": "a5",
+      "kind": "text",
+      "name": "Proposals",
+      "parent": "e410f413",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Proposals"
+    },
+    "fa36f168": {
+      "id": "fa36f168",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "18a0bcd4",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "flex",
+        "height": "0px",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "span"
+    },
+    "fa4f1c8d": {
+      "id": "fa4f1c8d",
+      "index": "a1",
+      "kind": "text",
+      "name": "Paste it into Claude Cod…",
+      "parent": "a24dfb28",
+      "style": {
+        "color": "#7c7c84",
+        "fontSize": "12px"
+      },
+      "tag": "span",
+      "text": "Paste it into Claude Code or Codex"
+    },
+    "fb7d3bee": {
+      "id": "fb7d3bee",
+      "index": "a5",
+      "kind": "frame",
+      "name": "div",
+      "parent": "f664b1f7",
+      "style": {
+        "borderSpacing": "0px",
+        "bottom": "0px",
+        "display": "block",
+        "flexShrink": "0",
+        "left": "0px",
+        "margin": "0px",
+        "position": "relative",
+        "right": "0px",
+        "top": "0px"
+      },
+      "tag": "div"
+    },
+    "fbb5b085": {
+      "id": "fbb5b085",
+      "index": "a0",
+      "kind": "text",
+      "name": "POST",
+      "parent": "03ad86c5",
+      "style": {
+        "background": "#e6e9f5",
+        "borderRadius": "4px",
+        "color": "#34458a",
+        "flexShrink": "0",
+        "fontFamily": "var(--mono)",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "padding": "1px 0",
+        "textAlign": "center",
+        "width": "40px"
+      },
+      "tag": "span",
+      "text": "POST"
+    },
+    "fc540a65": {
+      "id": "fc540a65",
+      "index": "a1",
+      "kind": "text",
+      "name": "Add operation",
+      "parent": "21bd8521",
+      "style": {},
+      "tag": "span",
+      "text": "Add operation"
+    },
+    "fd2b604f": {
+      "id": "fd2b604f",
+      "index": "a1",
+      "kind": "text",
+      "name": "Flows",
+      "parent": "79f53bd3",
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "border": "0px none #6b6b73",
+        "borderRadius": "0px",
+        "borderSpacing": "0px",
+        "color": "#6b6b73",
+        "display": "block",
+        "flexShrink": "0",
+        "fontFamily": "\"Instrument Sans\", -apple-system, \"system-ui\", system-ui, sans-serif",
+        "fontSize": "13px",
+        "height": "32px",
+        "lineHeight": "18.85px",
+        "margin": "0px",
+        "padding": "0px",
+        "whiteSpace": "nowrap"
+      },
+      "tag": "button",
+      "text": "Flows"
+    },
+    "fe3795b9": {
+      "id": "fe3795b9",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Actions",
+      "parent": "35adcc16",
+      "style": {
+        "display": "flex",
+        "gap": "8px",
+        "marginTop": "auto"
+      },
+      "tag": "div"
+    }
+  },
+  "pages": {
+    "2fa80ab6": {
+      "frame": "ed758530",
+      "id": "2fa80ab6",
+      "index": "a4V",
+      "name": "02 · Context",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ]
+    },
+    "c25d6b17": {
+      "frame": "69f75635",
+      "id": "c25d6b17",
+      "index": "a4",
+      "name": "01 · Empty",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ]
+    },
+    "f1325ab0": {
+      "frame": "73ae3548",
+      "id": "f1325ab0",
+      "index": "a4l",
+      "name": "03 · API",
+      "sources": [
+        {
+          "selector": "body",
+          "url": "http://127.0.0.1:62440/?file=%2Fdesigns%2Farch%2Fparcel-arch.buni&arch=map"
+        }
+      ]
+    }
+  },
+  "rules": {},
+  "sections": {},
+  "shared": {},
+  "tokens": {
+    "--font": "\"Instrument Sans\", system-ui, sans-serif",
+    "--grid": "#e6eae6",
+    "--ink": "#1a1f1c",
+    "--ink-2": "#4f5752",
+    "--ink-3": "#68706a",
+    "--line": "#d9ded9",
+    "--mono": "\"JetBrains Mono\", ui-monospace, monospace",
+    "--ok": "#2f6b4f",
+    "--paper": "#f6f7f5",
+    "--red": "#c0362c",
+    "--red-wash": "#fbecea",
+    "--sheet": "#ffffff"
+  }
+}

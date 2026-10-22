@@ -1,8 +1,12 @@
 // The architecture map: cards absolutely placed from the layout, one SVG of links under them, panned and zoomed.
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { Comment } from "buni/format/doc.ts";
+import { inkBox } from "buni/tools/ink.ts";
+import { StrokePaths } from "../tablet/Ink.tsx";
 import { Maximize, Minus, Plus } from "lucide-react";
 import type { Id } from "buni/format/doc.ts";
 import type { Card } from "./model.ts";
+import type { Notice } from "./checks.ts";
 import { between, boxesIn, moved, nearestBox, revealBy, snapMove, tabOrder, type Direction, type Guide, type MapBox, type MapStop, type MapFrame, type MapLayout, type Point, type RoutedLink } from "./layout.ts";
 
 /** How a flow shows the map: what is lit now, what stays shown, and whether the rest dims. */
@@ -20,7 +24,7 @@ export function stateOf(look: Look | undefined, ids: readonly Id[], context: rea
   return "dim";
 }
 
-const STROKE = { live: "rgba(255,255,255,0.35)", planned: "rgba(196,167,255,0.6)", deploy: "rgba(232,196,106,0.55)", added: "rgba(110,200,150,0.7)", removed: "rgba(255,138,128,0.7)", lit: "#8aaeff" } as const;
+const STROKE = { live: "rgb(var(--ink-rgb) / 0.35)", planned: "rgb(var(--arch-purple-rgb) / 0.6)", deploy: "rgb(var(--arch-gold-rgb) / 0.55)", added: "rgb(var(--arch-green-rgb) / 0.7)", removed: "rgb(var(--arch-red-rgb) / 0.7)", lit: "var(--arch-blue)" } as const;
 
 export function CardBody({ card, children }: { card: Card; children?: ReactNode }) {
   return (
@@ -55,7 +59,7 @@ function arrow(pts: readonly Point[]): string {
   return dx ? `${x},${y} ${x - 7 * dx},${y - 4} ${x - 7 * dx},${y + 4}` : `${x},${y} ${x - 4},${y - 7 * dy} ${x + 4},${y - 7 * dy}`;
 }
 
-const strokeOf = (l: RoutedLink, s: State) => (s === "lit" ? (l.tone === "deploy" ? "#e8c46a" : STROKE.lit) : STROKE[l.tone === "live" ? "live" : l.tone]);
+const strokeOf = (l: RoutedLink, s: State) => (s === "lit" ? (l.tone === "deploy" ? "var(--arch-gold)" : STROKE.lit) : STROKE[l.tone === "live" ? "live" : l.tone]);
 
 const ARROWS: Partial<Record<string, Direction>> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
 
@@ -88,9 +92,13 @@ export interface MapCanvasProps {
   onMove?: (to: ReadonlyMap<string, Point>, onto: MapFrame | undefined) => Promise<boolean>;
   /** Whether a card can go into a frame (lit while dragged over), why not (said beside the pointer), or neither. */
   dropRule?: (box: MapBox, frame: MapFrame) => { why?: string } | undefined;
+  /** The worst check on a card, by key: a pip, and the finding on hover. */
+  notices?: ReadonlyMap<string, Notice>;
+  /** Pen marks drawn on this map from a tablet, in its units, numbered where each starts. */
+  ink?: readonly Comment[];
 }
 
-export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, also, onToggle, onMarquee, badges, render, bubble, bottomInset = 0, footer, canLink, onLink, movable, onMove, dropRule }: MapCanvasProps) {
+export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, also, onToggle, onMarquee, badges, render, bubble, bottomInset = 0, footer, canLink, onLink, movable, onMove, dropRule, notices, ink }: MapCanvasProps) {
   const isPicked = (id: Id | undefined) => id !== undefined && (id === selected || also?.has(id) === true);
   const host = useRef<HTMLDivElement>(null);
   // Cards being dragged, drawn where they are going with the links routed round them; once dropped, held there until
@@ -152,7 +160,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
   // Dragging the background pans; a click on it (no drag) clears the selection.
   const drag = useRef<{ x: number; y: number; moved: boolean; pan: boolean; add: boolean; from: Point }>(undefined);
   const [marquee, setMarquee] = useState<{ from: Point; to: Point }>();
-  // Space held: dragging pans, as in most canvases (a drag on empty canvas otherwise picks with a marquee).
+  // Space held: dragging pans even over cards (empty canvas pans anyway; shift-drag there picks with a marquee).
   const space = useRef(false);
   useEffect(() => {
     const typing = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || (t instanceof HTMLElement && t.isContentEditable);
@@ -280,10 +288,13 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
       className={`arch-canvas${moving && !moving.done ? " dragging" : ""}`}
       onFocus={(e) => { if (e.target !== host.current && !e.target.closest(".arch-zoom")) reveal(e.target); }}
       onPointerDown={(e) => {
-        const panning = space.current || e.button === 1 || !onMarquee;
-        if (!panning && (e.target as Element).closest(".arch-card, .arch-zoom, .arch-hit, .arch-frame-title, .arch-link-label")) return;
+        // Dragging empty space moves the map, as a hand would; shift-drag picks several with a marquee (⌘ too adds them).
+        const onThing = (e.target as Element).closest(".arch-card, .arch-zoom, .arch-hit, .arch-frame-title, .arch-link-label") !== null;
+        const picking = e.shiftKey && onMarquee !== undefined && !space.current;
+        const panning = space.current || e.button === 1 || (!picking && !onThing);
+        if (!panning && onThing) return;
         if (panning && (e.target as Element).closest(".arch-zoom")) return;
-        drag.current = { x: e.clientX, y: e.clientY, moved: false, pan: panning, add: e.shiftKey, from: toPlane(e.clientX, e.clientY) };
+        drag.current = { x: e.clientX, y: e.clientY, moved: false, pan: panning, add: e.metaKey || e.ctrlKey, from: toPlane(e.clientX, e.clientY) };
         e.currentTarget.setPointerCapture(e.pointerId);
         if (panning) e.preventDefault();
       }}
@@ -318,8 +329,8 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
             const stroke = strokeOf(l, s);
             return (
               <g key={l.key} opacity={s === "dim" ? 0.25 : 1}>
-                <path d={`M${l.points.map((p) => p.join(" ")).join(" L")}`} fill="none" stroke={stroke} strokeWidth={s === "lit" ? 1.6 : 1.3} strokeDasharray={l.tone === "live" ? undefined : "4 4"} />
-                <polygon points={arrow(l.points)} fill={stroke} />
+                <path d={`M${l.points.map((p) => p.join(" ")).join(" L")}`} fill="none" style={{ stroke }} strokeWidth={s === "lit" ? 1.6 : 1.3} strokeDasharray={l.tone === "live" ? undefined : "4 4"} />
+                <polygon points={arrow(l.points)} style={{ fill: stroke }} />
                 {onSelect && l.ids[0] !== undefined && (
                   <path className="arch-hit" d={`M${l.points.map((p) => p.join(" ")).join(" L")}`} onClick={() => onSelect(l.ids[0])} />
                 )}
@@ -334,6 +345,12 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
             <path className="arch-drawing" d={`M${drawing.from.x + drawing.from.w} ${drawing.from.y + drawing.from.h / 2} L${drawing.x} ${drawing.y}`} />
           )}
         </svg>
+        {ink && ink.length > 0 && (
+          <svg className="arch-ink" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden>
+            {ink.map((c) => <g key={c.id} opacity={c.state === "addressed" ? 0.35 : 1}><StrokePaths strokes={c.ink?.strokes ?? []} /></g>)}
+            {ink.map((c, i) => { const b = inkBox(c.ink?.strokes ?? []); return <g key={`${c.id}-pin`} className={`ink-pin${c.state === "addressed" ? " answered" : ""}`}><circle cx={b.x} cy={b.y} r={11} /><text x={b.x} y={b.y + 4} textAnchor="middle">{c.state === "addressed" ? "✓" : i + 1}</text></g>; })}
+          </svg>
+        )}
         {layout.captions.map((c) => <span key={`${c.text} ${c.x} ${c.y}`} className="arch-caption" style={{ left: c.x, top: c.y }}>{c.text}</span>)}
         {/* Frames and cards in reading order, so Tab goes a frame's title, then its cards, then the next frame. */}
         {order.map((stop) => {
@@ -353,6 +370,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
           const s = stateOf(look, b.ids, b.context);
           const own = b.ids[0] ?? b.context?.[0];
           const badge = badges?.get(b.key);
+          const notice = notices?.get(b.key);
           return (
             <div
               key={b.key}
@@ -379,6 +397,7 @@ export function MapCanvas({ layout: given, fitKey, look, selected, onSelect, als
               }}
             >
               {render?.(b, s) ?? <CardBody card={b.card} />}
+              {notice && <span className={`arch-notice ${notice.severity}`} title={notice.title} />}
               {badge !== undefined && <span className="arch-badge">{badge}</span>}
               {onLink && canLink?.(b) && <span className="arch-handle" title="Drag onto another part to link them" onPointerDown={startLink(b)} onClick={(e) => e.stopPropagation()} />}
             </div>

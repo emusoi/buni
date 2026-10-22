@@ -321,11 +321,38 @@ export interface Post {
   at: string;
 }
 
+export const INK_TOOLS = ["pen", "highlighter"] as const;
+/** The architecture views a pen can draw on, besides pages: what the tablet shows. */
+export const INK_VIEWS = ["context", "system", "api"] as const;
+export type InkView = (typeof INK_VIEWS)[number];
+/** Where a mark on the architecture points when no part or link is under it. */
+export const ARCHITECTURE_ANCHOR = "architecture";
+/** Where a sketch of a new screen points: the Screens canvas, outside any page. */
+export const SCREENS_ANCHOR = "screens";
+
+/** One line drawn with a pen: its points are x, y pairs in the page's own pixels. */
+export interface Stroke {
+  tool: (typeof INK_TOOLS)[number];
+  /** A CSS colour: "#c8331f". */
+  color: string;
+  width: number;
+  points: number[];
+}
+
 export interface Comment extends SourceOwner {
   id: Id;
   node: Id;
   state: CommentState;
   posts: Post[];
+  /**
+   * A mark drawn with a pen (on a tablet): the strokes and where they were drawn, a page, an architecture view or a
+   * flow. On a page, `node` is the layer under it; on a view, the part or link under it (or ARCHITECTURE_ANCHOR), and
+   * its points are in that view's map units; on a flow, the frame of the screen under it (or of the flow's first), and
+   * its points are in the units the tablet lays the flow out in (src/editor/tablet-api.ts). A `sketch` is drawn on the
+   * Screens canvas outside any page, a screen to be built: `node` is SCREENS_ANCHOR and its points are the canvas's
+   * own, where pages sit (a page built from it is moved there).
+   */
+  ink?: { page?: Id; view?: InkView; flow?: Id; sketch?: true; strokes: Stroke[]; from?: string };
 }
 
 export type Rule = SourceOwner & (
@@ -366,7 +393,8 @@ export function statesOf(doc: Doc, screen: Page): Page[] {
 /** Whether a thing exists yet: planned and removed are a plan's proposal (merge_plan makes them so). */
 export const ARCH_STATUSES = ["live", "planned", "deprecated", "removed"] as const;
 export type ArchStatus = (typeof ARCH_STATUSES)[number];
-export const PART_KINDS = ["client", "service", "worker", "job", "store", "cache", "queue", "external", "edge"] as const;
+/** person: someone who uses the system (a buyer, a merchant), drawn on the Context level. */
+export const PART_KINDS = ["client", "service", "worker", "job", "store", "cache", "queue", "external", "edge", "person"] as const;
 export type PartKind = (typeof PART_KINDS)[number];
 export const LINK_KINDS = ["calls", "reads", "writes", "publishes", "subscribes", "routes"] as const;
 export const GROUP_KINDS = ["system", "domain", "team"] as const;
@@ -418,7 +446,50 @@ export interface Part extends Planned, SourceOwner {
   /** "RDS Postgres Multi-AZ": runs as a managed service, not a workload. */
   managed?: string;
   place?: MapPlaces;
+  /** The API it offers others, designed before it is built. */
+  api?: Api;
 }
+
+export const API_KINDS = ["rest", "graphql"] as const;
+export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+export const GRAPHQL_TYPES = ["query", "mutation", "subscription"] as const;
+
+/** A part's API: REST operations (openapi.yaml) or GraphQL fields (schema.graphql). */
+export interface Api {
+  kind: (typeof API_KINDS)[number];
+  /** The file it is written to: "openapi.yaml", "schema.graphql". */
+  spec?: string;
+  operations: Operation[];
+}
+
+/** One thing an API offers: a REST method and path, or a GraphQL field with its type. */
+export interface Operation {
+  /** Unique across the architecture's operations, so another can resolve to it. */
+  id: Id;
+  method?: (typeof HTTP_METHODS)[number];
+  /** "/returns/{id}/refund". */
+  path?: string;
+  type?: (typeof GRAPHQL_TYPES)[number];
+  /** "requestRefund(returnId: ID!)". */
+  field?: string;
+  /** "Refund", "[Return!]!". */
+  returns?: string;
+  about?: string;
+  /** "RefundRequest { amount, reason }". */
+  request?: string;
+  /** "202 Refund queued". */
+  responses?: string[];
+  /** The operation (on another part) this one is served by: a GraphQL field's REST call. */
+  resolves?: Id;
+}
+
+/** Every operation in the architecture, with the part that offers it. */
+export function operationsOf(arch: Architecture): { part: Part; op: Operation }[] {
+  return Object.values(arch.parts).flatMap((part) => (part.api?.operations ?? []).map((op) => ({ part, op })));
+}
+
+/** "POST /returns/{id}/refund" or "requestRefund(returnId: ID!)": how an operation reads. */
+export const operationLabel = (op: Operation): string => (op.field ?? `${op.method ?? "GET"} ${op.path ?? "/"}`);
 
 export interface ArchLink extends Planned {
   id: Id;

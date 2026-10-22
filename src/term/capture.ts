@@ -6,7 +6,7 @@ import { serializeDoc } from "../format/serialize.ts";
 import { fontFaces, renderPage } from "../tools/html.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
 import { Workspace } from "../tools/workspace.ts";
-import { captureWithBrowser, findBrowser } from "./chrome.ts";
+import { captureWithBrowser, findBrowser, type CaptureTarget } from "./chrome.ts";
 
 export interface CaptureDocument { source: string; page: string; revision: string; doc: Doc; owners: Record<string, string> }
 
@@ -25,9 +25,10 @@ export async function captureDocument(file: string, wanted: string): Promise<Cap
   return { source, page: page.id, revision, doc, owners };
 }
 
-/** A native viewer gets the exact document and bounds that produced its PNG. */
-export async function capturePage(file: string, wanted: string, out: string): Promise<void> {
-  const snap = await captureDocument(file, wanted);
+/** A page drawn at 1×, with how tall it came out and where each of its layers sits: what a native viewer draws. */
+export interface Shot { png: Uint8Array; width: number; height: number; targets: CaptureTarget[] }
+
+export async function captureShot(snap: CaptureDocument): Promise<Shot> {
   const browser = findBrowser();
   if (!browser) throw new Error("Preview needs Chrome, Chromium or Edge; set BUNI_CHROME to its executable.");
   const { html, css } = renderPage(snap.doc, snap.page);
@@ -36,8 +37,14 @@ export async function capturePage(file: string, wanted: string, out: string): Pr
     dir: dirname(snap.source), width,
     html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${fontFaces(snap.doc, embeddedFont)}${css}</style></head><body>${html}</body></html>`,
   });
-  await writeFile(out, drawn.png);
-  const targets = drawn.targets.filter((t) => snap.doc.nodes[t.id] !== undefined);
-  const revision = createHash("sha256").update(snap.revision).update(drawn.png).digest("hex").slice(0, 16);
-  await writeFile(`${out}.json`, JSON.stringify({ ...snap, revision, width, height: drawn.height, targets }));
+  return { png: drawn.png, width, height: drawn.height, targets: drawn.targets.filter((t) => snap.doc.nodes[t.id] !== undefined) };
+}
+
+/** A native viewer gets the exact document and bounds that produced its PNG. */
+export async function capturePage(file: string, wanted: string, out: string): Promise<void> {
+  const snap = await captureDocument(file, wanted);
+  const shot = await captureShot(snap);
+  await writeFile(out, shot.png);
+  const revision = createHash("sha256").update(snap.revision).update(shot.png).digest("hex").slice(0, 16);
+  await writeFile(`${out}.json`, JSON.stringify({ ...snap, revision, width: shot.width, height: shot.height, targets: shot.targets }));
 }

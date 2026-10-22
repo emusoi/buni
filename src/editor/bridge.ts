@@ -55,9 +55,10 @@ function applyTheme(t: ThemeChoice): void {
 function savedTheme(): ThemeChoice {
   try {
     const t = localStorage.getItem("buni-theme");
-    return t === "light" || t === "dark" ? t : "system";
+    // Light until the person picks Dark or System.
+    return t === "light" || t === "dark" || t === "system" ? t : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 applyTheme(savedTheme());
@@ -298,6 +299,16 @@ const api: BuniApi = {
   skills: () => call("skills"),
   skill: (name) => call("skill", name),
   inspiration: () => call("inspiration"),
+  sendMarks: (page) => call("sendMarks", page),
+  sendViewMarks: (view) => call("sendViewMarks", view),
+  // A hosted buni has no cable: tablets plug into the Mac that runs buni open.
+  ...(accounts ? {} : {
+    tablets: () => call("tablets"),
+    openOnTablet: (serial: string) => call("openOnTablet", serial),
+    installTabletApp: (serial: string) => call("installTabletApp", serial),
+    devices: () => call("devices"),
+    forgetDevice: (id: string) => call("forgetDevice", id),
+  }),
 };
 window.buni = api;
 

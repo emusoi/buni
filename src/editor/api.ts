@@ -23,13 +23,15 @@ export interface SettleResult {
 export const EDIT_TOOLS = [
   "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
   "make_component", "create_component", "place_component", "override", "move_component",
-  "write_section", "delete_section", "comment", "merge_components", "delete_component", "rename_component",
+  "write_section", "delete_section", "comment", "mark", "merge_components", "delete_component", "rename_component",
   "set_motion", "connect", "disconnect", "set_flow", "set_screen",
   // Architecture mode: a person writes the architecture with the same tools agents use.
-  "merge_plan", "delete_architecture", "set_part", "link_parts", "unlink", "set_group", "set_build", "set_environment", "set_cluster",
+  "merge_plan", "delete_architecture", "set_part", "link_parts", "unlink", "set_group", "set_build", "set_api", "set_operation", "set_environment", "set_cluster",
   "set_namespace", "set_workload", "set_release", "set_migration", "set_plan", "set_stage", "set_play", "place_architecture",
   // The architecture as text, read and written whole.
   "read_architecture_text", "write_architecture_text",
+  // API contracts written out as drafts to build from.
+  "export_architecture",
 ] as const;
 export type EditTool = (typeof EDIT_TOOLS)[number];
 
@@ -119,6 +121,19 @@ export interface BuniApi {
   skill?(name: string): Promise<string | undefined>;
   /** The inspiration libraries' patterns (buni's and the person's own), where the host can read them. */
   inspiration?(): Promise<PatternInfo[]>;
+  /** Tablets on a USB cable to this Mac; only buni open on this machine offers them. */
+  tablets?(): Promise<import("./usb.ts").WiredList>;
+  /** Opens the design in Chrome on a tablet on the cable, by its serial. */
+  openOnTablet?(serial: string): Promise<{ name: string; locked?: true } | { error: string }>;
+  /** Builds the buni app and installs it on a tablet on the cable. */
+  installTabletApp?(serial: string): Promise<{ name: string } | { error: string }>;
+  /** Tablet browsers that came in with a code. */
+  devices?(): Promise<import("./usb.ts").Device[]>;
+  forgetDevice?(id: string): Promise<void>;
+  /** A page's pen marks as a request for the coding agent, put on the Mac's clipboard. */
+  sendMarks?(page: Id): Promise<{ count: number; copied: boolean; request: string }>;
+  /** An architecture view's pen marks as a request for a plan, put on the Mac's clipboard. */
+  sendViewMarks?(view: import("buni/format/doc.ts").InkView): Promise<{ count: number; copied: boolean; request: string }>;
 }
 
 /** A pattern in an inspiration library, as a list shows it; use_inspiration takes its file. */

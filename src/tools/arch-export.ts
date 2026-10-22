@@ -1,11 +1,11 @@
 // The architecture as draft files to start the real ones from: Kubernetes manifests per workload, Argo CD
 // Applications, GitHub Actions workflows and a Markdown brief. Drafts: every file says so, and a person reviews them
 // before anything is applied. YAML comes from yaml.ts's small emitter.
-import { architectureOf, k8sName, workloadName, type Architecture, type Cluster, type Doc, type Environment, type Id, type Namespace, type Part, type Release, type Workload } from "../format/doc.ts";
+import { architectureOf, k8sName, workloadName, type Api, type Operation, type Architecture, type Cluster, type Doc, type Environment, type Id, type Namespace, type Part, type Release, type Workload } from "../format/doc.ts";
 import { ToolError } from "./kit.ts";
 import { filled, yamlLines, type YamlMap } from "./yaml.ts";
 
-export const EXPORT_FORMATS = ["manifests", "argocd", "ci", "brief"] as const;
+export const EXPORT_FORMATS = ["manifests", "argocd", "ci", "brief", "openapi", "graphql"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 export const DRAFT = "Draft from buni — review before applying.";
 
@@ -358,6 +358,65 @@ function ci(arch: Architecture, envs: readonly Environment[]): Map<string, strin
   return files;
 }
 
+// ---- API contracts: an openapi.yaml per REST part, a schema.graphql per GraphQL part. ----
+
+const apiParts = (arch: Architecture, kind: Api["kind"]) => Object.values(arch.parts).filter((p) => p.api?.kind === kind && p.api.operations.length).sort(byId);
+const specPath = (part: Part, fallback: string) => `${k8sName(part.name) || part.id}/${part.api?.spec?.split("/").pop() || fallback}`;
+
+/** "202 Refund queued" as an OpenAPI response; a line with no status code is a 200. */
+function response(line: string): [string, YamlMap] {
+  const m = /^\s*([1-5]\d\d|default)\b\s*(.*)$/.exec(line);
+  return m ? [m[1]!, { description: m[2] || "OK" }] : ["200", { description: line.trim() || "OK" }];
+}
+
+function openapi(arch: Architecture): Map<string, string> {
+  const files = new Map<string, string>();
+  for (const part of apiParts(arch, "rest")) {
+    const paths: Record<string, Record<string, YamlMap>> = {};
+    for (const op of part.api!.operations) {
+      const method = (op.method ?? "GET").toLowerCase();
+      const at = (paths[op.path ?? "/"] ??= {});
+      const params = [...(op.path ?? "").matchAll(/\{([^}]+)\}/g)].map((m) => ({ name: m[1]!, in: "path", required: true, schema: { type: "string" } }));
+      at[method] = {
+        operationId: op.id,
+        summary: op.about,
+        parameters: params.length ? params : undefined,
+        requestBody: op.request ? { description: op.request, content: { "application/json": { schema: { type: "object" } } } } : undefined,
+        responses: Object.fromEntries((op.responses?.length ? op.responses : ["200 OK"]).map(response)),
+      };
+    }
+    files.set(specPath(part, "openapi.yaml"), yamlFile([
+      `${part.name}'s REST API as designed${part.about ? `: ${part.about.replace(/\.$/, "")}` : ""}.`,
+      "Request and response bodies are the design's words; give each its schema.",
+    ], [{ value: { openapi: "3.1.0", info: { title: part.name, version: "0.1.0", description: part.about }, paths } }]));
+  }
+  return files;
+}
+
+const BUILT_IN = new Set(["ID", "String", "Int", "Float", "Boolean"]);
+function graphql(arch: Architecture): Map<string, string> {
+  const files = new Map<string, string>();
+  for (const part of apiParts(arch, "graphql")) {
+    const ops = part.api!.operations;
+    const named = new Set<string>();
+    const line = (op: Operation) => {
+      const field = op.field ?? op.id;
+      const typed = op.returns ? `${field}: ${op.returns}` : /\)\s*:/.test(field) || (!field.includes("(") && field.includes(":")) ? field : `${field}: String`;
+      // Type names stand after a colon, maybe inside a list: "(id: ID!): [Return!]!".
+      for (const m of typed.matchAll(/:\s*\[?\s*([A-Z][A-Za-z0-9_]*)/g)) if (!BUILT_IN.has(m[1]!)) named.add(m[1]!);
+      const said = [op.about?.replace(/"""/g, "'"), op.resolves ? `served by ${op.resolves}` : undefined].filter(Boolean).join(" · ");
+      return [...(said ? [`  """${said}"""`] : []), `  ${typed}`];
+    };
+    const blocks = (["query", "mutation", "subscription"] as const).flatMap((t) => {
+      const here = ops.filter((o) => (o.type ?? "query") === t);
+      return here.length ? [`type ${t[0]!.toUpperCase()}${t.slice(1)} {\n${here.flatMap(line).join("\n")}\n}`] : [];
+    });
+    const head = [DRAFT, `${part.name}'s GraphQL schema as designed${part.about ? `: ${part.about.replace(/\.$/, "")}` : ""}.`, ...(named.size ? [`Define these types: ${[...named].sort().join(", ")}.`] : [])];
+    files.set(specPath(part, "schema.graphql"), `${head.map((l) => `# ${l}`).join("\n")}\n\n${blocks.join("\n\n")}\n`);
+  }
+  return files;
+}
+
 /**
  * The architecture as draft files, by path inside the export folder. `brief` is read_architecture's text (passed in:
  * the brief lives with the tools, which use this file).
@@ -369,6 +428,8 @@ export function exportArchitecture(doc: Doc, format: ExportFormat, environment: 
     case "manifests": return manifests(arch, envs);
     case "argocd": return argocd(arch, envs);
     case "ci": return ci(arch, envs);
+    case "openapi": return openapi(arch);
+    case "graphql": return graphql(arch);
     case "brief": return new Map([["architecture.md", `<!-- ${DRAFT} -->\n# Architecture${environment === undefined ? "" : ` · ${envs[0]?.name}`}\n\n${brief()}\n`]]);
   }
 }

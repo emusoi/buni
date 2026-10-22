@@ -2,24 +2,30 @@
 // place: + Add, the inspector's fields, links drawn between cards, delete. Every change is a call to the same tools
 // agents use, so undo, live sync and the format's checks apply to a person's edits too.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { markKind, marksOnView, markTarget } from "buni/tools/ink.ts";
 import { Plus } from "lucide-react";
 import { LINK_KINDS, MAP_LEVELS, archCollectionOf, architectureOf, type Architecture, type Doc, type Id } from "buni/format/doc.ts";
 import { architectureBrief } from "buni/tools/areas/architecture.ts";
+import { checkArchitecture, type Finding } from "buni/tools/arch-check.ts";
+import { EDIT_TOOLS } from "../../api.ts";
 import { canaryAt, environmentOf, environmentsInOrder } from "./model.ts";
 import { layoutFor, type Level, type MapBox } from "./layout.ts";
 import { ADDABLE, addFor, dropOn, linkTargets, type AddContext, type Addable } from "./edit.ts";
 import { useDismiss } from "../useDismiss.ts";
 import { TextPane } from "./TextPane.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
+import { findingsAbout, noticesFor, placeFor } from "./checks.ts";
+import { CheckMenu } from "./Checks.tsx";
 import { ArchInspector, plansAbout, selectionOf } from "./Inspector.tsx";
 import { DeployPath, SoftwarePath } from "./Paths.tsx";
 import { Kubernetes } from "./Kubernetes.tsx";
 import { Proposals } from "./Proposals.tsx";
 import { CANARY_HEIGHT, Flows, levelFor } from "./Flows.tsx";
+import { ApiView } from "./Api.tsx";
 
-export const ARCH_VIEWS = [["map", "Map"], ["flows", "Flows"], ["software", "Software path"], ["deploy", "Deploy path"], ["kubernetes", "Kubernetes"], ["proposals", "Proposals"]] as const;
+export const ARCH_VIEWS = [["map", "Map"], ["api", "API"], ["flows", "Flows"], ["software", "Software path"], ["deploy", "Deploy path"], ["kubernetes", "Kubernetes"], ["proposals", "Proposals"]] as const;
 export type ArchView = (typeof ARCH_VIEWS)[number][0];
-const LEVELS: [Level, string][] = [["system", "System"], ["runtime", "Runtime"], ["code", "Code"]];
+const LEVELS: [Level, string][] = [["context", "Context"], ["system", "System"], ["runtime", "Runtime"], ["code", "Code"]];
 
 /** Where a link opens architecture mode: ?arch=map&level=runtime&env=prod&select=returns-api, ?arch=flows&play=…&step=5. */
 export function archParams(search: string): { view: ArchView; level?: Level; env?: Id; select?: Id; play?: Id; step?: number; plan?: Id } | undefined {
@@ -90,6 +96,14 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   const [planId, setPlanId] = useState<Id | undefined>(start?.plan);
   const startPlay = playId ? arch.plays[playId] : Object.values(arch.plays).sort((a, b) => a.name.localeCompare(b.name))[0];
   const [level, setLevel] = useState<Level>(start?.level ?? (start?.view === "flows" && startPlay ? levelFor(startPlay.kind) : "runtime"));
+  // What a tablet drew on this level (context and system are the levels it draws on), shown over the map.
+  const inkHere = useMemo(() => (level === "context" || level === "system" ? marksOnView(doc, level) : []), [doc, level]);
+  const askForPlan = async () => {
+    const r = await window.buni.sendViewMarks?.(level === "context" ? "context" : "system");
+    if (!r?.count) return onToast("No marks on this level yet");
+    if (!r.copied) await navigator.clipboard.writeText(r.request);
+    onToast(`Copied ${r.count} mark${r.count === 1 ? "" : "s"} for Claude; paste into Claude Code or Codex. The plan shows up here and on the tablet.`);
+  };
   const playOn = (id: Id) => {
     const p = arch.plays[id];
     if (!p) return;
@@ -115,10 +129,24 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   };
   // The architecture as text, in a pane beside the view; what is selected keeps its inspector beside it.
   const [text, setText] = useState(false);
+  // What the system has to do, written before anything is drawn: the brief the empty map copies for an agent.
+  const [brief, setBrief] = useState("");
   const textPane = text && <TextPane version={doc.architecture} onClose={() => setText(false)} onToast={onToast} />;
   // Selected along with `selected` (the one the inspector is about): shift-click and the marquee add to it.
   const [more, setMore] = useState<Id[]>([]);
   const select = useCallback((id: Id | undefined) => { setSelected(id); setMore([]); setFresh(undefined); setDeleting(false); }, []);
+  // A finding opens the view that draws its thing, then the inspector.
+  const openFinding = (id: Id) => {
+    const place = placeFor(arch, id);
+    if (place) {
+      setView(place.view);
+      if (place.level) setLevel(place.level);
+      if (place.env) setEnvId(place.env);
+      if (place.plan) setPlanId(place.plan);
+      if (place.play) playOn(place.play);
+    }
+    select(id);
+  };
   const toggle = (id: Id) => {
     const all = [...more, ...(selected ? [selected] : [])];
     const next = all.includes(id) ? all.filter((x) => x !== id) : [...all, id];
@@ -136,10 +164,19 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   };
   const env = environmentOf(arch, envId);
   const envs = environmentsInOrder(arch);
+  const findings = useMemo(() => checkArchitecture(doc), [doc]);
+  const fix = async (f: Finding) => {
+    const tool = f.apply && EDIT_TOOLS.find((t) => t === f.apply!.tool);
+    if (!tool || !f.apply) return;
+    const r = await window.buni.edit(tool, f.apply.args);
+    if (!r.ok) onToast(r.reply);
+    else if (r.saved && r.saved !== f.id) select(r.saved);
+  };
   // A release's canary split is drawn in its workload's card, which takes the room for it.
   const shownPlay = playId ? arch.plays[playId] : startPlay;
   const canary = view === "flows" && shownPlay?.kind === "release" ? canaryAt(arch, shownPlay, step) : undefined;
   const layout = useMemo(() => layoutFor(arch, level, env, canary ? new Map([[canary.workload, CANARY_HEIGHT]]) : undefined), [arch, level, env, canary?.workload]);
+  const notices = useMemo(() => noticesFor(arch, layout.boxes, findings, env?.id), [arch, layout, findings, env?.id]);
   // A selection the architecture no longer has (an agent deleted it, or undo took it back) goes; one just made waits for it.
   useEffect(() => { if (selected && selected !== fresh && !archCollectionOf(arch, selected)) select(undefined); }, [arch, selected, fresh]);
   useEffect(() => { if (more.some((id) => !archCollectionOf(arch, id))) setMore((m) => m.filter((id) => archCollectionOf(arch, id))); }, [arch, more]);
@@ -148,7 +185,7 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     const onKey = (e: KeyboardEvent) => {
       const el = e.target;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el instanceof HTMLElement && el.isContentEditable)) return;
-      if (linking || picking) return;
+      if (linking || picking || document.querySelector(".arch-menu")) return;
       if ((e.key === "Backspace" || e.key === "Delete") && selected && archCollectionOf(arch, selected)) { e.preventDefault(); setDeleting(true); }
       else if (e.key.toLowerCase() === "l" && !e.metaKey && !e.ctrlKey && !e.altKey && linkFrom) { e.preventDefault(); pickLink(); }
       else if (e.key === "Escape") { if (deleting) setDeleting(false); else if (selected) select(undefined); }
@@ -181,16 +218,21 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   };
 
   if (!Object.keys(arch.parts).length) {
+    const prompt = `Design the system for this brief in ${name}, with buni's architecture tools (buni skills architecture): who uses it (person parts) and the outside services it relies on, its parts and how they link, and the API between them (set_api, set_operation). Keep it a design: nothing is built yet.\n\nBrief: ${brief.trim() || "(write what the system has to do)"}`;
     return (
       <div className={`arch arch-empty${text ? " with-text" : ""}`}>
         <div>
-          <b>No architecture yet</b>
-          <p>How the app behind these screens is built and shipped: its parts, where their code lives, how each is built, how it ships to Kubernetes and what it runs as.</p>
+          <b>Design the system before you build it</b>
+          <p>Write what it has to do. Claude Code or Codex drafts who uses it, the parts inside and the API between them here; you change what it got wrong.</p>
+          <textarea className="arch-input arch-brief" aria-label="Brief" rows={5} value={brief} onChange={(e) => setBrief(e.target.value)}
+            placeholder="Buyers on a Shopify store return items. They print a carrier label and get refunded once the carrier scans the parcel. Merchants see every return and can refund by hand." />
           <p className="arch-empty-actions">
-            <button type="button" className="arch-btn primary" onClick={() => void add("parts")}>Add your first part</button>
+            <button type="button" className="arch-btn primary" disabled={!brief.trim()}
+              onClick={() => void navigator.clipboard.writeText(prompt).then(() => onToast("Copied; paste it into Claude Code or Codex."), () => onToast("Couldn't copy the brief."))}>Copy brief for Claude</button>
+            <button type="button" className="arch-btn" onClick={() => void add("parts")}>Or add the first part yourself</button>
             <button type="button" className="arch-btn" aria-pressed={text} onClick={() => setText((t) => !t)}>Write it as text</button>
           </p>
-          <p>Or ask your coding agent to describe it. It has the architecture tools (<code>set_part</code>, <code>link_parts</code>, <code>set_build</code>, <code>set_environment</code>, <code>set_cluster</code>, <code>set_workload</code>, <code>set_release</code>, <code>set_plan</code>…). From a terminal, <code>buni arch {name}</code> prints what is there.</p>
+          <p>From a terminal, <code>buni arch {name}</code> prints what is there.</p>
         </div>
         {textPane}
       </div>
@@ -206,12 +248,12 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
     onToast(r.reply);
   };
   const copyBrief = () => {
-    const text = architectureBrief(doc, { level, ...(env ? { environment: env.id } : {}), ...(selected && archCollectionOf(arch, selected) ? { focus: selected } : {}) });
+    const text = architectureBrief(doc, { level: level === "context" ? "system" : level, ...(env ? { environment: env.id } : {}), ...(selected && archCollectionOf(arch, selected) ? { focus: selected } : {}) });
     void navigator.clipboard.writeText(text).then(() => onToast("Copied the brief; paste it to Claude or any agent."), () => onToast("Couldn't copy the brief."));
   };
   const { part } = selected && archCollectionOf(arch, selected) ? selectionOf(arch, selected, env?.id) : {};
   const group = Object.values(arch.groups)[0];
-  const crumbs = [name.replace(/\.buni$/, ""), ...(level === "system" ? [] : [env?.name ?? ""]), ...(level === "runtime" && env?.cluster ? [arch.clusters[env.cluster]?.name ?? ""] : []), ...(level === "system" && group ? [group.name] : [])];
+  const crumbs = [name.replace(/\.buni$/, ""), ...(level === "system" || level === "context" ? [] : [env?.name ?? ""]), ...(level === "runtime" && env?.cluster ? [arch.clusters[env.cluster]?.name ?? ""] : []), ...(level === "system" && group ? [group.name] : [])];
   const inspector = (onClose?: () => void) => (
     <ArchInspector
       arch={arch}
@@ -222,12 +264,33 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
       onSelect={select}
       deleting={deleting}
       onDeleting={setDeleting}
+      findings={selected && more.length === 0 ? findingsAbout(arch, selected, findings, env?.id) : []}
+      onFix={fix}
       {...(onClose ? { onClose } : {})}
-      empty={group ? (
+      empty={inkHere.length ? (
+        <>
+          <span className="arch-lbl">From the tablet</span>
+          <b className="arch-inspector-name">{inkHere.length} mark{inkHere.length === 1 ? "" : "s"} on the {level} map</b>
+          <p className="arch-about">Drawn live on the tablet. The words are in the picture; Claude reads them there and answers with a plan you accept here or on the tablet.</p>
+          <ol className="marks-list">
+            {inkHere.map((c, i) => (
+              <li key={c.id}>
+                <span className="marks-n">{c.state === "addressed" ? "✓" : i + 1}</span>
+                <button type="button" className="marks-text" onClick={() => arch.parts[c.node] && select(c.node)}>
+                  <span>{c.posts.at(-1)?.body}</span>
+                  <span className="marks-where">{markKind(c.ink?.strokes ?? [])} · <b>{markTarget(doc, c)}</b></span>
+                </button>
+                <button type="button" className="icon-btn marks-erase" title="Erase mark" aria-label={`Erase mark ${i + 1}`} onClick={() => void window.buni.edit("mark", { remove: c.id })}>×</button>
+              </li>
+            ))}
+          </ol>
+          <div className="arch-actions"><button type="button" className="arch-btn primary" onClick={() => void askForPlan()}>Ask Claude for a plan</button></div>
+        </>
+      ) : group ? (
         <>
           <b className="arch-inspector-name">{group.name}</b>
           <p className="arch-about">{Object.values(arch.parts).filter((p) => p.group === group.id).map((p) => p.name).join(", ")}.</p>
-          <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as. Drag a card to move it, or from its right edge onto another to link them. Drag on empty space to pick several (shift adds); hold space and drag to pan; ⌘-scroll zooms.</p>
+          <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as. Drag a card to move it, or from its right edge onto another to link them. Drag empty space to move around; shift-drag picks several (⌘ adds); pinch or ⌘-scroll zooms.</p>
         </>
       ) : <p className="arch-about">Click a part to see and change how it is built, how it ships and what it runs as.</p>}
       actions={<>
@@ -252,34 +315,54 @@ export function ArchitectureMode({ doc, name, onToast }: { doc: Doc; name: strin
   return (
     <div className="arch">
       <div className="arch-views">
-        <nav className="arch-tabs" aria-label="Architecture views">
-          {ARCH_VIEWS.map(([v, label]) => (
-            <button key={v} type="button" className={v === view ? "on" : ""} aria-current={v === view ? "page" : undefined} onClick={() => setView(v)}>{label}</button>
-          ))}
-        </nav>
-        <span className="grow" />
-        {view === "map" && arranged && <button type="button" className="arch-btn" onClick={() => void tidy()} title="Put every card on this level back where the layout puts it">Tidy</button>}
-        {(view === "map" || view === "flows") && <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />}
-        {envs.length > 0 && view !== "proposals" && <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />}
-        <button type="button" className={`arch-btn${text ? " on" : ""}`} aria-pressed={text} onClick={() => setText((t) => !t)} title="The whole architecture as YAML, to read and write">Text</button>
-        <AddMenu arch={arch} view={view} ctx={ctx} onAdd={(what) => void add(what)} />
+        <div className="arch-views-row">
+          <span className="arch-group-label">View</span>
+          <nav className="arch-tabs" aria-label="Architecture views">
+            {ARCH_VIEWS.map(([v, label]) => (
+              <button key={v} type="button" className={v === view ? "on" : ""} aria-current={v === view ? "page" : undefined} onClick={() => setView(v)}>{label}</button>
+            ))}
+          </nav>
+        </div>
+        <div className="arch-views-row">
+          {(view === "map" || view === "flows") && (
+            <div className="arch-group">
+              <span className="arch-group-label">Level</span>
+              <Segmented label="Level" options={LEVELS} value={level} onChange={setLevel} />
+            </div>
+          )}
+          {envs.length > 0 && view !== "proposals" && view !== "api" && !(view === "map" && level === "context") && (
+            <div className="arch-group">
+              <span className="arch-group-label">Environment</span>
+              <Segmented label="Environment" options={envs.map((e) => [e.id, e.name] as const)} value={env?.id ?? ""} onChange={setEnvId} />
+            </div>
+          )}
+          <div className="arch-tools">
+            {view === "map" && arranged && <button type="button" className="arch-btn" onClick={() => void tidy()} title="Put every card on this level back where the layout puts it">Tidy</button>}
+            {findings.length > 0 && <CheckMenu arch={arch} findings={findings} onSelect={openFinding} />}
+            <button type="button" className={`arch-btn${text ? " on" : ""}`} aria-pressed={text} onClick={() => setText((t) => !t)} title="The whole architecture as YAML, to read and write">Text</button>
+            <AddMenu arch={arch} view={view} ctx={ctx} onAdd={(what) => void add(what)} />
+          </div>
+        </div>
       </div>
       <div className="arch-body">
-        {view === "software" ? <><SoftwarePath arch={arch} env={env} onSee={setView} onSelect={select} onToast={onToast} />{aside}</>
+        {view === "api" ? <><ApiView arch={arch} file={name} select={start?.select} onToast={onToast} />{textPane}</>
+        : view === "software" ? <><SoftwarePath arch={arch} env={env} onSee={setView} onSelect={select} onToast={onToast} />{aside}</>
         : view === "deploy" ? <><DeployPath arch={arch} env={env} onSelect={select} onToast={onToast} />{aside}</>
         : view === "kubernetes" ? <><Kubernetes arch={arch} env={env} onSelect={select} />{aside}</>
         : view === "proposals" ? <><Proposals arch={arch} plan={planId} onPlan={setPlanId} onToast={onToast} onSelect={select} />{aside}</>
         : view === "flows" ? (
-          <><Flows arch={arch} layout={layout} level={level} env={env} play={playId} step={step} onPlay={playOn} onStep={setStep} onSelect={select} />{aside}</>
+          <><Flows arch={arch} layout={layout} level={level} env={env} play={playId} step={step} onPlay={playOn} onStep={setStep} onSelect={select} notices={notices} />{aside}</>
         ) : <>
         <MapCanvas
           layout={layout}
           fitKey={`${level} ${env?.id}`}
+          ink={inkHere}
           selected={selected}
           also={new Set(more)}
           onToggle={toggle}
           onMarquee={pickMany}
           onSelect={select}
+          notices={notices}
           canLink={(b) => partOfBox(arch, b) !== undefined}
           onLink={(from, to, at) => {
             const [a, b] = [partOfBox(arch, from), partOfBox(arch, to)];

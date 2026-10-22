@@ -6,6 +6,8 @@ import { archCollectionOf, workloadName, type Architecture, type Environment, ty
 import { KIND_LABEL, releasesOf, strategyText, workloadsOf } from "./model.ts";
 import { NOUN, cascadeText, labelOf } from "./edit.ts";
 import { ThingForm } from "./Fields.tsx";
+import { CheckNotes } from "./Checks.tsx";
+import type { Finding } from "buni/tools/arch-check.ts";
 
 function Section({ title, rows }: { title: string; rows: [string, ReactNode][] }) {
   if (!rows.length) return null;
@@ -58,9 +60,12 @@ export interface InspectorProps {
   deleting: boolean;
   onDeleting: (on: boolean) => void;
   onClose?: () => void;
+  /** What the check says about this selection, worst first. */
+  findings: readonly Finding[];
+  onFix: (f: Finding) => Promise<void>;
 }
 
-export function ArchInspector({ arch, id, env, more = [], actions, empty, fresh, onSelect, deleting, onDeleting, onClose }: InspectorProps) {
+export function ArchInspector({ arch, id, env, more = [], actions, empty, fresh, onSelect, deleting, onDeleting, onClose, findings, onFix }: InspectorProps) {
   const c = id ? archCollectionOf(arch, id) : undefined;
   const all = [...more, ...(id ? [id] : [])].filter((x) => archCollectionOf(arch, x) !== undefined);
   if (all.length > 1) {
@@ -99,6 +104,7 @@ export function ArchInspector({ arch, id, env, more = [], actions, empty, fresh,
       <aside className="arch-inspector picked" key={id}>
         {close}
         <span className="arch-lbl">{KIND_LABEL[arch.parts[id]!.kind]}</span>
+        <CheckNotes findings={findings} onFix={onFix} />
         <ThingForm arch={arch} c="parts" id={id} focus={focus} />
         <PartRuns arch={arch} part={arch.parts[id]!} env={env} onSelect={onSelect} />
         {foot}
@@ -114,6 +120,7 @@ export function ArchInspector({ arch, id, env, more = [], actions, empty, fresh,
       </span>
       {c === "links" && <b className="arch-inspector-name">{labelOf(arch, id)}</b>}
       {w && <b className="arch-inspector-name">{workloadName(arch, w)}</b>}
+      <CheckNotes findings={findings} onFix={onFix} />
       <ThingForm arch={arch} c={c} id={id} focus={focus} heading={!w} />
       {foot}
     </aside>

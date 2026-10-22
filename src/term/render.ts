@@ -14,6 +14,7 @@ import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
 import { drawScales, drawWithBrowser, evaluateWithBrowser, findBrowser, framesWithBrowser, type Sheet } from "./chrome.ts";
 import { icnsFile, icoFile, ICON_SIZES } from "./iconset.ts";
+import { inkSvg } from "../tools/ink.ts";
 
 export interface Reply {
   ok: boolean;
@@ -30,6 +31,8 @@ export interface RenderJob {
   scale?: number;
   /** A PNG of the page's motion: this many moments side by side, from the start to when the last entrance ends. */
   frames?: number;
+  /** Draw the page's open pen marks over it, numbered. */
+  marks?: boolean;
 }
 
 const NEEDS = "Drawing pages needs Chrome, Chromium or Edge (or set BUNI_CHROME to one), or the buni desktop app. Everything else works without them.";
@@ -55,12 +58,12 @@ export async function renderHeadless(job: RenderJob, app: AppRenderer | undefine
     }
     // The app is handed the page by id, whichever way it was named here.
     // A filmstrip is drawn here: the app draws pages at rest.
-    if (app && !job.frames) return await renderInApp(app, { ...job, page: page.id });
+    if (app && !job.frames && !job.marks) return await renderInApp(app, { ...job, page: page.id });
     const browser = findBrowser();
     if (!browser) return { ok: false, text: NEEDS };
     if (job.format === "icons") return await writeIconSet(browser, doc, page, dirname(job.file), job.out);
     if (job.frames && job.format === "png") return await writeFilmstrip(browser, doc, page, dirname(job.file), job.out, job.frames);
-    const bytes = await drawWithBrowser(browser, { ...sheet(doc, page.id, dirname(job.file)), format: job.format, ...(job.scale ? { scale: job.scale } : {}) });
+    const bytes = await drawWithBrowser(browser, { ...sheet(doc, page.id, dirname(job.file), "", job.marks), format: job.format, ...(job.scale ? { scale: job.scale } : {}) });
     await writeFile(job.out, bytes);
     return { ok: true, text: `Saved ${job.out}.` };
   } catch (e) {
@@ -86,10 +89,11 @@ async function writeIconSet(browser: string, doc: Doc, page: Page, dir: string, 
 }
 
 /** A page as one HTML document at its own width, ready for a browser; `motion` adds its motion CSS. */
-function sheet(doc: Doc, pageId: Id, dir: string, motion = ""): Sheet {
+function sheet(doc: Doc, pageId: Id, dir: string, motion = "", marks = false): Sheet {
   const { html, css } = renderPage(doc, pageId);
   const width = Number.parseInt(doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style.width ?? "", 10) || 1440;
-  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${fontFaces(doc, embeddedFont)}${css}${motion}</style></head><body>${html}</body></html>`, dir, width };
+  const ink = marks ? inkSvg(doc, pageId, width, 1) : "";
+  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${ink ? "body{position:relative}" : ""}${fontFaces(doc, embeddedFont)}${css}${motion}</style></head><body>${html}${ink}</body></html>`, dir, width };
 }
 
 /**
@@ -109,11 +113,11 @@ async function writeFilmstrip(browser: string, doc: Doc, page: Page, dir: string
 }
 
 /** A page of the design in `file` drawn as a PNG (base64): an MCP client's or an agent's screenshot. */
-export async function screenshotPng(file: string, page: string): Promise<string> {
+export async function screenshotPng(file: string, page: string, marks = false): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "buni-shot-"));
   try {
     const out = join(dir, "page.png");
-    const r = await renderHeadless({ file, page, out, format: "png" });
+    const r = await renderHeadless({ file, page, out, format: "png", ...(marks ? { marks } : {}) });
     if (!r.ok) throw new Error(r.text);
     return (await readFile(out)).toString("base64");
   } finally {

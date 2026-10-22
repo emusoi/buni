@@ -4,7 +4,7 @@ import type { Architecture, ArchLink, ArchStatus, Environment, Id, Part, Workloa
 import { workloadName } from "buni/format/doc.ts";
 import { cardHeight, edgeCard, partCard, serviceCard, toneOf, workloadCard, workloadsOf, type Card, type Tone } from "./model.ts";
 
-export type Level = "system" | "runtime" | "code";
+export type Level = "context" | "system" | "runtime" | "code";
 export interface Rect { x: number; y: number; w: number; h: number }
 export type Point = [number, number];
 
@@ -271,7 +271,7 @@ export function labelled(links: readonly RoutedLink[], boxes: readonly Rect[]): 
 
 const xyOf = (p: { x: number; y: number } | undefined): Point | undefined => (p ? [p.x, p.y] : undefined);
 const linkLabel = (l: ArchLink, carries = true) => (carries && l.carries ? `${l.kind} · ${l.carries}` : l.kind);
-const KIND_ORDER: Record<Part["kind"], number> = { client: 0, edge: 1, service: 2, worker: 3, job: 4, queue: 5, cache: 6, store: 7, external: 8 };
+const KIND_ORDER: Record<Part["kind"], number> = { person: 0, client: 0, edge: 1, service: 2, worker: 3, job: 4, queue: 5, cache: 6, store: 7, external: 8 };
 const byKind = (a: Part, b: Part) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.name.localeCompare(b.name);
 
 // ---- System: parts in layered columns by which way their links go, inside their groups; outside services below. ----
@@ -353,7 +353,8 @@ function spreadRow(items: { key: string; want: number; w: number }[], gap: numbe
 export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
   const diff = (x: { plan?: Id; status?: ArchStatus }): Tone => (plan !== undefined && x.plan === plan ? (x.status === "removed" ? "removed" : "added") : toneOf(x.status));
   const card = (p: Part): Card => ({ ...partCard(p), tone: diff(p) });
-  const parts = Object.values(arch.parts).sort(byKind);
+  // People are drawn on the Context level only.
+  const parts = Object.values(arch.parts).filter((p) => p.kind !== "person").sort(byKind);
   const links = Object.values(arch.links);
   const grouped = parts.filter((p) => p.group !== undefined && arch.groups[p.group] && p.kind !== "edge");
   const inGroup = new Set(grouped.map((p) => p.id));
@@ -404,10 +405,68 @@ export function systemLayout(arch: Architecture, plan?: Id): MapLayout {
   return finish(boxes, frames, captions, mapLinks, (key) => xyOf(arch.parts[key]?.place?.system));
 }
 
+// ---- Context: who uses the system and what it relies on: people, the system as one box, outside services. ----
+
+const CTX = { sideW: 200, systemW: 400, gap: 168, rowGap: 32 } as const;
+/** The system box's key on the Context level: not a part, so selecting it selects the system group (if there is one). */
+export const SYSTEM_BOX = "context#system";
+
+export function contextLayout(arch: Architecture): MapLayout {
+  const parts = Object.values(arch.parts).sort(byKind);
+  const people = parts.filter((p) => p.kind === "person");
+  const outside = parts.filter((p) => p.kind === "external");
+  const inside = parts.filter((p) => p.kind !== "person" && p.kind !== "external");
+  const group = Object.values(arch.groups).find((g) => g.kind === "system");
+  const boxes: MapBox[] = [];
+  const captions: Caption[] = [];
+  const top = M + 26;
+  const sysX = M + CTX.sideW + CTX.gap;
+  const outX = sysX + CTX.systemW + CTX.gap;
+  const column = (list: Part[], x: number, w: number, caption: string) => {
+    if (!list.length) return;
+    captions.push({ x, y: M, text: caption });
+    let y = top;
+    for (const p of list) {
+      const c: Card = { label: p.kind === "person" ? "Person" : p.tech ?? "Outside service", name: p.name, ...(p.about ? { sub: p.about.replace(/\.$/, "") } : {}), tone: toneOf(p.status) };
+      const h = cardHeight(c, w);
+      boxes.push({ key: p.id, ids: [p.id], card: c, x, y, w, h });
+      y += h + CTX.rowGap;
+    }
+  };
+  column(people, M, CTX.sideW, "People");
+  column(outside, outX, CTX.sideW, "Outside services");
+  if (inside.length) {
+    const c: Card = {
+      label: "The system", name: group?.name ?? "The system",
+      sub: `${inside.length} part${inside.length === 1 ? "" : "s"} inside: open System to see them`,
+      chips: [inside.map((p) => p.name)], tone: "live",
+    };
+    const h = Math.max(cardHeight(c, CTX.systemW), 160);
+    const tallest = Math.max(top + h, ...boxes.map((b) => b.y + b.h));
+    boxes.push({ key: SYSTEM_BOX, ids: group ? [group.id] : [], context: inside.map((p) => p.id), card: c, x: sysX, y: Math.round(top + (tallest - top - h) / 2), w: CTX.systemW, h });
+  }
+  // A person or outside service's links into the system, as one arrow each way, labelled with what they say.
+  const side = (id: Id) => (arch.parts[id]?.kind === "person" || arch.parts[id]?.kind === "external" ? id : inside.some((p) => p.id === id) ? SYSTEM_BOX : undefined);
+  const lines = new Map<string, { from: string; to: string; links: ArchLink[] }>();
+  for (const l of Object.values(arch.links)) {
+    const [from, to] = [side(l.from), side(l.to)];
+    if (!from || !to || from === to) continue;
+    const key = `${from}>${to}`;
+    const line = lines.get(key) ?? { from, to, links: [] };
+    line.links.push(l);
+    lines.set(key, line);
+  }
+  const links: MapLink[] = [...lines.values()].map(({ from, to, links: ls }) => ({
+    key: `context#${from}>${to}`, ids: ls.map((l) => l.id), from, to,
+    label: [...new Set(ls.map((l) => linkLabel(l)))].join(", "), tone: ls.every((l) => l.status === "planned") ? "planned" : "live",
+  }));
+  return finish(boxes, [], captions, links);
+}
+
 // ---- Runtime: edge → the cluster's namespaces and workloads → managed services → outside services. ----
 
 /** Beside the cluster, what keeps data comes before what carries it. */
-const HOLDS: Record<Part["kind"], number> = { store: 0, cache: 1, queue: 2, client: 3, edge: 3, service: 3, worker: 3, job: 3, external: 4 };
+const HOLDS: Record<Part["kind"], number> = { store: 0, cache: 1, queue: 2, client: 3, edge: 3, service: 3, worker: 3, job: 3, external: 4, person: 5 };
 const RT = { edgeW: 160, clusterX: 220, clusterW: 600, sideW: 216, gap: 16 } as const;
 
 /** The box a part is drawn as in an environment: its serving workload, else its own card. */
@@ -598,7 +657,7 @@ export function codeLayout(arch: Architecture, env: Environment | undefined): Ma
 }
 
 export function layoutFor(arch: Architecture, level: Level, env: Environment | undefined, taller?: ReadonlyMap<Id, number>): MapLayout {
-  return level === "system" ? systemLayout(arch) : level === "runtime" ? runtimeLayout(arch, env, taller) : codeLayout(arch, env);
+  return level === "context" ? contextLayout(arch) : level === "system" ? systemLayout(arch) : level === "runtime" ? runtimeLayout(arch, env, taller) : codeLayout(arch, env);
 }
 
 // ---- Keyboard: the order Tab reads the map in, and where an arrow goes from a card. ----

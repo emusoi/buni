@@ -50,7 +50,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   arch <file.buni> text             the architecture as YAML to read and write by hand
   arch <file.buni> write <file|->   replace the architecture with what a text says, as one edit; "-" reads stdin
   arch <file.buni> edit             the text in $EDITOR, applied when you save and close; reopened with what's wrong
-  arch <file.buni> export manifests|argocd|ci|brief [--env NAME] [--out DIR]
+  arch <file.buni> export manifests|argocd|ci|brief|openapi|graphql [--env NAME] [--out DIR]
                                     draft Kubernetes YAML, Argo CD Applications, CI workflows or a Markdown brief,
                                     written to a folder inside the design's (default architecture/FORMAT)
   call <file.buni> <tool> [json|-]  run one tool; "-" reads the JSON from stdin
@@ -167,12 +167,25 @@ Improving a product that already ships (read buni skills critique first):
 4. For a real choice of direction, explore_page {page, options:[{name, idea}]} makes 3 or 4 takes to build out fully;
    compare_options reviews them side by side, ask_person when the choice is theirs, pick_option {option, why} makes one live.
 
+Pen marks and sketches: the person draws with a tablet (Open on tablet in the editor), then may just say "I left
+annotations", "fix what I marked" or "build from my sketches". Start with buni call FILE read_marks: every open mark (on
+pages, flows, the architecture) and every sketch of a new screen on the Screens canvas, numbered, with what's under each.
+The handwriting is only in pictures: buni shot FILE screens out.png draws the Screens canvas as the tablet shows it, the
+sketches, arrows and marks where they were drawn (--all for all of it); buni shot FILE PAGE out.png --marks draws one page.
+A sketch on empty canvas is a new screen: build it as a page in the design's style (create_page, write_html, its tokens and
+components), move_page it to where the sketch is, fill in what it leaves out (copy, states, errors), and connect what an
+arrow points from and to; a page linked from a flow's page joins that flow. A mark on a page asks for a change there.
+Reply on each thread with comment {thread, body, addressed: true} once it's handled, saying how you read it.
+
 Motion: set_motion on the layer (read buni skills motion); buni shot FILE PAGE out.png --frames 6 shows it as moments
 side by side, so check order and pace there. Imported pages keep their motion.
 
 Architecture: how the app behind the screens is built and shipped (code → build → release → Kubernetes → run), designed
 before and while it is built; not monitoring.
 - Parts and links: set_part {name, kind, tech, managed}, link_parts {from, to, kind, carries}, set_group; set_build {part, repo, path, steps}.
+  Who uses it: set_part {kind: "person"} (the Context level draws people, the system and outside services).
+- API contracts before code: set_api {part, kind: rest|graphql, spec}, set_operation {part, method, path | type, field, about,
+  request, responses, resolves}; export_architecture openapi|graphql writes openapi.yaml and schema.graphql drafts.
 - Where it runs: set_environment {name, order, cluster}, set_cluster {name, provider, pools, addons, gitops}, set_namespace
   {cluster, name}, set_workload {part, environment, namespace, kind, replicas, scale, probes, resources, …}.
 - How it ships: set_release {name, parts, path, strategy, checks, rollback, before}, set_migration {name, store, release, change, safe}.
@@ -184,7 +197,7 @@ before and while it is built; not monitoring.
 - Or write it whole as YAML, keyed by id: buni arch FILE text prints it (read_architecture_text); buni arch FILE write
   PATH|- applies it as one edit (write_architecture_text); buni arch FILE edit opens it in $EDITOR. People write it too.
 - How to design it, layer by layer: buni skills architecture. Then buni arch FILE check (check_architecture) and fix
-  what it finds; buni arch FILE export manifests|argocd|ci|brief writes drafts for the person to review.`;
+  what it finds; buni arch FILE export manifests|argocd|ci|brief|openapi|graphql writes drafts for the person to review.`;
 
 /** The guide in the SKILL.md shape shared by pi, Codex and Claude Code. */
 const SKILL = `---
@@ -217,6 +230,10 @@ export interface Flags {
   scale: number | undefined;
   /** --frames N: shot draws the page's motion as N moments side by side. */
   frames: number | undefined;
+  /** --marks: shot draws the page's pen marks over it. */
+  marks: boolean;
+  /** --all: shot of the Screens canvas draws all of it, not just around the sketches. */
+  whole: boolean;
   rest: string[];
 }
 
@@ -228,6 +245,8 @@ function parseFlags(argv: string[]): Flags {
   let server: string | undefined;
   let scale: number | undefined;
   let frames: number | undefined;
+  let marks = false;
+  let whole = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] ?? "";
     if (a === "--scale") {
@@ -236,7 +255,9 @@ function parseFlags(argv: string[]): Flags {
     } else if (a === "--frames") {
       const n = Number(argv[++i]);
       if (Number.isInteger(n) && n >= 2 && n <= 12) frames = n;
-    } else if (a === "--as") as = argv[++i] ?? as;
+    } else if (a === "--marks") marks = true;
+    else if (a === "--all") whole = true;
+    else if (a === "--as") as = argv[++i] ?? as;
     else if (a.startsWith("--as=")) as = a.slice(5);
     else if (a === "--json") json = true;
     else if (a === "--remote") remote = true;
@@ -244,7 +265,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a.startsWith("--server=")) server = a.slice(9);
     else rest.push(a);
   }
-  return { as, json, remote, server, scale, frames, rest };
+  return { as, json, remote, server, scale, frames, marks, whole, rest };
 }
 
 /** All of standard input, piped or redirected from a file. Read straight from fd 0: a stream over it came back empty for a redirected file. */
@@ -356,7 +377,7 @@ function flagArgs(args: readonly string[], names: Record<string, string>): Recor
   return out;
 }
 
-const ARCH_USAGE = "usage: buni arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID] | check | text | write <file|-> | edit | export manifests|argocd|ci|brief [--env NAME] [--out DIR]";
+const ARCH_USAGE = "usage: buni arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID] | check | text | write <file|-> | edit | export manifests|argocd|ci|brief|openapi|graphql [--env NAME] [--out DIR]";
 
 /**
  * buni arch as a tool call: check, text, write PATH|-, export FORMAT, or the brief; a usage line when it is none of
@@ -515,7 +536,7 @@ function needsAgent(cmd: string): number {
 export async function main(argv: string[], ext?: Extension): Promise<number> {
   const flags = parseFlags(argv);
   if (flags.rest[0] === "open") flags.rest = flags.rest.filter((a) => a !== "--web");
-  const { as, json, remote, server, scale, frames, rest } = flags;
+  const { as, json, remote, server, scale, frames, marks, whole, rest } = flags;
   const [cmd, file, ...args] = rest;
   const handled = await ext?.run(cmd, file, args, flags);
   if (handled !== undefined) return handled;
@@ -747,8 +768,13 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const [page, target] = args;
       const format = target?.toLowerCase().match(/\.(png|pdf|svg|txt|ans)$/)?.[1];
       if (!page || !target || (format !== "png" && format !== "pdf" && format !== "svg" && format !== "txt" && format !== "ans")) {
-        console.error("usage: buni shot <file.buni> <page> <out.png|out.pdf|out.svg|out.txt|out.ans> [--scale 2] [--frames 6]");
+        console.error("usage: buni shot <file.buni> <page|screens> <out.png|out.pdf|out.svg|out.txt|out.ans> [--scale 2] [--frames 6] [--marks] [--all]");
         return 2;
+      }
+      // "screens": the Screens canvas with what the pen left on it, as the tablet shows it (unless a page is called that).
+      if (page === "screens" && format === "png" && !Object.values((await Workspace.open(file)).view().pages).some((p) => p.id === page || p.name === page)) {
+        const { canvasShot } = await import("./term/canvas-shot.ts");
+        return out({ ok: true, text: await canvasShot(file, resolve(target), whole) });
       }
       if (format === "svg") {
         const svg = pageSvg((await Workspace.open(file)).system(), page, embeddedFont);
@@ -757,13 +783,13 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         return out({ ok: true, text: `Saved ${target}.` });
       }
       // The open app draws a plain screenshot; anything else, or no app, renders here.
-      if (format === "png" && scale === undefined && frames === undefined && (await liveApp(file))) {
+      if (format === "png" && scale === undefined && frames === undefined && !marks && (await liveApp(file))) {
         const r = await run(file, as, "screenshot", { page });
         if (!r.ok || !r.png) return out(r);
         await writeFile(target, r.png);
         return out({ ok: true, text: `Saved ${target}.` });
       }
-      return out(await renderHeadless({ file: resolve(file), page, out: resolve(target), format, ...(scale ? { scale } : {}), ...(frames ? { frames } : {}) }));
+      return out(await renderHeadless({ file: resolve(file), page, out: resolve(target), format, ...(scale ? { scale } : {}), ...(frames ? { frames } : {}), ...(marks ? { marks } : {}) }));
     }
     case "capture": {
       const [page, target] = args;
@@ -794,7 +820,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       // Long-running: one browser kept warm for the edit checks.
       (await import("./term/chrome.ts")).keepBrowserWarm();
       const ws = await Workspace.open(file);
-      const host = { screenshot: (page: string) => screenshotPng(ws.path, page), screenAsText: (page: string) => screenAsText(ws.path, page) };
+      const host = { screenshot: (page: string, marks?: boolean) => screenshotPng(ws.path, page, marks), screenAsText: (page: string) => screenAsText(ws.path, page) };
       // Otherwise this is the writer while it runs: buni call and other MCP clients find it through <file>.live.
       const served = await startMcpHttp(ws, 0, host);
       const marker = `${ws.path}.live`;

@@ -11,11 +11,12 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
 import { embeddedFont } from "../fontdata.ts";
 import { findIcons } from "../icons.ts";
+import { marksText } from "../ink.ts";
 import { Ids, type Tool, ToolError, pageOf, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
 
 /**
@@ -838,7 +839,8 @@ export const pagesTools = {
         ...Object.values(doc.connections)
           .filter((c) => c.page === page.id || c.to === page.id || gone.has(c.node))
           .map((c): Op => ({ kind: "delete", collection: "connections", id: c.id })),
-        ...Object.values(doc.comments).filter((c) => gone.has(c.node)).map((c): Op => ({ kind: "delete", collection: "comments", id: c.id })),
+        // Its layers' comments, and the pen marks on the flows that start here.
+        ...Object.values(doc.comments).filter((c) => gone.has(c.node) || flows.has(c.ink?.flow ?? "")).map((c): Op => ({ kind: "delete", collection: "comments", id: c.id })),
         ...[...flows].map((id): Op => ({ kind: "delete", collection: "flows", id })),
         // Its options become pages of their own.
         ...optionsOf(doc, page.id).map((p): Op => { const { option: _, ...rest } = p; return { kind: "put", collection: "pages", value: rest }; }),
@@ -958,6 +960,63 @@ export const pagesTools = {
         reply: `Started thread ${id}.`,
       };
     },
+  }),
+
+  mark: tool({
+    description: "Draw a mark, as a pen does on a tablet: on a page (strokes in the page's own pixels, on the layer under them, else the page's frame), on an architecture view (context, system or api; strokes in that map's units, on the part or link under them) on a flow (strokes in the tablet's layout of it, on the screen under them), or as a sketch of a new screen on the Screens canvas (strokes in the canvas's units, where pages sit). Kept as a comment thread. remove takes a mark away.",
+    input: {
+      page: z.string().optional().describe("Page drawn on"),
+      view: z.enum(INK_VIEWS).optional().describe("Or the architecture view drawn on"),
+      flow: z.string().optional().describe("Or the flow drawn on"),
+      sketch: z.boolean().optional().describe("Or true: a sketch of a new screen on the Screens canvas, outside any page"),
+      node: z.string().optional().describe("Layer (on a page), part or link (on a view), or page (on a flow) the mark points at"),
+      strokes: z.array(z.object({
+        tool: z.enum(INK_TOOLS),
+        color: z.string().min(1).max(40),
+        width: z.number().min(0.5).max(60),
+        points: z.array(z.number().finite()).min(2).max(8000).refine((p) => p.length % 2 === 0, "points are x, y pairs"),
+      })).min(1).max(200).optional(),
+      body: z.string().min(1).max(2000).optional().describe("Words typed with the mark"),
+      from: z.string().max(80).optional().describe("The device it was drawn on: \"iPad\""),
+      remove: z.string().optional().describe("Thread id of a mark to take away"),
+    },
+    run: async (doc, a, ctx) => {
+      if (a.remove !== undefined) {
+        const t = doc.comments[a.remove];
+        if (!t?.ink) throw new ToolError(`mark "${a.remove}" does not exist`);
+        return { label: "Erase mark", ops: [{ kind: "delete", collection: "comments", id: t.id }], reply: `Erased mark ${t.id}.` };
+      }
+      if (!a.strokes || [a.page, a.view, a.flow, a.sketch || undefined].filter((x) => x !== undefined).length !== 1) throw new ToolError("a new mark needs strokes and one of a page, a view, a flow or sketch: true");
+      const id = new Ids(doc, ctx).next();
+      const body = a.body ?? `Drew ${a.strokes.length === 1 ? "a mark" : `${a.strokes.length} strokes`}${a.from ? ` on ${a.from}` : ""}.`;
+      const put = (node: Id, where: { page: Id } | { view: InkView } | { flow: Id } | { sketch: true }, reply: string): ToolOutput => ({
+        label: "Mark",
+        ops: [{ kind: "put", collection: "comments", value: { id, node, state: "open", posts: [{ author: ctx.author, body, at: ctx.now() }], ink: { ...where, strokes: a.strokes ?? [], ...(a.from ? { from: a.from } : {}) } } }],
+        reply,
+      });
+      if (a.sketch) return put(SCREENS_ANCHOR, { sketch: true }, `Sketched a new screen on the canvas (thread ${id}).`);
+      if (a.flow !== undefined) {
+        const f = doc.flows[a.flow];
+        if (!f) throw new ToolError(`flow "${a.flow}" does not exist`);
+        // On the screen under it, else on the flow's first screen: either way it shows on a page in the editor.
+        const under = doc.pages[a.node ?? ""] ?? doc.pages[f.start];
+        if (!under) throw new ToolError(`flow "${f.name}" has no first page`);
+        return put(under.frame, { flow: f.id }, `Marked the flow ${f.name} (thread ${id}).`);
+      }
+      if (a.view !== undefined) {
+        const on = a.node !== undefined && archCollectionOf(architectureOf(doc), a.node) ? a.node : ARCHITECTURE_ANCHOR;
+        return put(on, { view: a.view }, `Marked the ${a.view} view (thread ${id}).`);
+      }
+      const p = page(doc, a.page ?? "");
+      const at = a.node !== undefined && doc.nodes[a.node] && pageOf(doc, a.node).id === p.id ? a.node : p.frame;
+      return put(at, { page: p.id }, `Marked ${p.name} (thread ${id}).`);
+    },
+  }),
+
+  read_marks: tool({
+    description: "Read the pen marks people drew on pages (on a tablet): each one numbered, what it looks like (circle, strike, highlight), the layer under it, and the thread to answer. The handwriting is only in the picture: buni shot FILE PAGE out.png --marks.",
+    input: { page: z.string().optional().describe("One page; all pages when left out") },
+    run: async (doc, a) => ({ label: "Read marks", ops: [], reply: marksText(doc, a.page === undefined ? undefined : page(doc, a.page).id) }),
   }),
 
   move_page: tool({

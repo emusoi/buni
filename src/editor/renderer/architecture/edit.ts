@@ -2,7 +2,7 @@
 // "+ Add" makes where you are, and what a delete takes with it. Pure, so the forms and the tests read the same table.
 import {
   ARCH_STATUSES, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY, STRATEGIES, WORKLOAD_KINDS,
-  archCollectionOf, workloadName, type ArchCollection, type Architecture, type Id, type MapLevel, type MapPoint, type Part, type Workload,
+  archCollectionOf, workloadName, type ArchCollection, type Architecture, type Id, type MapLevel, type MapPoint, type Part, type Release, type Workload,
 } from "buni/format/doc.ts";
 import type { EditTool } from "../../api.ts";
 import { archCascade } from "buni/tools/areas/architecture.ts";
@@ -93,6 +93,29 @@ export const FORMS: Record<ArchCollection, FormSection[]> = {
 
 /** Collections whose things a plan can add or remove: they take the plan picker. */
 export const PLANNABLE: readonly ArchCollection[] = ["parts", "links", "workloads", "migrations", "releases"];
+
+const SCALES = new Set<Workload["kind"]>(["Deployment", "Rollout", "StatefulSet"]);
+const BUILT = new Set<Part["kind"]>(["client", "service", "worker", "job"]);
+
+/** Whether this field belongs on this thing. A schedule is a CronJob's, a store is not built, a rolling release has no canary steps. */
+export function shows(c: ArchCollection, thing: object, field: Field): boolean {
+  if (c === "workloads") {
+    const w = thing as Workload;
+    if (field.key === "name") return w.name !== undefined;
+    if (field.key === "schedule") return w.kind === "CronJob";
+    if (field.key === "before") return w.kind === "Job";
+    if (field.key === "replicas.min" || field.key === "replicas.max" || field.key === "scale.by" || field.key === "scale.target" || field.key === "keep") {
+      return SCALES.has(w.kind) || w.replicas !== undefined || w.scale !== undefined || w.keep !== undefined;
+    }
+    if (field.key === "ingress.host" || field.key === "ingress.path") return w.service !== undefined || w.ingress !== undefined;
+  }
+  if (c === "releases" && (field.key === "strategy.steps" || field.key === "strategy.hold")) return (thing as Release).strategy.kind !== "rolling";
+  if (c === "parts" && field.key.startsWith("build.")) {
+    const p = thing as Part;
+    return BUILT.has(p.kind) || p.build !== undefined;
+  }
+  return true;
+}
 
 /** A thing's value at a field's key. */
 export function valueOf(thing: object, key: string): FieldValue {

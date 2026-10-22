@@ -3,8 +3,8 @@
 // thing when it is given: what a change leaves out is kept, and null removes an optional field.
 import { z } from "zod";
 import {
-  ARCH_COLLECTIONS, ARCH_STATUSES, MAP_LEVELS, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY,
-  STRATEGIES, WORKLOAD_KINDS, archCollectionOf, architectureOf, workloadName,
+  API_KINDS, ARCH_COLLECTIONS, ARCH_STATUSES, GRAPHQL_TYPES, HTTP_METHODS, MAP_LEVELS, CLUSTER_PROVIDERS, GITOPS_TOOLS, GROUP_KINDS, LINK_KINDS, MIGRATION_SAFETY, PART_KINDS, PLAY_KINDS, SCALE_BY,
+  STRATEGIES, WORKLOAD_KINDS, archCollectionOf, architectureOf, operationLabel, operationsOf, workloadName,
   type ArchCollection, type Architecture, type Doc, type Id, type MapPlaces, type MapPoint, type Workload,
 } from "../../format/doc.ts";
 import { Reader } from "../../format/parse.ts";
@@ -137,6 +137,13 @@ function without(arch: Architecture, ids: Iterable<Id>): { next: Architecture; g
   const unplanned = <T extends { plan?: Id; status?: string }>(x: T): T | Omit<T, "plan" | "status"> => (x.plan !== undefined && gone.has(x.plan) ? settled(x) : x);
   for (const x of Object.values(next.parts)) next.parts[x.id] = unplanned(x.group !== undefined && gone.has(x.group) ? (({ group: _, ...rest }) => rest)(x) : x);
   for (const x of Object.values(next.links)) next.links[x.id] = unplanned(x);
+  // An operation served by one on a part that went is no longer served by it.
+  const goneOps = new Set([...gone].flatMap((id) => arch.parts[id]?.api?.operations.map((o) => o.id) ?? []));
+  for (const x of Object.values(next.parts)) {
+    const api = x.api;
+    if (!goneOps.size || !api?.operations.some((o) => o.resolves !== undefined && goneOps.has(o.resolves))) continue;
+    next.parts[x.id] = { ...x, api: { ...api, operations: api.operations.map(({ resolves, ...o }) => (resolves !== undefined && !goneOps.has(resolves) ? { ...o, resolves } : o)) } };
+  }
   for (const x of Object.values(next.groups)) if (x.parent !== undefined && gone.has(x.parent)) { const { parent: _, ...rest } = x; next.groups[x.id] = rest; }
   for (const x of Object.values(next.environments)) if (x.cluster !== undefined && gone.has(x.cluster)) { const { cluster: _, ...rest } = x; next.environments[x.id] = rest; }
   for (const x of Object.values(next.workloads)) {
@@ -168,6 +175,18 @@ function without(arch: Architecture, ids: Iterable<Id>): { next: Architecture; g
     };
   }
   return { next, gone };
+}
+
+/** The architecture without operations `ids`: what resolved to them no longer does. */
+function withoutOperations(arch: Architecture, ids: ReadonlySet<Id>): { next: Architecture } {
+  const next = draftOf(arch);
+  for (const x of Object.values(next.parts)) {
+    const api = x.api;
+    if (!api) continue;
+    const operations = api.operations.filter((o) => !ids.has(o.id)).map(({ resolves, ...o }) => (resolves !== undefined && !ids.has(resolves) ? { ...o, resolves } : o));
+    next.parts[x.id] = { ...x, api: { ...api, operations } };
+  }
+  return { next };
 }
 
 /** What is in a plan, as "kind name" lines: what it adds and what it removes (its releases are listed on it). */
@@ -236,6 +255,10 @@ export function architectureBrief(doc: Doc, opts: { level?: BriefLevel; environm
     }
     for (const l of Object.values(arch.links)) if (show(l.id)) lines.push(`link ${l.id}: ${partName(l.from)} ${l.kind} ${partName(l.to)}${l.carries ? ` · ${l.carries}` : ""}${bracket(tags(l))}`);
     section("System", lines);
+    section("API", Object.values(arch.parts).filter((p) => show(p.id) && p.api).flatMap((p) => [
+      `${p.id} "${p.name}" offers ${p.api!.kind === "rest" ? "REST" : "GraphQL"}${p.api!.spec ? ` (${p.api!.spec})` : ""}`,
+      ...p.api!.operations.map((o) => `  ${o.id}: ${o.type ? `${o.type} ` : ""}${operationLabel(o)}${o.returns ? `: ${o.returns}` : ""}${o.about ? ` — ${o.about}` : ""}${o.request ? ` · takes ${o.request}` : ""}${o.responses?.length ? ` · answers ${o.responses.join("; ")}` : ""}${o.resolves ? ` · served by ${o.resolves}` : ""}`),
+    ]));
   }
 
   if (level("runtime")) {
@@ -349,7 +372,7 @@ export const architectureTools = {
   set_part: tool({
     description:
       "Add a part of the app, or change one (pass id). Kinds: client (a web or mobile app), service (an API), worker, job, store (a database, a bucket), " +
-      "cache, queue, external (Stripe, Shippo), edge (DNS, CDN, firewall, load balancer). managed says it runs as a cloud service, not a workload " +
+      "cache, queue, external (Stripe, Shippo), edge (DNS, CDN, firewall, load balancer), person (someone who uses it: a buyer, a merchant; drawn on the Context level). managed says it runs as a cloud service, not a workload " +
       '("RDS Postgres Multi-AZ"). status planned with plan proposes it. How it is built: set_build.',
     input: {
       id: ID,
@@ -396,6 +419,84 @@ export const architectureTools = {
       if (!part.build && a.repo === undefined) throw new ToolError("a new build needs its repo");
       const build = shaped("build", (r) => r.build(edited(part.build ?? {}, changes), `parts.${part.id}.build`));
       return { label: `Build of ${part.name}`, ops: [ARCH_PUT.parts({ ...rest, build })], reply: `${part.name} builds from ${build.repo}${build.path ? ` ${build.path}` : ""}.` };
+    },
+  }),
+
+  set_api: tool({
+    description:
+      "Say a part offers an API: rest (written to openapi.yaml) or graphql (schema.graphql); spec names the file. Then add what it offers with set_operation. " +
+      "remove drops the API and its operations.",
+    input: {
+      part: z.string(),
+      kind: z.enum(API_KINDS).optional(),
+      spec: TEXT.describe('"openapi.yaml", "schema.graphql"'),
+      remove: z.boolean().optional(),
+    },
+    run: async (doc, a) => {
+      const arch = architectureOf(doc);
+      const part = existing(arch.parts, a.part, "part");
+      if (!part) throw new ToolError("give the part");
+      const { api: old, ...rest } = part;
+      if (a.remove) {
+        const { next } = withoutOperations(arch, new Set(old?.operations.map((o) => o.id) ?? []));
+        return { label: `Remove ${part.name}'s API`, ops: opsBetween(arch, { ...next, parts: { ...next.parts, [part.id]: rest } }), reply: `${part.name} offers no API now.` };
+      }
+      const kind = a.kind ?? old?.kind;
+      if (!kind) throw new ToolError("a new API needs its kind: rest or graphql");
+      if (old && a.kind && a.kind !== old.kind && old.operations.length) throw new ToolError(`${part.name}'s API has ${old.operations.length} ${old.kind} operations; remove them before making it ${a.kind}`);
+      const api = shaped("API", (r) => r.api(edited({ ...(old ?? { operations: [] }), kind }, { spec: a.spec }), `parts.${part.id}.api`));
+      return { label: `${part.name}'s ${kind === "rest" ? "REST" : "GraphQL"} API`, ops: [ARCH_PUT.parts({ ...rest, api })], reply: `${part.name} offers a ${kind === "rest" ? "REST" : "GraphQL"} API${api.spec ? ` (${api.spec})` : ""}.`, saved: part.id };
+    },
+  }),
+
+  set_operation: tool({
+    description:
+      "Add one thing a part's API offers, or change one (pass id): REST takes method and path (\"POST\", \"/returns/{id}/refund\"), GraphQL takes type " +
+      "(query, mutation, subscription) and field (\"requestRefund(returnId: ID!)\"). about says what it does; request and responses its shapes; " +
+      "resolves names the operation on another part that serves it (a GraphQL field's REST call). A part with no API gets one of the kind the fields say. " +
+      "remove: true takes the operation out.",
+    input: {
+      part: z.string(),
+      id: ID,
+      method: opt(z.enum(HTTP_METHODS)),
+      path: TEXT.describe('"/returns/{id}/refund"'),
+      type: opt(z.enum(GRAPHQL_TYPES)),
+      field: TEXT.describe('"requestRefund(returnId: ID!)"'),
+      returns: TEXT.describe('"Refund", "[Return!]!"'),
+      about: TEXT.describe("What it does, in a sentence"),
+      request: TEXT.describe('"RefundRequest { amount, reason }"'),
+      responses: LIST.describe('["202 Refund queued", "409 Not scanned yet"]'),
+      resolves: TEXT.describe("Operation id on another part that serves this one"),
+      remove: z.boolean().optional(),
+    },
+    run: async (doc, a) => {
+      const arch = architectureOf(doc);
+      const part = existing(arch.parts, a.part, "part");
+      if (!part) throw new ToolError("give the part");
+      const { part: _, id, remove, ...changes } = a;
+      const list = part.api?.operations ?? [];
+      const old = id === undefined ? undefined : list.find((o) => o.id === id);
+      if (id !== undefined && !old) throw new ToolError(`${part.name} has no operation "${id}"; it has ${list.map((o) => o.id).join(", ") || "none"}`);
+      if (remove) {
+        if (!old) throw new ToolError("give the operation's id to remove it");
+        const { next } = withoutOperations(arch, new Set([old.id]));
+        return { label: `Remove ${operationLabel(old)}`, ops: opsBetween(arch, next), reply: `Removed ${operationLabel(old)} from ${part.name}.` };
+      }
+      const kind = part.api?.kind ?? (a.field !== undefined || a.type !== undefined ? "graphql" : "rest");
+      if (!old && kind === "rest" && (a.method === undefined || a.path === undefined)) throw new ToolError("a new REST operation needs its method and path");
+      if (!old && kind === "graphql" && a.field === undefined) throw new ToolError("a new GraphQL operation needs its field");
+      const taken = new Set(operationsOf(arch).map((x) => x.op.id));
+      const base = a.field ?? `${a.method ?? ""} ${a.path ?? ""}`;
+      const slug = base.split("(")[0]!.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "operation";
+      let oid = old?.id ?? slug;
+      for (let n = 2; !old && taken.has(oid); n++) oid = `${slug}-${n}`;
+      const op = shaped("operation", (r) => r.operation(edited(old ?? { id: oid, ...(kind === "graphql" ? { type: "query" } : {}) }, changes), `parts.${part.id}.api.operations`, kind));
+      if (op.resolves !== undefined && !operationsOf(arch).some((x) => x.op.id === op.resolves && x.part.id !== part.id)) {
+        throw new ToolError(`"${op.resolves}" is no operation on another part; there are ${operationsOf(arch).filter((x) => x.part.id !== part.id).map((x) => x.op.id).join(", ") || "none"}`);
+      }
+      const operations = old ? list.map((o) => (o.id === old.id ? op : o)) : [...list, op];
+      const api = { ...(part.api ?? { kind }), operations };
+      return { label: `${old ? "Change" : "Add"} ${operationLabel(op)}`, ops: [ARCH_PUT.parts({ ...part, api })], reply: `${old ? "Changed" : "Created"} operation ${op.id} on ${part.name}: ${operationLabel(op)}.`, saved: part.id };
     },
   }),
 
@@ -842,7 +943,7 @@ export const architectureTools = {
       "Write the architecture as draft files for a person to review, in a folder inside the design's folder: manifests (per workload: Deployment or " +
       "Argo Rollout with its canary steps, Service, Ingress, HPA or KEDA ScaledObject, PodDisruptionBudget, ServiceAccount with its role, NetworkPolicy " +
       "from egress, ExternalSecrets, Jobs that run before a sync as PreSync hooks; a kustomization per namespace), argocd (an Application per part per " +
-      "environment), ci (a GitHub Actions workflow per part from its build) or brief (read_architecture as Markdown). Each file says it is a draft.",
+      "environment), ci (a GitHub Actions workflow per part from its build), openapi (an OpenAPI 3.1 openapi.yaml per part with a REST API), graphql (a schema.graphql per part with a GraphQL API) or brief (read_architecture as Markdown). Each file says it is a draft.",
     input: {
       format: z.enum(EXPORT_FORMATS),
       environment: z.string().optional().describe("Environment id or name; all of them when omitted"),
@@ -852,7 +953,7 @@ export const architectureTools = {
       if (!ctx.writeFiles) throw new ToolError("This host can't write files; run buni arch FILE export on the machine with the design.");
       const files = exportArchitecture(doc, a.format, a.environment, () => architectureBrief(doc, a.environment === undefined ? {} : { environment: a.environment }));
       if (files.size === 0) {
-        const why = { manifests: "no workloads run there", argocd: "no cluster there is synced by Argo CD", ci: "no part has a build", brief: "" }[a.format];
+        const why = { manifests: "no workloads run there", argocd: "no cluster there is synced by Argo CD", ci: "no part has a build", brief: "", openapi: "no part has a REST API with operations (set_api, set_operation)", graphql: "no part has a GraphQL API with operations (set_api, set_operation)" }[a.format];
         throw new ToolError(`Nothing to export as ${a.format}: ${why}.`);
       }
       const out = a.out ?? `architecture/${a.format}`;

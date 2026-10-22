@@ -145,3 +145,16 @@ describe("read_architecture_text and write_architecture_text", () => {
     expect(serializeDoc(ws.view())).toBe(before);
   });
 });
+
+test("a person and an API round-trip through the text, and a broken operation names its line", () => {
+  const doc = parcel();
+  const a = architectureOf(doc);
+  a.parts.buyer = { id: "buyer", name: "Buyer", kind: "person" };
+  a.parts["returns-api"] = { ...a.parts["returns-api"]!, api: { kind: "rest", spec: "openapi.yaml", operations: [{ id: "refund", method: "POST", path: "/returns/{id}/refund", responses: ["202 Refund queued", "409 Not scanned yet"] }] } };
+  const text = architectureText(a);
+  expect(text).toContain("kind: person");
+  expect(text).toContain('path: "/returns/{id}/refund"');
+  expect(parseArchitectureText(text)).toEqual(a);
+  expect(refusal(text.replace("method: POST", "method: FETCH"))).toMatch(/line \d+ · parts\.returns-api\.api\.operations\[0\]\.method: expected one of GET, POST/);
+});
+

@@ -241,4 +241,32 @@ describe("tools", () => {
     expect((await ws.call("claude", "read_architecture", { focus: "ghost" })).reply).toBe('"ghost" is nothing in the architecture');
     expect(await call(await fresh(), "read_architecture", {})).toContain("no architecture yet");
   });
+
+  test("set_api and set_operation design an API: ids, validation, resolves, the brief, and removing", async () => {
+    const ws = await fresh();
+    await call(ws, "set_part", { name: "Returns API", kind: "service" });
+    await call(ws, "set_part", { name: "Gateway", kind: "service" });
+    await call(ws, "set_part", { name: "Buyer", kind: "person" });
+    expect(await call(ws, "set_operation", { part: "returns-api", method: "POST", path: "/returns/{id}/refund", about: "Refunds a return", responses: ["202 Refund queued"] }))
+      .toBe("Created operation post-returns-id-refund on Returns API: POST /returns/{id}/refund.");
+    expect(architectureOf(ws.view()).parts["returns-api"]?.api).toEqual({ kind: "rest", operations: [{ id: "post-returns-id-refund", method: "POST", path: "/returns/{id}/refund", about: "Refunds a return", responses: ["202 Refund queued"] }] });
+    expect((await ws.call("claude", "set_operation", { part: "returns-api", method: "GET", path: "returns" })).reply).toContain('a path starts with "/"');
+    expect((await ws.call("claude", "set_operation", { part: "returns-api", method: "GET", path: "/x", field: "x" })).reply).toContain("a REST operation has a method and path");
+    await call(ws, "set_api", { part: "gateway", kind: "graphql", spec: "schema.graphql" });
+    expect((await ws.call("claude", "set_operation", { part: "gateway", field: "requestRefund(returnId: ID!)", resolves: "ghost" })).reply).toContain('"ghost" is no operation on another part');
+    await call(ws, "set_operation", { part: "gateway", type: "mutation", field: "requestRefund(returnId: ID!)", returns: "Refund", resolves: "post-returns-id-refund" });
+    const brief = await call(ws, "read_architecture", {});
+    expect(brief).toContain('part buyer "Buyer" person');
+    expect(brief).toContain("requestrefund: mutation requestRefund(returnId: ID!): Refund · served by post-returns-id-refund");
+    // Taking the REST operation out leaves the field it served standing, served by nothing.
+    await call(ws, "set_operation", { part: "returns-api", id: "post-returns-id-refund", remove: true });
+    expect(architectureOf(ws.view()).parts.gateway?.api?.operations).toEqual([{ id: "requestrefund", type: "mutation", field: "requestRefund(returnId: ID!)", returns: "Refund" }]);
+    // So does deleting the part an operation was on.
+    await call(ws, "set_operation", { part: "returns-api", method: "POST", path: "/refunds" });
+    await call(ws, "set_operation", { part: "gateway", id: "requestrefund", resolves: "post-refunds" });
+    await call(ws, "delete_architecture", { ids: ["returns-api"] });
+    expect(architectureOf(ws.view()).parts.gateway?.api?.operations[0]?.resolves).toBeUndefined();
+    await call(ws, "set_api", { part: "gateway", remove: true });
+    expect(architectureOf(ws.view()).parts.gateway?.api).toBeUndefined();
+  });
 });

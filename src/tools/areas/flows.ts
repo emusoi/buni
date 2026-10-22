@@ -88,6 +88,7 @@ export const flowsTools = {
       if (old && a.remove) {
         const ops: Op[] = [{ kind: "delete", collection: "flows", id: old.id }];
         for (const j of Object.values(doc.journeys)) if (j.flow === old.id) ops.push({ kind: "delete", collection: "journeys", id: j.id });
+        for (const c of Object.values(doc.comments)) if (c.ink?.flow === old.id) ops.push({ kind: "delete", collection: "comments", id: c.id });
         return { label: `Remove flow ${old.name}`, ops, reply: "Removed the flow and its journey." };
       }
       if (a.start !== undefined) page(doc, a.start);

@@ -1,0 +1,1102 @@
+{
+  "attachments": {},
+  "buni": 1,
+  "comments": {},
+  "connections": {},
+  "flows": {},
+  "journeys": {},
+  "nodes": {
+    "008abb8a": {
+      "id": "008abb8a",
+      "index": "a2",
+      "kind": "text",
+      "name": "Node 22 · REST",
+      "parent": "44e6a9c9",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "Node 22 · REST"
+    },
+    "02236015": {
+      "id": "02236015",
+      "index": "a0",
+      "kind": "text",
+      "name": "System",
+      "parent": "0a744bf6",
+      "style": {
+        "background": "var(--surface)",
+        "borderRadius": "6px",
+        "fontWeight": "650",
+        "margin": "0",
+        "padding": "4px 10px"
+      },
+      "tag": "b",
+      "text": "System"
+    },
+    "0a744bf6": {
+      "id": "0a744bf6",
+      "index": "a2",
+      "kind": "frame",
+      "name": "div",
+      "parent": "cefe4813",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--bg)",
+        "borderRadius": "8px",
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "4px",
+        "marginLeft": "auto",
+        "padding": "3px"
+      },
+      "tag": "div"
+    },
+    "0f2677f9": {
+      "id": "0f2677f9",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/></svg>",
+      "name": "minus",
+      "parent": "b0724ff9",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "15644a6b": {
+      "id": "15644a6b",
+      "index": "a2",
+      "kind": "text",
+      "name": "Static assets",
+      "parent": "8d6c51a2",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "Static assets"
+    },
+    "194b8ea8": {
+      "id": "194b8ea8",
+      "index": "aD",
+      "kind": "frame",
+      "name": "Zoom",
+      "parent": "54c7c574",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "8px",
+        "bottom": "16px",
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "2px",
+        "left": "16px",
+        "padding": "4px",
+        "position": "absolute"
+      },
+      "tag": "div"
+    },
+    "2219f2d3": {
+      "id": "2219f2d3",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2\"/><path d=\"M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2\"/><path d=\"M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8\"/><path d=\"M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15\"/></svg>",
+      "name": "hand",
+      "parent": "d8b916b1",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "3105ba97": {
+      "id": "3105ba97",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "194b8ea8",
+      "style": {
+        "alignItems": "center",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "28px",
+        "justifyContent": "center",
+        "width": "28px"
+      },
+      "tag": "span"
+    },
+    "33b7006c": {
+      "id": "33b7006c",
+      "index": "aB",
+      "kind": "frame",
+      "name": "Main database",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "400px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "480px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "3688ec14": {
+      "id": "3688ec14",
+      "index": "a0",
+      "kind": "text",
+      "name": "Worker",
+      "parent": "a4777896",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Worker"
+    },
+    "3737fd6e": {
+      "id": "3737fd6e",
+      "index": "a1",
+      "kind": "text",
+      "name": "ALB",
+      "parent": "acd6c4ae",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "ALB"
+    },
+    "3902f178": {
+      "id": "3902f178",
+      "index": "a2",
+      "kind": "text",
+      "name": "SQS · RefundJob",
+      "parent": "fa518511",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "SQS · RefundJob"
+    },
+    "3c8ecdee": {
+      "id": "3c8ecdee",
+      "index": "a0",
+      "kind": "text",
+      "name": "Edge",
+      "parent": "9c36f59f",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Edge"
+    },
+    "3d0b97f2": {
+      "id": "3d0b97f2",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Body",
+      "parent": "a1cbc432",
+      "style": {
+        "display": "flex",
+        "flex": "1",
+        "minHeight": "0"
+      },
+      "tag": "div"
+    },
+    "41208f93": {
+      "id": "41208f93",
+      "index": "a2",
+      "kind": "text",
+      "name": "TLS termination",
+      "parent": "acd6c4ae",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "TLS termination"
+    },
+    "44e6a9c9": {
+      "id": "44e6a9c9",
+      "index": "a8",
+      "kind": "frame",
+      "name": "Returns API",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "2px solid var(--accent)",
+        "borderRadius": "10px",
+        "left": "400px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "300px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "485c25f8": {
+      "id": "485c25f8",
+      "index": "a1",
+      "kind": "text",
+      "name": "routes",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--bg)",
+        "color": "var(--ink-2)",
+        "fontSize": "12px",
+        "left": "318px",
+        "padding": "0 6px",
+        "position": "absolute",
+        "top": "328px"
+      },
+      "tag": "span",
+      "text": "routes"
+    },
+    "4b929fbf": {
+      "id": "4b929fbf",
+      "index": "a3",
+      "kind": "text",
+      "name": "publishes",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--bg)",
+        "color": "var(--ink-2)",
+        "fontSize": "12px",
+        "left": "660px",
+        "padding": "0 6px",
+        "position": "absolute",
+        "top": "220px"
+      },
+      "tag": "span",
+      "text": "publishes"
+    },
+    "54c7c574": {
+      "id": "54c7c574",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Canvas",
+      "parent": "3d0b97f2",
+      "style": {
+        "backgroundColor": "var(--bg)",
+        "backgroundImage": "radial-gradient(var(--line) 1.25px, transparent 1.25px)",
+        "backgroundSize": "24px 24px",
+        "flex": "1",
+        "position": "relative"
+      },
+      "tag": "div"
+    },
+    "55524ddd": {
+      "id": "55524ddd",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
+      "name": "plus",
+      "parent": "7090e56e",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "57b5bed1": {
+      "id": "57b5bed1",
+      "index": "a0",
+      "kind": "text",
+      "name": "Diagram",
+      "parent": "f97f3e3b",
+      "style": {
+        "fontWeight": "650",
+        "margin": "0"
+      },
+      "tag": "b",
+      "text": "Diagram"
+    },
+    "5ce293d0": {
+      "id": "5ce293d0",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Tools",
+      "parent": "3d0b97f2",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--surface)",
+        "borderRight": "1px solid var(--line)",
+        "display": "flex",
+        "flex": "none",
+        "flexDirection": "column",
+        "gap": "6px",
+        "padding": "12px 0",
+        "width": "64px"
+      },
+      "tag": "nav"
+    },
+    "5e28635d": {
+      "id": "5e28635d",
+      "index": "a1",
+      "kind": "text",
+      "name": "returns",
+      "parent": "e395aec2",
+      "style": {
+        "color": "var(--ink-3)",
+        "fontSize": "13px"
+      },
+      "tag": "span",
+      "text": "returns"
+    },
+    "653e38d8": {
+      "id": "653e38d8",
+      "index": "a1",
+      "kind": "text",
+      "name": "Route 53",
+      "parent": "9c36f59f",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "Route 53"
+    },
+    "66a53b33": {
+      "id": "66a53b33",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg viewBox=\"0 0 1376 844\">\n        <line x1=\"292\" y1=\"342\" x2=\"400\" y2=\"342\" stroke=\"#1c1915\" stroke-width=\"1.5\"></line>\n        <line x1=\"510\" y1=\"384\" x2=\"510\" y2=\"480\" stroke=\"#1c1915\" stroke-width=\"1.5\"></line>\n        <line x1=\"620\" y1=\"318\" x2=\"760\" y2=\"162\" stroke=\"#1c1915\" stroke-width=\"1.5\"></line>\n        <line x1=\"870\" y1=\"204\" x2=\"870\" y2=\"300\" stroke=\"#1c1915\" stroke-width=\"1.5\"></line>\n      </svg>",
+      "name": "Links",
+      "parent": "54c7c574",
+      "style": {
+        "height": "100%",
+        "inset": "0",
+        "pointerEvents": "none",
+        "position": "absolute",
+        "width": "100%"
+      }
+    },
+    "6785ff00": {
+      "id": "6785ff00",
+      "index": "a2",
+      "kind": "text",
+      "name": "Node 22 · jobs",
+      "parent": "a4777896",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "Node 22 · jobs"
+    },
+    "69c280f8": {
+      "id": "69c280f8",
+      "index": "a2",
+      "kind": "text",
+      "name": "writes",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--bg)",
+        "color": "var(--ink-2)",
+        "fontSize": "12px",
+        "left": "468px",
+        "padding": "0 6px",
+        "position": "absolute",
+        "top": "420px"
+      },
+      "tag": "span",
+      "text": "writes"
+    },
+    "6fcb5e56": {
+      "id": "6fcb5e56",
+      "index": "a0",
+      "kind": "text",
+      "name": "Service · selected",
+      "parent": "44e6a9c9",
+      "style": {
+        "color": "var(--accent)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Service · selected"
+    },
+    "7090e56e": {
+      "id": "7090e56e",
+      "index": "a1",
+      "kind": "frame",
+      "name": "span",
+      "parent": "5ce293d0",
+      "style": {
+        "alignItems": "center",
+        "borderRadius": "8px",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "40px",
+        "justifyContent": "center",
+        "width": "40px"
+      },
+      "tag": "span"
+    },
+    "718e3338": {
+      "id": "718e3338",
+      "index": "a2",
+      "kind": "frame",
+      "name": "span",
+      "parent": "5ce293d0",
+      "style": {
+        "alignItems": "center",
+        "borderRadius": "8px",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "40px",
+        "justifyContent": "center",
+        "width": "40px"
+      },
+      "tag": "span"
+    },
+    "72e1bd46": {
+      "id": "72e1bd46",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"19\" cy=\"5\" r=\"2\"/><circle cx=\"5\" cy=\"19\" r=\"2\"/><path d=\"M5 17A12 12 0 0 1 17 5\"/></svg>",
+      "name": "spline",
+      "parent": "718e3338",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "75fefd93": {
+      "id": "75fefd93",
+      "index": "a3",
+      "kind": "frame",
+      "name": "span",
+      "parent": "44e6a9c9",
+      "style": {
+        "background": "var(--accent)",
+        "borderRadius": "99px",
+        "height": "12px",
+        "position": "absolute",
+        "right": "-6px",
+        "top": "36px",
+        "width": "12px"
+      },
+      "tag": "span"
+    },
+    "79e6fc74": {
+      "id": "79e6fc74",
+      "index": "a1",
+      "kind": "text",
+      "name": "Flows",
+      "parent": "f97f3e3b",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Flows"
+    },
+    "82272fdd": {
+      "id": "82272fdd",
+      "index": "a1",
+      "kind": "text",
+      "name": "CloudFront",
+      "parent": "8d6c51a2",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "CloudFront"
+    },
+    "8775789c": {
+      "id": "8775789c",
+      "index": "a1",
+      "kind": "text",
+      "name": "Runtime",
+      "parent": "0a744bf6",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Runtime"
+    },
+    "8cb30aba": {
+      "id": "8cb30aba",
+      "index": "a1",
+      "kind": "text",
+      "name": "Jobs",
+      "parent": "fa518511",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "Jobs"
+    },
+    "8d01dbeb": {
+      "id": "8d01dbeb",
+      "index": "a2",
+      "kind": "text",
+      "name": "Postgres 16",
+      "parent": "33b7006c",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "Postgres 16"
+    },
+    "8d6c51a2": {
+      "id": "8d6c51a2",
+      "index": "a6",
+      "kind": "frame",
+      "name": "CloudFront",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "72px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "188px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "8f8694f1": {
+      "id": "8f8694f1",
+      "index": "a1",
+      "kind": "text",
+      "name": "Main database",
+      "parent": "33b7006c",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "Main database"
+    },
+    "915ba63f": {
+      "id": "915ba63f",
+      "index": "a3",
+      "kind": "text",
+      "name": "Cluster",
+      "parent": "f97f3e3b",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Cluster"
+    },
+    "915f2a38": {
+      "id": "915f2a38",
+      "index": "a0",
+      "kind": "text",
+      "name": "Store",
+      "parent": "33b7006c",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Store"
+    },
+    "9307939d": {
+      "id": "9307939d",
+      "index": "aC",
+      "kind": "text",
+      "name": "Hint",
+      "parent": "54c7c574",
+      "style": {
+        "bottom": "22px",
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "left": "160px",
+        "margin": "0",
+        "position": "absolute"
+      },
+      "tag": "p",
+      "text": "Drag a part to move it. Hand or space pans. Scroll zooms. Drag the dot to draw a link."
+    },
+    "973f7237": {
+      "id": "973f7237",
+      "index": "a1",
+      "kind": "text",
+      "name": "2 issues",
+      "parent": "98aeeebf",
+      "style": {},
+      "tag": "span",
+      "text": "2 issues"
+    },
+    "98aeeebf": {
+      "id": "98aeeebf",
+      "index": "aE",
+      "kind": "frame",
+      "name": "Issues chip",
+      "parent": "54c7c574",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "8px",
+        "display": "flex",
+        "fontSize": "13px",
+        "gap": "8px",
+        "height": "32px",
+        "padding": "0 12px",
+        "position": "absolute",
+        "right": "16px",
+        "top": "16px"
+      },
+      "tag": "span"
+    },
+    "9c36f59f": {
+      "id": "9c36f59f",
+      "index": "a5",
+      "kind": "frame",
+      "name": "Route 53",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "72px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "80px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "9c6c4544": {
+      "id": "9c6c4544",
+      "index": "a1",
+      "kind": "text",
+      "name": "Returns API",
+      "parent": "44e6a9c9",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "Returns API"
+    },
+    "9fc666c9": {
+      "id": "9fc666c9",
+      "index": "a4",
+      "kind": "text",
+      "name": "subscribes",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--bg)",
+        "color": "var(--ink-2)",
+        "fontSize": "12px",
+        "left": "884px",
+        "padding": "0 6px",
+        "position": "absolute",
+        "top": "236px"
+      },
+      "tag": "span",
+      "text": "subscribes"
+    },
+    "a18769ff": {
+      "id": "a18769ff",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\"/><line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\"/></svg>",
+      "name": "circle-alert",
+      "parent": "98aeeebf",
+      "style": {
+        "color": "var(--ink-2)",
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "a1cbc432": {
+      "id": "a1cbc432",
+      "index": "a0",
+      "kind": "frame",
+      "name": "App",
+      "parent": "dd8d752f",
+      "style": {
+        "background": "var(--bg)",
+        "color": "var(--ink)",
+        "display": "flex",
+        "flexDirection": "column",
+        "fontFamily": "Figtree, sans-serif",
+        "height": "900px",
+        "overflow": "hidden",
+        "width": "1440px"
+      },
+      "tag": "section"
+    },
+    "a4777896": {
+      "id": "a4777896",
+      "index": "aA",
+      "kind": "frame",
+      "name": "Worker",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "760px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "300px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "a7a5bbc3": {
+      "id": "a7a5bbc3",
+      "index": "a4",
+      "kind": "text",
+      "name": "Proposal",
+      "parent": "f97f3e3b",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Proposal"
+    },
+    "acd6c4ae": {
+      "id": "acd6c4ae",
+      "index": "a7",
+      "kind": "frame",
+      "name": "ALB",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "72px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "300px",
+        "width": "220px"
+      },
+      "tag": "article"
+    },
+    "b0724ff9": {
+      "id": "b0724ff9",
+      "index": "a0",
+      "kind": "frame",
+      "name": "span",
+      "parent": "194b8ea8",
+      "style": {
+        "alignItems": "center",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "28px",
+        "justifyContent": "center",
+        "width": "28px"
+      },
+      "tag": "span"
+    },
+    "b727a621": {
+      "id": "b727a621",
+      "index": "a1",
+      "kind": "text",
+      "name": "100%",
+      "parent": "194b8ea8",
+      "style": {
+        "padding": "0 8px"
+      },
+      "tag": "span",
+      "text": "100%"
+    },
+    "bd12aca0": {
+      "id": "bd12aca0",
+      "index": "a2",
+      "kind": "text",
+      "name": "Ship",
+      "parent": "f97f3e3b",
+      "style": {
+        "color": "var(--ink-2)"
+      },
+      "tag": "span",
+      "text": "Ship"
+    },
+    "bf327e31": {
+      "id": "bf327e31",
+      "index": "a0",
+      "kind": "text",
+      "name": "Queue",
+      "parent": "fa518511",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Queue"
+    },
+    "bf9eb0c3": {
+      "id": "bf9eb0c3",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
+      "name": "plus",
+      "parent": "3105ba97",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "c4f77ab0": {
+      "id": "c4f77ab0",
+      "index": "a0",
+      "kind": "text",
+      "name": "Edge",
+      "parent": "acd6c4ae",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Edge"
+    },
+    "cc3e6b6a": {
+      "id": "cc3e6b6a",
+      "index": "a2",
+      "kind": "text",
+      "name": "returns.parcel.app",
+      "parent": "9c36f59f",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "2px 0 0"
+      },
+      "tag": "p",
+      "text": "returns.parcel.app"
+    },
+    "cee27b6b": {
+      "id": "cee27b6b",
+      "index": "a1",
+      "kind": "text",
+      "name": "Worker",
+      "parent": "a4777896",
+      "style": {
+        "fontSize": "16px",
+        "fontWeight": "650",
+        "lineHeight": "1.3",
+        "margin": "2px 0 0"
+      },
+      "tag": "h2",
+      "text": "Worker"
+    },
+    "cefe4813": {
+      "id": "cefe4813",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Top bar",
+      "parent": "a1cbc432",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--surface)",
+        "borderBottom": "1px solid var(--line)",
+        "display": "flex",
+        "flex": "none",
+        "gap": "28px",
+        "height": "56px",
+        "padding": "0 20px"
+      },
+      "tag": "header"
+    },
+    "cffba4a2": {
+      "id": "cffba4a2",
+      "index": "a0",
+      "kind": "svg",
+      "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z\"/></svg>",
+      "name": "mouse-pointer-2",
+      "parent": "f6350280",
+      "style": {
+        "display": "inline-flex",
+        "flexShrink": "0"
+      }
+    },
+    "d7609b38": {
+      "id": "d7609b38",
+      "index": "a0",
+      "kind": "text",
+      "name": "Parcel",
+      "parent": "e395aec2",
+      "style": {
+        "fontSize": "15px",
+        "fontWeight": "650",
+        "margin": "0"
+      },
+      "tag": "b",
+      "text": "Parcel"
+    },
+    "d8b916b1": {
+      "id": "d8b916b1",
+      "index": "a3",
+      "kind": "frame",
+      "name": "span",
+      "parent": "5ce293d0",
+      "style": {
+        "alignItems": "center",
+        "borderRadius": "8px",
+        "color": "var(--ink-2)",
+        "display": "flex",
+        "height": "40px",
+        "justifyContent": "center",
+        "width": "40px"
+      },
+      "tag": "span"
+    },
+    "dd8d752f": {
+      "id": "dd8d752f",
+      "index": "a0",
+      "kind": "frame",
+      "name": "01 · Diagram",
+      "style": {
+        "height": "900px",
+        "overflow": "hidden",
+        "width": "1440px"
+      }
+    },
+    "e395aec2": {
+      "id": "e395aec2",
+      "index": "a0",
+      "kind": "frame",
+      "name": "div",
+      "parent": "cefe4813",
+      "style": {
+        "alignItems": "baseline",
+        "display": "flex",
+        "gap": "10px",
+        "minWidth": "220px"
+      },
+      "tag": "div"
+    },
+    "e96f6122": {
+      "id": "e96f6122",
+      "index": "a0",
+      "kind": "text",
+      "name": "Edge",
+      "parent": "8d6c51a2",
+      "style": {
+        "color": "var(--ink-2)",
+        "fontSize": "13px",
+        "margin": "0"
+      },
+      "tag": "div",
+      "text": "Edge"
+    },
+    "ef683086": {
+      "id": "ef683086",
+      "index": "a2",
+      "kind": "text",
+      "name": "Code",
+      "parent": "0a744bf6",
+      "style": {
+        "color": "var(--ink-2)",
+        "padding": "4px 10px"
+      },
+      "tag": "span",
+      "text": "Code"
+    },
+    "f6350280": {
+      "id": "f6350280",
+      "index": "a0",
+      "kind": "frame",
+      "name": "Select",
+      "parent": "5ce293d0",
+      "style": {
+        "alignItems": "center",
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "8px",
+        "color": "var(--accent)",
+        "display": "flex",
+        "height": "40px",
+        "justifyContent": "center",
+        "width": "40px"
+      },
+      "tag": "span"
+    },
+    "f97f3e3b": {
+      "id": "f97f3e3b",
+      "index": "a1",
+      "kind": "frame",
+      "name": "Views",
+      "parent": "cefe4813",
+      "style": {
+        "alignItems": "center",
+        "display": "flex",
+        "fontSize": "14px",
+        "gap": "22px"
+      },
+      "tag": "nav"
+    },
+    "fa518511": {
+      "id": "fa518511",
+      "index": "a9",
+      "kind": "frame",
+      "name": "Jobs",
+      "parent": "54c7c574",
+      "style": {
+        "background": "var(--surface)",
+        "border": "1px solid var(--line)",
+        "borderRadius": "10px",
+        "left": "760px",
+        "padding": "12px 16px",
+        "position": "absolute",
+        "top": "120px",
+        "width": "220px"
+      },
+      "tag": "article"
+    }
+  },
+  "pages": {
+    "726c7b38": {
+      "frame": "dd8d752f",
+      "id": "726c7b38",
+      "index": "a0",
+      "name": "01 · Diagram",
+      "route": "/diagram"
+    }
+  },
+  "rules": {},
+  "sections": {},
+  "shared": {},
+  "tokens": {
+    "--accent": "#1e4d3a",
+    "--accent-ink": "#f6f3ec",
+    "--bg": "#f3f0e8",
+    "--ink": "#1c1915",
+    "--ink-2": "#5e584e",
+    "--ink-3": "#8a8376",
+    "--line": "#ddd6c8",
+    "--surface": "#fffdf8"
+  }
+}

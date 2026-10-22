@@ -23,7 +23,7 @@ const THEMES: [ThemeChoice, string, typeof Sun][] = [["light", "Light", Sun], ["
 
 /** Light, dark or the system's, always in reach at the foot of the rail. */
 export function ThemeSwitch() {
-  const [theme, setTheme] = useState<ThemeChoice>("system");
+  const [theme, setTheme] = useState<ThemeChoice>("light");
   useEffect(() => void window.buni.theme().then(setTheme), []);
   return (
     <div className="theme-switch" role="radiogroup" aria-label="Appearance">

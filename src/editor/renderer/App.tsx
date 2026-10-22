@@ -32,6 +32,10 @@ import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
 import { loadProject, useProject } from "./projectStore.ts";
 import { archParams, ArchitectureMode } from "./architecture/ArchitectureMode.tsx";
+import { TabletButton } from "./tablet/Connect.tsx";
+import { MarksPanel } from "./tablet/Marks.tsx";
+import { TabletView } from "./tablet/Tablet.tsx";
+import { marksOn } from "buni/tools/ink.ts";
 
 declare global {
   interface Window {
@@ -164,11 +168,14 @@ function Layers({ doc, root, depth, selected, also = [], expanded, onToggle, onS
 
 
 /** The editor for one open file; remounted when another file opens. */
+/** Opened from the tablet's QR (pair.ts): the design to draw on, not the editor. */
+const TABLET = new URLSearchParams(location.search).get("tablet") === "1";
+
 export function App({ snap }: { snap: Snapshot }) {
   // A link can open the design on one page (?page=): the extension's "Open in buni" lands on what was captured.
   const [page, setPage] = useState<Id | undefined>(() => new URLSearchParams(location.search).get("page") ?? undefined);
   const [selected, setSelected] = useState<Id>();
-  const [panel, setPanel] = useState<"design" | "agent" | "doc">("design");
+  const [panel, setPanel] = useState<"design" | "agent" | "doc" | "marks">("design");
   /** Layers shown open in the sidebar; page and component roots start open, everything else closed. */
   const [expanded, setExpanded] = useState<Set<Id>>(() => new Set());
   /** Pages whose layer list is hidden even while open. */
@@ -399,6 +406,21 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("copy", onCopy); document.removeEventListener("paste", onPaste); };
   }, [selected, also, doc, page, mode]);
   const [toast, setToast] = useState<string>();
+  // The mark the Marks panel points at, lit on the page.
+  const [litMark, setLitMark] = useState<Id>();
+  // A tablet's marks arriving: say so once, and open the Marks panel for them.
+  const markCount = Object.values(snap.view.comments).filter((c) => c.ink && c.state !== "resolved").length;
+  const marksSeen = useRef(markCount);
+  useEffect(() => {
+    const before = marksSeen.current;
+    marksSeen.current = markCount;
+    if (TABLET || markCount <= before) return;
+    const newest = Object.values(snap.view.comments).filter((c) => c.ink).sort((a, b) => (b.posts[0]?.at ?? "").localeCompare(a.posts[0]?.at ?? ""))[0];
+    if (!newest?.ink?.from) return;
+    const where = newest.ink.view ? `the ${newest.ink.view} view` : newest.ink.flow ? `the flow ${snap.view.flows[newest.ink.flow]?.name ?? ""}` : (newest.ink.page && snap.view.pages[newest.ink.page]?.name) || "a page";
+    setToast(`${newest.ink.from} drew a mark on ${where}`);
+    if (newest.ink.page === page) setPanel("marks");
+  }, [markCount, snap.view, page]);
   // The open page at every width side by side, in place of the canvas.
   const [comparing, setComparing] = useState(false);
   const [guides, setGuides] = useState(false);
@@ -737,6 +759,14 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => narrow.removeEventListener("change", fit);
   }, []);
   // The side panels float over the canvas; what they cover, for fitting pages and laying out the views beneath.
+  if (TABLET) {
+    return (
+      <>
+        <TabletView doc={doc} dir={snap.dir} fileName={fileName} onToast={setToast} />
+        {toast && <div className="toast" role="status">{toast}</div>}
+      </>
+    );
+  }
   const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
@@ -762,6 +792,7 @@ export function App({ snap }: { snap: Snapshot }) {
           </button>
         )}
         <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
+        <TabletButton onToast={setToast} />
         {activePage && mode === "screens" && (
           <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
             <PlayIcon size={16} strokeWidth={1.75} />
@@ -1018,12 +1049,18 @@ export function App({ snap }: { snap: Snapshot }) {
                   {agentCount ? `Agents · ${agentCount}` : "Agents"}
                 </button>
                 <button type="button" role="tab" aria-selected={panel === "doc"} className={panel === "doc" ? "on" : ""} onClick={() => setPanel("doc")}>Doc</button>
+                {activePage && (panel === "marks" || marksOn(doc, activePage).length > 0) && (
+                  <button type="button" role="tab" aria-selected={panel === "marks"} className={panel === "marks" ? "on" : ""} onClick={() => setPanel("marks")}>
+                    Marks{marksOn(doc, activePage).length ? ` · ${marksOn(doc, activePage).length}` : ""}
+                  </button>
+                )}
               </div>
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
             {panel === "design" && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
+            {panel === "marks" && activePage && <MarksPanel doc={doc} page={activePage} lit={litMark} onLight={setLitMark} onShow={(node) => { setSelected(node); setReveal({ page: activePage, at: Date.now() }); }} onToast={setToast} />}
             </div>
           </aside>
           )}

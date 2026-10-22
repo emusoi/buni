@@ -1,6 +1,9 @@
 import { memo, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
+import { linkLabel, routeAll, type Arrow } from "./links.ts";
+import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
+import { sketchesOpen } from "buni/tools/ink.ts";
 import { fontFaces, fontSlug, renderComponent, renderPage } from "buni/tools/html.ts";
 
 interface Props {
@@ -588,6 +591,7 @@ const Artboard = memo(function Artboard(props: {
         {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
         ) : <div className="board-placeholder" />}
+        {page && <InkLayer doc={doc} page={pageId} width={width} />}
         <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
         {drop && <div className="drop-line" style={{ left: drop.line.x, top: drop.line.y, width: drop.line.w, height: drop.line.h }} />}
         {box2 && !drop && !editing && (
@@ -602,49 +606,6 @@ const Artboard = memo(function Artboard(props: {
     </div>
   );
 });
-
-interface Arrow {
-  id: Id;
-  from: Id;
-  to: Id;
-  /** What triggers the link, shown along it. */
-  label: string;
-  /** Top centre of the triggering element, where the link's dot sits. */
-  x: number;
-  y: number;
-  /** Top and bottom edges of the page the link leaves from: the line starts at one, not across the page's content. */
-  sy: number;
-  sb: number;
-  /** Left edge and top of the target page's frame. */
-  tx: number;
-  ty: number;
-  /** Highest top of the two pages; lanes run above it. */
-  top: number;
-}
-
-/** Up from the top of the page, above the element, to a lane above both pages, across, and down into the target's top edge, with rounded corners. */
-function route(a: Arrow, lane: number, slot: number, zoom: number): { d: string; lx: number; ly: number } {
-  // Spacing is in screen pixels so lanes stay apart at any zoom.
-  const px = 1 / zoom;
-  const x2 = a.tx + (40 + slot * 24) * px;
-  const r = Math.min(10 * px, Math.abs(x2 - a.x) / 2);
-  const dir = x2 >= a.x ? 1 : -1;
-  // A page in a row below: down from the source's bottom edge to a lane in the gap just above the
-  // target's row, so the line never crosses the boards in between. Lanes squeeze to fit the gap.
-  if (goesDown(a, zoom)) {
-    const below = Math.max(a.sb + 16 * px, a.ty - (28 + lane * 22) * px);
-    const d = `M ${a.x} ${a.sb} V ${below - r} Q ${a.x} ${below} ${a.x + r * dir} ${below} H ${x2 - r * dir} Q ${x2} ${below} ${x2} ${below + r} V ${a.ty - 6}`;
-    return { d, lx: a.x + (x2 >= a.x ? 6 : -6) * px, ly: below - 5 * px };
-  }
-  const y = a.top - (28 + lane * 22) * px;
-  const d = `M ${a.x} ${a.sy} V ${y + r} Q ${a.x} ${y} ${a.x + r * dir} ${y} H ${x2 - r * dir} Q ${x2} ${y} ${x2} ${y + r} V ${a.ty - 6}`;
-  return { d, lx: a.x + (x2 >= a.x ? 6 : -6) * px, ly: y - 5 * px };
-}
-
-/** The link goes to a row below its page, with room for a lane between them. */
-function goesDown(a: Arrow, zoom: number): boolean {
-  return a.ty - 28 / zoom > a.sb + 16 / zoom;
-}
 
 /** Which links the canvas draws: the active page's, all of them, or none. */
 type LinkMode = "page" | "all" | "off";
@@ -663,7 +624,7 @@ export function arrows(doc: Doc, boxes: ReadonlyMap<Id, BoardRect>, boards: Read
     out.push({
       // A key link reads as its key; anything else as the layer that triggers it.
       // A condition is what tells a branch from the usual path out of the same element, so it is the label.
-      id: c.id, from: c.page, to: c.to, label: c.condition ? `if ${c.condition.charAt(0).toLowerCase()}${c.condition.slice(1)}` : c.trigger === "key" ? `${c.key ?? ""}` : doc.nodes[c.node]?.name ?? "",
+      id: c.id, from: c.page, to: c.to, label: linkLabel(doc, c),
       x: fx + (r ? r.left + r.width / 2 : from.width / 2), y: fy + (r?.top ?? 0), sy: fy, sb: fy + from.height, tx: to.x, ty, top: Math.min(fy, ty) - 24,
     });
   }
@@ -761,13 +722,9 @@ export function Canvas(props: Props) {
   const [links, setLinks] = useState<Arrow[]>([]);
   const [linkMode, setLinkMode] = useState<LinkMode>("page");
   const routed = useMemo(() => {
-    const slots = new Map<Id, number>(), lanes = { up: 0, down: 0 };
-    return links.filter((a) => linkMode !== "off" && (linkMode === "all" || a.from === props.activePage)).map((a) => {
-      const lane = goesDown(a, view.zoom) ? lanes.down++ : lanes.up++;
-      const slot = slots.get(a.to) ?? 0;
-      slots.set(a.to, slot + 1);
-      const kind = a.from === props.activePage ? "out" : a.to === props.activePage ? "in" : "other";
-      return { a, kind, ...route(a, lane, slot, view.zoom), endX: a.tx + (40 + slot * 24) / view.zoom };
+    return routeAll(links.filter((a) => linkMode !== "off" && (linkMode === "all" || a.from === props.activePage)), view.zoom).map((r) => {
+      const kind = r.a.from === props.activePage ? "out" : r.a.to === props.activePage ? "in" : "other";
+      return { ...r, kind };
     });
   }, [links, linkMode, props.activePage, view.zoom]);
   const drag = useRef<{ x: number; y: number; start: Point; moved: boolean; pick: boolean } | undefined>(undefined);
@@ -1240,6 +1197,10 @@ export function Canvas(props: Props) {
             ✦ {t.spot.label}
           </div>
         ))}
+        {/* Sketches of new screens, drawn on the tablet's canvas outside any page, where they were drawn: built ones faded. */}
+        <svg className="ink-layer" width={1} height={1} aria-hidden="true">
+          {sketchesOpen(props.doc).map((c) => <g key={c.id} opacity={c.state === "addressed" ? 0.35 : 1}><StrokePaths strokes={c.ink?.strokes ?? []} /></g>)}
+        </svg>
         <svg className="links" aria-hidden="true">
           <defs>
             {(["out", "in", "other"] as const).map((k) => (

@@ -11,6 +11,8 @@ export interface Finding {
   id: Id;
   message: string;
   fix: string;
+  /** The one tool call that repairs it, when `fix` already names every argument. Absent when a person still has to fill a blank in. */
+  apply?: { tool: string; args: Record<string, unknown> };
 }
 
 const RANK: Record<Severity, number> = { p1: 0, p2: 1, p3: 2 };
@@ -20,6 +22,26 @@ const LONG_RUNNING = new Set<Workload["kind"]>(["Deployment", "Rollout", "Statef
 const OUTBOUND = new Set<ArchLink["kind"]>(["calls", "reads", "writes", "publishes", "subscribes"]);
 
 const call = (tool: string, args: Record<string, unknown>) => `${tool} ${JSON.stringify(args)}`;
+/** Whole values the check still wants a person to choose. A real name that merely contains one of these stays applicable. */
+const BLANK = new Set(["CLUSTER_ID", "EDGE_PART", "REPO", "NAME", "WORKLOAD_ID", "MIGRATION_JOB_WORKLOAD", "PART_ID", "ISSUE", "RELEASE_ID", "PATH/", "DEPLOY_REPO/apps/NAME"]);
+const concrete = (value: unknown): boolean => {
+  if (typeof value === "string") return !BLANK.has(value) && !value.includes("DEPLOY_REPO");
+  if (Array.isArray(value)) return value.every(concrete);
+  if (value !== null && typeof value === "object") return Object.values(value).every(concrete);
+  return true;
+};
+// ponytail: apply is parsed back out of the `tool {json}` sentence an agent reads. The upgrade is to build the call once and render the sentence from it.
+function applyOf(fix: string): Finding["apply"] {
+  const space = fix.indexOf(" ");
+  if (space < 1 || !fix.endsWith("}")) return undefined;
+  const tool = fix.slice(0, space);
+  const json = fix.slice(space + 1);
+  if (!/^[a-z_]+$/.test(tool) || !json.startsWith("{")) return undefined;
+  let args: unknown;
+  try { args = JSON.parse(json); } catch { return undefined; }
+  if (!args || typeof args !== "object" || Array.isArray(args) || !concrete(args)) return undefined;
+  return { tool, args: args as Record<string, unknown> };
+}
 const hasAddon = (addons: readonly string[] | undefined, re: RegExp) => (addons ?? []).some((a) => re.test(a));
 /** A part that holds secrets for the cluster to read: Secrets Manager, Vault, Key Vault… */
 const holdsSecrets = (p: Part) => /secret|vault/i.test(`${p.managed ?? ""} ${p.tech ?? ""} ${p.name}`);
@@ -28,7 +50,10 @@ const holdsSecrets = (p: Part) => /secret|vault/i.test(`${p.managed ?? ""} ${p.t
 export function checkArchitecture(doc: Doc): Finding[] {
   const arch = architectureOf(doc);
   const out: Finding[] = [];
-  const add = (severity: Severity, rule: string, id: Id, message: string, fix: string) => out.push({ rule, severity, id, message, fix });
+  const add = (severity: Severity, rule: string, id: Id, message: string, fix: string) => {
+    const apply = applyOf(fix);
+    out.push({ rule, severity, id, message, fix, ...(apply ? { apply } : {}) });
+  };
   const parts = Object.values(arch.parts);
   const links = Object.values(arch.links);
   const workloads = Object.values(arch.workloads);

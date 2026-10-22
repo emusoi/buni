@@ -21,6 +21,7 @@ Reuse: make_component turns a layer into a component (nav bars, cards, footers);
 When a choice is the person's to make (copy, a direction, a trade-off), ask_person asks them in the editor and waits for the answer; don't ask about each step.
 Architecture (how the app is built and shipped, designed before it is built): set_part, link_parts, set_build, set_environment, set_cluster, set_namespace, set_workload, set_release, set_migration, set_stage and set_play; read_architecture gives the brief (level system, runtime or code; environment; focus). Plan a change with set_plan and mark what it adds status "planned" with plan; merge_plan is the person's to run.
 Designing the software path layer by layer: read_skill architecture; then check_architecture, fix what it finds, and export_architecture writes drafts (manifests, argocd, ci, brief) for the person to review.
+Pen marks the person drew on a tablet: read_marks lists them; screenshot with marks: true shows the handwriting. Answer each with comment {thread, body, addressed: true}.
 If an edit is refused, the reply says which reference or rule it broke; fix the call and retry.`;
 
 /**
@@ -29,7 +30,7 @@ If an edit is refused, the reply says which reference or rule it broke; fix the 
  */
 export interface HostTools {
   /** Renders a page to PNG (base64). Only a host with a browser engine can offer this. */
-  screenshot?: (pageId: string) => Promise<string>;
+  screenshot?: (pageId: string, marks?: boolean) => Promise<string>;
   /** A terminal screen as the characters a terminal shows, borders and all. Needs a browser engine too. */
   screenAsText?: (pageId: string) => Promise<string>;
   /** Loads a live website and returns a PNG (base64) and a short summary of its look. */
@@ -89,10 +90,10 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
   if (screenshot) {
     server.registerTool(
       "screenshot",
-      { description: "Render one page to a PNG.", inputSchema: { page: z.string() } },
-      async ({ page }) => {
+      { description: "Render one page to a PNG; marks draws the pen marks people left on it (read_marks lists them).", inputSchema: { page: z.string(), marks: z.boolean().optional() } },
+      async ({ page, marks }) => {
         if (!ws.view().pages[page]) return { content: [{ type: "text", text: `page "${page}" does not exist` }], isError: true };
-        return { content: [{ type: "image", data: await screenshot(page), mimeType: "image/png" }] };
+        return { content: [{ type: "image", data: await screenshot(page, marks), mimeType: "image/png" }] };
       },
     );
   }

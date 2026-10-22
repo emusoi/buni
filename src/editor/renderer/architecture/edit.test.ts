@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ARCH_COLLECTIONS, architectureOf, emptyDoc, type Architecture } from "buni/format/doc.ts";
 import { serializeDoc } from "buni/format/serialize.ts";
 import { Workspace } from "buni/tools/workspace.ts";
-import { ADDABLE, FORMS, addFor, dropOn, insertionAt, moveItem, orderAt, cascadeOf, cascadeText, changeFor, planChange, linkTargets, readInput, valueOf, type Call, type Field } from "./edit.ts";
+import { ADDABLE, FORMS, addFor, dropOn, insertionAt, moveItem, orderAt, cascadeOf, cascadeText, changeFor, planChange, linkTargets, readInput, shows, valueOf, type Call, type Field } from "./edit.ts";
 
 const parcelPath = new URL(import.meta.resolve("buni/examples/parcel.buni")).pathname;
 const withParcel = async () => {
@@ -42,6 +42,25 @@ test("nothing changed is no call; a required field can't be emptied; a refusal c
   const r = await run(ws, changeFor("namespaces", ns, field("namespaces", "name"), "Not A K8s Name"));
   expect(r.ok).toBe(false);
   expect(r.reply).toContain("isn't a Kubernetes name");
+});
+
+test("the inspector shows a field only where it applies", () => {
+  const roll = { id: "w", kind: "Rollout" as const, part: "api", service: { port: 8080 } };
+  expect(shows("workloads", roll, field("workloads", "schedule"))).toBe(false);
+  expect(shows("workloads", roll, field("workloads", "before"))).toBe(false);
+  expect(shows("workloads", roll, field("workloads", "name"))).toBe(false);
+  expect(shows("workloads", roll, field("workloads", "replicas.min"))).toBe(true);
+  expect(shows("workloads", roll, field("workloads", "ingress.host"))).toBe(true);
+  expect(shows("workloads", { id: "w", kind: "CronJob" }, field("workloads", "schedule"))).toBe(true);
+  expect(shows("workloads", { id: "w", kind: "Job" }, field("workloads", "before"))).toBe(true);
+  expect(shows("workloads", { id: "w", kind: "Job" }, field("workloads", "replicas.min"))).toBe(false);
+  expect(shows("workloads", { id: "w", kind: "Job", replicas: { min: 1 } }, field("workloads", "replicas.min"))).toBe(true);
+  expect(shows("workloads", { id: "w", kind: "Rollout", name: "api" }, field("workloads", "name"))).toBe(true);
+  expect(shows("releases", { id: "v", name: "v", parts: [], path: [], strategy: { kind: "rolling" } }, field("releases", "strategy.steps"))).toBe(false);
+  expect(shows("releases", { id: "v", name: "v", parts: [], path: [], strategy: { kind: "canary" } }, field("releases", "strategy.hold"))).toBe(true);
+  expect(shows("parts", { id: "db", name: "DB", kind: "store" }, field("parts", "build.repo"))).toBe(false);
+  expect(shows("parts", { id: "api", name: "API", kind: "service" }, field("parts", "build.repo"))).toBe(true);
+  expect(shows("parts", { id: "db", name: "DB", kind: "store", build: { repo: "acme/db" } }, field("parts", "build.repo"))).toBe(true);
 });
 
 test("fields that move together: a CronJob gets a schedule, a canary's steps go when it stops being one", async () => {

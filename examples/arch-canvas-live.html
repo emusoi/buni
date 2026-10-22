@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Parcel diagram</title>
+  <style>
+    html, body, #root { margin: 0; height: 100%; }
+    .excalidraw { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import React from "https://esm.sh/react@19.0.0";
+    import { createRoot } from "https://esm.sh/react-dom@19.0.0/client";
+    import { Excalidraw, convertToExcalidrawElements } from "https://esm.sh/@excalidraw/excalidraw@0.18.0?external=react,react-dom";
+
+    const elements = convertToExcalidrawElements([
+      { type: "rectangle", id: "dns", x: 80, y: 80, width: 220, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1, roundness: { type: 3 } },
+      { type: "text", x: 96, y: 96, text: "Edge\nRoute 53\nreturns.parcel.app", fontSize: 16, strokeColor: "#1c1915", textAlign: "left" },
+      { type: "rectangle", id: "cdn", x: 80, y: 200, width: 220, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1 },
+      { type: "text", x: 96, y: 216, text: "Edge\nCloudFront\nStatic assets", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "rectangle", id: "alb", x: 80, y: 320, width: 220, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1 },
+      { type: "text", x: 96, y: 336, text: "Edge\nALB\nTLS termination", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "rectangle", id: "api", x: 460, y: 320, width: 240, height: 84, strokeColor: "#1e4d3a", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 2 },
+      { type: "text", x: 476, y: 336, text: "Service\nReturns API\nNode 22 · REST", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "rectangle", id: "jobs", x: 860, y: 140, width: 220, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1 },
+      { type: "text", x: 876, y: 156, text: "Queue\nJobs\nSQS · RefundJob", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "rectangle", id: "worker", x: 860, y: 320, width: 220, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1 },
+      { type: "text", x: 876, y: 336, text: "Worker\nWorker\nNode 22 · jobs", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "rectangle", id: "db", x: 460, y: 520, width: 240, height: 84, strokeColor: "#1c1915", backgroundColor: "#fffdf8", fillStyle: "solid", roughness: 0, strokeWidth: 1 },
+      { type: "text", x: 476, y: 536, text: "Store\nMain database\nPostgres 16", fontSize: 16, strokeColor: "#1c1915" },
+      { type: "arrow", x: 300, y: 362, width: 160, height: 0, strokeColor: "#1c1915", roughness: 0, endArrowhead: "arrow" },
+      { type: "arrow", x: 580, y: 320, width: 280, height: -96, strokeColor: "#1c1915", roughness: 0, endArrowhead: "arrow" },
+      { type: "arrow", x: 970, y: 224, width: 0, height: 96, strokeColor: "#1c1915", roughness: 0, endArrowhead: "arrow" },
+      { type: "arrow", x: 580, y: 404, width: 0, height: 116, strokeColor: "#1c1915", roughness: 0, endArrowhead: "arrow" },
+    ]);
+
+    createRoot(document.getElementById("root")).render(
+      React.createElement("div", { style: { height: "100%" } },
+        React.createElement(Excalidraw, {
+          initialData: { elements, appState: { viewBackgroundColor: "#f3f0e8", currentItemRoughness: 0 } },
+        }),
+      ),
+    );
+  </script>
+</body>
+</html>

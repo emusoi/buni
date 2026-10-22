@@ -2,8 +2,9 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseDoc } from "buni/format/parse.ts";
 import { architectureOf, type Architecture } from "buni/format/doc.ts";
-import { between, boxesIn, codeLayout, labelBox, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
+import { between, boxesIn, codeLayout, contextLayout, SYSTEM_BOX, labelBox, columnsOf, moved, nearestBox, revealBy, snapMove, tabOrder, route, routeLinks, runtimeLayout, systemLayout, type MapBox, type MapLayout, type Rect } from "./layout.ts";
 import { planChanges } from "./Proposals.tsx";
+import { apiLayout } from "./apiLayout.ts";
 import { canaryAt, cardHeight, cronText, environmentOf, flowLook, payloadOf, previousVersion } from "./model.ts";
 
 const r = parseDoc(readFileSync(new URL(import.meta.resolve("buni/examples/parcel.buni")), "utf8"));
@@ -229,3 +230,48 @@ test("frames are drawn round what they hold, with even room on every side but th
     }
   }
 });
+
+test("context: people left, the system as one box, outside services right, links into the system as one arrow each way", () => {
+  const a: Architecture = structuredClone(arch);
+  a.parts.buyer = { id: "buyer", name: "Buyer", kind: "person" };
+  a.links["buyer-portal"] = { id: "buyer-portal", from: "buyer", to: Object.values(a.parts).find((p) => p.kind === "client")!.id, kind: "calls" };
+  const l = contextLayout(a);
+  expect(contextLayout(a)).toEqual(l);
+  const sys = box(l, SYSTEM_BOX)!;
+  const buyer = box(l, "buyer")!;
+  const outside = Object.values(a.parts).filter((p) => p.kind === "external");
+  expect(outside.length).toBeGreaterThan(0);
+  expect(buyer.x + buyer.w).toBeLessThan(sys.x);
+  for (const p of outside) expect(box(l, p.id)!.x).toBeGreaterThan(sys.x + sys.w);
+  // Inside parts are named in the system's box, not drawn as cards of their own.
+  expect(l.boxes.filter((b) => b.key !== SYSTEM_BOX).every((b) => a.parts[b.key]?.kind === "person" || a.parts[b.key]?.kind === "external")).toBe(true);
+  expect(sys.card.chips?.[0]).toContain(Object.values(a.parts).find((p) => p.kind === "client")!.name);
+  const into = l.links.find((x) => x.from === "buyer");
+  expect(into).toMatchObject({ to: SYSTEM_BOX, ids: ["buyer-portal"], label: "calls" });
+  for (const [i, x] of l.boxes.entries()) for (const y of l.boxes.slice(i + 1)) expect(overlap(x, y)).toBe(false);
+  expect(orthogonal(l)).toBe(true);
+  // People never show on the System level.
+  expect(box(systemLayout(a), "buyer")).toBeUndefined();
+});
+
+test("api: callers, then GraphQL cards, then the REST cards that serve them, every operation a row in its card", () => {
+  const a: Architecture = structuredClone(arch);
+  a.parts.gateway = { id: "gateway", name: "Gateway", kind: "service", api: { kind: "graphql", operations: [
+    { id: "ret", type: "query", field: "return(id: ID!)", returns: "Return", resolves: "get-return" },
+    { id: "refund", type: "mutation", field: "requestRefund(id: ID!)", resolves: "post-refund" },
+  ] } };
+  a.parts["returns-api"] = { ...a.parts["returns-api"]!, api: { kind: "rest", operations: [
+    { id: "get-return", method: "GET", path: "/returns/{id}" }, { id: "post-refund", method: "POST", path: "/returns/{id}/refund" },
+  ] } };
+  a.links["portal-gw"] = { id: "portal-gw", from: "buyer-portal", to: "gateway", kind: "calls" };
+  const l = apiLayout(a);
+  const [gql, rest] = [l.cards.find((c) => c.part.id === "gateway")!, l.cards.find((c) => c.part.id === "returns-api")!];
+  expect(l.callers.map((c) => c.part.id)).toContain("buyer-portal");
+  expect(l.callers.find((c) => c.part.id === "buyer-portal")!.to.sort()).toEqual(["gateway", "returns-api"]);
+  expect(gql.x).toBeLessThan(rest.x);
+  expect(gql.sections.map((s) => s.label)).toEqual(["Query", "Mutation"]);
+  expect(rest.rows.map((r) => r.op.id)).toEqual(["get-return", "post-refund"]);
+  for (const c of l.cards) for (const r of c.rows) expect(r.y >= c.y && r.y + 30 <= c.y + c.h).toBe(true);
+  expect(apiLayout(arch).cards).toEqual([]);
+});
+
