@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from "react";
 import { ChevronRight, Diamond, FileText, Link2, MessageCircle, Unlink } from "lucide-react";
 import { pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
+import { layerHtml, layerJsx } from "buni/tools/html.ts";
 import type { EditTool } from "../api.ts";
 import { useDismiss } from "./useDismiss.ts";
 
@@ -34,6 +35,8 @@ export function ContextMenu({ doc, node, page, at, onRun, onComment, onClose }: 
       {item("Comment…", "agents read it", () => { onComment(); onClose(); }, <MessageCircle size={13} />)}
       <div className="menu-rule" />
       {item("Copy", "⌘C", () => { document.execCommand("copy"); onClose(); })}
+      {item("Copy as HTML", "inline styles", () => { void navigator.clipboard.writeText(layerHtml(doc, node)); onClose(); })}
+      {item("Copy as React", "JSX", () => { void navigator.clipboard.writeText(layerJsx(doc, node)); onClose(); })}
       {item("Duplicate", "⌘D", () => act("duplicate_nodes", { nodes: [node] }, (r) => r.match(/Copied: ([^,.\s]+)/)?.[1]))}
       {item("Wrap in a frame", "⌘G", () => act("wrap_nodes", { nodes: [node] }, (r) => r.match(/Frame (\S+) holds/)?.[1]))}
       {item("Make a component", "", () => act("make_component", { node }), <Diamond size={13} />)}

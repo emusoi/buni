@@ -1,4 +1,4 @@
-import { memo, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
@@ -467,6 +467,81 @@ const Artboard = memo(function Artboard(props: {
     const r = el.getBoundingClientRect();
     setBox({ x: r.left, y: r.top, w: r.width, h: r.height });
   }, [props.selected, props.version, width, height, loads]); // the board's drawing changes with these
+
+  // The selected frame's spacing, dragged where it is: the gap between its first two children, and its padding at
+  // the top and left edges (each sets both sides). Shown live in the page; written once, on release.
+  type Rect = { x: number; y: number; w: number; h: number };
+  const [spacing, setSpacing] = useState<{ gap?: Rect & { axis: "x" | "y" }; pad?: { t: number; l: number } }>();
+  const measureSpacing = useCallback(() => {
+    const sel = props.selected;
+    const node = sel ? doc.nodes[sel] : undefined;
+    const el = sel ? frame.current?.contentDocument?.querySelector<HTMLElement>(`.b-${sel}`) : null;
+    const cs = el?.ownerDocument.defaultView?.getComputedStyle(el);
+    if (!sel || !el || !cs || node?.kind !== "frame" || node.parent === undefined) { setSpacing(undefined); return; }
+    const kids = childrenOf(doc, sel).filter((c) => !c.hidden).map((c) => el.querySelector<HTMLElement>(`.b-${c.id}`)?.getBoundingClientRect()).filter((k) => k !== undefined);
+    const [a, b] = kids;
+    let gap: (Rect & { axis: "x" | "y" }) | undefined;
+    if (cs.display === "flex" && a && b) {
+      gap = cs.flexDirection.startsWith("column")
+        ? { x: a.left, y: a.bottom, w: a.width, h: Math.max(0, b.top - a.bottom), axis: "y" }
+        : { x: a.right, y: a.top, w: Math.max(0, b.left - a.right), h: a.height, axis: "x" };
+    }
+    setSpacing({ ...(gap ? { gap } : {}), pad: { t: parseFloat(cs.paddingTop) || 0, l: parseFloat(cs.paddingLeft) || 0 } });
+  }, [props.selected, doc]);
+  useEffect(measureSpacing, [measureSpacing, box2]);
+  const dragSpacing = (what: "gap" | "pt" | "pl") => (e: ReactPointerEvent<HTMLSpanElement>) => {
+    const sel = props.selected;
+    const el = sel ? frame.current?.contentDocument?.querySelector<HTMLElement>(`.b-${sel}`) : null;
+    const cs = el?.ownerDocument.defaultView?.getComputedStyle(el);
+    if (!sel || !el || !cs) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const px = (v: string) => parseFloat(v) || 0;
+    const along = what === "pl" || (what === "gap" && spacing?.gap?.axis === "x") ? "x" : "y";
+    const start = { x: e.clientX, y: e.clientY, from: what === "gap" ? px(along === "x" ? cs.columnGap : cs.rowGap) : what === "pt" ? px(cs.paddingTop) : px(cs.paddingLeft) };
+    const pad = { t: px(cs.paddingTop), r: px(cs.paddingRight), b: px(cs.paddingBottom), l: px(cs.paddingLeft) };
+    const value = (ev: PointerEvent) => Math.max(0, Math.round(start.from + (along === "x" ? ev.clientX - start.x : ev.clientY - start.y) / props.zoom.current));
+    const apply = (v: number) => {
+      if (what === "gap") el.style.gap = `${v}px`;
+      else if (what === "pt") el.style.paddingTop = el.style.paddingBottom = `${v}px`;
+      else el.style.paddingLeft = el.style.paddingRight = `${v}px`;
+    };
+    const move = (ev: PointerEvent) => { apply(value(ev)); measureSpacing(); };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const v = value(ev);
+      const p = what === "pt" ? { ...pad, t: v, b: v } : { ...pad, l: v, r: v };
+      // The shorthand, as short as it can be.
+      const padding = p.t === p.b && p.l === p.r ? (p.t === p.l ? `${p.t}px` : `${p.t}px ${p.l}px`) : `${p.t}px ${p.r}px ${p.b}px ${p.l}px`;
+      void window.buni.edit("update_styles", { nodes: [sel], style: what === "gap" ? { gap: `${v}px` } : { padding }, ...(props.viewWidth !== undefined ? { width: props.viewWidth } : {}) });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  // Holding ⌥ over another layer measures from the selected one to it: a line and a number for each axis they're apart on.
+  const [gauge, setGauge] = useState<(Rect & { label: string })[]>();
+  const measureMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!e.altKey || !box2 || !props.selected || drag.current) { if (gauge) setGauge(undefined); return; }
+    const p = local(e);
+    const id = pickNode(doc, frame.current, p.x, p.y);
+    const r = id && id !== props.selected ? frame.current?.contentDocument?.querySelector(`.b-${CSS.escape(id)}`)?.getBoundingClientRect() : undefined;
+    if (!r) { if (gauge) setGauge(undefined); return; }
+    const s = { left: box2.x, right: box2.x + box2.w, top: box2.y, bottom: box2.y + box2.h };
+    const lines: (Rect & { label: string })[] = [];
+    const span = (from: number, to: number): [number, number] => [from, to];
+    const dx = r.left >= s.right ? span(s.right, r.left) : r.right <= s.left ? span(r.right, s.left) : undefined;
+    const dy = r.top >= s.bottom ? span(s.bottom, r.top) : r.bottom <= s.top ? span(r.bottom, s.top) : undefined;
+    if (dx) { const y = (Math.max(s.top, r.top) + Math.min(s.bottom, r.bottom)) / 2; lines.push({ x: dx[0], y, w: dx[1] - dx[0], h: 0, label: `${Math.round(dx[1] - dx[0])}` }); }
+    if (dy) { const x = (Math.max(s.left, r.left) + Math.min(s.right, r.right)) / 2; lines.push({ x, y: dy[0], w: 0, h: dy[1] - dy[0], label: `${Math.round(dy[1] - dy[0])}` }); }
+    setGauge(lines);
+  };
+  useEffect(() => {
+    const up = (e: KeyboardEvent) => { if (e.key === "Alt") setGauge(undefined); };
+    window.addEventListener("keyup", up);
+    return () => window.removeEventListener("keyup", up);
+  }, []);
   const resize = (edge: "e" | "s" | "se") => (e: ReactPointerEvent<HTMLSpanElement>) => {
     const sel = props.selected;
     const el = sel ? frame.current?.contentDocument?.querySelector<HTMLElement>(`.b-${sel}`) : null;
@@ -592,16 +667,22 @@ const Artboard = memo(function Artboard(props: {
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
         ) : <div className="board-placeholder" />}
         {page && <InkLayer doc={doc} page={pageId} width={width} />}
-        <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
+        <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={(e) => { dragMove(e); measureMove(e); }} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
         {drop && <div className="drop-line" style={{ left: drop.line.x, top: drop.line.y, width: drop.line.w, height: drop.line.h }} />}
         {box2 && !drop && !editing && (
-          <div className="sel-box" style={{ left: box2.x, top: box2.y, width: box2.w, height: box2.h }}>
+          <div className={`sel-box${gauge?.length ? " measuring" : ""}`} style={{ left: box2.x, top: box2.y, width: box2.w, height: box2.h }}>
             <span className="sel-size">{Math.round(box2.w)} × {Math.round(box2.h)}</span>
             <span className="sel-handle e" onPointerDown={resize("e")} title="Drag to set the width" />
             <span className="sel-handle s" onPointerDown={resize("s")} title="Drag to set the height" />
             <span className="sel-handle se" onPointerDown={resize("se")} title="Drag to set both" />
+            {spacing?.gap && <span className={`gap-handle ${spacing.gap.axis}`} style={{ left: spacing.gap.x - box2.x, top: spacing.gap.y - box2.y, width: spacing.gap.w, height: spacing.gap.h }} onPointerDown={dragSpacing("gap")} title="Drag to set the gap between the children" />}
+            {spacing?.pad && <span className="pad-handle t" style={{ top: spacing.pad.t }} onPointerDown={dragSpacing("pt")} title="Drag to set the padding above and below" />}
+            {spacing?.pad && <span className="pad-handle l" style={{ left: spacing.pad.l }} onPointerDown={dragSpacing("pl")} title="Drag to set the padding left and right" />}
           </div>
         )}
+        {gauge?.map((m) => (
+          <div key={`${m.x},${m.y}`} className={`measure ${m.w ? "x" : "y"}`} style={{ left: m.x, top: m.y, width: m.w, height: m.h }}><span>{m.label}</span></div>
+        ))}
       </div>
     </div>
   );

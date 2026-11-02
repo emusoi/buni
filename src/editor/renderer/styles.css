@@ -1235,6 +1235,21 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .sel-handle.e { right: 0; top: 50%; transform: translate(50%, -50%); cursor: ew-resize; }
 .sel-handle.s { bottom: 0; left: 50%; transform: translate(-50%, 50%); cursor: ns-resize; }
 .sel-handle.se { right: 0; bottom: 0; transform: translate(50%, 50%); cursor: nwse-resize; }
+/* Spacing dragged on the canvas: the gap between the first two children as a strip, the padding as a bar at the top and left edges. */
+.gap-handle { position: absolute; pointer-events: auto; background: rgb(51 70 211 / 0.1); box-sizing: border-box; }
+.gap-handle.x { min-width: calc(6px * var(--inv, 1)); cursor: ew-resize; }
+.gap-handle.y { min-height: calc(6px * var(--inv, 1)); cursor: ns-resize; }
+.gap-handle:hover, .gap-handle:active { background: rgb(51 70 211 / 0.3); }
+.pad-handle { position: absolute; pointer-events: auto; background: #3346d3; opacity: 0.45; border-radius: 999px; }
+.pad-handle.t { left: 30%; right: 30%; height: calc(3px * var(--inv, 1)); transform: translateY(-50%); cursor: ns-resize; }
+.pad-handle.l { top: 30%; bottom: 30%; width: calc(3px * var(--inv, 1)); transform: translateX(-50%); cursor: ew-resize; }
+.pad-handle:hover, .pad-handle:active { opacity: 1; }
+/* ⌥ over another layer: the distance to it, on each axis they're apart on. */
+.measure { position: absolute; z-index: 5; pointer-events: none; background: #e0457b; }
+.sel-box.measuring .sel-size { display: none; }
+.measure.x { height: calc(1px * var(--inv, 1)); transform: translateY(-50%); }
+.measure.y { width: calc(1px * var(--inv, 1)); transform: translateX(-50%); }
+.measure span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--inv, 1)); padding: 1px 5px; border-radius: 4px; background: #e0457b; color: #fff; font: 600 10px var(--mono); white-space: nowrap; }
 
 /* Styles a component use gives the component's layers. */
 .override-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-2); }

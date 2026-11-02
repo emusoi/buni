@@ -12,6 +12,10 @@ const GROUPS: [string, [string, string][]][] = [
     ["⌘G", "Wrap in a frame"],
     ["⌫", "Delete"],
     ["Double-click in Layers", "Rename; drag a row to move the layer"],
+    ["Drag a selected layer", "Move it before or after a layer, or into an empty frame"],
+    ["Drag the strip / bars", "The gap between a frame's children / its padding"],
+    ["⌥ hover", "Measure from the selected layer to the one under the pointer"],
+    ["Right-click", "Copy as HTML or React, link, wrap, make a component…"],
   ]],
   ["Canvas", [
     ["Space + drag", "Pan"],
