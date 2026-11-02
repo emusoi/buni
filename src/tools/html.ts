@@ -447,7 +447,15 @@ const BASE_CSS = "*, *::before, *::after {\n  box-sizing: border-box;\n}\nbody {
 
 function tokensCss(doc: Doc): string {
   // In name order, as the file keeps them: the CSS of a page doesn't change when only the tokens' order did.
-  return BASE_CSS + cssRule(":root", Object.fromEntries(Object.entries(doc.tokens).sort(([a], [b]) => (a < b ? -1 : 1))));
+  const sorted = (t: Record<string, string>) => Object.fromEntries(Object.entries(t).sort(([a], [b]) => (a < b ? -1 : 1)));
+  let css = BASE_CSS + cssRule(":root", sorted(doc.tokens));
+  // A mode is asked for on <html data-mode>; "dark" also follows the system where nothing asked.
+  for (const [mode, values] of Object.entries(doc.modes ?? {}).sort(([a], [b]) => (a < b ? -1 : 1))) {
+    if (Object.keys(values).length === 0) continue;
+    css += cssRule(`:root[data-mode="${mode}"]`, sorted(values));
+    if (mode === "dark") css += `@media (prefers-color-scheme: dark) {\n${cssRule(":root:not([data-mode])", sorted(values))}}\n`;
+  }
+  return css;
 }
 
 /** Source-tree styles for the selected components, or all of them for the exported stylesheet. */

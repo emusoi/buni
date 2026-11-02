@@ -706,6 +706,11 @@ export interface Doc {
   tokensRef?: string;
   /** CSS custom property name ("--color-ink") to value. */
   tokens: Record<string, string>;
+  /**
+   * Other appearances of the tokens, by mode name ("dark"): the tokens that differ there, to their values. A page
+   * is drawn in a mode on the canvas, in Play, and on the exported site; "dark" also follows the system's choice.
+   */
+  modes?: Record<string, Record<string, string>>;
   pages: Record<Id, Page>;
   /**
    * Pages of the files this one imports, as links may reach them: filled in with the imports (withImports),
@@ -821,6 +826,10 @@ export function withImports(doc: Doc, context: Doc | undefined): Doc {
   out.shared = { ...context.shared, ...doc.shared };
   out.nodes = { ...componentNodes(context), ...doc.nodes };
   out.tokens = { ...context.tokens, ...doc.tokens };
+  if (context.modes || doc.modes) {
+    out.modes = { ...context.modes };
+    for (const [mode, values] of Object.entries(doc.modes ?? {})) out.modes[mode] = { ...context.modes?.[mode], ...values };
+  }
   // Links a component holds on every use come with it.
   out.connections = { ...Object.fromEntries(Object.entries(context.connections).filter(([, c]) => context.shared[c.page])), ...doc.connections };
   // The imported files' pages, as places a link may go: names and routes only, never drawn here.

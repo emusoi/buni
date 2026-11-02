@@ -5,6 +5,14 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: token modes. `modes` in the file holds, by mode name ("dark"), the tokens that differ there; `tokens
+  {mode, set}` sets them and reading gives every mode's values. The canvas draws every board in a mode (a button
+  beside Links and Tidy, one per mode), Play follows, and the exported site answers to `<html data-mode>` and, for
+  dark, to the system's choice. The Tokens panel shows a Dark column for colours once the mode exists.
+- Added: on the canvas, a selected frame's gap (a strip between its first two children) and padding (bars at its
+  top and left edges) drag; ⌥ over another layer measures the distance to it; a layer's right-click menu copies it
+  as HTML or React. Tabs on a design see where each other is: chips in the toolbar, and each one's selected layer
+  outlined and tagged in their colour, as an agent's spot is.
 - Added: the architecture as text people write by hand. `read_architecture_text` gives it as YAML, a section per
   collection keyed by id with defaults left out and links on one line (`web calls api`); `write_architecture_text
   {text}` replaces the whole architecture with what a text says as one undoable edit (unchanged things untouched),

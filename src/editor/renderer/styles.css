@@ -1139,6 +1139,9 @@ button.insert-where:hover { color: var(--ink); }
 .tokens-head .hint { flex: 1; min-width: 0; font-size: 11px; }
 .token-group { display: flex; flex-direction: column; gap: 4px; }
 .token-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+/* With a dark mode, a colour's row carries its dark swatch and value too. */
+.token-row:has(.token-swatch.dark) { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 0.8fr) auto; }
+.zoom button.active { background: var(--sidebar); color: var(--ink); }
 .token-row:not(:has(.token-swatch)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
 form.token-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
 .token-swatch { position: relative; width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--rule); cursor: pointer; overflow: hidden; }

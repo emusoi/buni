@@ -905,7 +905,7 @@ export class Reader {
 
   doc(v: unknown): Doc {
     const o = this.obj(v, "", [
-      "buni", "imports", "tokensRef", "tokens", "pages", "nodes", "shared", "connections",
+      "buni", "imports", "tokensRef", "tokens", "modes", "pages", "nodes", "shared", "connections",
       "flows", "journeys", "comments", "sections", "rules", "attachments", "architecture",
       ...LEGACY_COLLECTIONS,
     ]);
@@ -918,6 +918,10 @@ export class Reader {
       doc.imports.forEach((path, i) => { if (!path.endsWith(".buni") || path.startsWith("/")) this.fail(`imports[${i}]`, "imports are relative paths to .buni files"); });
     }
     doc.tokens = this.strMap(o.tokens, "tokens");
+    if (o.modes !== undefined) {
+      if (!isRecord(o.modes)) this.fail("modes", "expected an object of modes, each an object of token values");
+      else doc.modes = Object.fromEntries(Object.entries(o.modes).filter(([k]) => this.safeKey(k, join("modes", k))).map(([k, v]) => [k, this.strMap(v, join("modes", k))]));
+    }
     doc.pages = this.byId(o.pages, "pages", (x, p) => this.page(x, p));
     doc.nodes = this.byId(o.nodes, "nodes", (x, p) => this.node(x, p));
     doc.shared = this.byId(o.shared, "shared", (x, p) => this.shared(x, p));
@@ -962,6 +966,13 @@ function checkRefs(doc: Doc, r: Reader): void {
   for (const [name, value] of Object.entries(doc.tokens)) {
     if (!/^--[A-Za-z0-9_-]+$/.test(name)) r.fail(join("tokens", name), 'token names are "--" then letters, digits, - and _');
     if (UNSAFE_CSS.test(value)) r.fail(join("tokens", name), CSS_MESSAGE);
+  }
+  for (const [mode, values] of Object.entries(doc.modes ?? {})) {
+    if (!/^[a-z][a-z0-9-]{0,31}$/.test(mode)) r.fail(join("modes", mode), "a mode name is lowercase letters, digits and -, starting with a letter");
+    for (const [name, value] of Object.entries(values)) {
+      if (!/^--[A-Za-z0-9_-]+$/.test(name)) r.fail(join(join("modes", mode), name), 'token names are "--" then letters, digits, - and _');
+      if (UNSAFE_CSS.test(value)) r.fail(join(join("modes", mode), name), CSS_MESSAGE);
+    }
   }
   const checkStyle = (style: Style, path: string) => {
     for (const [k, v] of Object.entries(style)) {

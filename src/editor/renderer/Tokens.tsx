@@ -33,11 +33,13 @@ export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | 
   const uses = useMemo(() => tokenUses(doc.nodes), [doc.nodes]);
   const [adding, setAdding] = useState<{ name: string; value: string }>();
   const nameField = useRef<HTMLInputElement>(null);
-  const set = async (name: string, value: string) => {
-    const r = await window.buni.edit("tokens", { set: { [name]: value } });
+  const set = async (name: string, value: string, mode?: string) => {
+    const r = await window.buni.edit("tokens", { set: { [name]: value }, ...(mode ? { mode } : {}) });
     onError(r.ok ? undefined : r.reply);
     return r.ok;
   };
+  // Dark mode: the colours that differ there, beside each colour; blank leaves the colour as it is in the light.
+  const dark = doc.modes?.dark;
   const entries = Object.entries(doc.tokens).sort(([a], [b]) => (a < b ? -1 : 1));
   const groups: [string, [string, string][]][] = [
     ["Colours", entries.filter(([, v]) => COLOR.test(v.trim()))],
@@ -49,6 +51,7 @@ export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | 
       <div className="tokens-head">
         <b>Tokens</b>
         <span className="hint">{doc.tokensRef ? `Shared from ${doc.tokensRef}` : "Layers using var(--name) follow a change"}</span>
+        {!dark && entries.length > 0 && <button type="button" className="link-btn" title="Give the colours a dark appearance: pages can be drawn in it, and the site follows the system" onClick={() => void set("--mode", "", "dark")}>☾ Dark mode</button>}
         <button type="button" className="icon-btn small" aria-label="Add a token" title="Add a token" onClick={() => setAdding({ name: "--", value: "" })}><Plus size={13} /></button>
       </div>
       {adding && (
@@ -78,6 +81,16 @@ export function Tokens({ doc, own, onError }: { doc: Doc; own?: Doc["tokens"] | 
               <input key={value} className="field mono" defaultValue={value} aria-label={`${name} value`}
                 onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v && v !== value) void set(name, v); }}
                 onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.currentTarget.value = value; e.currentTarget.blur(); } }} />
+              {dark && title === "Colours" && (
+                <>
+                  <label className="token-swatch dark" style={{ background: dark[name] ?? value }} title={dark[name] ? "Pick the dark colour" : "As in the light"}>
+                    <input type="color" value={hex(dark[name] ?? value) ?? "#000000"} aria-label={`${name} dark colour`} onChange={(e) => void set(name, e.target.value, "dark")} />
+                  </label>
+                  <input key={`dark:${dark[name] ?? ""}`} className="field mono narrow" defaultValue={dark[name] ?? ""} placeholder="dark" aria-label={`${name} dark value`}
+                    onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v !== (dark[name] ?? "")) void set(name, v, "dark"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.currentTarget.value = dark[name] ?? ""; e.currentTarget.blur(); } }} />
+                </>
+              )}
               {own && own[name] === undefined ? <span className="token-from" title="From an imported file; a value set here overrides it in this file">core</span> : <button type="button" className="icon-btn small" aria-label={`Remove ${name}`} title={(uses.get(name) ?? 0) ? `${(uses.get(name) ?? 0)} layers use it; they lose this value` : "Remove"} onClick={() => void set(name, "")}><X size={12} /></button>}
             </div>
           ))}

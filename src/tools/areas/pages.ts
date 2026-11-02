@@ -855,12 +855,17 @@ export const pagesTools = {
   }),
 
   tokens: tool({
-    description: "Read design tokens, or set them (CSS custom properties; empty string removes).",
-    input: { set: z.record(z.string(), z.string()).optional() },
+    description:
+      "Read design tokens, or set them (CSS custom properties; empty string removes). With mode (\"dark\"), set the values " +
+      "tokens take in that mode: only the ones that differ. Pages are drawn in a mode on the canvas, in Play and on the " +
+      "exported site, and \"dark\" follows the system too. Reading gives the tokens and every mode's values.",
+    input: { set: z.record(z.string(), z.string()).optional(), mode: z.string().regex(/^[a-z][a-z0-9-]{0,31}$/).optional() },
     run: async (doc, a) => {
-      if (!a.set) return { label: "Read tokens", ops: [], reply: JSON.stringify(doc.tokens, null, 2) };
-      const ops: Op[] = Object.entries(a.set).map(([name, value]) => (value === "" ? { kind: "token", name } : { kind: "token", name, value }));
-      return { label: `Set ${ops.length} token${ops.length === 1 ? "" : "s"}`, ops, reply: "Tokens updated." };
+      if (!a.set) return { label: "Read tokens", ops: [], reply: JSON.stringify({ tokens: doc.tokens, ...(doc.modes ? { modes: doc.modes } : {}) }, null, 2) };
+      const mode = a.mode === undefined ? {} : { mode: a.mode };
+      const ops: Op[] = Object.entries(a.set).map(([name, value]) => (value === "" ? { kind: "token", name, ...mode } : { kind: "token", name, value, ...mode }));
+      const where = a.mode === undefined ? "" : ` in ${a.mode} mode`;
+      return { label: `Set ${ops.length} token${ops.length === 1 ? "" : "s"}${where}`, ops, reply: `Tokens updated${where}.` };
     },
   }),
 

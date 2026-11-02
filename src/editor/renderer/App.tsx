@@ -300,6 +300,8 @@ export function App({ snap }: { snap: Snapshot }) {
   }, [activePage, selected]);
   // Pages shown at one of their other widths; while one is, its layers are styled at that width.
   const [viewAt, setViewAt] = useState<Record<Id, number>>({});
+  // The token mode the boards are drawn in ("dark"); Play follows it.
+  const [tokenMode, setTokenMode] = useState<string>();
   const viewWidth = useCallback((pageId: Id, w: number | undefined) => setViewAt((v) => {
     const { [pageId]: _old, ...rest } = v;
     return w === undefined ? rest : { ...rest, [pageId]: w };
@@ -1021,6 +1023,8 @@ export function App({ snap }: { snap: Snapshot }) {
               selected={selected}
               also={also}
               viewAt={viewAt}
+              mode={tokenMode}
+              onMode={setTokenMode}
               onSelectPage={selectBoard}
               onSelectNode={selectNode}
               onMenu={openMenu}
@@ -1125,6 +1129,7 @@ export function App({ snap }: { snap: Snapshot }) {
         <Play
           doc={app}
           dir={snap.dir}
+          mode={tokenMode}
           start={play.page}
           {...(play.flow ? { flow: play.flow } : {})}
           startWidth={viewAt[play.page]}

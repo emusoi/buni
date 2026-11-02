@@ -34,13 +34,15 @@ function elapsed(ms: number): string {
  * the journey drawer says what the person should be doing and thinking here, and notes pinned on
  * the page go to the agent in one request.
  */
-export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSend, onLeave }: {
+export function Play({ doc, dir, start, flow: wanted, startWidth, mode, onClose, onSend, onLeave }: {
   doc: Doc;
   dir: string;
   start: Id;
   flow?: Id;
   /** The width the canvas showed the page at, to play it there. */
   startWidth?: number | undefined;
+  /** The token mode the canvas was drawn in, to play in it too. */
+  mode?: string | undefined;
   onClose: () => void;
   /** Hands the notes and found issues to the agent as a request. */
   onSend: (request: string) => void;
@@ -111,8 +113,8 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, onClose, onSen
     const marks = hot || flash ? links.map((c) => `.b-${c.node}{${ring}}`).join("") : "";
     const cursor = noting ? "*{cursor:crosshair!important}" : links.map((c) => `.b-${c.node}{cursor:pointer}`).join("");
     // Play is where motion runs; the canvas shows each layer at rest.
-    return srcdoc(doc, here.page, dir, `${motionCss(doc)}${marks}${cursor}`);
-  }, [doc, dir, here.page, links, hot, flash, noting]);
+    return srcdoc(doc, here.page, dir, `${motionCss(doc)}${marks}${cursor}`, mode);
+  }, [doc, dir, here.page, links, hot, flash, noting, mode]);
 
   const go = (page: Id, via?: Connection) => {
     if (!doc.pages[page]) return onLeave?.(page);

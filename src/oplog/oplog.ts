@@ -13,7 +13,8 @@ export type EntityOf<C extends Collection> = C extends ArchCollection ? Architec
 export type Op =
   | { [C in Collection]: { kind: "put"; collection: C; value: EntityOf<C> } }[Collection]
   | { kind: "delete"; collection: Collection; id: Id }
-  | { kind: "token"; name: string; value?: string }
+  /** With `mode`, the token's value in that mode ("dark"); without a value, the token (or its mode value) goes. */
+  | { kind: "token"; name: string; value?: string; mode?: string }
   | { kind: "imports"; value: string[] };
 
 /** One reviewable step, e.g. one tool call: "Heading size". */
@@ -94,10 +95,13 @@ function applyOp(doc: Doc, op: Op): void {
     case "delete":
       if (!isArchCollection(op.collection)) delete doc[op.collection][op.id];
       return;
-    case "token":
-      if (op.value === undefined) delete doc.tokens[op.name];
-      else doc.tokens[op.name] = op.value;
+    case "token": {
+      // A mode stays once made, even with nothing in it yet: the editor shows it to fill in.
+      const bag = op.mode === undefined ? doc.tokens : ((doc.modes ??= {})[op.mode] ??= {});
+      if (op.value === undefined) delete bag[op.name];
+      else bag[op.name] = op.value;
       return;
+    }
     case "imports":
       if (op.value.length === 0) delete doc.imports;
       else doc.imports = op.value;
@@ -126,6 +130,7 @@ function tidy(doc: Doc): Doc {
  */
 function copyFor(doc: Doc, ops: readonly Op[]): Doc {
   const next: Doc = { ...doc, tokens: ops.some((op) => op.kind === "token") ? { ...doc.tokens } : doc.tokens };
+  if (ops.some((op) => op.kind === "token" && op.mode !== undefined)) next.modes = Object.fromEntries(Object.entries(doc.modes ?? {}).map(([m, v]) => [m, { ...v }]));
   const touched = new Set(ops.flatMap((op) => (op.kind === "put" || op.kind === "delete" ? [op.collection] : [])));
   const arch = [...touched].filter(isArchCollection);
   if (arch.length) {
@@ -292,8 +297,9 @@ export function invert(doc: Doc, ops: readonly Op[]): Op[] {
     .map((op): Op => {
       if (op.kind === "imports") return { kind: "imports", value: doc.imports ?? [] };
       if (op.kind !== "token") return restore(doc, op.collection, op.kind === "put" ? op.value.id : op.id);
-      const prev = doc.tokens[op.name];
-      return prev === undefined ? { kind: "token", name: op.name } : { kind: "token", name: op.name, value: prev };
+      const prev = (op.mode === undefined ? doc.tokens : doc.modes?.[op.mode])?.[op.name];
+      const mode = op.mode === undefined ? {} : { mode: op.mode };
+      return prev === undefined ? { kind: "token", name: op.name, ...mode } : { kind: "token", name: op.name, value: prev, ...mode };
     })
     .reverse();
 }
@@ -324,6 +330,11 @@ export function diffOps(from: Doc, to: Doc): Op[] {
   for (const c of ARCH_COLLECTIONS) archDiff(c, from.architecture, to.architecture, out);
   for (const name of Object.keys(from.tokens)) if (!(name in to.tokens)) out.push({ kind: "token", name });
   for (const [name, value] of Object.entries(to.tokens)) if (from.tokens[name] !== value) out.push({ kind: "token", name, value });
+  for (const mode of new Set([...Object.keys(from.modes ?? {}), ...Object.keys(to.modes ?? {})])) {
+    const a = from.modes?.[mode] ?? {}, b = to.modes?.[mode] ?? {};
+    for (const name of Object.keys(a)) if (!(name in b)) out.push({ kind: "token", name, mode });
+    for (const [name, value] of Object.entries(b)) if (a[name] !== value) out.push({ kind: "token", name, value, mode });
+  }
   if (JSON.stringify(from.imports ?? []) !== JSON.stringify(to.imports ?? [])) out.push({ kind: "imports", value: to.imports ?? [] });
   return out;
 }

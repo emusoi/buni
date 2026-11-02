@@ -176,3 +176,17 @@ describe("settle", () => {
     expect(next.pages).toBe(base.pages);
   });
 });
+
+test("a token op with a mode sets the mode's value, undoes to what was there, and a diff finds it", async () => {
+  const { applyOps, invert, diffOps } = await import("./oplog.ts");
+  const { emptyDoc } = await import("../format/doc.ts");
+  const doc = { ...emptyDoc(), tokens: { "--bg": "#fff" } };
+  const set = [{ kind: "token", name: "--bg", value: "#111", mode: "dark" }] as const;
+  const dark = applyOps(doc, set);
+  expect(dark.modes).toEqual({ dark: { "--bg": "#111" } });
+  expect(doc.modes).toBeUndefined();
+  expect(invert(doc, set)).toEqual([{ kind: "token", name: "--bg", mode: "dark" }]);
+  expect(applyOps(dark, invert(doc, set)).modes).toEqual({ dark: {} });
+  expect(diffOps(doc, dark)).toEqual([{ kind: "token", name: "--bg", value: "#111", mode: "dark" }]);
+  expect(diffOps(dark, doc)).toEqual([{ kind: "token", name: "--bg", mode: "dark" }]);
+});

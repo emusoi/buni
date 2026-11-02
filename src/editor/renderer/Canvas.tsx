@@ -18,6 +18,9 @@ interface Props {
   also: readonly Id[];
   /** Pages shown at one of their other widths. */
   viewAt?: Readonly<Record<Id, number>>;
+  /** The token mode every board is drawn in ("dark"), or none for the tokens as they are. */
+  mode?: string | undefined;
+  onMode?: (mode: string | undefined) => void;
   /** Where each busy agent is working: outlined and tagged in its colour; the first is scrolled into view. */
   focus: readonly AgentSpot[];
   /** What agents just changed, to show it arriving. */
@@ -51,18 +54,19 @@ export interface AgentSpot {
 /** The app's own copy of an embedded font: every board shares one load and decode instead of carrying its own. */
 const fontFile = (family: string) => new URL(`fonts/${fontSlug(family)}.woff2`, location.href).href;
 
-export function srcdoc(doc: Doc, pageId: Id, dir: string, extraCss = ""): string {
-  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss);
+export function srcdoc(doc: Doc, pageId: Id, dir: string, extraCss = "", mode?: string): string {
+  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss, mode);
 }
 
 /** A component board as a standalone document, for previews. */
-export function componentSrcdoc(doc: Doc, sharedId: Id, dir: string, extraCss = ""): string {
-  return wrap(renderComponent(doc, sharedId), dir, fontFaces(doc, fontFile) + extraCss);
+export function componentSrcdoc(doc: Doc, sharedId: Id, dir: string, extraCss = "", mode?: string): string {
+  return wrap(renderComponent(doc, sharedId), dir, fontFaces(doc, fontFile) + extraCss, mode);
 }
 
-function wrap({ html, css }: { html: string; css: string }, dir: string, extraCss: string): string {
+/** `mode`: one of the design's token modes to draw in ("dark"); the tokens' CSS answers to it on <html>. */
+function wrap({ html, css }: { html: string; css: string }, dir: string, extraCss: string, mode?: string): string {
   const base = `${window.buni.assetBase ?? "file://"}${dir.split("/").map(encodeURIComponent).join("/")}/`;
-  return `<!doctype html><html><head><meta charset="utf-8"><base href="${base}"><style>html,body{margin:0;overflow:hidden}${css}${extraCss}</style></head><body>${html}</body></html>`;
+  return `<!doctype html><html${mode ? ` data-mode="${mode}"` : ""}><head><meta charset="utf-8"><base href="${base}"><style>html,body{margin:0;overflow:hidden}${css}${extraCss}</style></head><body>${html}</body></html>`;
 }
 
 /** Small pictures in the overview, rather than hundreds of live browsing contexts. */
@@ -258,7 +262,7 @@ function previewSoon(draw: () => Promise<void>): () => void {
  * between versions, so this compares by identity.
  */
 export function touchedBoards(prev: Doc, next: Doc): Set<Id> | undefined {
-  if (prev.tokens !== next.tokens || prev.shared !== next.shared || prev.attachments !== next.attachments) return undefined;
+  if (prev.tokens !== next.tokens || prev.modes !== next.modes || prev.shared !== next.shared || prev.attachments !== next.attachments) return undefined;
   const out = new Set<Id>();
   if (prev.pages !== next.pages) for (const id of new Set([...Object.keys(prev.pages), ...Object.keys(next.pages)])) if (prev.pages[id] !== next.pages[id]) out.add(id);
   if (prev.nodes === next.nodes) return out;
@@ -299,6 +303,8 @@ const Artboard = memo(function Artboard(props: {
   uses: number;
   /** One of the page's other widths to show it at, instead of its own. */
   viewWidth?: number | undefined;
+  /** The token mode to draw in. */
+  mode?: string | undefined;
   /** The selected layer: pressing it and dragging moves it. */
   selected?: Id | undefined;
   /** Read when handling a pointer, so zooming doesn't re-render every board. */
@@ -340,7 +346,7 @@ const Artboard = memo(function Artboard(props: {
   const [html, setHtml] = useState("");
   useEffect(() => {
     if (!live) { setHtml(""); return; }
-    return buildSoon(() => setHtml(page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir)), true);
+    return buildSoon(() => setHtml(page ? srcdoc(doc, pageId, props.dir, "", props.mode) : componentSrcdoc(doc, pageId, props.dir, "", props.mode)), true);
     // Not `doc`: most boards keep their drawing when an edit happens elsewhere.
   }, [props.version, pageId, props.dir, page, live]);
   // Keep the document out of DOM attributes: inspection otherwise copies megabytes per board.
@@ -367,7 +373,7 @@ const Artboard = memo(function Artboard(props: {
     };
     const cancelBuild = previewSoon(async () => {
       try {
-        const html = page ? srcdoc(doc, pageId, props.dir) : componentSrcdoc(doc, pageId, props.dir);
+        const html = page ? srcdoc(doc, pageId, props.dir, "", props.mode) : componentSrcdoc(doc, pageId, props.dir, "", props.mode);
         const svg = await thumbnail(html, width, height, props.previewWidth, props.resources);
         if (cancelled) return;
         await new Promise<void>((resolve) => {
@@ -1257,8 +1263,9 @@ export function Canvas(props: Props) {
             marks={marks}
             uses={uses.get(p.id) ?? 0}
             viewWidth={props.viewAt?.[p.id]}
+            mode={props.mode}
             selected={p.id === props.activePage ? props.selected : undefined}
-            version={`${d.all}.${d.board.get(p.id) ?? 0}`}
+            version={`${d.all}.${d.board.get(p.id) ?? 0}.${props.mode ?? ""}`}
             zoom={zoom}
             onDrag={onDrag}
             register={register}
@@ -1346,6 +1353,11 @@ export function Canvas(props: Props) {
           Links {linkMode === "page" ? "here" : linkMode}
         </button>
         <button type="button" onClick={() => props.onTidy(tidy(own, heights.current))} title="One row per flow, then the rest">Tidy</button>
+        {Object.keys(props.doc.modes ?? {}).map((m) => (
+          <button type="button" key={m} className={props.mode === m ? "active" : undefined} onClick={() => props.onMode?.(props.mode === m ? undefined : m)} title={`Draw every page in ${m} mode; click again for the tokens as they are`}>
+            {m === "dark" ? "☾ " : ""}{m[0]?.toUpperCase()}{m.slice(1)}
+          </button>
+        ))}
       </div>
     </div>
   );

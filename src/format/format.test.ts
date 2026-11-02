@@ -316,3 +316,17 @@ describe("screen states", () => {
     expect(orphan).toContainEqual({ path: "pages.s3.route", message: 'no screen has route "/nowhere" for this to be a state of' });
   });
 });
+
+test("token modes: parsed, checked, kept through serialize, and drawn as CSS for <html data-mode> and the system's dark", () => {
+  const doc = { ...emptyDoc(), tokens: { "--bg": "#fff", "--ink": "#111" }, modes: { dark: { "--bg": "#111", "--ink": "#eee" } } };
+  const again = parseDoc(serializeDoc(doc));
+  if (!again.ok) throw new Error(again.errors.map((e) => e.message).join("; "));
+  expect(again.doc.modes).toEqual({ dark: { "--bg": "#111", "--ink": "#eee" } });
+  const css = exportSite(again.doc, embeddedFont).get("styles/tokens.css") ?? "";
+  expect(css).toContain(':root[data-mode="dark"] {');
+  expect(css).toContain("@media (prefers-color-scheme: dark)");
+  expect(css).toContain(":root:not([data-mode]) {");
+  const bad = parseDoc(serializeDoc({ ...doc, modes: { "Dark Mode": { "--bg": "#000" }, dark: { bg: "url(javascript:1)" } } }));
+  expect(bad.ok).toBe(false);
+  if (!bad.ok) expect(bad.errors.map((e) => e.path).sort()).toEqual(["modes.Dark Mode", "modes.dark.bg"]);
+});
