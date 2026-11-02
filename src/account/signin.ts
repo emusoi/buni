@@ -59,6 +59,42 @@ export async function signInWithPassword(server: string, email: string, password
   return { token, person };
 }
 
+/** A sign-in started for this machine: the secret it polls with, the code the person compares by eye, and the page to approve it. */
+export interface Started {
+  deviceCode: string;
+  userCode: string;
+  url: string;
+  intervalMs: number;
+  expiresAt: number;
+}
+
+/** Asks the server for a code; the person approves it at `url`, signed in there. `name` says which machine. */
+export async function startDeviceSignIn(server: string, name: string, fetcher: Fetch = fetch): Promise<Started> {
+  const r = await call(server, "/auth/device/start", { method: "POST", body: JSON.stringify({ name }) }, fetcher);
+  if (r.status === 404) throw new SignInError(`${new URL(server).host} doesn't sign machines in from the browser; is it a buni server?`);
+  const [deviceCode, userCode, url] = [r.body.deviceCode, r.body.userCode, r.body.url].map(text);
+  if (!r.ok || !deviceCode || !userCode || !url) throw new SignInError(text(r.body.error) ?? "The server didn't start the sign-in.");
+  const intervalMs = typeof r.body.intervalMs === "number" ? r.body.intervalMs : 2000;
+  const expiresAt = typeof r.body.expiresAt === "number" ? r.body.expiresAt : Date.now() + 10 * 60_000;
+  return { deviceCode, userCode, url, intervalMs, expiresAt };
+}
+
+/** Waits for the person to approve the sign-in; the token and who it is for. Throws when it expires or is cancelled. */
+export async function waitForDevice(server: string, started: Started, signal: AbortSignal, fetcher: Fetch = fetch): Promise<{ token: string; person: Person }> {
+  while (Date.now() < started.expiresAt) {
+    if (signal.aborted) throw new SignInError("Sign-in cancelled.");
+    const r = await call(server, "/auth/device/token", { method: "POST", body: JSON.stringify({ deviceCode: started.deviceCode }) }, fetcher);
+    if (r.body.state === "approved") {
+      const token = text(r.body.token);
+      const person = personOf(r.body.person);
+      if (token && person) return { token, person };
+    }
+    if (r.body.state === "expired") break;
+    await new Promise((resolve) => setTimeout(resolve, started.intervalMs));
+  }
+  throw new SignInError("That sign-in expired before it was approved. Run buni login again.");
+}
+
 /** Who a token belongs to; undefined once it is revoked. */
 export async function fetchPerson(server: string, token: string, fetcher: Fetch = fetch): Promise<Person | undefined> {
   const r = await call(server, "/auth/me", { headers: { authorization: `Bearer ${token}` } }, fetcher);

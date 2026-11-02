@@ -75,5 +75,7 @@ export async function forgetAccount(secrets: Secrets = osSecrets, file = ACCOUNT
 export async function signedIn(): Promise<Account> {
   const account = await loadAccount();
   if (!account) throw new Error("Not signed in. Run: buni login");
+  // A token from before buni had accounts of its own (Wazo's) is refused by every server now.
+  if (!process.env.BUNI_TOKEN && !account.token.startsWith("buni_")) throw new Error("Your saved sign-in is from before buni had its own accounts. Run: buni login");
   return account;
 }

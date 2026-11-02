@@ -23,7 +23,7 @@ import { renderHeadless, screenAsText, screenshotPng } from "./term/render.ts";
 import { embeddedFont } from "./tools/fontdata.ts";
 import { VERSION } from "./version.ts";
 import { ACCOUNT_FILE, DEFAULT_SERVER, saveAccount, signedIn, type Account } from "./account/account.ts";
-import { checkServer } from "./account/signin.ts";
+import { checkServer, type Person } from "./account/signin.ts";
 
 const COMMANDS = `buni — design tools for agents and people. Edits are written to the file at once (keep it in git to go back).
 
@@ -64,7 +64,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   export <file.buni> <out-dir>      write the site as static HTML + CSS
   split <file.buni> core <core.buni>      move every component and token into a core file the design imports
   mcp <file.buni>                   serve the tools over MCP (stdio); "buni mcp --remote" alone: all your designs there
-  login [--server URL]              sign in with your email and password; your designs on buni.emusoi.app (or URL) then work with --remote
+  login [--server URL]              sign in: approve a code in the browser (--with-password: type them here); then --remote works
   logout | whoami                   sign out of it, or say who you are signed in as
   ls                                your designs on that buni server
 `;
@@ -461,14 +461,30 @@ async function ask(question: string, hidden = false): Promise<string> {
   return new Promise((resolve) => rl.question("", (answer) => { rl.close(); if (hidden) process.stdout.write("\n"); resolve(answer.trim()); }));
 }
 
-/** Signs in with an email and password; the server gives the command line a token of its own, kept for that server. */
-async function login(server: string | undefined): Promise<number> {
-  const { signInWithPassword } = await import("./account/signin.ts");
+/**
+ * Signs in: a code here, approved in the browser where the person is signed in to the server, and the command line
+ * gets a token of its own, kept for that server. --with-password asks for the email and password here instead.
+ */
+async function login(server: string | undefined, withPassword: boolean): Promise<number> {
+  const { signInWithPassword, startDeviceSignIn, waitForDevice } = await import("./account/signin.ts");
   const target = checkServer(server ?? DEFAULT_SERVER);
-  console.log(`Signing in to ${new URL(target).host}.`);
-  const email = await ask("Email: ");
-  const password = await ask("Password: ", true);
-  const { token, person } = await signInWithPassword(target, email, password, `buni CLI on ${hostname()}`);
+  const name = `buni CLI on ${hostname()}`;
+  let signedInAs: { token: string; person: Person };
+  if (withPassword) {
+    console.log(`Signing in to ${new URL(target).host}.`);
+    const email = await ask("Email: ");
+    const password = await ask("Password: ", true);
+    signedInAs = await signInWithPassword(target, email, password, name);
+  } else {
+    const { openUrl } = await import("./term/open.ts");
+    const started = await startDeviceSignIn(target, name);
+    console.log(`Approve this sign-in in the browser; check it shows ${started.userCode}.\nIf the browser didn't open: ${started.url}`);
+    openUrl(started.url);
+    const stop = new AbortController();
+    process.once("SIGINT", () => stop.abort());
+    signedInAs = await waitForDevice(target, started, stop.signal);
+  }
+  const { token, person } = signedInAs;
   const where = await saveAccount({ server: target, token, person });
   console.log(`Signed in as ${person.name} (@${person.username}). Your designs on ${new URL(target).host}: buni ls`);
   if (where === "file") console.log(`There's no keychain here, so the sign-in is kept in ${ACCOUNT_FILE} (readable only by you).`);
@@ -675,7 +691,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         console.error("usage: buni login [--server URL]");
         return 2;
       }
-      return login(server);
+      return login(server, args.includes("--with-password"));
     }
     case "logout": {
       const { forgetAccount, loadAccount } = await import("./account/account.ts");

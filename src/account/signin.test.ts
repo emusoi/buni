@@ -1,5 +1,5 @@
 import { afterAll, expect, test } from "bun:test";
-import { checkServer, fetchPerson, revokeToken, SignInError, signInWithPassword } from "./signin.ts";
+import { checkServer, fetchPerson, revokeToken, SignInError, signInWithPassword, startDeviceSignIn, waitForDevice } from "./signin.ts";
 
 // A small buni server: one account, tokens made by /auth/token, /auth/me for a live one, /auth/signout forgets it.
 const tokens = new Set<string>();
@@ -51,4 +51,36 @@ test("tokens only travel over https, or to this machine", () => {
   expect(checkServer("http://127.0.0.1:7720")).toBe("http://127.0.0.1:7720");
   expect(() => checkServer("http://buni.emusoi.app")).toThrow(SignInError);
   expect(() => checkServer("not a url")).toThrow(SignInError);
+});
+
+test("a sign-in from the browser: a code to approve, polled until a token comes back; an old one says so", async () => {
+  let approved = false;
+  const box = Bun.serve({
+    port: 0,
+    async fetch(req) {
+      const url = new URL(req.url);
+      if (url.pathname === "/auth/device/start") return Response.json({ deviceCode: "dev-1", userCode: "ABCD-EFGH", url: `${url.origin}/approve?code=ABCD-EFGH`, intervalMs: 5, expiresAt: Date.now() + 60_000 });
+      if (url.pathname === "/auth/device/token") {
+        const { deviceCode } = (await req.json()) as { deviceCode: string };
+        if (deviceCode === "dev-old") return Response.json({ state: "expired" });
+        if (!approved) { approved = true; return Response.json({ state: "pending" }); }
+        return Response.json({ state: "approved", token: "buni_fresh", person: { id: "u1", username: "ada", name: "Ada" } });
+      }
+      return Response.json({ error: "not found" }, { status: 404 });
+    },
+  });
+  try {
+    const base = `http://localhost:${box.port}`;
+    const started = await startDeviceSignIn(base, "buni CLI on a Mac");
+    expect(started.userCode).toBe("ABCD-EFGH");
+    expect(started.url).toBe(`${base}/approve?code=ABCD-EFGH`);
+    const got = await waitForDevice(base, started, new AbortController().signal);
+    expect(got).toEqual({ token: "buni_fresh", person: { id: "u1", username: "ada", name: "Ada" } });
+    await expect(waitForDevice(base, { ...started, deviceCode: "dev-old" }, new AbortController().signal)).rejects.toThrow("expired");
+    const stop = new AbortController();
+    stop.abort();
+    await expect(waitForDevice(base, started, stop.signal)).rejects.toThrow("cancelled");
+  } finally {
+    box.stop(true);
+  }
 });
