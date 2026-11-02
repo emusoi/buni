@@ -23,7 +23,7 @@ import { renderHeadless, screenAsText, screenshotPng } from "./term/render.ts";
 import { embeddedFont } from "./tools/fontdata.ts";
 import { VERSION } from "./version.ts";
 import { ACCOUNT_FILE, DEFAULT_SERVER, saveAccount, signedIn, type Account } from "./account/account.ts";
-import { checkServer } from "./account/wazo.ts";
+import { checkServer } from "./account/signin.ts";
 
 const COMMANDS = `buni — design tools for agents and people. Edits are written to the file at once (keep it in git to go back).
 
@@ -62,7 +62,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   export <file.buni> <out-dir>      write the site as static HTML + CSS
   split <file.buni> core <core.buni>      move every component and token into a core file the design imports
   mcp <file.buni>                   serve the tools over MCP (stdio)
-  login [--server URL]              sign in with Wazo; your designs on buni.emusoi.app (or URL) then work with --remote
+  login [--server URL]              sign in with your email and password; your designs on buni.emusoi.app (or URL) then work with --remote
   logout | whoami                   sign out of it, or say who you are signed in as
   ls                                your designs on that buni server
 `;
@@ -439,20 +439,34 @@ function contextArgs(args: readonly string[]): { focus?: string } {
   return focus ? { focus } : {};
 }
 
-/** Signs in with Wazo: a code here, approved on Wazo's site in the browser; the token is kept for this buni server. */
+/** Lines piped in, read once, when there is no terminal to ask at. */
+let piped: string[] | undefined;
+
+/** A line typed at the terminal; with `hidden`, nothing is echoed (a password). Piped in, the next line. */
+async function ask(question: string, hidden = false): Promise<string> {
+  process.stdout.write(question);
+  if (!process.stdin.isTTY) {
+    const lines = (piped ??= (await stdin()).split("\n"));
+    return lines.shift()?.trim() ?? "";
+  }
+  const { createInterface } = await import("node:readline");
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+  if (hidden) {
+    // The line is read with its echo off: readline's own echo is replaced with nothing.
+    const asTty = rl as unknown as { _writeToOutput: (s: string) => void };
+    asTty._writeToOutput = () => undefined;
+  }
+  return new Promise((resolve) => rl.question("", (answer) => { rl.close(); if (hidden) process.stdout.write("\n"); resolve(answer.trim()); }));
+}
+
+/** Signs in with an email and password; the server gives the command line a token of its own, kept for that server. */
 async function login(server: string | undefined): Promise<number> {
-  const { fetchPerson, startSignIn, waitForApproval, WAZO_URL } = await import("./account/wazo.ts");
-  const { openUrl } = await import("./term/open.ts");
+  const { signInWithPassword } = await import("./account/signin.ts");
   const target = checkServer(server ?? DEFAULT_SERVER);
-  if (target !== checkServer(DEFAULT_SERVER)) console.log(`Signing in for ${new URL(target).host}: it will hold a Wazo token for your account, so only use a buni server you trust.`);
-  const started = await startSignIn(WAZO_URL, `buni CLI on ${hostname()}`);
-  console.log(`Check that Wazo shows ${started.userCode}, then choose Allow.\nIf the browser didn't open: ${started.url}`);
-  openUrl(started.url);
-  const stop = new AbortController();
-  process.once("SIGINT", () => stop.abort());
-  const token = await waitForApproval(WAZO_URL, started, stop.signal);
-  const person = await fetchPerson(WAZO_URL, token);
-  if (!person) throw new Error("Wazo didn't accept the new sign-in. Try again.");
+  console.log(`Signing in to ${new URL(target).host}.`);
+  const email = await ask("Email: ");
+  const password = await ask("Password: ", true);
+  const { token, person } = await signInWithPassword(target, email, password, `buni CLI on ${hostname()}`);
   const where = await saveAccount({ server: target, token, person });
   console.log(`Signed in as ${person.name} (@${person.username}). Your designs on ${new URL(target).host}: buni ls`);
   if (where === "file") console.log(`There's no keychain here, so the sign-in is kept in ${ACCOUNT_FILE} (readable only by you).`);
@@ -663,18 +677,18 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     }
     case "logout": {
       const { forgetAccount, loadAccount } = await import("./account/account.ts");
-      const { revokeToken, WAZO_URL } = await import("./account/wazo.ts");
+      const { revokeToken } = await import("./account/signin.ts");
       const was = await loadAccount();
       await forgetAccount();
-      if (was && !process.env.BUNI_TOKEN) await revokeToken(WAZO_URL, was.token);
+      if (was && !process.env.BUNI_TOKEN) await revokeToken(was.server, was.token);
       console.log(process.env.BUNI_TOKEN ? "Forgot the saved sign-in, but $BUNI_TOKEN is set, so commands still sign in with it." : was ? "Signed out." : "You weren't signed in.");
       return 0;
     }
     case "whoami": {
       const account = await signedIn();
-      const { fetchPerson, WAZO_URL } = await import("./account/wazo.ts");
-      const person = await fetchPerson(WAZO_URL, account.token);
-      if (!person) throw new Error("Wazo no longer accepts this sign-in. Run: buni login");
+      const { fetchPerson } = await import("./account/signin.ts");
+      const person = await fetchPerson(account.server, account.token);
+      if (!person) throw new Error(`${new URL(account.server).host} no longer accepts this sign-in. Run: buni login`);
       console.log(json ? JSON.stringify({ server: account.server, person }) : `${person.name} (@${person.username}) on ${new URL(account.server).host}`);
       return 0;
     }

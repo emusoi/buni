@@ -13,7 +13,7 @@ test("login takes --server either way, and refuses anything else before signing 
   for (const form of [["--server", "http://buni.example"], ["--server=http://buni.example"]]) {
     const r = cli("login", ...form);
     expect(r.code).not.toBe(0);
-    expect(r.out).toContain("only signs in to Wazo over https");
+    expect(r.out).toContain("only signs in over https");
   }
   const r = cli("login", "something-else");
   expect(r.code).toBe(2);

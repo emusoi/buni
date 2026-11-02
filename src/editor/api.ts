@@ -1,4 +1,4 @@
-import type { Person } from "../account/wazo.ts";
+import type { Person } from "../account/signin.ts";
 import type { Doc, Id } from "buni/format/doc.ts";
 import type { Edit } from "buni/tools/workspace.ts";
 import type { DocPatch } from "buni/format/patch.ts";

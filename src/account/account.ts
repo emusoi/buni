@@ -5,7 +5,7 @@ import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { osSecrets, type Secrets } from "./keychain.ts";
-import { checkServer, type Person } from "./wazo.ts";
+import { checkServer, personOf, type Person } from "./signin.ts";
 
 /** Where designs are kept unless $BUNI_SERVER_URL or `buni login --server` says otherwise. */
 export const DEFAULT_SERVER = process.env.BUNI_SERVER_URL ?? "https://buni.emusoi.app";
@@ -28,11 +28,6 @@ function text(o: object, k: string): string | undefined {
   return typeof v === "string" && v ? v : undefined;
 }
 
-function personOf(v: unknown): Person | undefined {
-  if (typeof v !== "object" || v === null) return undefined;
-  const [id, name, username, email, avatar] = ["id", "name", "username", "email", "avatar"].map((k) => text(v, k));
-  return id && name && username ? { id, name, username, ...(email ? { email } : {}), ...(avatar ? { avatar } : {}) } : undefined;
-}
 
 function parse(raw: string | undefined): Account | undefined {
   if (!raw) return undefined;
