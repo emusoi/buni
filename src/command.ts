@@ -43,6 +43,7 @@ usage: buni <command> [args] [--as <name>] [--json]
       [--port N] [--no-open]          its port; print the address instead
       [--new]                         another tab even when one already shows it
       [--no-sync]                     don't mirror it on your buni server (signed in, it is, as it changes)
+      [--to NAME]                     mirror it in that organization's space there, not your own
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
   arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
@@ -753,7 +754,18 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
       const account = args.includes("--no-sync") ? undefined : await (await import("./account/account.ts")).loadAccount().catch(() => undefined);
       if (account) {
         const { mirror } = await import("./account/sync.ts");
-        const stopMirror = mirror(account, editor, design, file, (line) => console.log(line));
+        // --to <organization>: the mirror goes in that space on the server rather than the person's own.
+        const to = args.indexOf("--to");
+        let root: string | undefined;
+        if (to >= 0) {
+          const want = args[to + 1] ?? "";
+          const { spaces } = await import("./account/remote.ts");
+          const all = await spaces(account);
+          const hit = all.find((s) => s.name === want) ?? all.find((s) => s.name.toLowerCase() === want.toLowerCase());
+          if (!hit) throw new Error(`No space called "${want}" on ${new URL(account.server).host}; you have: ${all.map((s) => s.name).join(", ")}`);
+          root = hit.root;
+        }
+        const stopMirror = mirror(account, editor, design, file, (line) => console.log(line), root);
         process.on("exit", stopMirror);
       }
       if (!args.includes("--no-open")) openUrl(url);

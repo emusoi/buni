@@ -221,6 +221,7 @@ const api: BuniApi = {
   },
   home: () => call("home"),
   project: () => call("project"),
+  ...(accounts ? { spaces: async () => (await fetch("/spaces")).json() } : {}),
   documents: (paths) => call("documents", paths),
   open: async (path) => (path === undefined ? pickFile() : go(path)),
   create: async (name, options) => go(await call<string>("create", name ?? "Untitled", options)),

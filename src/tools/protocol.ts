@@ -87,6 +87,16 @@ export interface HomeFile {
   preview?: Id;
   /** What the lead agent did last in this file, in one line. */
   agentNote?: string;
+  /** The space the design lives in, where the host has them (the web): the person's own, or an organization's. */
+  space?: Space;
+}
+
+/** A place designs live, with the people who may edit them: a person's own, or an organization they're in. */
+export interface Space {
+  /** The folder its designs live under: a new design made "in" it goes there. */
+  root: string;
+  name: string;
+  members?: { name: string; email?: string }[];
 }
 
 /** One of the agents working in the open file. */

@@ -2,7 +2,7 @@
 // MCP client. Tool calls go to the server's MCP endpoint (mcpUrl), so edits land for everyone with the design open.
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { HomeFile } from "../tools/protocol.ts";
+import type { HomeFile, Space } from "../tools/protocol.ts";
 import type { Account } from "./account.ts";
 
 /**
@@ -36,9 +36,19 @@ export async function findDesign(account: Account, name: string): Promise<string
 /** An attachment sent along with a design's text. */
 export interface Upload { name: string; base64: string }
 
-/** Mirrors a design to the server under `name`: its text as it is now, with the attachments given. Its path there. */
-export async function push(account: Account, name: string, text: string, assets: readonly Upload[]): Promise<string> {
-  return rpc<string>(account.server, account.token, "sync", undefined, [name, text, assets]);
+/**
+ * Mirrors a design to the server under `name`: its text as it is now, with the attachments given; `root` is the
+ * space it goes in (an organization's folder), else the person's own. Its path there.
+ */
+export async function push(account: Account, name: string, text: string, assets: readonly Upload[], root?: string): Promise<string> {
+  return rpc<string>(account.server, account.token, "sync", undefined, [name, text, assets, ...(root ? [`${root}/`] : [])]);
+}
+
+/** The spaces the person's designs live in on the server: their own, and each organization they're in. */
+export async function spaces(account: Account): Promise<Space[]> {
+  const res = await fetch(`${account.server}/spaces`, { headers: bearer(account) });
+  if (!res.ok) throw new Error(`${account.server}: ${res.status} ${res.statusText}`);
+  return (await res.json()) as Space[];
 }
 
 /** The design's .buni text, as the server has it now. */

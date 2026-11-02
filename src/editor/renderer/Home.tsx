@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, FilePlus, Play, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, X } from "lucide-react";
-import type { HomeFile } from "../api.ts";
+import { BookOpen, FilePlus, Play, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, UserRound, Users, X } from "lucide-react";
+import type { HomeFile, Space } from "../api.ts";
 import { srcdoc } from "./Canvas.tsx";
 import { ConfirmDialog, NameDialog } from "./Ask.tsx";
 import { Wordmark } from "./Wordmark.tsx";
@@ -28,8 +28,9 @@ export function ago(iso: string, now: number): string {
 }
 
 /** Last two folders of a long path, enough to tell projects apart. */
-function short(folder: string): string {
-  // A design on disk names its folder; hosted, "/designs/…" is only the store's.
+function short(folder: string, space?: Space): string {
+  // A design on disk names its folder; hosted, the store's root ("/designs/…", a space's) is only the store's.
+  if (space && folder.startsWith(`${space.root}/`)) return folder.slice(space.root.length + 1);
   const parts = folder.replace(/^\/designs\//, "").split("/").filter(Boolean);
   if (folder.startsWith("/designs/")) return parts.join("/");
   return parts.length > 3 ? `…/${parts.slice(-2).join("/")}` : folder;
@@ -109,17 +110,26 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
 
   const refresh = () => void window.buni.home().then(setFiles);
   useEffect(refresh, []);
+  // Spaces (the web): the person's own designs and each organization's. One space is no choice; with more, the
+  // sidebar switches between them, and projects and designs are the chosen space's.
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  useEffect(() => { void window.buni.spaces?.().then(setSpaces, () => undefined); }, []);
+  const [spaceRoot, setSpaceRoot] = useState<string>(() => { try { return localStorage.getItem("buni:space") ?? ""; } catch { return ""; } });
+  const space = spaces.length > 1 ? spaces.find((s) => s.root === spaceRoot) ?? spaces[0] : undefined;
+  const pickSpace = (root: string) => { setSpaceRoot(root); setFolder(undefined); try { localStorage.setItem("buni:space", root); } catch { /* a private window */ } };
+  const inSpace = useMemo(() => (files ?? []).filter((f) => !space || f.space?.root === space.root), [files, space]);
 
   // By parent, then name, so a project's folders sit together.
   const tail = (f: string) => f.split("/").filter(Boolean).slice(-2);
   const byTail = (a: string, b: string) => { const [x = "", y = ""] = tail(a); const [u = "", v = ""] = tail(b); return x === u ? y.localeCompare(v) : x.localeCompare(u); };
-  const folders = useMemo(() => [...new Set((files ?? []).map((f) => f.folder))].sort(byTail), [files]);
+  const folders = useMemo(() => [...new Set(inSpace.map((f) => f.folder))].sort(byTail), [inSpace]);
+  const showProjects = folders.length > 1 && (!space || folders.some((f) => inSpace.filter((x) => x.folder === f).length > 1));
   const q = query.trim().toLowerCase();
-  const working = (files ?? []).filter((f) => f.agentNote).length;
+  const working = inSpace.filter((f) => f.agentNote).length;
   // Two designs with one name are told apart by their folder.
   const named = new Map<string, number>();
-  for (const f of files ?? []) named.set(f.name, (named.get(f.name) ?? 0) + 1);
-  const shown = sorted(files ?? [], sort).filter((f) => (folder === undefined || f.folder === folder) && (!onlyAgents || f.agentNote) && (!q || `${f.name} ${f.folder}`.toLowerCase().includes(q)));
+  for (const f of inSpace) named.set(f.name, (named.get(f.name) ?? 0) + 1);
+  const shown = sorted(inSpace, sort).filter((f) => (folder === undefined || f.folder === folder) && (!onlyAgents || f.agentNote) && (!q || `${f.name} ${f.folder}`.toLowerCase().includes(q)));
   const now = Date.now();
   const run = (p: Promise<void>) => p.catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
 
@@ -138,11 +148,25 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           </label>
         </div>
         <nav className="tree">
+          {space && (
+            <>
+              <div className="section-label">Spaces</div>
+              <div className="nav">
+                {spaces.map((s) => (
+                  <button type="button" key={s.root} className={`row${s.root === space.root ? " active" : ""}`} onClick={() => pickSpace(s.root)} title={s.members?.length ? s.members.map((m) => m.name).join(", ") : undefined}>
+                    {s.members && s.members.length > 1 ? <Users size={16} strokeWidth={1.75} /> : <UserRound size={16} strokeWidth={1.75} />}
+                    <span className="name">{s.name}</span>
+                    <span className="count">{(files ?? []).filter((f) => f.space?.root === s.root).length}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <div className="nav">
             <button type="button" className={`row${folder === undefined && !onlyAgents ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(false); }}>
               <LayoutGrid size={16} strokeWidth={1.75} />
               <span className="name">All designs</span>
-              {files && <span className="count">{files.length}</span>}
+              {files && <span className="count">{inSpace.length}</span>}
             </button>
             <button type="button" className={`row${onlyAgents ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(true); }}>
               <Sparkles size={16} strokeWidth={1.75} />
@@ -154,22 +178,29 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
               <span className="name">Example</span>
             </button>
           </div>
-          {/* A project is a folder of designs; one is no choice, so projects show when designs live in several. */}
-          {folders.length > 1 && <div className="section-label">Projects</div>}
-          {folders.length > 1 && folders.map((f) => {
+          {/* A project is a folder of designs; one is no choice, so projects show when designs live in several. In a
+              space, where every design starts in a folder of its own, they show once a folder holds more than one. */}
+          {showProjects && <div className="section-label">Projects</div>}
+          {showProjects && folders.map((f) => {
             const Icon = f === folder ? FolderOpen : Folder;
-            // "designs" alone repeats across projects, so each folder reads as its parent, then itself.
-            const [parent, name] = f.split("/").filter(Boolean).slice(-2);
+            // "designs" alone repeats across projects, so each folder reads as its parent, then itself; in a space, as itself.
+            const [parent, name] = space ? [short(f, space)] : f.split("/").filter(Boolean).slice(-2);
             return (
               <button type="button" key={f} className={`row folder-row${f === folder ? " active" : ""}`} onClick={() => setFolder(f)} title={f}>
                 <Icon size={16} strokeWidth={1.75} />
                 <span className="name">{name ? <><span className="folder-parent">{parent}</span><span className="folder-sep">/</span>{name}</> : parent ?? f}</span>
-                <span className="count">{files?.filter((x) => x.folder === f).length}</span>
+                <span className="count">{inSpace.filter((x) => x.folder === f).length}</span>
               </button>
             );
           })}
         </nav>
         <div className="rail-foot-stack">
+          {space && space.members && space.members.length > 1 && (
+            <div className="rail-card" title={space.members.map((m) => `${m.name}${m.email ? ` · ${m.email}` : ""}`).join("\n")}>
+              <b><Users size={13} /> In {space.name}</b>
+              <span>{space.members.map((m) => m.name).join(", ")}</span>
+            </div>
+          )}
           <AgentsHere />
           <ThemeSwitch />
         </div>
@@ -183,7 +214,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         <div className="home">
           {files && files.length > 0 && <header className="home-head">
             <div>
-              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : "Designs"}</h1>
+              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space ? space.name : "Designs"}</h1>
               {onlyAgents && <p>Designs a coding agent is editing right now.</p>}
             </div>
             <div className="home-actions">
@@ -219,7 +250,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
                 <button type="button" className="card" onClick={() => void run(window.buni.open(f.path))} title={f.path}>
                   <Thumb file={f} badge={f.agentNote} />
                   <span className="card-name">{f.name}</span>
-                  <span className="card-meta">{f.pages} page{f.pages === 1 ? "" : "s"} · edited {ago(f.modified, now)}{folders.length > 1 || (named.get(f.name) ?? 0) > 1 ? ` · ${short(f.folder)}` : ""}</span>
+                  <span className="card-meta">{f.pages} page{f.pages === 1 ? "" : "s"} · edited {ago(f.modified, now)}{folders.length > 1 || (named.get(f.name) ?? 0) > 1 ? ` · ${short(f.folder, f.space)}` : ""}</span>
                 </button>
                 <FileActions file={f} onAsk={setAsking} />
               </div>
@@ -246,7 +277,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         </div>
       </main>
       {asking?.kind === "new" && (
-        <NewDesign files={files ?? []} folder={folder} onClose={() => setAsking(undefined)} onCreate={(name, options) => { setAsking(undefined); void run(window.buni.create(name, options)); }} />
+        <NewDesign files={files ?? []} folder={folder} space={space} onClose={() => setAsking(undefined)} onCreate={(name, options) => { setAsking(undefined); void run(window.buni.create(name, options)); }} />
       )}
       {asking?.kind === "rename" && (
         <NameDialog title={`Rename ${asking.file.name}`} label="New name" initial={asking.file.name} action="Rename" onClose={() => setAsking(undefined)} onSubmit={(name) => {

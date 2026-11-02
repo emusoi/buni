@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: spaces. Where the host keeps designs (the web), each design says which space it lives in (`HomeFile.space`:
+  the person's own, or an organization's), Home switches between them and lists the people in the one shown, a new
+  design starts in the space shown (`create {in}`), and `buni open --to NAME` mirrors a design into that
+  organization's space rather than your own.
 - Added: `buni open` mirrors the design on your buni server while it runs, when you are signed in: every change
   goes up a moment after it settles, as one change there (`sync` rpc), so people and agents on the server see it as
   it happens; attachments travel when the set of them changes. `--no-sync` leaves it on this machine. `buni login`

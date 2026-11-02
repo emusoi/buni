@@ -11,7 +11,7 @@ import { push, type Upload } from "./remote.ts";
 const SETTLE_MS = 1500;
 
 /** Starts mirroring; returns how to stop. `log` hears where the copy is, once, and any push that failed. */
-export function mirror(account: Account, editor: Editor, design: string, localFile: string, log: (line: string) => void): () => void {
+export function mirror(account: Account, editor: Editor, design: string, localFile: string, log: (line: string) => void, root?: string): () => void {
   const name = basename(localFile, ".buni");
   const host = new URL(account.server).host;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -34,7 +34,7 @@ export function mirror(account: Account, editor: Editor, design: string, localFi
         const bytes = await readFile(join(dirname(localFile), p)).catch(() => undefined);
         return bytes ? [{ name: basename(p), base64: bytes.toString("base64") }] : [];
       }))).flat();
-      const there = await push(account, name, text, assets);
+      const there = await push(account, name, text, assets, root);
       sentText = text;
       sentAssets = key;
       if (!told) { told = true; log(`Mirrored on ${host}: ${account.server}/?file=${encodeURIComponent(there)}`); }

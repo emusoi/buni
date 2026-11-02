@@ -6,8 +6,8 @@ import type { FormatError } from "buni/format/parse.ts";
 
 /** Everything the window needs to draw: the live document and the work waiting on it. */
 export type { Edit };
-export type { AgentInfo, GitStatus, HomeFile, Presence, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
-import type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+export type { AgentInfo, GitStatus, HomeFile, Presence, ProjectFile, Snapshot, SnapshotUpdate, Space, VersionInfo } from "buni/tools/protocol.ts";
+import type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, Space, VersionInfo } from "buni/tools/protocol.ts";
 
 export interface SkillInfo {
   name: string;
@@ -57,8 +57,10 @@ export interface BuniApi {
   /** Opens a file; without a path, asks for one. */
   open(path?: string): Promise<void>;
   /** A new, empty file, opened: named `name` where the host names files itself (the web), else saved where the person picks. */
-  /** A new design, beside `beside` (in its project) and building on `core` there, when given. */
-  create(name?: string, options?: { beside?: string; core?: string }): Promise<void>;
+  /** A new design, beside `beside` (in its project) and building on `core` there, when given; else `in` a space's root. */
+  create(name?: string, options?: { beside?: string; core?: string; in?: string }): Promise<void>;
+  /** The spaces the person's designs live in and who is in each; only where the host has them (the web). */
+  spaces?(): Promise<Space[]>;
   /** Back to the home screen. */
   close(): Promise<void>;
   /** Renames a file on the home screen; only where files have no Finder of their own (the web). Returns its new path. */

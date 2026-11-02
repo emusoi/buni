@@ -1,18 +1,22 @@
 // A new design: its name, the project (folder) it joins, and the design it builds on there (a core's tokens and
 // components), so a new section of an app starts from what the app already has.
 import { useMemo, useState } from "react";
-import type { HomeFile } from "../api.ts";
+import type { HomeFile, Space } from "../api.ts";
 
-export function NewDesign({ files, folder, onCreate, onClose }: {
+export function NewDesign({ files, folder, space, onCreate, onClose }: {
   files: readonly HomeFile[];
   /** The project showing in Home, if one is. */
   folder: string | undefined;
-  onCreate: (name: string, options: { beside?: string; core?: string }) => void;
+  /** The space showing in Home (the web): a new design with no project to join starts in its root. */
+  space?: Space | undefined;
+  onCreate: (name: string, options: { beside?: string; core?: string; in?: string }) => void;
   onClose: () => void;
 }) {
-  const folders = useMemo(() => [...new Set(files.map((f) => f.folder))].sort(), [files]);
+  const inSpace = space ? files.filter((f) => f.space?.root === space.root) : files;
+  const folders = useMemo(() => [...new Set(inSpace.map((f) => f.folder))].sort(), [inSpace]);
   const [name, setName] = useState("Untitled");
-  const [where, setWhere] = useState(folder ?? folders[0] ?? "");
+  // "" is a project of its own, named for the design.
+  const [where, setWhere] = useState(folder ?? (space ? "" : folders[0] ?? ""));
   const here = files.filter((f) => f.folder === where);
   // Designs with components can be built on; one called core first, as projects usually name it.
   const cores = here.filter((f) => Object.keys(f.doc.shared).length > 0).sort((a, b) => Number(b.name === "core") - Number(a.name === "core"));
@@ -21,12 +25,13 @@ export function NewDesign({ files, folder, onCreate, onClose }: {
   return (
     <div className="dialog-backdrop" onClick={onClose}>
       <form className="dialog new-design" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}
-        onSubmit={(e) => { e.preventDefault(); if (name.trim()) onCreate(name.trim(), { ...(here[0] ? { beside: here[0].path } : {}), ...(chosen ? { core: chosen } : {}) }); }}>
-        <h2>New design</h2>
+        onSubmit={(e) => { e.preventDefault(); if (name.trim()) onCreate(name.trim(), { ...(here[0] ? { beside: here[0].path } : space ? { in: space.root } : {}), ...(chosen ? { core: chosen } : {}) }); }}>
+        <h2>New design{space ? ` in ${space.name}` : ""}</h2>
         <label className="new-row"><span>Name</span><input className="field" autoFocus value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} /></label>
-        {folders.length > 1 && (
+        {(folders.length > 1 || (space && folders.length > 0)) && (
           <label className="new-row"><span>Project</span>
             <select className="field" value={where} onChange={(e) => { setWhere(e.target.value); setCore(undefined); }}>
+              {space && <option value="">A project of its own</option>}
               {folders.map((f) => <option key={f} value={f}>{f.split("/").filter(Boolean).at(-1) ?? f}</option>)}
             </select>
           </label>
