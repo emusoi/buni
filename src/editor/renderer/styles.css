@@ -1253,6 +1253,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* ⌥ over another layer: the distance to it, on each axis they're apart on. */
 .measure { position: absolute; z-index: 5; pointer-events: none; background: #e0457b; }
 .sel-box.measuring .sel-size { display: none; }
+/* The layer being dragged, carried with the pointer. */
+.drag-ghost { position: absolute; z-index: 6; pointer-events: none; border: calc(1.5px * var(--inv, 1)) solid #3346d3; border-radius: calc(3px * var(--inv, 1)); background: rgb(51 70 211 / 0.08); }
+.drag-ghost span { position: absolute; left: 0; bottom: 100%; transform: scale(var(--inv, 1)); transform-origin: 0 100%; padding: 1px 6px; border-radius: 4px 4px 4px 0; background: #3346d3; color: #fff; font: 600 10px var(--mono); white-space: nowrap; }
+/* A page's own token mode, on its board beside the label. */
+.board-mode { position: absolute; right: 0; top: 0; transform: translateY(-100%) scale(var(--inv, 1)); transform-origin: 100% 100%; height: 19px; min-width: 22px; padding: 0 5px; border: 0; border-radius: 5px; background: none; color: var(--label); font-size: 12px; cursor: pointer; opacity: 0; }
+.artboard:hover .board-mode, .board-mode.on { opacity: 1; }
+.board-mode.on { color: var(--ink); background: var(--hover); }
 .measure.x { height: calc(1px * var(--inv, 1)); transform: translateY(-50%); }
 .measure.y { width: calc(1px * var(--inv, 1)); transform: translateX(-50%); }
 .measure span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--inv, 1)); padding: 1px 5px; border-radius: 4px; background: #e0457b; color: #fff; font: 600 10px var(--mono); white-space: nowrap; }

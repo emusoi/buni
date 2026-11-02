@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: a page drawn in a token mode of its own (☾ beside its label on the board), over the canvas-wide one; the
+  layer being dragged travels with the pointer; SVG or HTML on the clipboard pastes as layers into the selected frame;
+  a mesh gradient fill (◍ beside the fill) from the design's colours.
+- Fixed: the Inspector crashed (a hook after an early return) when the selection changed shape, since this morning's
+  corners-one-by-one.
 - Added: an MCP client connected to `/mcp` with no file (hosted; `buni mcp --remote` with no design) is on the
   person's spaces: `list_designs` shows every design they may work on, `use_design` picks one, `create_design` starts
   one in a space, and every other tool then works on the one picked. The design's tabs see it as connected.

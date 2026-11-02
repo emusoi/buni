@@ -485,6 +485,20 @@ function MotionSection({ node, onError }: { node: Node; onError: (m: string | un
   );
 }
 
+/**
+ * A mesh gradient from the design's colours: soft radial washes of the accent, its tint and a surface over the
+ * background, as the "mesh" fills design tools offer; plain CSS, so it exports as it draws.
+ */
+export function meshFill(doc: Doc): string {
+  const names = Object.keys(doc.tokens);
+  const pick = (want: RegExp, fallback: string) => { const n = names.find((t) => want.test(t)); return n ? `var(${n})` : fallback; };
+  const accent = pick(/accent$|primary$|brand$/, "#5b6cf0");
+  const tint = pick(/accent-tint|tint|accent-2|secondary/, "#c7d2fe");
+  const surface = pick(/surface|warm|muted/, "#fde68a");
+  const base = pick(/^--bg$|background|paper/, "#ffffff");
+  return `radial-gradient(at 18% 22%, ${tint} 0, transparent 55%), radial-gradient(at 82% 12%, ${accent} 0, transparent 50%), radial-gradient(at 58% 92%, ${surface} 0, transparent 58%), ${base}`;
+}
+
 /** A border-radius shorthand as its four corners, clockwise from top-left. */
 export function cornerRadii(shorthand: string): [string, string, string, string] {
   const [a = "0", b, c, d] = shorthand.trim().split("/")[0]?.split(/\s+/).filter(Boolean) ?? [];
@@ -672,6 +686,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   /** Properties added by name but not given a value yet. */
   const [added, setAdded] = useState<string[]>([]);
   const [advanced, setAdvanced] = useState(false);
+  const [corners, setCorners] = useState(false);
   useEffect(() => {
     setNotice(undefined);
     setAdded([]);
@@ -703,7 +718,6 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   const st = atWidth !== undefined ? { ...node.style, ...node.at?.[String(atWidth)] } : node.style;
   const setStyle = (prop: string, value: string) => void run("update_styles", { nodes: targets, style: { [prop]: value }, ...(atWidth !== undefined ? { width: atWidth } : {}) });
   // The corners one by one: the radius shorthand read as four, written back as few as say the same.
-  const [corners, setCorners] = useState(false);
   const radii = cornerRadii(st.borderRadius ?? "");
   const setCorner = (i: number, v: string) => {
     const next = [...radii] as [string, string, string, string];
@@ -910,7 +924,10 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         </div>
       </Group>
       <Group title="Fill and shape" summary={[short(st.background ?? st.backgroundColor), st.borderRadius && `◜ ${st.borderRadius}`].filter(Boolean).join(" · ") || "None"} empty={!st.background && !st.backgroundColor && !st.borderRadius && !st.opacity && !st.border && !st.boxShadow}>
-        <div className="prow"><ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} /></div>
+        <div className="prow">
+          <ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} />
+          <button type="button" className="icon-btn small" title="A soft mesh of the design's colours as the fill: three radial gradients over the base. Edit the value after." aria-label="Mesh gradient fill" onClick={() => void run("update_styles", { nodes: targets, style: { background: meshFill(doc), backgroundColor: "" }, ...(atWidth !== undefined ? { width: atWidth } : {}) })}>◍</button>
+        </div>
         <div className="prow">
           {corners ? (
             <Num prefix="◜" title="Top-left corner" value={radii[0]} onSave={(v) => setCorner(0, v)} />

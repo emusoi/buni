@@ -302,6 +302,8 @@ export function App({ snap }: { snap: Snapshot }) {
   const [viewAt, setViewAt] = useState<Record<Id, number>>({});
   // The token mode the boards are drawn in ("dark"); Play follows it.
   const [tokenMode, setTokenMode] = useState<string>();
+  const [modeAt, setModeAt] = useState<Record<Id, string>>({});
+  const setPageMode = useCallback((pageId: Id, m: string | undefined) => setModeAt((v) => { const { [pageId]: _old, ...rest } = v; return m === undefined ? rest : { ...rest, [pageId]: m }; }), []);
   const viewWidth = useCallback((pageId: Id, w: number | undefined) => setViewAt((v) => {
     const { [pageId]: _old, ...rest } = v;
     return w === undefined ? rest : { ...rest, [pageId]: w };
@@ -403,8 +405,25 @@ export function App({ snap }: { snap: Snapshot }) {
         void placeImage(image, at).then((r) => ("id" in r ? setSelected(r.id) : setToast(r.error)));
         return;
       }
+      // Markup from elsewhere (an SVG icon, a snippet copied out of a page) comes in as layers, into the selected frame
+      // or after the selected layer. Figma's own clipboard is a binary blob behind a <span data-buffer>; not that.
+      const plain = e.clipboardData?.getData("text/plain") ?? "";
+      const markup = e.clipboardData?.getData("text/html") ?? "";
+      const svg = plain.trim().startsWith("<svg") ? plain.trim() : "";
+      const html = !svg && markup && !markup.includes("data-buffer") && !markup.includes("data-metadata") ? markup : "";
+      if ((svg || html) && pageRoot) {
+        const t = selected ? doc.nodes[selected] : undefined;
+        const at = t?.kind === "frame" ? { parent: t.id } : t?.parent ? { parent: t.parent, after: t.id } : { parent: pageRoot };
+        // A page's body only: the clipboard wraps copied HTML in a document of its own.
+        const body = html ? (/<body[^>]*>([\s\S]*)<\/body>/i.exec(html)?.[1] ?? html).replace(/<!--[\s\S]*?-->/g, "").trim() : svg;
+        if (body) {
+          e.preventDefault();
+          run("write_html", { ...at, html: body }, (r) => r.match(/Created \d+ nodes: (\S+)/)?.[1]?.replace(/[,.]$/, ""));
+          return;
+        }
+      }
       let copied: unknown;
-      try { copied = JSON.parse(e.clipboardData?.getData("text/plain") ?? ""); } catch { return; }
+      try { copied = JSON.parse(plain); } catch { return; }
       if (typeof copied !== "object" || copied === null || !("buni" in copied) || !("nodes" in copied) || !Array.isArray(copied.nodes)) return;
       const nodes = copied.nodes.filter((x): x is Id => typeof x === "string" && doc.nodes[x] !== undefined);
       if (!nodes.length) return setToast("Those layers are not in this file.");
@@ -1025,6 +1044,8 @@ export function App({ snap }: { snap: Snapshot }) {
               viewAt={viewAt}
               mode={tokenMode}
               onMode={setTokenMode}
+              modeAt={modeAt}
+              onModeAt={setPageMode}
               onSelectPage={selectBoard}
               onSelectNode={selectNode}
               onMenu={openMenu}
@@ -1129,7 +1150,7 @@ export function App({ snap }: { snap: Snapshot }) {
         <Play
           doc={app}
           dir={snap.dir}
-          mode={tokenMode}
+          mode={modeAt[play.page] ?? tokenMode}
           start={play.page}
           {...(play.flow ? { flow: play.flow } : {})}
           startWidth={viewAt[play.page]}

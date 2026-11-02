@@ -21,6 +21,9 @@ interface Props {
   /** The token mode every board is drawn in ("dark"), or none for the tokens as they are. */
   mode?: string | undefined;
   onMode?: (mode: string | undefined) => void;
+  /** Pages drawn in a mode of their own, over the canvas-wide one. */
+  modeAt?: Readonly<Record<Id, string>>;
+  onModeAt?: (page: Id, mode: string | undefined) => void;
   /** Where each busy agent is working: outlined and tagged in its colour; the first is scrolled into view. */
   focus: readonly AgentSpot[];
   /** What agents just changed, to show it arriving. */
@@ -305,6 +308,9 @@ const Artboard = memo(function Artboard(props: {
   viewWidth?: number | undefined;
   /** The token mode to draw in. */
   mode?: string | undefined;
+  /** The design's modes, and how to set this page's own: a toggle on the label cycles through them. */
+  modes?: readonly string[];
+  onMode?: ((mode: string | undefined) => void) | undefined;
   /** The selected layer: pressing it and dragging moves it. */
   selected?: Id | undefined;
   /** Read when handling a pointer, so zooming doesn't re-render every board. */
@@ -434,7 +440,9 @@ const Artboard = memo(function Artboard(props: {
 
   // Pressing the selected layer and dragging moves it: before or after the layer under the pointer, along its
   // parent's direction, or into an empty frame; a line shows where it lands.
-  const drag = useRef<{ id: Id; x: number; y: number; moving: boolean; pick: Id | undefined } | undefined>(undefined);
+  const drag = useRef<{ id: Id; x: number; y: number; moving: boolean; pick: Id | undefined; from?: { x: number; y: number; w: number; h: number } } | undefined>(undefined);
+  /** The dragged layer's box, carried along with the pointer so it reads as moving, not just its drop line. */
+  const [ghost, setGhost] = useState<{ x: number; y: number; w: number; h: number; name: string }>();
   const [drop, setDrop] = useState<{ parent: Id; after: Id | ""; line: { x: number; y: number; w: number; h: number } }>();
   const local = (e: ReactPointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -450,7 +458,7 @@ const Artboard = memo(function Artboard(props: {
     let inside = false;
     for (let n = id ? doc.nodes[id] : undefined; n; n = n.parent ? doc.nodes[n.parent] : undefined) if (n.id === sel) { inside = true; break; }
     if (sel && inside && !e.shiftKey && doc.nodes[sel]?.parent !== undefined) {
-      drag.current = { id: sel, x: p.x, y: p.y, moving: false, pick: id };
+      drag.current = { id: sel, x: p.x, y: p.y, moving: false, pick: id, ...(box2 ? { from: box2 } : {}) };
       e.currentTarget.setPointerCapture(e.pointerId);
       return;
     }
@@ -463,6 +471,7 @@ const Artboard = memo(function Artboard(props: {
     if (!d.moving && Math.hypot(p.x - d.x, p.y - d.y) * props.zoom.current < 5) return;
     d.moving = true;
     setDrop(dropAt(doc, frame.current, d.id, p.x, p.y));
+    if (d.from) setGhost({ x: d.from.x + (p.x - d.x), y: d.from.y + (p.y - d.y), w: d.from.w, h: d.from.h, name: doc.nodes[d.id]?.name ?? "" });
   };
   // The selected layer's box, for its size and resize handles; measured after each change to the board.
   const [box2, setBox] = useState<{ x: number; y: number; w: number; h: number }>();
@@ -581,6 +590,7 @@ const Artboard = memo(function Artboard(props: {
     drag.current = undefined;
     const target = drop;
     setDrop(undefined);
+    setGhost(undefined);
     if (d && !d.moving) { if (d.pick !== d.id) props.onSelectNode(d.pick); return; }
     if (!d || !target) return;
     void window.buni.edit("move_nodes", { nodes: [d.id], parent: target.parent, after: target.after });
@@ -668,13 +678,20 @@ const Artboard = memo(function Artboard(props: {
         <span className="route">{page ? pageLabel(props.doc, page) : component?.variant ? `${Object.entries(component.variant).map(([k, v]) => `${k}: ${v}`).join(" · ")} · ${uses} use${uses === 1 ? "" : "s"}` : `component · ${uses} use${uses === 1 ? "" : "s"}`}</span>
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
       </button>
+      {page && props.modes && props.modes.length > 0 && props.onMode && (
+        <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
+          onPointerDown={(e) => e.stopPropagation()} onClick={() => { const i = props.mode ? props.modes!.indexOf(props.mode) : -1; props.onMode?.(props.modes![i + 1]); }}>
+          {props.mode === "dark" ? "☾" : props.mode ? props.mode[0]?.toUpperCase() : "☼"}
+        </button>
+      )}
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
         {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
         ) : <div className="board-placeholder" />}
         {page && <InkLayer doc={doc} page={pageId} width={width} />}
-        <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={(e) => { dragMove(e); measureMove(e); }} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
+        <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={(e) => { dragMove(e); measureMove(e); }} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); setGhost(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />
         {drop && <div className="drop-line" style={{ left: drop.line.x, top: drop.line.y, width: drop.line.w, height: drop.line.h }} />}
+        {ghost && <div className="drag-ghost" style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h }}><span>{ghost.name}</span></div>}
         {box2 && !drop && !editing && (
           <div className={`sel-box${gauge?.length ? " measuring" : ""}`} style={{ left: box2.x, top: box2.y, width: box2.w, height: box2.h }}>
             <span className="sel-size">{Math.round(box2.w)} × {Math.round(box2.h)}</span>
@@ -897,6 +914,7 @@ export function Canvas(props: Props) {
     }
     return ids;
   }, [props.focus, props.doc.pages, props.doc.shared, props.doc.nodes]);
+  const modeNames = useMemo(() => Object.keys(props.doc.modes ?? {}), [props.doc.modes]);
   // Each board's version: bumped for the boards an edit touched, or for all of them when it can't tell.
   const drawn = useRef({ doc: props.doc, all: 0, board: new Map<Id, number>() });
   const d = drawn.current;
@@ -1263,9 +1281,11 @@ export function Canvas(props: Props) {
             marks={marks}
             uses={uses.get(p.id) ?? 0}
             viewWidth={props.viewAt?.[p.id]}
-            mode={props.mode}
+            mode={props.modeAt?.[p.id] ?? props.mode}
+            modes={modeNames}
+            onMode={props.onModeAt ? (m) => props.onModeAt?.(p.id, m) : undefined}
             selected={p.id === props.activePage ? props.selected : undefined}
-            version={`${d.all}.${d.board.get(p.id) ?? 0}.${props.mode ?? ""}`}
+            version={`${d.all}.${d.board.get(p.id) ?? 0}.${props.modeAt?.[p.id] ?? props.mode ?? ""}`}
             zoom={zoom}
             onDrag={onDrag}
             register={register}
