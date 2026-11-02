@@ -5,6 +5,10 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: `buni open` mirrors the design on your buni server while it runs, when you are signed in: every change
+  goes up a moment after it settles, as one change there (`sync` rpc), so people and agents on the server see it as
+  it happens; attachments travel when the set of them changes. `--no-sync` leaves it on this machine. `buni login`
+  signs in with an email and password (the server hands the command line a token of its own); Wazo is gone.
 - Added: token modes. `modes` in the file holds, by mode name ("dark"), the tokens that differ there; `tokens
   {mode, set}` sets them and reading gives every mode's values. The canvas draws every board in a mode (a button
   beside Links and Tidy, one per mode), Play follows, and the exported site answers to `<html data-mode>` and, for

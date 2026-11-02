@@ -33,6 +33,14 @@ export async function findDesign(account: Account, name: string): Promise<string
   throw new Error(`No design called "${name}" on ${new URL(account.server).host}${known ? `; you have: ${known}` : "; you have none yet"}.`);
 }
 
+/** An attachment sent along with a design's text. */
+export interface Upload { name: string; base64: string }
+
+/** Mirrors a design to the server under `name`: its text as it is now, with the attachments given. Its path there. */
+export async function push(account: Account, name: string, text: string, assets: readonly Upload[]): Promise<string> {
+  return rpc<string>(account.server, account.token, "sync", undefined, [name, text, assets]);
+}
+
 /** The design's .buni text, as the server has it now. */
 export async function download(account: Account, path: string): Promise<string> {
   return rpc<string>(account.server, account.token, "fileText", path, []);

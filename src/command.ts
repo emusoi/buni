@@ -42,6 +42,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
       [--new]                         another tab even when one already shows it
+      [--no-sync]                     don't mirror it on your buni server (signed in, it is, as it changes)
   tree <file.buni> [node]           outline of pages, components and layers
   context <file.buni> [kind:id]     brief to build from: the doc, then one page or flow (page:, flow:), or all of them
   arch <file.buni> [--level system|runtime|code] [--env NAME] [--focus ID]
@@ -744,10 +745,17 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         console.error("usage: buni open <file.buni> [--port N] [--no-open] [--new]");
         return 2;
       }
-      const { url, stop } = await serveEditor(file, port);
+      const { url, stop, editor, design } = await serveEditor(file, port);
       process.on("exit", stop);
       for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => process.exit(0));
       console.log(`Editing ${file} at ${url} (ctrl+c stops).`);
+      // Signed in, the design is mirrored on the buni server as it changes, so the people there see it too.
+      const account = args.includes("--no-sync") ? undefined : await (await import("./account/account.ts")).loadAccount().catch(() => undefined);
+      if (account) {
+        const { mirror } = await import("./account/sync.ts");
+        const stopMirror = mirror(account, editor, design, file, (line) => console.log(line));
+        process.on("exit", stopMirror);
+      }
       if (!args.includes("--no-open")) openUrl(url);
       return new Promise<number>(() => {});
     }

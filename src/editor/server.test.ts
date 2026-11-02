@@ -129,6 +129,39 @@ test("the hosted editor rejects another account's files and imports", async () =
 });
 
 
+test("sync mirrors a design by name: added the first time, then taken as one change with its attachments, which tabs hear", async () => {
+  const root = await mkdtemp(join(tmpdir(), "buni-sync-"));
+  const store = new DiskStore(root);
+  const editor = await createEditor({ store, origin: "https://buni.test", assets: () => ({ files: new Map(), client: "", styles: "" }) });
+  const rpc = (name: string, args: unknown[], file?: string) => editor.fetch(new Request(`https://buni.test/rpc/${name}${file ? `?file=${encodeURIComponent(file)}` : ""}`, {
+    method: "POST", headers: { host: "buni.test", "content-type": "application/json" }, body: JSON.stringify(args),
+  }), "/designs");
+  const value = async <T>(r: Response): Promise<T> => { const j = (await r.json()) as { value?: T; error?: string }; if (!r.ok || j.value === undefined) throw new Error(j.error ?? "no value"); return j.value; };
+  try {
+    const first = { ...emptyDoc(), tokens: { "--bg": "#fff" } };
+    const path = await value<string>(await rpc("sync", ["Shop", serializeDoc(first), []]));
+    expect(path).toBe("/designs/Shop/Shop.buni");
+    expect(await value<string>(await rpc("sync", ["Shop", serializeDoc(first), []]))).toBe(path);
+    const heard: string[] = [];
+    const stop = await editor.onChange(path, () => heard.push("changed"));
+    const second = { ...first, tokens: { "--bg": "#000" }, attachments: { pic: { id: "pic", path: "assets/pic.png", mime: "image/png" } } };
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    expect(await value<string>(await rpc("sync", ["Shop", serializeDoc(second), [{ name: "pic.png", base64: Buffer.from(png).toString("base64") }]]))).toBe(path);
+    // Listeners hear it on the next turn, as a tab's feed does.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(heard.length).toBeGreaterThan(0);
+    expect(await editor.text(path)).toBe(serializeDoc(second));
+    expect(await store.readBytes("/designs/Shop/assets/pic.png")).toEqual(png);
+    const snap = await value<Snapshot>(await rpc("snapshot", [], path));
+    expect(snap.edits?.at(-1)?.author).toBe("sync");
+    stop();
+    await expect(rpc("sync", ["Shop", "not a design", []]).then(value)).rejects.toThrow("not a valid .buni file");
+  } finally {
+    editor.stop();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("tabs on a file hear where each other is, and a tab that closes its feed leaves the list", async () => {
   const root = await mkdtemp(join(tmpdir(), "buni-presence-"));
   await mkdir(join(root, "a/Shop"), { recursive: true });

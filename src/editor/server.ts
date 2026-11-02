@@ -62,6 +62,10 @@ export interface Editor {
   tabletSocket(req: Request, dir?: string): string | undefined;
   /** Sends `file`'s changes to `send` as they happen; returns how to stop. */
   watch(file: string, send: (data: string) => void, tab?: string): Promise<() => void>;
+  /** Calls `fn` on each change to `file`, without counting as a tab; returns how to stop. */
+  onChange(file: string, fn: () => void): Promise<() => void>;
+  /** The file as it would be written now. */
+  text(file: string): Promise<string>;
   stop(): void;
 }
 
@@ -369,6 +373,26 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         const b64 = given.get(n);
         return b64 === undefined ? undefined : Uint8Array.fromBase64(b64);
       }, dir);
+    },
+    /**
+     * A design mirrored from a machine where `buni open` runs: the one here with that name takes the text as one
+     * change (so tabs on it follow), with whichever attachments came along; a name not here yet is added.
+     */
+    sync: async (_file, name, text, assets) => {
+      const given = new Map(Array.isArray(assets) ? assets.filter(isUpload).map((a) => [a.name, a.base64] as const) : []);
+      const bytes = async (n: string) => { const b64 = given.get(n); return b64 === undefined ? undefined : Uint8Array.fromBase64(b64); };
+      const want = str(name, "sync");
+      const existing = [...(await index.docs(dir)).keys()].find((p) => basename(p, ".buni") === want);
+      if (!existing) return addFile(want, str(text, "sync"), bytes, dir);
+      const r = parseDoc(str(text, "sync"), { refs: false });
+      if (!r.ok) throw new Error(`${want} is not a valid .buni file`);
+      for (const a of Object.values(r.doc.attachments)) {
+        const b = await bytes(basename(a.path));
+        if (b) await store.writeBytes(besideFile(existing, a.path), b);
+      }
+      const res = await (await load(existing)).ws.restore("sync", "Synced from the machine it is edited on", r.doc);
+      if (!res.ok) throw new Error(res.reply);
+      return existing;
     },
     create: async (file, name, options) => {
       // From Home: beside a design of the chosen project, building on the design it names as its core.
@@ -868,7 +892,13 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     return allowedOrigin(req, new Set(tabletHosts().map((h) => `http://${h}`))) ? file : undefined;
   }
 
-  return { fetch, socketFile, tabletFetch, tabletSocket, watch, stop };
+  const onChange = async (file: string, fn: () => void): Promise<() => void> => {
+    const o = await load(file);
+    o.listeners.add(fn);
+    return () => o.listeners.delete(fn);
+  };
+  const text = async (file: string): Promise<string> => serializeDoc((await load(file)).ws.view());
+  return { fetch, socketFile, tabletFetch, tabletSocket, watch, onChange, text, stop };
 }
 
 /** A short page a tablet sees when it can't come in, saying what to do. */
@@ -889,7 +919,7 @@ function toClipboard(text: string): Promise<boolean> {
 }
 
 /** The full editor on files in place, served only on this machine. */
-export async function serveEditor(file: string, port = 0): Promise<{ url: string; stop: () => void }> {
+export async function serveEditor(file: string, port = 0): Promise<{ url: string; stop: () => void; editor: Editor; design: string }> {
   const localFile = resolve(file);
   // Edit checks run on every visible edit: one browser kept warm beats starting Chrome each time.
   keepBrowserWarm();
@@ -946,9 +976,10 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
     tablets.port = tabletServer.port ?? 0;
     const editor = await createEditor({ store: new DiskStore(dirname(dirname(localFile))), origin: `http://localhost:${server.port}`, localFile, assets: () => assets, tablets });
     ready.resolve(editor);
-    const url = `http://localhost:${server.port}/?file=${encodeURIComponent(`/designs/${basename(dirname(localFile))}/${basename(localFile)}`)}`;
+    const design = `/designs/${basename(dirname(localFile))}/${basename(localFile)}`;
+    const url = `http://localhost:${server.port}/?file=${encodeURIComponent(design)}`;
     const stop = () => { editor.stop(); tablets.stop(); void server.stop(true); void tabletServer.stop(true); };
-    return { url, stop };
+    return { url, stop, editor, design };
   } catch (error) {
     void server.stop(true);
     void tabletServer.stop(true);
