@@ -485,6 +485,27 @@ function MotionSection({ node, onError }: { node: Node; onError: (m: string | un
   );
 }
 
+/** A border-radius shorthand as its four corners, clockwise from top-left. */
+export function cornerRadii(shorthand: string): [string, string, string, string] {
+  const [a = "0", b, c, d] = shorthand.trim().split("/")[0]?.split(/\s+/).filter(Boolean) ?? [];
+  return [a, b ?? a, c ?? a, d ?? b ?? a];
+}
+
+/** Four corners as the shortest shorthand that means them. */
+export function radiusShorthand([tl, tr, br, bl]: [string, string, string, string]): string {
+  if (tl === tr && tr === br && br === bl) return tl;
+  if (tl === br && tr === bl) return `${tl} ${tr}`;
+  if (tr === bl) return `${tl} ${tr} ${br}`;
+  return `${tl} ${tr} ${br} ${bl}`;
+}
+
+/** `transform` with its rotation set to `deg` (none when blank), other functions kept. */
+export function withRotation(transform: string, deg: string): string {
+  const rest = transform.replace(/rotate\([^)]*\)/g, "").trim().replace(/\s+/g, " ");
+  const n = deg.trim();
+  return [rest, n && n !== "0" ? `rotate(${n}deg)` : ""].filter(Boolean).join(" ");
+}
+
 function Num({ prefix, title, value, placeholder, onSave }: { prefix: string; title: string; value: string; placeholder?: string; onSave: (v: string) => void }) {
   return (
     <label className="num" title={title}>
@@ -681,6 +702,15 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   const atWidth = viewWidth !== undefined && page !== undefined && doc.pages[page]?.widths?.includes(viewWidth) && !componentOf(doc, node) ? viewWidth : undefined;
   const st = atWidth !== undefined ? { ...node.style, ...node.at?.[String(atWidth)] } : node.style;
   const setStyle = (prop: string, value: string) => void run("update_styles", { nodes: targets, style: { [prop]: value }, ...(atWidth !== undefined ? { width: atWidth } : {}) });
+  // The corners one by one: the radius shorthand read as four, written back as few as say the same.
+  const [corners, setCorners] = useState(false);
+  const radii = cornerRadii(st.borderRadius ?? "");
+  const setCorner = (i: number, v: string) => {
+    const next = [...radii] as [string, string, string, string];
+    next[i] = v.trim() || "0";
+    setStyle("borderRadius", radiusShorthand(next));
+  };
+  const rotation = /rotate\((-?[\d.]+)deg\)/.exec(st.transform ?? "")?.[1] ?? "";
   const row = (prop: string) => {
     const value = st[prop] ?? "";
     return (
@@ -845,6 +875,11 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
             />
             <Num prefix="Gap" title="Gap between children" value={st.gap ?? ""} onSave={(v) => setStyle("gap", v)} />
           </div>
+          {st.display?.includes("flex") && (
+            <div className="prow">
+              <Select title="Whether children wrap to the next line when they don't fit" value={st.flexWrap ?? ""} options={[["", "No wrap"], ["wrap", "Wrap"], ["wrap-reverse", "Wrap, last line first"]]} onChange={(v) => setStyle("flexWrap", v)} />
+            </div>
+          )}
           {st.display === "grid" && (
             <div className="prow">
               <Num prefix="Cols" title="Columns: a number for equal ones, or any grid-template-columns" value={st.gridTemplateColumns?.match(/^repeat\((\d+), minmax\(0, 1fr\)\)$/)?.[1] ?? st.gridTemplateColumns ?? ""}
@@ -860,25 +895,48 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           </div>
         </Group>
       )}
-      <Group title="Size" empty={!st.width && !st.height && !st.maxWidth && !st.minHeight} summary={`${st.width ?? "Hug"} × ${st.height ?? "Hug"}`}>
+      <Group title="Size" empty={!st.width && !st.height && !st.maxWidth && !st.minHeight && !st.minWidth && !st.maxHeight} summary={`${st.width ?? "Hug"} × ${st.height ?? "Hug"}`}>
         <div className="prow">
           <Num prefix="W" title="Width: a size, 100% to fill, empty to hug" value={st.width ?? ""} placeholder="Hug" onSave={(v) => setStyle("width", v)} />
           <Num prefix="H" title="Height: a size, empty to hug" value={st.height ?? ""} placeholder="Hug" onSave={(v) => setStyle("height", v)} />
         </div>
         <div className="prow">
+          <Num prefix="Min W" title="Minimum width" value={st.minWidth ?? ""} onSave={(v) => setStyle("minWidth", v)} />
           <Num prefix="Max W" title="Maximum width" value={st.maxWidth ?? ""} onSave={(v) => setStyle("maxWidth", v)} />
+        </div>
+        <div className="prow">
           <Num prefix="Min H" title="Minimum height" value={st.minHeight ?? ""} onSave={(v) => setStyle("minHeight", v)} />
+          <Num prefix="Max H" title="Maximum height" value={st.maxHeight ?? ""} onSave={(v) => setStyle("maxHeight", v)} />
         </div>
       </Group>
       <Group title="Fill and shape" summary={[short(st.background ?? st.backgroundColor), st.borderRadius && `◜ ${st.borderRadius}`].filter(Boolean).join(" · ") || "None"} empty={!st.background && !st.backgroundColor && !st.borderRadius && !st.opacity && !st.border && !st.boxShadow}>
         <div className="prow"><ColorField doc={doc} value={st.background ?? st.backgroundColor ?? ""} onSave={(v) => setStyle(st.background === undefined && st.backgroundColor !== undefined ? "backgroundColor" : "background", v)} /></div>
         <div className="prow">
-          <Num prefix="◜" title="Corner radius" value={st.borderRadius ?? ""} onSave={(v) => setStyle("borderRadius", v)} />
-          <Num prefix="α" title="Opacity, 0 to 1" value={st.opacity ?? ""} onSave={(v) => setStyle("opacity", v)} />
+          {corners ? (
+            <Num prefix="◜" title="Top-left corner" value={radii[0]} onSave={(v) => setCorner(0, v)} />
+          ) : (
+            <Num prefix="◜" title="Corner radius" value={st.borderRadius ?? ""} onSave={(v) => setStyle("borderRadius", v)} />
+          )}
+          {corners ? <Num prefix="◝" title="Top-right corner" value={radii[1]} onSave={(v) => setCorner(1, v)} /> : <Num prefix="α" title="Opacity, 0 to 1" value={st.opacity ?? ""} onSave={(v) => setStyle("opacity", v)} />}
+          <button type="button" className={`icon-btn small${corners ? " active" : ""}`} title={corners ? "One radius for every corner" : "Each corner its own radius"} aria-label="Corners one by one" onClick={() => setCorners((v) => !v)}>◰</button>
         </div>
+        {corners && (
+          <div className="prow">
+            <Num prefix="◟" title="Bottom-left corner" value={radii[3]} onSave={(v) => setCorner(3, v)} />
+            <Num prefix="◞" title="Bottom-right corner" value={radii[2]} onSave={(v) => setCorner(2, v)} />
+            <Num prefix="α" title="Opacity, 0 to 1" value={st.opacity ?? ""} onSave={(v) => setStyle("opacity", v)} />
+          </div>
+        )}
         <div className="prow"><Num prefix="Border" title="Border, e.g. 1px solid var(--rule)" value={st.border ?? ""} onSave={(v) => setStyle("border", v)} /></div>
         <div className="prow">
           <Select title="Shadow" value={st.boxShadow ?? ""} options={SHADOWS} onChange={(v) => setStyle("boxShadow", v)} />
+        </div>
+        <div className="prow">
+          <Num prefix="Filter" title="CSS filter on the layer: blur(4px), grayscale(1), brightness(1.1)…" value={st.filter ?? ""} onSave={(v) => setStyle("filter", v)} />
+          <Num prefix="Behind" title="Filter on what shows through the layer: blur(12px) for frosted glass" value={st.backdropFilter ?? ""} onSave={(v) => setStyle("backdropFilter", v)} />
+        </div>
+        <div className="prow">
+          <Num prefix="Rotate" title="Degrees, clockwise; other transforms on the layer stay" value={rotation} placeholder="0" onSave={(v) => setStyle("transform", withRotation(st.transform ?? "", v))} />
         </div>
       </Group>
       {/* What a layer is and looks like comes first; what it shows, how it moves and what people said about it after. */}
