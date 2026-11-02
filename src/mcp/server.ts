@@ -24,38 +24,79 @@ Designing the software path layer by layer: read_skill architecture; then check_
 Pen marks the person drew on a tablet: read_marks lists them; screenshot with marks: true shows the handwriting. Answer each with comment {thread, body, addressed: true}.
 If an edit is refused, the reply says which reference or rule it broke; fix the call and retry.`;
 
+const SPACE = `You are connected to a space, not one design: list_designs shows every design you may work on (your own and each organization's), use_design picks one, create_design starts one; every other tool then works on the one picked. Switch with use_design whenever the work moves to another design.`;
+
 /**
  * MCP server over one workspace. Edits are made as the client's name, so the
  * canvas shows who is working where.
  */
 export interface HostTools {
   /** Renders a page to PNG (base64). Only a host with a browser engine can offer this. */
-  screenshot?: (pageId: string, marks?: boolean) => Promise<string>;
+  screenshot?: (pageId: string, marks: boolean | undefined, ws: Workspace) => Promise<string>;
   /** A terminal screen as the characters a terminal shows, borders and all. Needs a browser engine too. */
-  screenAsText?: (pageId: string) => Promise<string>;
+  screenAsText?: (pageId: string, ws: Workspace) => Promise<string>;
   /** Loads a live website and returns a PNG (base64) and a short summary of its look. */
   lookAtUrl?: (url: string) => Promise<{ png: string; summary: string }>;
   /** Puts a question to the person watching in the editor; the answer, or undefined when none came in time. */
-  ask?: (author: string, q: { question: string; options: string[]; node?: string }) => Promise<string | undefined>;
+  ask?: (author: string, q: { question: string; options: string[]; node?: string }, ws: Workspace) => Promise<string | undefined>;
   /** An agent changed the design; `before` is how it was. The host can keep it as a point to go back to. */
-  edited?: (author: string, before: Doc) => void;
+  edited?: (author: string, before: Doc, ws: Workspace) => void;
+  /**
+   * The designs the client may work on, when it is connected to a space rather than one design: it lists them,
+   * picks one (use_design), or starts one (create_design); every other tool then works on the one picked.
+   */
+  designs?: {
+    list(): Promise<{ space: string; name: string; path: string; pages: number }[]>;
+    use(path: string): Promise<Workspace>;
+    create(name: string, space?: string): Promise<Workspace>;
+  };
 }
 
-export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer {
-  const server = new McpServer({ name: "buni", version: VERSION }, { instructions: INSTRUCTIONS });
+
+export function createMcpServer(first: Workspace | undefined, host: HostTools = {}): McpServer {
+  const server = new McpServer({ name: "buni", version: VERSION }, { instructions: host.designs ? `${INSTRUCTIONS}\n${SPACE}` : INSTRUCTIONS });
   const author = () => server.server.getClientVersion()?.name ?? "mcp client";
+  /** The design the tools work on; a client connected to a space picks it with use_design. */
+  let current = first;
+  const none = { content: [{ type: "text" as const, text: "No design is chosen yet: list_designs, then use_design one, or create_design." }], isError: true };
 
   for (const name of toolNames) {
     const tool = tools[name];
     server.registerTool(name, { description: tool.description, inputSchema: tool.input }, async (args) => {
+      const ws = current;
+      if (!ws) return none;
       // An imported core may have been edited where this server doesn't see (straight to disk): read it again first.
       await ws.refreshImports();
       const before = ws.view();
       const r = await ws.call(author(), name, args);
       const after = ws.view();
-      if (after !== before) host.edited?.(author(), before);
+      if (after !== before) host.edited?.(author(), before, ws);
       const checks = r.ok && after !== before ? await editChecks(before, after) : "";
       return { content: [{ type: "text", text: checks ? `${r.reply}\n${checks}` : r.reply }], isError: !r.ok };
+    });
+  }
+  const { designs } = host;
+  if (designs) {
+    const named = (ws: Workspace) => `Working on ${ws.path.split("/").pop()?.replace(/\.buni$/, "")} (${ws.path}): ${Object.keys(ws.view().pages).length} pages. read_tree and read_doc come next.`;
+    server.registerTool("list_designs", { description: "The designs you can work on, by space (your own, each organization's): name, path and pages. use_design picks one.", inputSchema: {} }, async () => {
+      const all = await designs.list();
+      const lines = all.map((d) => `${d.space} · ${d.name} — ${d.path} — ${d.pages} page${d.pages === 1 ? "" : "s"}`);
+      return { content: [{ type: "text", text: lines.length ? `${lines.join("\n")}${current ? `\n\nNow on: ${current.path}` : ""}` : "No designs yet. create_design starts one." }] };
+    });
+    server.registerTool("use_design", { description: "Work on one of the designs list_designs shows, by its path (or its exact name). Later tools act on it.", inputSchema: { design: z.string() } }, async ({ design }) => {
+      const all = await designs.list();
+      const hit = all.find((d) => d.path === design) ?? all.find((d) => d.name === design) ?? all.find((d) => d.name.toLowerCase() === design.toLowerCase());
+      if (!hit) return { content: [{ type: "text", text: `No design "${design}". list_designs shows them.` }], isError: true };
+      current = await designs.use(hit.path);
+      return { content: [{ type: "text", text: named(current) }] };
+    });
+    server.registerTool("create_design", { description: "Start a new design in a space (your own unless `space` names an organization) and work on it.", inputSchema: { name: z.string(), space: z.string().optional() } }, async ({ name, space }) => {
+      try {
+        current = await designs.create(name, space);
+        return { content: [{ type: "text", text: `Created. ${named(current)}` }] };
+      } catch (e) {
+        return { content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }], isError: true };
+      }
     });
   }
   server.registerTool("list_skills", { description: "List the design skills: what each covers and when to read it.", inputSchema: {} }, async () => ({
@@ -80,8 +121,10 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
         inputSchema: { question: z.string(), options: z.array(z.string()).max(4).optional(), node: z.string().optional() },
       },
       async ({ question, options, node }) => {
+        const ws = current;
+        if (!ws) return none;
         if (node && !ws.view().nodes[node]) return { content: [{ type: "text", text: `layer "${node}" does not exist` }], isError: true };
-        const answer = await ask(author(), { question, options: options ?? [], ...(node ? { node } : {}) });
+        const answer = await ask(author(), { question, options: options ?? [], ...(node ? { node } : {}) }, ws);
         return { content: [{ type: "text", text: answer === undefined ? "No answer in ten minutes. Go with your best judgement, and say what you chose and why." : `They answered: ${answer}` }] };
       },
     );
@@ -92,8 +135,10 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
       "screenshot",
       { description: "Render one page to a PNG; marks draws the pen marks people left on it (read_marks lists them).", inputSchema: { page: z.string(), marks: z.boolean().optional() } },
       async ({ page, marks }) => {
+        const ws = current;
+        if (!ws) return none;
         if (!ws.view().pages[page]) return { content: [{ type: "text", text: `page "${page}" does not exist` }], isError: true };
-        return { content: [{ type: "image", data: await screenshot(page, marks), mimeType: "image/png" }] };
+        return { content: [{ type: "image", data: await screenshot(page, marks, ws), mimeType: "image/png" }] };
       },
     );
   }
@@ -103,8 +148,10 @@ export function createMcpServer(ws: Workspace, host: HostTools = {}): McpServer 
       "read_screen",
       { description: "Read a terminal screen as the characters a terminal shows, borders as box drawing: what to build, cell for cell.", inputSchema: { page: z.string() } },
       async ({ page }) => {
+        const ws = current;
+        if (!ws) return none;
         if (!ws.view().pages[page]) return { content: [{ type: "text", text: `page "${page}" does not exist` }], isError: true };
-        return { content: [{ type: "text", text: await screenAsText(page) }] };
+        return { content: [{ type: "text", text: await screenAsText(page, ws) }] };
       },
     );
   }

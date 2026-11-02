@@ -41,3 +41,35 @@ test("ask_person hands the question to the host and the person's answer back; no
   expect(JSON.stringify(none.content)).toContain("best judgement");
   expect((await silent.callTool({ name: "ask_person", arguments: { question: "This?", node: "nope" } })).isError).toBe(true);
 });
+
+test("connected to a space, a client lists designs, picks one, starts one, and every other tool works on the one picked", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "buni-mcp-space-"));
+  await copyFile(join(import.meta.dir, "../../examples/tk.buni"), join(dir, "tk.buni"));
+  const open = new Map<string, Workspace>();
+  const ws = async (path: string) => { let w = open.get(path); if (!w) { w = await Workspace.open(path); open.set(path, w); } return w; };
+  const made: string[] = [];
+  const host: HostTools = {
+    designs: {
+      list: async () => [{ space: "Personal", name: "tk", path: join(dir, "tk.buni"), pages: 2 }, ...made.map((p) => ({ space: "Acme", name: "New", path: p, pages: 0 }))],
+      use: ws,
+      create: async (name, space) => { const p = join(dir, `${name}.buni`); await Bun.write(p, '{"buni":1,"tokens":{},"pages":{},"nodes":{},"shared":{},"connections":{},"flows":{},"journeys":{},"comments":{},"sections":{},"rules":{},"attachments":{}}'); made.push(p); if (space !== "Acme") throw new Error(`No space "${space}"`); return ws(p); },
+    },
+  };
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  await createMcpServer(undefined, host).connect(a);
+  const client = new Client({ name: "test", version: "1" });
+  await client.connect(b);
+  const text = (r: Awaited<ReturnType<Client["callTool"]>>) => (r.content as { text?: string }[])[0]?.text ?? "";
+  const tree = await client.callTool({ name: "read_tree", arguments: {} });
+  expect(tree.isError).toBe(true);
+  expect(text(tree)).toContain("use_design");
+  expect(text(await client.callTool({ name: "list_designs", arguments: {} }))).toContain("Personal · tk");
+  expect(text(await client.callTool({ name: "use_design", arguments: { design: "tk" } }))).toContain("Working on tk");
+  expect((await client.callTool({ name: "read_tree", arguments: {} })).isError).toBeFalsy();
+  const wrong = await client.callTool({ name: "create_design", arguments: { name: "New", space: "Nowhere" } });
+  expect(wrong.isError).toBe(true);
+  expect(text(await client.callTool({ name: "create_design", arguments: { name: "New", space: "Acme" } }))).toContain("Created. Working on New");
+  const r = await client.callTool({ name: "create_page", arguments: { name: "Home", route: "/" } });
+  expect(text(r)).toContain("Created page");
+  expect(Object.keys((await ws(join(dir, "New.buni"))).view().pages)).toHaveLength(1);
+});

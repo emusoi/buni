@@ -221,7 +221,15 @@ const api: BuniApi = {
   },
   home: () => call("home"),
   project: () => call("project"),
-  ...(accounts ? { spaces: async () => (await fetch("/spaces")).json() } : {}),
+  ...(accounts ? {
+    spaces: async () => (await fetch("/spaces")).json(),
+    agentToken: async (name: string) => {
+      const res = await fetch("/auth/tokens", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
+      const body: { token?: string; error?: string } = await res.json();
+      if (!res.ok || typeof body.token !== "string") throw new Error(body.error ?? "The token could not be made");
+      return body.token;
+    },
+  } : {}),
   documents: (paths) => call("documents", paths),
   open: async (path) => (path === undefined ? pickFile() : go(path)),
   create: async (name, options) => go(await call<string>("create", name ?? "Untitled", options)),

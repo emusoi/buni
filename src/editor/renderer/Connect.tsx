@@ -25,10 +25,24 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, onShow, on
     const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
   }, []);
-  const ways = [
-    { title: "Claude Code", text: `claude mcp add --transport http buni "${mcpUrl}"` },
-    { title: "Codex or any MCP client", text: mcpUrl },
-  ];
+  // Hosted, the server wants a token with every call: made here, once, and written into the lines.
+  const needsToken = Boolean(window.buni.agentToken);
+  const [token, setToken] = useState<string>();
+  const [making, setMaking] = useState(false);
+  const makeToken = () => {
+    setMaking(true);
+    void window.buni.agentToken?.("coding agent").then(setToken, (e: unknown) => onToast(e instanceof Error ? e.message : String(e))).finally(() => setMaking(false));
+  };
+  const ways = needsToken && token
+    ? [
+      { title: "Claude Code", text: `claude mcp add --transport http buni "${mcpUrl}" --header "Authorization: Bearer ${token}"` },
+      { title: "Codex", text: `export BUNI_TOKEN=${token}\ncodex mcp add buni --url "${mcpUrl}" --bearer-token-env-var BUNI_TOKEN` },
+      { title: "Any MCP client", text: `${mcpUrl}\nAuthorization: Bearer ${token}` },
+    ]
+    : needsToken ? [] : [
+      { title: "Claude Code", text: `claude mcp add --transport http buni "${mcpUrl}"` },
+      { title: "Codex or any MCP client", text: mcpUrl },
+    ];
   // Agents connected now, then ones that edited here earlier and have since gone.
   const names = [...new Set([...connected, ...Object.keys(recent).filter((n) => n !== "you")])];
   return (
@@ -70,6 +84,13 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, onShow, on
       <section className="connect-ways">
         <h3>{names.length ? "Connect another agent" : "Connect a coding agent"}</h3>
         <p className="hint">It edits this design through buni's tools. You see every change land here.</p>
+        {needsToken && !token && (
+          <div className="connect-way">
+            <b>A token for it</b>
+            <p className="hint">The agent signs in to this server with a token of its own, which you can revoke on your account page. It shows once.</p>
+            <button type="button" className="btn" disabled={making} onClick={makeToken}>{making ? "Making…" : "Make a token"}</button>
+          </div>
+        )}
         {ways.map((w) => (
           <div key={w.title} className="connect-way">
             <b>{w.title}</b>

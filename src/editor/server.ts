@@ -52,8 +52,12 @@ export interface EditorOptions {
 }
 
 /** The same editor and design API, with the host choosing storage and who may reach it. */
+/** A place designs live, as the host names it: an MCP client connected to /mcp without a file may roam these. */
+export interface SpaceRoot { root: string; name: string }
+
 export interface Editor {
-  fetch(req: Request, dir?: string): Promise<Response>;
+  /** `spaces`: for /mcp without a file, the spaces the client may list, use and create designs in; `dir` alone otherwise. */
+  fetch(req: Request, dir?: string, spaces?: readonly SpaceRoot[]): Promise<Response>;
   /** The design a WebSocket upgrade for the live feed may watch, or undefined when it isn't allowed. */
   socketFile(req: Request, dir?: string): string | undefined;
   /** A request on the listener only a tablet on the cable reaches; everything a tablet may do goes through here. */
@@ -193,6 +197,64 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     const session = sid ? o.mcp.get(sid) : undefined;
     if (session) session.seen = Date.now();
     return t.handleRequest(req, { parsedBody: body });
+  }
+
+  /** MCP sessions connected to spaces rather than one design, by session id. */
+  const roaming = new Map<string, { transport: WebStandardStreamableHTTPServerTransport; seen: number }>();
+
+  /**
+   * An MCP client on the person's spaces: it lists their designs, picks one and works on it, or starts one. While it
+   * is on a design, that design's tabs see it as connected, and its edits land there as any agent's do.
+   */
+  async function mcpSpaces(req: Request, spaces: readonly SpaceRoot[]): Promise<Response> {
+    const body: unknown = req.method === "POST" ? await req.json() : undefined;
+    const sid = req.headers.get("mcp-session-id");
+    const known = sid ? roaming.get(sid) : undefined;
+    if (!known && req.method === "POST" && isInitializeRequest(body)) {
+      let on: Open | undefined;
+      let session = "";
+      const entry = { transport: undefined as unknown as WebStandardStreamableHTTPServerTransport, server: undefined as unknown as ReturnType<typeof createMcpServer>, seen: Date.now() };
+      const list = async () => {
+        const out: { space: string; name: string; path: string; pages: number }[] = [];
+        for (const sp of spaces) for (const [path, d] of await index.docs(sp.root)) out.push({ space: sp.name, name: basename(path, ".buni"), path, pages: Object.keys(d.doc.pages).length });
+        return out;
+      };
+      const moveTo = async (path: string) => {
+        const o = await load(path);
+        if (on && on !== o) { on.mcp.delete(session); on.listeners.forEach((fn) => fn()); }
+        on = o;
+        if (session) { o.mcp.set(session, entry); o.listeners.forEach((fn) => fn()); }
+        return o.ws;
+      };
+      const server = createMcpServer(undefined, {
+        screenshot: async (page, marks, ws) => renderAway(await load(ws.path), page, marks),
+        edited: (author, before, ws) => void load(ws.path).then((o) => keepBefore(o, author, before)),
+        ask: async (author, q, ws) => askPerson(await load(ws.path), author, q),
+        designs: {
+          list,
+          use: moveTo,
+          create: async (name, space) => {
+            const sp = space === undefined ? spaces[0] : spaces.find((x) => x.name === space) ?? spaces.find((x) => x.name.toLowerCase() === space.toLowerCase());
+            if (!sp) throw new Error(`No space "${space}"; you have: ${spaces.map((x) => x.name).join(", ")}`);
+            const path = await freePath(name, sp.root);
+            await store.write(path, serializeDoc(emptyDoc()));
+            return moveTo(path);
+          },
+        },
+      });
+      const made = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID(), onsessioninitialized: (id) => { session = id; roaming.set(id, entry); } });
+      entry.transport = made;
+      entry.server = server;
+      made.onclose = () => {
+        if (session) roaming.delete(session);
+        if (on) { on.mcp.delete(session); on.listeners.forEach((fn) => fn()); }
+      };
+      await server.connect(made);
+      return made.handleRequest(req, { parsedBody: body });
+    }
+    if (!known) return Response.json({ error: "start with an initialize request" }, { status: 400 });
+    known.seen = Date.now();
+    return known.transport.handleRequest(req, { parsedBody: body });
   }
 
   /**
@@ -819,7 +881,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   }
 
   const FONTS: Record<string, string> = Object.fromEntries(FONT_FAMILIES.map((family) => [`/fonts/${fontSlug(family)}.woff2`, family]));
-  async function fetch(req: Request, dir = "/designs"): Promise<Response> {
+  async function fetch(req: Request, dir = "/designs", spaces?: readonly SpaceRoot[]): Promise<Response> {
     const url = new URL(req.url);
     if (url.pathname === "/health") return new Response("ok");
     if (!HOSTS.has(req.headers.get("host") ?? "")) return new Response("forbidden host", { status: 403 });
@@ -860,9 +922,10 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       }
       if (url.pathname === "/events" && file) return await events(file, url.searchParams.get("tab") ?? undefined);
       if (url.pathname === "/tabs" && file && req.method === "GET") return Response.json({ tabs: tabs.get(file) ?? 0 });
-      if (url.pathname === "/mcp" && file) {
+      if (url.pathname === "/mcp") {
         if (!allowedOrigin(req, OWN)) return new Response("forbidden origin", { status: 403 });
-        return await mcp(file, req);
+        // Without a file, the client is connected to the person's spaces and picks a design with use_design.
+        return file ? await mcp(file, req) : await mcpSpaces(req, spaces ?? [{ root: dir, name: "Designs" }]);
       }
       const name = url.pathname.startsWith("/rpc/") ? url.pathname.slice(5) : "";
       const rpc = rpcFor(dir);

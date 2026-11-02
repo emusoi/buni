@@ -960,6 +960,8 @@ svg { flex-shrink: 0; }
 .connect-way { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
 .connect-way button { padding: 8px 10px; border: 0; border-radius: 6px; background: var(--canvas); text-align: left; cursor: copy; }
 .connect-way button:hover { background: var(--hover); }
+.connect-way .btn { align-self: flex-start; cursor: pointer; }
+.connect-way code { white-space: pre-wrap; word-break: break-all; }
 .connect-way code { font-size: 11.5px; word-break: break-all; }
 
 /* Home rail: one primary action at the top; where agents connect and the theme at the foot. */

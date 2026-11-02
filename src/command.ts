@@ -63,7 +63,7 @@ usage: buni <command> [args] [--as <name>] [--json]
   capture <file.buni> <page> <out.png>   PNG plus exact document, revision and layer bounds in out.png.json
   export <file.buni> <out-dir>      write the site as static HTML + CSS
   split <file.buni> core <core.buni>      move every component and token into a core file the design imports
-  mcp <file.buni>                   serve the tools over MCP (stdio)
+  mcp <file.buni>                   serve the tools over MCP (stdio); "buni mcp --remote" alone: all your designs there
   login [--server URL]              sign in with your email and password; your designs on buni.emusoi.app (or URL) then work with --remote
   logout | whoami                   sign out of it, or say who you are signed in as
   ls                                your designs on that buni server
@@ -704,6 +704,13 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
     }
   }
 
+  // `buni mcp --remote` with no design: the client is connected to your spaces there, and picks designs itself.
+  if (!file && cmd === "mcp" && remote) {
+    const { bearer, proxyMcp } = await import("./account/remote.ts");
+    const account = await signedIn();
+    await proxyMcp(new URL("/mcp", account.server), bearer(account));
+    return new Promise<number>(() => {});
+  }
   if (!file) {
     console.error(usage(ext));
     return 2;

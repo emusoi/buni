@@ -5,6 +5,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: an MCP client connected to `/mcp` with no file (hosted; `buni mcp --remote` with no design) is on the
+  person's spaces: `list_designs` shows every design they may work on, `use_design` picks one, `create_design` starts
+  one in a space, and every other tool then works on the one picked. The design's tabs see it as connected.
 - Added: spaces. Where the host keeps designs (the web), each design says which space it lives in (`HomeFile.space`:
   the person's own, or an organization's), Home switches between them and lists the people in the one shown, a new
   design starts in the space shown (`create {in}`), and `buni open --to NAME` mirrors a design into that

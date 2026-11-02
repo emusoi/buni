@@ -61,6 +61,8 @@ export interface BuniApi {
   create(name?: string, options?: { beside?: string; core?: string; in?: string }): Promise<void>;
   /** The spaces the person's designs live in and who is in each; only where the host has them (the web). */
   spaces?(): Promise<Space[]>;
+  /** A new API token for a coding agent to reach this server with, named for what uses it; only where calls need one (the web). */
+  agentToken?(name: string): Promise<string>;
   /** Back to the home screen. */
   close(): Promise<void>;
   /** Renames a file on the home screen; only where files have no Finder of their own (the web). Returns its new path. */
