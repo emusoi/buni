@@ -63,8 +63,8 @@ function savedTheme(): ThemeChoice {
 }
 applyTheme(savedTheme());
 
-/** A hosted buni signs everyone in with Wazo; on this machine alone there are no accounts. */
-const accounts = document.documentElement.dataset.accounts === "wazo";
+/** A hosted buni has accounts (data-accounts names how); on this machine alone there are none. */
+const accounts = document.documentElement.dataset.accounts !== undefined;
 const desktopOnly = () => Promise.reject(new Error("Only in the desktop app for now."));
 
 /** The open file as it is now. The server leaves out `system` when it is the view itself; it's put back here. */
