@@ -45,6 +45,7 @@ Use `var(--…)` everywhere; a raw hex in a layer is a bug.
 ## Dark surfaces
 - Choose light or dark for how the product is used (a cockpit at night, an editor all day), not by product category.
 - Not inverted light mode: raise surfaces by getting lighter, not by adding shadow. Desaturate the accent slightly; use about 90% white for text to reduce glare.
+- Both appearances live in one design: `tokens {mode: "dark", set: {…}}` gives only the tokens that differ their dark values (surfaces, ink, lines, a softer accent). The canvas draws every page in it (the Dark button beside Links), Play follows, and the exported site answers to the system's choice. Layers keep using `var(--…)`; nothing changes per page.
 
 ## Checks
 - Contrast: body text 4.5:1, large text and UI parts 3:1 (WCAG 2). APCA gives a more accurate perceptual check when in doubt.
