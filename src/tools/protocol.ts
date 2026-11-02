@@ -10,7 +10,17 @@ import type { Edit } from "./workspace.ts";
 export type SnapshotUpdate =
   | { kind: "whole"; snap: Snapshot | undefined }
   /** `system` is left out when it is the view itself: the file imports nothing. */
-  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[] };
+  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[]; present?: Presence[] };
+
+/** Someone with the design open in a tab, and where they are in it. */
+export interface Presence {
+  /** The tab, so a person with two open shows twice and a tab can leave itself out. */
+  tab: string;
+  who: string;
+  page?: Id;
+  /** The layer they have selected. */
+  node?: Id;
+}
 
 export interface Snapshot {
   path: string;
@@ -31,6 +41,8 @@ export interface Snapshot {
   edits?: readonly Edit[];
   /** Questions agents are waiting on the person to answer, oldest first. */
   asking?: Asking[];
+  /** People with the design open right now, and where; only where the host keeps the feed (the web). */
+  present?: Presence[];
 }
 
 /** An agent's question to the person watching, about a layer or the design. */

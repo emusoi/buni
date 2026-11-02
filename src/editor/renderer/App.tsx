@@ -277,14 +277,27 @@ export function App({ snap }: { snap: Snapshot }) {
     return () => clearTimeout(t);
   }, [edits, landing.length, working.length]);
   const agentCount = connected.length;
-  // What the toolbar says about agents: who is editing where, or who is connected.
+  // The other tabs on this file: who, and where. Their selections are outlined like an agent's spot, in their colour.
+  const peers = (snap.present ?? []).filter((p) => p.tab !== window.buni.tab);
+  const people = [...new Set(peers.map((p) => p.who))];
+  // What the toolbar says: who is editing where, who is here, or who is connected.
   const presence = working[0]
     ? `${working[0]} is editing ${doc.pages[pageOfNode(doc, snap.recent[working[0]]?.[0] ?? "") ?? ""]?.name ?? "this design"}`
+    : peers[0] ? `${peers[0].who} is on ${doc.pages[peers[0].page ?? ""]?.name ?? "this design"}${peers.length > 1 ? ` and ${peers.length - 1} more here` : ""}`
     : connected.length ? `${connected.join(" and ")} connected` : undefined;
-  const spots: AgentSpot[] = working.flatMap((name) => {
-    const at = snap.recent[name]?.[0];
-    return at ? [{ agent: name, nodes: [at], label: name, color: agentColor(name) }] : [];
-  });
+  const spots: AgentSpot[] = [
+    ...working.flatMap((name) => {
+      const at = snap.recent[name]?.[0];
+      return at ? [{ agent: name, nodes: [at], label: name, color: agentColor(name) }] : [];
+    }),
+    ...peers.flatMap((p) => (p.node && doc.nodes[p.node] ? [{ agent: `tab:${p.tab}`, nodes: [p.node], label: p.who, color: agentColor(p.who) }] : [])),
+  ];
+  // Tell the others where this tab is, a moment after it settles.
+  useEffect(() => {
+    if (!window.buni.presence) return;
+    const t = setTimeout(() => void window.buni.presence?.(activePage, selected).catch(() => undefined), 150);
+    return () => clearTimeout(t);
+  }, [activePage, selected]);
   // Pages shown at one of their other widths; while one is, its layers are styled at that width.
   const [viewAt, setViewAt] = useState<Record<Id, number>>({});
   const viewWidth = useCallback((pageId: Id, w: number | undefined) => setViewAt((v) => {
@@ -788,7 +801,10 @@ export function App({ snap }: { snap: Snapshot }) {
             {connected.map((name) => (
               <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
             ))}
-            <span className="presence-text" title={presence}>{connected.length ? connected.join(", ") : working.join(", ")}</span>
+            {people.map((name) => (
+              <span key={`person:${name}`} className="presence-dot person" style={{ background: agentColor(name) }} title={`${name} · here`}>{agentInitials(name)}</span>
+            ))}
+            <span className="presence-text" title={presence}>{[...connected, ...people].length ? [...connected, ...people].join(", ") : working.join(", ")}</span>
           </button>
         )}
         <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />

@@ -6,7 +6,7 @@ import type { FormatError } from "buni/format/parse.ts";
 
 /** Everything the window needs to draw: the live document and the work waiting on it. */
 export type { Edit };
-export type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
+export type { AgentInfo, GitStatus, HomeFile, Presence, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
 import type { AgentInfo, GitStatus, HomeFile, ProjectFile, Snapshot, SnapshotUpdate, VersionInfo } from "buni/tools/protocol.ts";
 
 export interface SkillInfo {
@@ -109,6 +109,10 @@ export interface BuniApi {
   openAccountPage(): Promise<void>;
   theme(): Promise<ThemeChoice>;
   setTheme(t: ThemeChoice): Promise<void>;
+  /** This tab's id in the file's presence list, where the host keeps one (the web). */
+  tab?: string;
+  /** Tells the others on the file which page this tab looks at and which layer it has selected. */
+  presence?(page: Id | undefined, node: Id | undefined): Promise<void>;
   /** Asks where, then saves one page as a picture, a PDF, an SVG or an app icon set; undefined if cancelled. */
   exportPage(page: string, as: PageExport): Promise<{ path: string } | undefined>;
   undo(): Promise<EditResult>;

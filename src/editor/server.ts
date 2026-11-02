@@ -4,7 +4,7 @@ import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts"
 import { checkImage } from "buni/tools/assets.ts";
 import { fontSlug } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
-import { homedir, tmpdir } from "node:os";
+import { homedir, tmpdir, userInfo } from "node:os";
 import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins } from "./guard.ts";
 import { rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -18,7 +18,7 @@ import { Workspace } from "buni/tools/workspace.ts";
 import { ProjectIndex, summaries, withImportsFrom } from "./project.ts";
 import { allPatterns } from "../tools/inspiration.ts";
 import { EDIT_TOOLS, type HomeFile, type Snapshot, type SnapshotUpdate } from "./api.ts";
-import type { Asking } from "buni/tools/protocol.ts";
+import type { Asking, Presence } from "buni/tools/protocol.ts";
 import { gitCommit, gitStatus } from "./git.ts";
 import { loadSkills, readSkill } from "buni/skills/skills.ts";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
@@ -61,7 +61,7 @@ export interface Editor {
   /** The design a tablet's WebSocket may watch, or undefined. */
   tabletSocket(req: Request, dir?: string): string | undefined;
   /** Sends `file`'s changes to `send` as they happen; returns how to stop. */
-  watch(file: string, send: (data: string) => void): Promise<() => void>;
+  watch(file: string, send: (data: string) => void, tab?: string): Promise<() => void>;
   stop(): void;
 }
 
@@ -84,6 +84,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     mcp: Map<string, { transport: WebStandardStreamableHTTPServerTransport; server: ReturnType<typeof createMcpServer>; seen: number }>;
     /** Agents' questions waiting on the person, each with how to hand back the answer. */
     asking: Map<string, Asking & { answer: (text: string | undefined) => void }>;
+    /** The tabs on the file and where each person is, by tab; gone when the tab's feed closes. */
+    present: Map<string, Presence>;
   }
   /** This run of the server: a tab that reconnects to a different one reloads, so it never runs yesterday's code. */
   const BUILD = Date.now().toString(36);
@@ -98,7 +100,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     let o = opened.get(path);
     if (!o) {
       o = Workspace.open(path, within(store, dirname(dirname(path)), loopback && store.localImports === true)).then(async (ws) => {
-        const file: Open = { ws, listeners: new Set(), mcp: new Map(), asking: new Map() };
+        const file: Open = { ws, listeners: new Set(), mcp: new Map(), asking: new Map(), present: new Map() };
         if (disk) {
           // On disk, buni open shows who is editing, and the buni command and coding agents send their edits here
           // (through <file>.live) so this editor stays the one writer of the file.
@@ -122,8 +124,9 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   }
 
   const mcpUrl = (path: string) => `${origin}/mcp?file=${encodeURIComponent(path)}`;
-  const snapshot = ({ ws, mcp, asking }: Open): Snapshot => ({
+  const snapshot = ({ ws, mcp, asking, present }: Open): Snapshot => ({
     asking: [...asking.values()].map(({ answer: _answer, ...q }) => q),
+    present: [...present.values()],
     path: ws.path, dir: dirname(ws.path), view: ws.view(), system: ws.system(), owners: ws.owners(), recent: ws.recent(), mcpUrl: mcpUrl(ws.path),
     // An agent that quits or crashes rarely says so: one heard from in the last ten minutes counts as here.
     // ponytail: "gone" shows on the next change after that, not the moment it lapses
@@ -429,6 +432,14 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       if (!name) throw new Error(`${String(tool)} is not something the window can edit with`);
       return (await need(file)).call("you", name, args);
     },
+    /** Where a tab's person is: the page they look at and the layer they picked. Other tabs see it on the canvas. */
+    presence: async (file, tab, who, page, node) => {
+      if (!file || typeof tab !== "string" || !/^[\w-]{1,32}$/.test(tab)) throw new Error("presence expects a tab id");
+      const o = await load(file);
+      const name = typeof who === "string" && who.trim() ? who.trim().slice(0, 80) : userInfo().username;
+      o.present.set(tab, { tab, who: name, ...(typeof page === "string" ? { page } : {}), ...(typeof node === "string" ? { node } : {}) });
+      o.listeners.forEach((fn) => fn());
+    },
     // Versions sit in the design's folder, so moving or deleting the folder takes them along. The newest is also the
     // .version Review compares against.
     saveVersion: async (file, name) => saveVersion(store, await need(file), name),
@@ -533,12 +544,13 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
    * A tab's live feed of its file: changes only, from the file as it is now. The tab fetches the whole file (compressed)
    * once the feed is open, so nothing between the two is missed and the file isn't sent twice. Returns how to stop it.
    */
-  async function watch(file: string, send: (data: string) => void): Promise<() => void> {
+  async function watch(file: string, send: (data: string) => void, tab?: string): Promise<() => void> {
     const o = await load(file);
     let sent: { view: Doc; system: Doc } = snapshot(o);
     const changed = () => {
       const s = snapshot(o);
-      const u: SnapshotUpdate = { kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}), ...(s.asking ? { asking: s.asking } : {}) };
+      // ponytail: a presence change diffs the whole doc too (nothing changed, so it's quick); split the feed if it shows
+      const u: SnapshotUpdate = { kind: "patch", view: diffDoc(sent.view, s.view), ...(s.system !== s.view ? { system: diffDoc(sent.system, s.system) } : {}), owners: s.owners, recent: s.recent, ...(s.connected ? { connected: s.connected } : {}), ...(s.edits ? { edits: s.edits } : {}), ...(s.asking ? { asking: s.asking } : {}), ...(s.present ? { present: s.present } : {}) };
       send(JSON.stringify(u));
       sent = s;
     };
@@ -550,19 +562,20 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       stopped = true;
       o.listeners.delete(changed);
       tabs.set(file, (tabs.get(file) ?? 1) - 1);
+      if (tab !== undefined && o.present.delete(tab)) o.listeners.forEach((fn) => fn());
     };
   }
   /** How many tabs have each design open: buni open shows the one that's there instead of opening another. */
   const tabs = new Map<string, number>();
 
   /** The feed as a server-sent event stream, for hosts that serve the editor over HTTP/2 (no per-host socket limit). */
-  async function events(file: string): Promise<Response> {
+  async function events(file: string, tab?: string): Promise<Response> {
     let stop = () => {};
     const stream = new ReadableStream<string>({
       async start(c) {
         // The comment opens the stream at once.
         c.enqueue(": open\n\n");
-        stop = await watch(file, (data) => c.enqueue(`data: ${data}\n\n`));
+        stop = await watch(file, (data) => c.enqueue(`data: ${data}\n\n`), tab);
       },
       cancel: () => stop(),
     });
@@ -821,7 +834,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
         }
         return Response.json({ error: "forbidden" }, { status: 403 });
       }
-      if (url.pathname === "/events" && file) return await events(file);
+      if (url.pathname === "/events" && file) return await events(file, url.searchParams.get("tab") ?? undefined);
       if (url.pathname === "/tabs" && file && req.method === "GET") return Response.json({ tabs: tabs.get(file) ?? 0 });
       if (url.pathname === "/mcp" && file) {
         if (!allowedOrigin(req, OWN)) return new Response("forbidden origin", { status: 403 });
@@ -884,7 +897,7 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
   const ready = Promise.withResolvers<Editor>();
   // Each tab's live feed is a WebSocket here: an event stream holds one of the six HTTP/1.1 connections Chrome allows
   // per host, so with six tabs open on this buni a seventh never loads. Sockets don't count against that limit.
-  type Feed = { file: string; stop?: () => void; closed?: boolean };
+  type Feed = { file: string; tab?: string; stop?: () => void; closed?: boolean };
   const server = Bun.serve<Feed>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,
     fetch: async (req, srv) => {
@@ -892,7 +905,7 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
       if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
         const file = editor.socketFile(req);
         if (!file) return new Response("forbidden", { status: 403 });
-        return srv.upgrade(req, { data: { file } }) ? undefined : new Response("upgrade failed", { status: 400 });
+        return srv.upgrade(req, { data: { file, tab: new URL(req.url).searchParams.get("tab") ?? undefined } }) ? undefined : new Response("upgrade failed", { status: 400 });
       }
       return editor.fetch(req);
     },
@@ -916,7 +929,7 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
   function feeds(): Bun.WebSocketHandler<Feed> {
     return {
       async open(ws) {
-        const stop = await (await ready.promise).watch(ws.data.file, (data) => ws.send(data));
+        const stop = await (await ready.promise).watch(ws.data.file, (data) => ws.send(data), ws.data.tab);
         // Closed while the file was loading: stop at once rather than feed a socket that's gone.
         if (ws.data.closed) stop();
         else ws.data.stop = stop;

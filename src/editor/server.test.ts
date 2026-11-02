@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { emptyDoc } from "../format/doc.ts";
 import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
-import type { Snapshot } from "./api.ts";
+import type { Presence, Snapshot } from "./api.ts";
 import { createEditor } from "./server.ts";
 import { DiskStore } from "./store.ts";
 
@@ -128,6 +128,53 @@ test("the hosted editor rejects another account's files and imports", async () =
   }
 });
 
+
+test("tabs on a file hear where each other is, and a tab that closes its feed leaves the list", async () => {
+  const root = await mkdtemp(join(tmpdir(), "buni-presence-"));
+  await mkdir(join(root, "a/Shop"), { recursive: true });
+  const store = new DiskStore(root, "/people");
+  const file = "/people/a/Shop/Shop.buni";
+  await store.write(file, serializeDoc(emptyDoc()));
+  const editor = await createEditor({ store, origin: "https://buni.test", assets: () => ({ files: new Map(), client: "", styles: "" }) });
+  const rpc = (name: string, args: unknown[]) => editor.fetch(new Request(`https://buni.test/rpc/${name}?file=${encodeURIComponent(file)}`, {
+    method: "POST", headers: { host: "buni.test", "content-type": "application/json" }, body: JSON.stringify(args),
+  }), "/people/a");
+  const feed = async (tab: string) => {
+    const r = (await editor.fetch(new Request(`https://buni.test/events?file=${encodeURIComponent(file)}&tab=${tab}`, { headers: { host: "buni.test" } }), "/people/a")).body?.getReader();
+    if (!r) throw new Error("no feed");
+    await r.read();
+    return r;
+  };
+  // In process the stream hands over its strings as they were enqueued, one event each.
+  const next = async (r: ReadableStreamDefaultReader<Uint8Array | string>): Promise<{ present?: Presence[] }> => {
+    const chunk = await r.read();
+    if (chunk.done) throw new Error("feed ended");
+    const text = typeof chunk.value === "string" ? chunk.value : new TextDecoder().decode(chunk.value);
+    return JSON.parse(text.replace(/^data: /, ""));
+  };
+  try {
+    const a = await feed("tab-a");
+    const b = await feed("tab-b");
+    const page = await (await rpc("edit", ["create_page", { name: "Home", route: "/" }])).json() as { value: { reply: string } };
+    const frame = page.value.reply.match(/root frame (\S+)\./)?.[1] ?? "";
+    await next(a); await next(b);
+    expect((await rpc("presence", ["tab-b", "Ada", "p1", frame])).status).toBe(200);
+    const heard = await next(a);
+    expect(heard.present).toEqual([{ tab: "tab-b", who: "Ada", page: "p1", node: frame }]);
+    // Its own presence reaches the tab too; it leaves itself out when drawing.
+    expect((await next(b)).present?.map((p) => p.tab)).toEqual(["tab-b"]);
+    await b.cancel();
+    expect((await next(a)).present).toEqual([]);
+    // No name given: the machine's user, as on buni open.
+    expect((await rpc("presence", ["bad tab!", "", "p1"])).status).toBe(400);
+    await rpc("presence", ["tab-a", "", "p1"]);
+    expect((await next(a)).present?.[0]?.who).toBeTruthy();
+    await a.cancel();
+  } finally {
+    editor.stop();
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("opening a file held by a headless MCP server cannot replace its writer", async () => {
   const dir = await mkdtemp(join(tmpdir(), "buni-held-"));

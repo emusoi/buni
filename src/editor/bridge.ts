@@ -65,6 +65,10 @@ applyTheme(savedTheme());
 
 /** A hosted buni has accounts (data-accounts names how); on this machine alone there are none. */
 const accounts = document.documentElement.dataset.accounts !== undefined;
+/** This tab in the file's presence list; the server drops it when the tab's feed closes. */
+const TAB = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+/** The person's name for presence: from the account where there is one; the server names the machine's user otherwise. */
+const myName: Promise<string> = accounts ? fetch("/auth/me").then((r) => r.json()).then((a: AccountState) => (a.state === "signed-in" ? a.person.name : ""), () => "") : Promise.resolve("");
 const desktopOnly = () => Promise.reject(new Error("Only in the desktop app for now."));
 
 /** The open file as it is now. The server leaves out `system` when it is the view itself; it's put back here. */
@@ -115,7 +119,7 @@ function streamFeed(path: string): Feed {
 }
 
 function watchFile(switched = false) {
-  const events = location.protocol === "http:" ? socketFeed(at("/events")) : streamFeed(at("/events"));
+  const events = location.protocol === "http:" ? socketFeed(`${at("/events")}&tab=${TAB}`) : streamFeed(`${at("/events")}&tab=${TAB}`);
   let waiting: SnapshotUpdate[] | undefined = [];
   let opens = 0;
   let build: string | undefined;
@@ -287,6 +291,8 @@ const api: BuniApi = {
     const a: AccountState = await window.buni.account();
     if (a.state === "signed-in") window.open(`${a.server}/files/settings/account.settings`, "_blank", "noopener");
   },
+  tab: TAB,
+  presence: async (page, node) => { if (file) await call("presence", TAB, await myName, page, node); },
   theme: async () => savedTheme(),
   setTheme: async (t) => {
     applyTheme(t);
