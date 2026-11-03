@@ -2,13 +2,13 @@
 // buni runs inside it or a host names it; otherwise any Chrome, Chromium or Edge on this machine does (chrome.ts). The CLI's shot, icons and pdf use
 // this, and so does the terminal agent when it looks at its own work.
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pagesInOrder, type Doc, type Id, type Page } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
-import { fontFaces, liveHead, motionCss, renderPage } from "../tools/html.ts";
+import { fontFaces, liveHead, MOMENT_CLOCK_JS, motionCss, renderPage, SCRIPT_MOMENTS_MS } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
@@ -89,11 +89,11 @@ async function writeIconSet(browser: string, doc: Doc, page: Page, dir: string, 
 }
 
 /** A page as one HTML document at its own width, ready for a browser; `motion` adds its motion CSS. */
-function sheet(doc: Doc, pageId: Id, dir: string, motion = "", marks = false): Sheet {
+function sheet(doc: Doc, pageId: Id, dir: string, motion = "", marks = false, clock = false): Sheet {
   const { html, css } = renderPage(doc, pageId);
   const width = Number.parseInt(doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style.width ?? "", 10) || 1440;
   const ink = marks ? inkSvg(doc, pageId, width, 1) : "";
-  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${ink ? "body{position:relative}" : ""}${fontFaces(doc, embeddedFont)}${css}${motion}</style>${liveHead(doc, pageId)}</head><body>${html}${ink}</body></html>`, dir, width };
+  return { html: `<!doctype html><html><head><meta charset="utf-8">${clock ? `<script>${MOMENT_CLOCK_JS}</script>` : ""}<style>html,body{margin:0;overflow:hidden}${ink ? "body{position:relative}" : ""}${fontFaces(doc, embeddedFont)}${css}${motion}</style>${liveHead(doc, pageId, { inline: (p) => { try { return readFileSync(join(dir, p), "utf8"); } catch { return undefined; } } })}</head><body>${html}${ink}</body></html>`, dir, width };
 }
 
 /**
@@ -102,9 +102,10 @@ function sheet(doc: Doc, pageId: Id, dir: string, motion = "", marks = false): S
  */
 async function writeFilmstrip(browser: string, doc: Doc, page: Page, dir: string, out: string, count: number): Promise<Reply> {
   const motion = motionCss(doc, { scrollByTime: true });
-  if (!motion) return { ok: false, text: `Nothing moves on ${page.name}; set_motion adds motion, and buni shot without --frames draws the page.` };
-  const s = sheet(doc, page.id, dir, motion);
-  const { pngs, times } = await framesWithBrowser(browser, s, count);
+  // A live page's script may animate on its own; a still page without motion has nothing to show.
+  if (!motion && !page.live) return { ok: false, text: `Nothing moves on ${page.name}; set_motion adds motion, and buni shot without --frames draws the page.` };
+  const s = sheet(doc, page.id, dir, motion, false, Boolean(page.live));
+  const { pngs, times } = await framesWithBrowser(browser, s, count, 1, page.live ? SCRIPT_MOMENTS_MS : 0);
   const each = Math.min(480, s.width);
   const cells = pngs.map((png, i) => `<figure><img src="data:image/png;base64,${Buffer.from(png).toString("base64")}"><figcaption>${times[i]}ms</figcaption></figure>`).join("");
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#e9e9ec;font:600 14px/1 system-ui,sans-serif;color:#333}main{display:flex;gap:16px;padding:16px;align-items:flex-start}figure{margin:0;display:flex;flex-direction:column;gap:8px}img{width:${each}px;display:block;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}</style></head><body><main>${cells}</main></body></html>`;

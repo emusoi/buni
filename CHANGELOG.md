@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: moments of a live page. The Moments strip and `buni shot --frames` hold a live page's own script at each
+  time as well: the page runs on a held clock (`performance.now`, `requestAnimationFrame`, `setTimeout` and every
+  Web Animation it makes), stepped 16 ms at a time to the moment, so Motion or GSAP work lands where it would be;
+  the first three seconds when nothing says when it ends, a loop caught where it is. Headless drawing inlines the
+  page's files, since a file document can't load a module script.
 - Added: agent state in the editor. The Agents panel shows, for each connected agent, the tool it runs now (or ran
   last) and when, and three ways to steer it: Pause holds its next call until Continue, Ask it says something the
   agent reads on top of its next tool reply, Undo last takes back its latest edit. The host hooks are `hold` and

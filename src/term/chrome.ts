@@ -86,15 +86,16 @@ export function drawScales(browser: string, sheet: Sheet, scales: readonly numbe
  * The page's motion held still at `count` moments from its start to when the last entrance ends, one PNG each, with
  * each moment in ms. A loop is caught wherever it is at that moment.
  */
-export function framesWithBrowser(browser: string, sheet: Sheet, count: number, scale = 1): Promise<{ pngs: Uint8Array[]; times: number[] }> {
+export function framesWithBrowser(browser: string, sheet: Sheet, count: number, scale = 1, atLeast = 0): Promise<{ pngs: Uint8Array[]; times: number[] }> {
   return inBrowser(browser, sheet, async (cdp, url) => {
     await load(cdp, url, sheet.width, scale);
-    const end = Number(await readBack(cdp, "String(Math.max(0, ...document.getAnimations().map((a) => { a.pause(); return Number(a.effect?.getComputedTiming().endTime); }).filter(Number.isFinite)))"));
+    // `atLeast`: a live page's own script is followed this far whatever the Web Animations say (its clock is held, see MOMENT_CLOCK_JS).
+    const end = Math.max(atLeast, Number(await readBack(cdp, "String(Math.max(0, ...document.getAnimations().map((a) => { a.pause(); return Number(a.effect?.getComputedTiming().endTime); }).filter(Number.isFinite)))")));
     const pngs: Uint8Array[] = [], times: number[] = [];
     for (let i = 0; i < count; i++) {
       const t = Math.round(count === 1 ? end : (end * i) / (count - 1));
-      // Two frames later the held moment is what the screen shows.
-      await readBack(cdp, `(() => { for (const a of document.getAnimations()) a.currentTime = ${t}; return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done("ok")))); })()`);
+      // Two real frames later the held moment is what the screen shows (the page's own rAF may be the held one, so setTimeout).
+      await readBack(cdp, `(async () => { if (window.__buniHold) await window.__buniHold(${t}); else for (const a of document.getAnimations()) a.currentTime = ${t}; return new Promise((done) => (window.__buniRealTimeout ?? setTimeout)(() => done("ok"), 40)); })()`);
       pngs.push(bytesOf(await cdp.call("Page.captureScreenshot", { format: "png" })));
       times.push(t);
     }

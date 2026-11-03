@@ -542,21 +542,41 @@ export function motionCss(doc: Doc, opts: { scrollByTime?: boolean } = {}): stri
  * What a live page loads besides its layers, for the document's <head>: its libraries (a stylesheet or a script
  * each), then its own stylesheet and script. `bust` is added to the page's own files so a preview sees each save.
  */
-export function liveHead(doc: Doc, pageId: Id, opts: { assetPrefix?: string; bust?: string } = {}): string {
+export function liveHead(doc: Doc, pageId: Id, opts: { assetPrefix?: string; bust?: string; inline?: (path: string) => string | undefined } = {}): string {
   const live = doc.pages[pageId]?.live;
   if (!live) return "";
-  const own = (id: Id | undefined) => {
-    const path = id === undefined ? undefined : doc.attachments[id]?.path;
-    return path === undefined ? undefined : `${opts.assetPrefix ?? ""}${path}${opts.bust ? `?v=${opts.bust}` : ""}`;
-  };
-  const css = own(live.css);
-  const js = own(live.js);
+  const pathOf = (id: Id | undefined) => (id === undefined ? undefined : doc.attachments[id]?.path);
+  const own = (path: string | undefined) => (path === undefined ? undefined : `${opts.assetPrefix ?? ""}${path}${opts.bust ? `?v=${opts.bust}` : ""}`);
+  const cssPath = pathOf(live.css), jsPath = pathOf(live.js);
+  // Inlined where the files can't be fetched by the page (a file:// document can't load a module script): the text
+  // itself, with nothing in it able to close its tag.
+  const cssText = cssPath === undefined ? undefined : opts.inline?.(cssPath);
+  const jsText = jsPath === undefined ? undefined : opts.inline?.(jsPath);
+  const css = own(cssPath), js = own(jsPath);
   return [
     ...live.libraries.map((l) => (libraryIsStyle(l.url) ? `<link rel="stylesheet" href="${escapeAttr(l.url)}">` : `<script src="${escapeAttr(l.url)}"></script>`)),
-    ...(css ? [`<link rel="stylesheet" href="${escapeAttr(css)}">`] : []),
-    ...(js ? [`<script type="module" src="${escapeAttr(js)}"></script>`] : []),
+    ...(cssText !== undefined ? [`<style>${cssText.replace(/<\/style/gi, "<\\/style")}</style>`] : css ? [`<link rel="stylesheet" href="${escapeAttr(css)}">`] : []),
+    ...(jsText !== undefined ? [`<script type="module">${jsText.replace(/<\/script/gi, "<\\/script")}</script>`] : js ? [`<script type="module" src="${escapeAttr(js)}"></script>`] : []),
   ].join("\n");
 }
+
+/**
+ * A clock the page's own scripts run on, for holding a live page at one moment: from the start, performance.now stays
+ * at 0, requestAnimationFrame only queues, setTimeout only schedules and a Web Animation a script makes is held the moment
+ * it is made; __buniHold(ms) (async) then plays the frames and timers up to ms, 16 ms at a time, yielding to microtasks
+ * between, and places every animation at that time. Goes first in <head>, before any library, so every library's frame
+ * loop runs on it.
+ */
+export const MOMENT_CLOCK_JS = "(()=>{const c={t:0,q:[],timers:[],n:0,anims:[]};window.__buniRealTimeout=window.setTimeout.bind(window);performance.now=()=>c.t;"
+  + "window.requestAnimationFrame=(f)=>(c.q.push(f),c.q.length);window.cancelAnimationFrame=()=>{};"
+  + "window.setTimeout=(f,ms,...a)=>{const id=++c.n;c.timers.push({id,at:c.t+(Number(ms)||0),f:()=>f(...a)});return id};window.clearTimeout=(id)=>{c.timers=c.timers.filter((x)=>x.id!==id)};"
+  // A Web Animation a library makes (Motion, GSAP's WAAPI path) is pinned to the clock: held at once, placed when the hold ends.
+  + "const EA=Element.prototype.animate;Element.prototype.animate=function(...args){const a=EA.apply(this,args);c.anims.push({a,at:c.t});a.pause();return a};"
+  + "window.__buniHold=async(ms)=>{let t=0;while(t<ms){t=Math.min(ms,t+16);c.t=t;const due=c.timers.filter((x)=>x.at<=t).sort((a,b)=>a.at-b.at);c.timers=c.timers.filter((x)=>x.at>t);for(const x of due){try{x.f()}catch(e){}}"
+  + "const q=c.q;c.q=[];for(const f of q){try{f(t)}catch(e){}}await Promise.resolve();await Promise.resolve()}"
+  + "for(const a of document.getAnimations()){a.pause();const k=c.anims.find((x)=>x.a===a);a.currentTime=k?Math.max(0,ms-k.at):ms}}})();";
+/** How far a live page's own script is followed when nothing else says when its motion ends. */
+export const SCRIPT_MOMENTS_MS = 3000;
 
 /** CSS images stay in attachments rather than being repeated as base64 in layer styles. */
 function assetCss(doc: Doc, css: string, prefix = ""): string {

@@ -57,9 +57,9 @@ export interface AgentSpot {
 /** The app's own copy of an embedded font: every board shares one load and decode instead of carrying its own. */
 const fontFile = (family: string) => new URL(`fonts/${fontSlug(family)}.woff2`, location.href).href;
 
-export function srcdoc(doc: Doc, pageId: Id, dir: string, extraCss = "", mode?: string): string {
+export function srcdoc(doc: Doc, pageId: Id, dir: string, extraCss = "", mode?: string, headFirst = ""): string {
   // A live page's files are fetched again on every build, so a save shows at once.
-  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss, mode, liveHead(doc, pageId, { bust: String(Date.now()) }));
+  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss, mode, headFirst + liveHead(doc, pageId, { bust: String(Date.now()) }));
 }
 
 /** A component board as a standalone document, for previews. */
