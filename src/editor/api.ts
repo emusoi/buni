@@ -83,6 +83,10 @@ export interface BuniApi {
   commit?(message: string, push: boolean): Promise<{ ok: boolean; reply: string }>;
   /** Answers an agent's question; no text dismisses it. */
   answer?(id: string, text: string | undefined): Promise<void>;
+  /** Pauses an agent (its next call waits until you let it go) or lets it go on. */
+  pauseAgent?(name: string, paused: boolean): Promise<void>;
+  /** Says something to an agent: it reads it on top of its next tool reply. */
+  tellAgent?(name: string, text: string): Promise<void>;
   /** Keeps an image in the design's folder and attaches it; resolves to its attachment id, for <img src="asset:ID">. */
   uploadImage?(name: string, base64: string, mime: string): Promise<string>;
   /** Saved versions, newest first. */

@@ -73,3 +73,21 @@ test("connected to a space, a client lists designs, picks one, starts one, and e
   expect(text(r)).toContain("Created page");
   expect(Object.keys((await ws(join(dir, "New.buni"))).view().pages)).toHaveLength(1);
 });
+
+test("the host holds a call until the person lets the agent go, hands over what they said, and hears each step start and end", async () => {
+  const steps: string[] = [];
+  let release: (() => void) | undefined;
+  const client = await connect({
+    hold: (author) => new Promise((resolve) => { steps.push(`hold ${author}`); release = () => resolve(["Keep the headline short"]); }),
+    working: (author, tool, phase) => void steps.push(`${phase} ${tool} by ${author}`),
+  });
+  const call = client.callTool({ name: "read_tree", arguments: {} });
+  await new Promise((r) => setTimeout(r, 20));
+  // Held: nothing has run yet.
+  expect(steps).toEqual(["hold test"]);
+  release?.();
+  const r = await call;
+  expect(steps).toEqual(["hold test", "start read_tree by test", "done read_tree by test"]);
+  const text = JSON.stringify(r.content);
+  expect(text).toContain("The person watching says:\\n- Keep the headline short\\n\\n");
+});

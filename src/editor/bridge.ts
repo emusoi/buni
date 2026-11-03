@@ -281,6 +281,8 @@ const api: BuniApi = {
   },
   saveVersion: (name) => call("saveVersion", name),
   answer: (id, text) => call("answer", id, text),
+  pauseAgent: (name, paused) => call("pauseAgent", name, paused),
+  tellAgent: (name, text) => call("tellAgent", name, text),
   changes: () => call("changes"),
   commit: (message, push) => call("commit", message, push),
   versions: () => call("versions"),

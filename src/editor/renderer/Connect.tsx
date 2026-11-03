@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Copy } from "lucide-react";
+import { Copy, MessageSquare, Pause, Play, Undo2 } from "lucide-react";
 import type { Edit } from "../api.ts";
+import type { AgentState } from "buni/tools/protocol.ts";
 import { ago } from "./Home.tsx";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { pageOfNode } from "./search.ts";
@@ -18,7 +19,16 @@ export const agentInitials = (name: string) => {
  * The coding agents connected to this file and
  * where each last worked, then how to connect another.
  */
-export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, onShow, onToast }: { doc: Doc; mcpUrl: string; connected: readonly string[]; recent: Record<string, readonly Id[]>; edits: readonly Edit[]; onShow: (node: Id) => void; onToast: (t: string) => void }) {
+export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [], onShow, onToast, onUndo }: { doc: Doc; mcpUrl: string; connected: readonly string[]; recent: Record<string, readonly Id[]>; edits: readonly Edit[]; agents?: readonly AgentState[]; onShow: (node: Id) => void; onToast: (t: string) => void; onUndo?: () => void }) {
+  const [asking, setAsking] = useState<string>();
+  const [words, setWords] = useState("");
+  const tell = async (name: string) => {
+    if (!words.trim() || !window.buni.tellAgent) return;
+    await window.buni.tellAgent(name, words.trim());
+    setWords("");
+    setAsking(undefined);
+    onToast(`${name} reads it with its next step.`);
+  };
   // Re-read the clock now and then, so "just now" becomes "2 min ago" without an edit to prompt it.
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -53,13 +63,35 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, onShow, on
             const touched = recent[name]?.[0];
             const page = touched ? doc.pages[pageOfNode(doc, touched) ?? ""]?.name : undefined;
             const live = connected.includes(name);
-            const mine = edits.filter((e) => e.author === name).slice(-4).reverse();
+            const mine = edits.filter((e) => e.author === name).slice(-12).reverse();
+            const state = agents.find((a) => a.name === name);
+            const lastIsTheirs = edits.at(-1)?.author === name;
+            const canSteer = live && Boolean(window.buni.pauseAgent);
             return (
               <div key={name} className="agent-card">
                 <span className="agent-dot" style={{ background: agentColor(name) }}>{agentInitials(name)}</span>
                 <div>
-                  <b>{name} <span className={live ? "live" : "live off"} /> <small>{live ? "connected" : "gone"}</small></b>
+                  <b>{name} <span className={live ? "live" : "live off"} /> <small>{state?.paused ? "paused" : live ? "connected" : "gone"}</small></b>
                   <span>{page ? <>Working on <em>{page}</em>. ⌘Z takes any of it back.</> : "Connected; no edits yet."}</span>
+                  {state?.tool && (
+                    <span className={`agent-now${state.busy ? " busy" : ""}`}>
+                      {state.paused && state.busy ? "Held before its next step · last " : state.busy ? "Now: " : "Last: "}<code>{state.tool}</code>{state.at && <> · {ago(state.at, now)}</>}
+                    </span>
+                  )}
+                  {canSteer && (
+                    <div className="agent-controls">
+                      <button type="button" className="btn small" onClick={() => void window.buni.pauseAgent?.(name, !state?.paused)}>
+                        {state?.paused ? <><Play size={12} /> Continue</> : <><Pause size={12} /> Pause</>}
+                      </button>
+                      <button type="button" className="btn small" onClick={() => setAsking(asking === name ? undefined : name)}><MessageSquare size={12} /> Ask it</button>
+                      {onUndo && <button type="button" className="btn small" disabled={!lastIsTheirs} title={lastIsTheirs ? "Take back its last edit" : "Its last edit isn't the latest one; ⌘Z steps back through all of them"} onClick={onUndo}><Undo2 size={12} /> Undo last</button>}
+                    </div>
+                  )}
+                  {asking === name && (
+                    <form className="agent-ask" onSubmit={(e) => { e.preventDefault(); void tell(name); }}>
+                      <input className="field" autoFocus placeholder={`Tell ${name} something; it reads it before its next step`} value={words} onChange={(e) => setWords(e.target.value)} />
+                    </form>
+                  )}
                   {mine.length > 0 && (
                     <ol className="agent-edits" aria-label={`What ${name} did last`}>
                       {mine.map((e) => (

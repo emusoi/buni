@@ -10,7 +10,7 @@ import type { Edit } from "./workspace.ts";
 export type SnapshotUpdate =
   | { kind: "whole"; snap: Snapshot | undefined }
   /** `system` is left out when it is the view itself: the file imports nothing. */
-  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[]; present?: Presence[] };
+  | { kind: "patch"; view: DocPatch; system?: DocPatch; owners: Record<Id, string>; recent: Record<string, Id[]>; connected?: string[]; edits?: readonly Edit[]; asking?: Asking[]; present?: Presence[]; agents?: AgentState[] };
 
 /** Someone with the design open in a tab, and where they are in it. */
 export interface Presence {
@@ -43,6 +43,21 @@ export interface Snapshot {
   asking?: Asking[];
   /** People with the design open right now, and where; only where the host keeps the feed (the web). */
   present?: Presence[];
+  /** What each connected agent runs now, and which are paused; where the host runs the MCP server. */
+  agents?: AgentState[];
+}
+
+/** One coding agent on the file: what it runs now (or ran last), and whether the person paused it. */
+export interface AgentState {
+  name: string;
+  /** The tool running now, or the last one; none before its first call. */
+  tool?: string;
+  /** When that call started, ISO. */
+  at?: string;
+  /** The call is still running (or waiting, when paused). */
+  busy: boolean;
+  /** Its next call waits until the person lets it go. */
+  paused: boolean;
 }
 
 /** An agent's question to the person watching, about a layer or the design. */

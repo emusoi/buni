@@ -42,6 +42,13 @@ export interface HostTools {
   /** An agent changed the design; `before` is how it was. The host can keep it as a point to go back to. */
   edited?: (author: string, before: Doc, ws: Workspace) => void;
   /**
+   * Before a tool runs: resolves when the person lets the agent go on (at once unless they paused it), with what
+   * they said to it meanwhile, which goes on top of the tool's reply.
+   */
+  hold?: (author: string, ws: Workspace) => Promise<string[]>;
+  /** What the agent runs now, and when it is done: the editor shows it beside the agent. */
+  working?: (author: string, tool: string, phase: "start" | "done", ws: Workspace) => void;
+  /**
    * The designs the client may work on, when it is connected to a space rather than one design: it lists them,
    * picks one (use_design), or starts one (create_design); every other tool then works on the one picked.
    */
@@ -65,14 +72,21 @@ export function createMcpServer(first: Workspace | undefined, host: HostTools = 
     server.registerTool(name, { description: tool.description, inputSchema: tool.input }, async (args) => {
       const ws = current;
       if (!ws) return none;
-      // An imported core may have been edited where this server doesn't see (straight to disk): read it again first.
-      await ws.refreshImports();
-      const before = ws.view();
-      const r = await ws.call(author(), name, args);
-      const after = ws.view();
-      if (after !== before) host.edited?.(author(), before, ws);
-      const checks = r.ok && after !== before ? await editChecks(before, after) : "";
-      return { content: [{ type: "text", text: checks ? `${r.reply}\n${checks}` : r.reply }], isError: !r.ok };
+      const notes = (await host.hold?.(author(), ws)) ?? [];
+      host.working?.(author(), name, "start", ws);
+      try {
+        // An imported core may have been edited where this server doesn't see (straight to disk): read it again first.
+        await ws.refreshImports();
+        const before = ws.view();
+        const r = await ws.call(author(), name, args);
+        const after = ws.view();
+        if (after !== before) host.edited?.(author(), before, ws);
+        const checks = r.ok && after !== before ? await editChecks(before, after) : "";
+        const said = notes.length ? `The person watching says:\n${notes.map((n) => `- ${n}`).join("\n")}\n\n` : "";
+        return { content: [{ type: "text", text: `${said}${checks ? `${r.reply}\n${checks}` : r.reply}` }], isError: !r.ok };
+      } finally {
+        host.working?.(author(), name, "done", ws);
+      }
     });
   }
   const { designs } = host;

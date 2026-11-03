@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: agent state in the editor. The Agents panel shows, for each connected agent, the tool it runs now (or ran
+  last) and when, and three ways to steer it: Pause holds its next call until Continue, Ask it says something the
+  agent reads on top of its next tool reply, Undo last takes back its latest edit. The host hooks are `hold` and
+  `working` on the MCP server; the editor's `pauseAgent` and `tellAgent` calls drive them; `agents` in the snapshot
+  carries the state to every tab.
 - Added: live pages. `set_live` makes a page live: its scripts run in the preview on the canvas, in Play, in
   `buni shot` and on the exported site, and it loads libraries pinned to a version on cdnjs, jsdelivr, unpkg or
   Google Fonts (Tailwind, Motion, a font). `write_file` gives it a stylesheet and a script of its own
