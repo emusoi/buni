@@ -11,7 +11,7 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, LIBRARY_HOSTS, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type LivePage, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
 import { embeddedFont } from "../fontdata.ts";
@@ -1083,6 +1083,67 @@ export const pagesTools = {
       if (!doc.pages[a.page]) throw new ToolError(`page "${a.page}" does not exist`);
       const { html, css } = renderPage(doc, a.page);
       return { label: "Export HTML", ops: [], reply: `${html}\n<style>\n${css}</style>` };
+    },
+  }),
+
+  set_live: tool({
+    description:
+      "Make a page live, or still again. A live page runs scripts in its preview on the canvas, in Play and on the exported site, and loads libraries: " +
+      "pass libraries to set the list (it replaces the old one), each {name, url} with the url pinned to a version on cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or fonts.googleapis.com " +
+      "(https://cdn.jsdelivr.net/npm/motion@11.15.0/dist/motion.js, https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11, a Google Fonts css2 URL). " +
+      "Its own stylesheet and script come from write_file. live: false makes it still again (its files stay on disk). Layers stay layers either way: read_tree, review_page and the Inspector see them.",
+    input: {
+      page: z.string(),
+      live: z.boolean().default(true),
+      libraries: z.array(z.object({ name: z.string().min(1).max(80), url: z.string().url() })).max(20).optional(),
+    },
+    run: async (doc, a) => {
+      const p = page(doc, a.page);
+      if (!a.live) {
+        const { live: _l, ...rest } = p;
+        return { label: `${p.name} is still`, ops: [{ kind: "put", collection: "pages", value: rest }], reply: `${p.name} is a still page again: no scripts, no libraries.` };
+      }
+      for (const l of a.libraries ?? []) if (!LIBRARY_HOSTS.test(l.url)) throw new ToolError(`${l.name}: a library loads from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or fonts.googleapis.com, pinned to a version`);
+      const live: LivePage = { ...(p.live ?? { libraries: [] }), ...(a.libraries ? { libraries: a.libraries } : {}) };
+      return {
+        label: `${p.name} is live`,
+        ops: [{ kind: "put", collection: "pages", value: { ...p, live } }],
+        reply: `${p.name} is live: scripts run in its preview and on the exported site.${live.libraries.length ? ` Libraries: ${live.libraries.map((l) => l.name).join(", ")}.` : ""} write_file gives it a stylesheet and a script.`,
+      };
+    },
+  }),
+
+  write_file: tool({
+    description:
+      "Write a live page's own stylesheet or script: the whole text of live/PAGE.css or live/PAGE.js beside the design (the page is made live if it isn't). " +
+      "Reach layers by .b-ID (read_tree shows ids) or by the classes write_html keeps from class=\"\" (Tailwind's, your own). The script runs as a module in the preview and on the exported site; keep it to this page.",
+    input: { page: z.string(), kind: z.enum(["css", "js"]), text: z.string().max(200_000) },
+    run: async (doc, a, ctx) => {
+      if (!ctx.writeFiles) throw new ToolError("This host can't write files beside the design.");
+      const p = page(doc, a.page);
+      const path = `live/${p.id}.${a.kind}`;
+      await ctx.writeFiles("live", new Map([[`${p.id}.${a.kind}`, a.text]]));
+      const live: LivePage = p.live ?? { libraries: [] };
+      const ops: Op[] = [];
+      let id = live[a.kind];
+      if (id === undefined || doc.attachments[id]?.path !== path) {
+        id = Object.values(doc.attachments).find((x) => x.path === path)?.id ?? new Ids(doc, ctx).next();
+        ops.push({ kind: "put", collection: "attachments", value: { id, path, mime: a.kind === "css" ? "text/css" : "text/javascript" } });
+      }
+      ops.push({ kind: "put", collection: "pages", value: { ...p, live: { ...live, [a.kind]: id } } });
+      return { label: `Write ${path}`, ops, reply: `Wrote ${path} (${a.text.length} characters); ${p.name} is live and shows it.` };
+    },
+  }),
+
+  read_file: tool({
+    description: "A live page's own stylesheet or script, as write_file wrote it.",
+    input: { page: z.string(), kind: z.enum(["css", "js"]) },
+    run: async (doc, a, ctx) => {
+      const p = page(doc, a.page);
+      const id = p.live?.[a.kind];
+      const path = id === undefined ? undefined : doc.attachments[id]?.path;
+      if (path === undefined) throw new ToolError(`${p.name} has no ${a.kind} file; write_file makes one`);
+      return { label: `Read ${path}`, ops: [], reply: await ctx.readAttachment(path) };
     },
   }),
 

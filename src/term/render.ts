@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pagesInOrder, type Doc, type Id, type Page } from "../format/doc.ts";
 import { embeddedFont } from "../tools/fontdata.ts";
-import { fontFaces, motionCss, renderPage } from "../tools/html.ts";
+import { fontFaces, liveHead, motionCss, renderPage } from "../tools/html.ts";
 import { Workspace } from "../tools/workspace.ts";
 import { ANSI } from "../tools/terminal.ts";
 import { cellsAnsi, cellsText, computed, READ_CELLS, type Screen } from "./cells.ts";
@@ -93,7 +93,7 @@ function sheet(doc: Doc, pageId: Id, dir: string, motion = "", marks = false): S
   const { html, css } = renderPage(doc, pageId);
   const width = Number.parseInt(doc.nodes[doc.pages[pageId]?.frame ?? ""]?.style.width ?? "", 10) || 1440;
   const ink = marks ? inkSvg(doc, pageId, width, 1) : "";
-  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${ink ? "body{position:relative}" : ""}${fontFaces(doc, embeddedFont)}${css}${motion}</style></head><body>${html}${ink}</body></html>`, dir, width };
+  return { html: `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}${ink ? "body{position:relative}" : ""}${fontFaces(doc, embeddedFont)}${css}${motion}</style>${liveHead(doc, pageId)}</head><body>${html}${ink}</body></html>`, dir, width };
 }
 
 /**

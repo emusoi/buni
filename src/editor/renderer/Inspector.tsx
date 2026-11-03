@@ -663,6 +663,85 @@ function ScreenSection({ page, onError }: { page: Page & { terminal: TerminalScr
   );
 }
 
+/** "name@version" or a CDN URL as a library: jsdelivr serves a package by name and version. */
+export function libraryFrom(text: string): { name: string; url: string } | undefined {
+  const t = text.trim();
+  if (!t) return undefined;
+  if (/^https?:\/\//.test(t)) return { name: t.replace(/^https?:\/\/[^/]+\/(npm\/|ajax\/libs\/)?/, "").split(/[@/?]/).find(Boolean) ?? t, url: t };
+  const at = t.lastIndexOf("@");
+  if (at <= 0) return undefined;
+  const name = t.slice(0, at), version = t.slice(at + 1);
+  if (!name || !version || /\s/.test(t)) return undefined;
+  return { name, url: `https://cdn.jsdelivr.net/npm/${name}@${version}` };
+}
+
+/** One of a live page's own files: its text, edited in place and written back with write_file. */
+function LiveFile({ doc, page, kind, dir, onError }: { doc: Doc; page: Id; kind: "css" | "js"; dir: string | undefined; onError: (m: string | undefined) => void }) {
+  const id = doc.pages[page]?.live?.[kind];
+  const path = id === undefined ? undefined : doc.attachments[id]?.path;
+  const [text, setText] = useState<string>();
+  const [draft, setDraft] = useState<string>();
+  useEffect(() => {
+    setDraft(undefined);
+    if (!path || dir === undefined) { setText(""); return; }
+    let gone = false;
+    fetch(`${window.buni.assetBase ?? "file://"}${dir.split("/").map(encodeURIComponent).join("/")}/${path}?v=${Date.now()}`).then((r) => (r.ok ? r.text() : "")).then((t) => { if (!gone) setText(t); }, () => { if (!gone) setText(""); });
+    return () => { gone = true; };
+  }, [path, dir, id]);
+  const shown = draft ?? text ?? "";
+  const save = async () => {
+    const r = await window.buni.edit("write_file", { page, kind, text: shown });
+    onError(r.ok ? undefined : r.reply);
+    if (r.ok) { setText(shown); setDraft(undefined); }
+  };
+  return (
+    <div className="live-file">
+      <div className="live-file-head"><span className="mono">{path ?? `live/${page}.${kind}`}</span>{draft !== undefined && draft !== text && <button type="button" className="link-btn" onClick={() => void save()}>Save</button>}</div>
+      <textarea className="mono" spellCheck={false} rows={Math.min(14, Math.max(3, shown.split("\n").length))} value={shown} placeholder={kind === "css" ? ".b-ID { … }  or your classes" : 'import { animate } from "motion"; …'} onChange={(e) => setDraft(e.target.value)} onBlur={() => { if (draft !== undefined && draft !== text) void save(); }} />
+    </div>
+  );
+}
+
+/** A page made live: scripts run in its preview, with libraries from a pinned CDN and a stylesheet and script of its own. */
+function LiveSection({ doc, page, dir, onError }: { doc: Doc; page: Id; dir: string | undefined; onError: (m: string | undefined) => void }) {
+  const live = doc.pages[page]?.live;
+  const [adding, setAdding] = useState("");
+  const call = async (tool: EditTool, args: Record<string, unknown>) => {
+    const r = await window.buni.edit(tool, args);
+    onError(r.ok ? undefined : r.reply);
+    return r.ok;
+  };
+  const libraries = live?.libraries ?? [];
+  return (
+    <Group title="Live page" empty={!live} summary={live ? `scripts run · ${libraries.length} ${libraries.length === 1 ? "library" : "libraries"}` : "Still"}>
+      <label className="switch-label">
+        <input type="checkbox" checked={Boolean(live)} onChange={(e) => void call("set_live", { page, live: e.target.checked })} />
+        Scripts run on the canvas
+      </label>
+      {live && (
+        <>
+          <div className="group-title sub">Libraries</div>
+          {libraries.map((l, i) => (
+            <div className="live-lib" key={l.url}>
+              <span className="mono name" title={l.url}>{l.name}</span>
+              <span className="mono dim">{l.url.replace(/^https:\/\//, "").split("/")[0]}</span>
+              <button type="button" className="icon-btn small" aria-label={`Remove ${l.name}`} onClick={() => void call("set_live", { page, libraries: libraries.filter((_, at) => at !== i) })}><Trash2 size={12} /></button>
+            </div>
+          ))}
+          <form className="live-add" onSubmit={(e) => { e.preventDefault(); const lib = libraryFrom(adding); if (!lib) { onError("name@version, or a URL on cdnjs, jsdelivr, unpkg or Google Fonts"); return; } void call("set_live", { page, libraries: [...libraries, lib] }).then((ok) => { if (ok) setAdding(""); }); }}>
+            <input className="field mono" placeholder="name@version, or a CDN URL" value={adding} onChange={(e) => setAdding(e.target.value)} />
+          </form>
+          <p className="hint">Pinned versions from cdnjs, jsdelivr, unpkg or Google Fonts only; the export and the agent see the same list.</p>
+          <div className="group-title sub">Files</div>
+          <LiveFile doc={doc} page={page} kind="css" dir={dir} onError={onError} />
+          <LiveFile doc={doc} page={page} kind="js" dir={dir} onError={onError} />
+          <p className="hint">Reach a layer by its class .b-ID, or by the classes a layer keeps from class="". Layers stay layers.</p>
+        </>
+      )}
+    </Group>
+  );
+}
+
 /** The open design's path, for what depends on its project (the other designs a link may go to). */
 export const OpenFile = createContext("");
 
@@ -719,6 +798,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onCompare={onCompare} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
+        {page && doc.pages[page] && !doc.pages[page]?.terminal && <LiveSection doc={doc} page={page} dir={dir} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
         {notice && <div className="notice">{notice}</div>}
         {page ? <Sources key={page} doc={doc} id={page} /> : (() => { const component = Object.values(doc.shared).find((c) => c.root === root); return component ? <Sources key={component.id} doc={doc} id={component.id} /> : null; })()}

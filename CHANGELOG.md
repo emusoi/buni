@@ -5,6 +5,13 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: live pages. `set_live` makes a page live: its scripts run in the preview on the canvas, in Play, in
+  `buni shot` and on the exported site, and it loads libraries pinned to a version on cdnjs, jsdelivr, unpkg or
+  Google Fonts (Tailwind, Motion, a font). `write_file` gives it a stylesheet and a script of its own
+  (`live/PAGE.css`, `live/PAGE.js`, attachments), `read_file` reads them back. A layer keeps the `class=""` of the
+  HTML it was written from (`classes` in the file, one word each), so a page's files and Tailwind reach it; `.b-ID`
+  always does. The Inspector's Live page section switches it, lists the libraries (add `name@version` or a CDN
+  URL), and edits the files in place; the board says "Scripts run".
 - Added: motion in the editor reads as a sentence. The Inspector's Motion section shows one trigger at a time (Load,
   Scroll, Hover, Press, a dot on those set), the effect as chips, duration, easing, delay and children one by one,
   and draws the curve. A page whose layers enter gets a Moments strip under the canvas: six frames from rest to

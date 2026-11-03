@@ -329,7 +329,7 @@ export function Play({ doc, dir, start, flow: wanted, startWidth, mode, onClose,
               <iframe
                 ref={frame}
                 title="Play"
-                sandbox="allow-same-origin"
+                sandbox={doc.pages[here.page]?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"}
                 srcDoc={html}
                 width={width}
                 height={height}

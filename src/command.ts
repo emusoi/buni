@@ -179,6 +179,9 @@ components), move_page it to where the sketch is, fill in what it leaves out (co
 arrow points from and to; a page linked from a flow's page joins that flow. A mark on a page asks for a change there.
 Reply on each thread with comment {thread, body, addressed: true} once it's handled, saying how you read it.
 
+A live page (scripts, a stylesheet and script of its own, libraries such as Tailwind or Motion from a pinned CDN):
+set_live {page, libraries: [{name, url}]}, then write_file {page, kind: "css"|"js", text}; reach layers by .b-ID or the
+class="" write_html keeps on them. Scripts run on the canvas, in Play, in buni shot and on the exported site.
 Motion: set_motion on the layer (read buni skills motion); buni shot FILE PAGE out.png --frames 6 shows it as moments
 side by side, so check order and pace there. Imported pages keep their motion.
 

@@ -5,14 +5,16 @@ import { paletteVars } from "./terminal.ts";
 import { FONT_FAMILIES } from "./fonts.gen.ts";
 import { TAGS, UNSAFE_TAGS } from "../format/parse.ts";
 import { z } from "zod";
-import { CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
+import {
+  CLASS_NAME,
+  libraryIsStyle, CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
 
 // ---------------------------------------------------------------------------
 // HTML in: agent markup to node drafts
 // ---------------------------------------------------------------------------
 
 /** A node before it has an id, parent and index in a document; notes become comments on it (an import's what-it-lost). */
-export type Draft = SourceOwner & { motion?: Motion[]; notes?: string[] } & (
+export type Draft = SourceOwner & { motion?: Motion[]; notes?: string[]; classes?: string[] } & (
   | { kind: "frame"; name: string; tag?: string; style: Style; children: Draft[] }
   | { kind: "text"; name: string; tag?: string; style: Style; text: string; filled?: true }
   | { kind: "image"; name: string; style: Style; asset: Id; alt: string }
@@ -25,7 +27,7 @@ export interface ParsedHtml {
   warnings: string[];
 }
 
-const KNOWN_ATTRS = new Set(["data-buni-sources", "data-buni-motion", "data-buni-note", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
+const KNOWN_ATTRS = new Set(["class", "data-buni-sources", "data-buni-motion", "data-buni-note", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
 
 /** Form fields whose text is their placeholder: kept as text layers with this tag, drawn as real fields. */
 const FIELD_TAGS = new Set(["input", "textarea"]);
@@ -205,6 +207,9 @@ function toDraft(el: P.Element, warnings: string[], keep: boolean): Draft | unde
   }
   const note = attr(el, "data-buni-note");
   if (note) draft.notes = [note];
+  // Classes of its own, for a live page's files and libraries; an <svg> keeps its markup whole instead.
+  const classes = draft.kind === "svg" ? [] : (attr(el, "class") ?? "").split(/\s+/).filter((c) => CLASS_NAME.test(c));
+  if (classes.length) draft.classes = classes;
   const raw = attr(el, "data-buni-sources");
   if (raw === undefined) return draft;
   try {
@@ -354,7 +359,7 @@ class Renderer {
   node(n: Node, depth: number, ctx?: InstanceCtx, extraClass?: string): string {
     if (n.hidden) return "";
     const pad = "  ".repeat(depth);
-    const classes = [`b-${n.id}`];
+    const classes = [`b-${n.id}`, ...(n.classes ?? [])];
     const root = n.id === this.doc.pages[this.pageId]?.frame;
     // A page with other widths fills the window; its design width is where the canvas shows it first.
     // A terminal screen's frame names the terminal's colours, for its layers to paint with.
@@ -533,6 +538,26 @@ export function motionCss(doc: Doc, opts: { scrollByTime?: boolean } = {}): stri
   return `@media (prefers-reduced-motion: no-preference) {\n${frames}${rules}}\n`;
 }
 
+/**
+ * What a live page loads besides its layers, for the document's <head>: its libraries (a stylesheet or a script
+ * each), then its own stylesheet and script. `bust` is added to the page's own files so a preview sees each save.
+ */
+export function liveHead(doc: Doc, pageId: Id, opts: { assetPrefix?: string; bust?: string } = {}): string {
+  const live = doc.pages[pageId]?.live;
+  if (!live) return "";
+  const own = (id: Id | undefined) => {
+    const path = id === undefined ? undefined : doc.attachments[id]?.path;
+    return path === undefined ? undefined : `${opts.assetPrefix ?? ""}${path}${opts.bust ? `?v=${opts.bust}` : ""}`;
+  };
+  const css = own(live.css);
+  const js = own(live.js);
+  return [
+    ...live.libraries.map((l) => (libraryIsStyle(l.url) ? `<link rel="stylesheet" href="${escapeAttr(l.url)}">` : `<script src="${escapeAttr(l.url)}"></script>`)),
+    ...(css ? [`<link rel="stylesheet" href="${escapeAttr(css)}">`] : []),
+    ...(js ? [`<script type="module" src="${escapeAttr(js)}"></script>`] : []),
+  ].join("\n");
+}
+
 /** CSS images stay in attachments rather than being repeated as base64 in layer styles. */
 function assetCss(doc: Doc, css: string, prefix = ""): string {
   if (!css.includes("asset:")) return css;
@@ -677,6 +702,7 @@ export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
         `<link rel="stylesheet" href="${up}styles/tokens.css">`,
         `<link rel="stylesheet" href="${up}styles/shared.css">`,
         `<link rel="stylesheet" href="${up}styles/pages.css">`,
+        ...(p.live ? [liveHead(doc, p.id, { assetPrefix: up })] : []),
         "</head>",
         "<body>",
         r.html.trimEnd(),
@@ -702,7 +728,7 @@ export function layerHtml(doc: Doc, id: Id, depth = 0): string {
   const pad = "  ".repeat(depth);
   const style = Object.entries(n.style).map(([k, v]) => `${kebab(k)}: ${v}`).join("; ");
   const attrs = (defaultName: string, extra = "") =>
-    `${n.name !== defaultName ? ` layer-name="${escapeAttr(n.name)}"` : ""}${extra}${n.sources?.length ? ` data-buni-sources="${escapeAttr(JSON.stringify(n.sources))}"` : ""}${style ? ` style="${escapeAttr(style)}"` : ""}`;
+    `${n.name !== defaultName ? ` layer-name="${escapeAttr(n.name)}"` : ""}${n.classes?.length ? ` class="${escapeAttr(n.classes.join(" "))}"` : ""}${extra}${n.sources?.length ? ` data-buni-sources="${escapeAttr(JSON.stringify(n.sources))}"` : ""}${style ? ` style="${escapeAttr(style)}"` : ""}`;
   switch (n.kind) {
     case "frame": {
       const tag = n.tag ?? "div";

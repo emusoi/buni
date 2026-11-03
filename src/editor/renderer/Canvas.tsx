@@ -4,7 +4,7 @@ import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from 
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
 import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
 import { sketchesOpen } from "buni/tools/ink.ts";
-import { fontFaces, fontSlug, renderComponent, renderPage } from "buni/tools/html.ts";
+import { fontFaces, fontSlug, renderComponent, renderPage, liveHead } from "buni/tools/html.ts";
 
 interface Props {
   /** The design with what it imports: imported components render in instances, but aren't boards here. */
@@ -58,7 +58,8 @@ export interface AgentSpot {
 const fontFile = (family: string) => new URL(`fonts/${fontSlug(family)}.woff2`, location.href).href;
 
 export function srcdoc(doc: Doc, pageId: Id, dir: string, extraCss = "", mode?: string): string {
-  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss, mode);
+  // A live page's files are fetched again on every build, so a save shows at once.
+  return wrap(renderPage(doc, pageId), dir, fontFaces(doc, fontFile) + extraCss, mode, liveHead(doc, pageId, { bust: String(Date.now()) }));
 }
 
 /** A component board as a standalone document, for previews. */
@@ -67,9 +68,9 @@ export function componentSrcdoc(doc: Doc, sharedId: Id, dir: string, extraCss = 
 }
 
 /** `mode`: one of the design's token modes to draw in ("dark"); the tokens' CSS answers to it on <html>. */
-function wrap({ html, css }: { html: string; css: string }, dir: string, extraCss: string, mode?: string): string {
+function wrap({ html, css }: { html: string; css: string }, dir: string, extraCss: string, mode?: string, head = ""): string {
   const base = `${window.buni.assetBase ?? "file://"}${dir.split("/").map(encodeURIComponent).join("/")}/`;
-  return `<!doctype html><html${mode ? ` data-mode="${mode}"` : ""}><head><meta charset="utf-8"><base href="${base}"><style>html,body{margin:0;overflow:hidden}${css}${extraCss}</style></head><body>${html}</body></html>`;
+  return `<!doctype html><html${mode ? ` data-mode="${mode}"` : ""}><head><meta charset="utf-8"><base href="${base}"><style>html,body{margin:0;overflow:hidden}${css}${extraCss}</style>${head}</head><body>${html}</body></html>`;
 }
 
 /** Small pictures in the overview, rather than hundreds of live browsing contexts. */
@@ -677,6 +678,7 @@ const Artboard = memo(function Artboard(props: {
         {page ? page.name : `◆ ${component?.name}`}
         <span className="route">{page ? pageLabel(props.doc, page) : component?.variant ? `${Object.entries(component.variant).map(([k, v]) => `${k}: ${v}`).join(" · ")} · ${uses} use${uses === 1 ? "" : "s"}` : `component · ${uses} use${uses === 1 ? "" : "s"}`}</span>
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
+        {page?.live && <span className="board-live" title="A live page: its scripts and libraries run here">Scripts run</span>}
       </button>
       {page && props.modes && props.modes.length > 0 && props.onMode && (
         <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
@@ -686,7 +688,7 @@ const Artboard = memo(function Artboard(props: {
       )}
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
         {url ? (
-          <iframe ref={frame} title={page?.name ?? component?.name} sandbox="allow-same-origin" src={url} width={width} height={height} onLoad={measure} />
+          <iframe ref={frame} title={page?.name ?? component?.name} sandbox={page?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={height} onLoad={measure} />
         ) : <div className="board-placeholder" />}
         {page && <InkLayer doc={doc} page={pageId} width={width} />}
         <div className="hit" onPointerDown={hit} onContextMenu={(e) => { if (!props.onMenu) return; e.preventDefault(); props.onMenu(e.clientX, e.clientY); }} onPointerMove={(e) => { dragMove(e); measureMove(e); }} onPointerUp={dragEnd} onPointerCancel={() => { drag.current = undefined; setDrop(undefined); setGhost(undefined); }} onDoubleClick={editText} style={editing ? { pointerEvents: "none" } : undefined} />

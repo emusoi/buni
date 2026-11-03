@@ -78,6 +78,10 @@ import {
   type Release,
   type Stage,
   type Workload,
+  CLASS_NAME,
+  LIBRARY_HOSTS,
+  type Library,
+  type LivePage,
 } from "./doc.ts";
 
 export interface FormatError {
@@ -272,7 +276,7 @@ export class Reader {
   }
 
   node(v: unknown, path: string): Node {
-    const base = ["id", "parent", "index", "name", "style", "kind", "tag", "hidden", "locked", "at", "twin", "motion"];
+    const base = ["id", "parent", "index", "name", "style", "kind", "tag", "hidden", "locked", "at", "twin", "motion", "classes"];
     const kind = isRecord(v) ? v.kind : undefined;
     const extra =
       kind === "text" ? ["text", "filled"]
@@ -294,6 +298,7 @@ export class Reader {
       ...(o.at !== undefined ? { at: this.atStyles(o.at, join(path, "at")) } : {}),
       ...(o.twin !== undefined ? { twin: this.str(o.twin, join(path, "twin")) } : {}),
       ...(o.motion !== undefined ? { motion: this.motions(o.motion, join(path, "motion")) } : {}),
+      ...(o.classes !== undefined ? { classes: this.classes(o.classes, join(path, "classes")) } : {}),
     };
     const at = (k: string) => join(path, k);
     switch (this.oneOf(o.kind, at("kind"), ["frame", "text", "image", "svg", "instance"] as const)) {
@@ -378,9 +383,26 @@ export class Reader {
     return out;
   }
 
+  classes(v: unknown, path: string): string[] {
+    if (!Array.isArray(v) || !v.length || !v.every((c) => typeof c === "string" && CLASS_NAME.test(c))) this.fail(path, "classes are a list of class names: one word each, nothing that could end the attribute");
+    return v as string[];
+  }
+
+  livePage(v: unknown, path: string): LivePage {
+    const o = this.obj(v, path, ["libraries", "css", "js"]);
+    if (!Array.isArray(o.libraries)) this.fail(join(path, "libraries"), "a live page lists its libraries, [] for none");
+    const libraries = (o.libraries as unknown[]).map((lib, i): Library => {
+      const l = this.obj(lib, join(path, `libraries[${i}]`), ["name", "url"]);
+      const url = this.str(l.url, join(path, `libraries[${i}].url`));
+      if (!LIBRARY_HOSTS.test(url)) this.fail(join(path, `libraries[${i}].url`), "a library loads from cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or fonts.googleapis.com, pinned to a version");
+      return { name: this.str(l.name, join(path, `libraries[${i}].name`)), url };
+    });
+    return { libraries, ...(o.css !== undefined ? { css: this.str(o.css, join(path, "css")) } : {}), ...(o.js !== undefined ? { js: this.str(o.js, join(path, "js")) } : {}) };
+  }
+
   page(v: unknown, path: string): Page {
     // "client" is legacy (LEGACY_COLLECTIONS): allowed, never read.
-    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option"]);
+    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option", "live"]);
     const x = this.optNum(o.x, join(path, "x"));
     const y = this.optNum(o.y, join(path, "y"));
     if ((x === undefined) !== (y === undefined)) this.fail(path, "a canvas position needs both x and y");
@@ -395,6 +417,7 @@ export class Reader {
       ...(o.terminal !== undefined ? { terminal: this.terminalScreen(o.terminal, join(path, "terminal")) } : {}),
       ...(o.widths !== undefined ? { widths: this.widths(o.widths, join(path, "widths")) } : {}),
       ...(o.option !== undefined ? { option: this.pageOption(o.option, join(path, "option")) } : {}),
+      ...(o.live !== undefined ? { live: this.livePage(o.live, join(path, "live")) } : {}),
     };
   }
 

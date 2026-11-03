@@ -33,7 +33,12 @@ interface NodeBase extends SourceOwner {
   twin?: Id;
   /** How it moves in Play and on the exported site: at most one per trigger. The canvas and images stay still. */
   motion?: Motion[];
+  /** Class names of its own, for a live page's stylesheet, script or library (Tailwind) to find it by. */
+  classes?: string[];
 }
+
+/** A class name as it goes into class="": one word, nothing that could end the attribute. */
+export const CLASS_NAME = /^[^\s"'<>&]{1,200}$/;
 
 /** When a layer's motion plays: as the page loads, as it scrolls into view, while hovered, while pressed. */
 export const MOTION_TRIGGERS = ["load", "scroll", "hover", "press"] as const;
@@ -167,6 +172,8 @@ export interface Page extends SourceOwner {
   y?: number;
   /** A screen in a terminal rather than a web page. */
   terminal?: TerminalScreen;
+  /** A live page: scripts run in its preview, and it has a stylesheet, a script and libraries of its own. */
+  live?: LivePage;
   /**
    * Other widths the page must work at, in px (390, 768). With any, the page fills the window, and layers can
    * change their style at each width (NodeBase.at).
@@ -178,6 +185,26 @@ export interface Page extends SourceOwner {
    */
   option?: PageOption;
 }
+
+/**
+ * What makes a page live: libraries from a pinned CDN, and its own stylesheet and script (attachments under live/).
+ * Its layers are still layers; the files and libraries reach them by class (`classes` on a layer, `.b-ID` always).
+ */
+export interface LivePage {
+  libraries: Library[];
+  css?: Id;
+  js?: Id;
+}
+export interface Library {
+  /** "tailwindcss", "motion", "Manrope": how the page names it. */
+  name: string;
+  /** Pinned: a URL on one of LIBRARY_HOSTS, with the version in it. */
+  url: string;
+}
+/** The only places a library may load from: pinned, versioned, public. */
+export const LIBRARY_HOSTS = /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com|fonts\.googleapis\.com)\//;
+/** A library that is a stylesheet (a font, a CSS file) rather than a script. */
+export const libraryIsStyle = (url: string): boolean => /\.css(\?|$)/.test(url) || url.startsWith("https://fonts.googleapis.com/");
 
 export interface PageOption {
   of: Id;
