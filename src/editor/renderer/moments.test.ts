@@ -1,0 +1,32 @@
+import { expect, test } from "bun:test";
+import { emptyDoc, type Doc, type Node } from "buni/format/doc.ts";
+import { curvePoints, momentTimes, motionEnd, motionSentence } from "./moments.ts";
+
+const frame = (id: string, parent: string | undefined, index: string, extra: Partial<Node> = {}): Node =>
+  ({ id, ...(parent ? { parent } : {}), index, name: id, style: {}, kind: "frame", ...extra }) as Node; // Test fixture
+
+test("a motion reads as one sentence", () => {
+  expect(motionSentence({ trigger: "load", effect: "rise", durationMs: 320, easing: "out" })).toBe("On load, rises in over 320 ms, easing out.");
+  expect(motionSentence({ trigger: "scroll", effect: "fade", durationMs: 400, delayMs: 100, easing: "in-out", staggerMs: 80 }))
+    .toBe("Into view, its children fades in one by one, 80 ms apart, as it scrolls through 400 ms of reading, after 100 ms, easing in-out.");
+  expect(motionSentence({ trigger: "hover", effect: "lift", durationMs: 150, easing: "out", curve: "cubic-bezier(0.1, 0.2, 0.3, 1)" })).toBe("On hover, lifts in 150 ms, on its own curve.");
+  expect(curvePoints({ easing: "out" })).toEqual([0.22, 1, 0.36, 1]);
+  expect(curvePoints({ easing: "out", curve: "cubic-bezier(0.1, 0.2, 0.3, 1)" })).toEqual([0.1, 0.2, 0.3, 1]);
+  expect(curvePoints({ easing: "linear" })).toEqual([0, 0, 1, 1]);
+});
+
+test("a page's moments run from rest to the last arrival, staggers counted", () => {
+  const doc: Doc = { ...emptyDoc(), nodes: {} };
+  doc.pages.p = { id: "p", name: "Home", route: "/", frame: "root" } as Doc["pages"][string];
+  expect(motionEnd({ ...doc, nodes: { root: frame("root", undefined, "a") } }, "p")).toBe(0);
+  doc.nodes.root = frame("root", undefined, "a");
+  doc.nodes.hero = frame("hero", "root", "a", { motion: [{ trigger: "load", effect: "rise", durationMs: 600, delayMs: 100, easing: "out" }, { trigger: "hover", effect: "lift", durationMs: 5000, easing: "out" }] });
+  doc.nodes.list = frame("list", "root", "b", { motion: [{ trigger: "scroll", effect: "fade", durationMs: 400, easing: "out", staggerMs: 300 }] });
+  doc.nodes.one = frame("one", "list", "a");
+  doc.nodes.two = frame("two", "list", "b");
+  doc.nodes.three = frame("three", "list", "c");
+  // hero ends at 700; the list's third child starts 600 late and ends at 1000; hover never counts.
+  expect(motionEnd(doc, "p")).toBe(1000);
+  expect(momentTimes(1000, 6)).toEqual([0, 200, 400, 600, 800, 1000]);
+  expect(momentTimes(700, 1)).toEqual([700]);
+});

@@ -473,7 +473,7 @@ function sharedCss(doc: Doc, components?: ReadonlySet<Id>): string {
   return css;
 }
 
-const EASE: Record<Easing, string> = {
+export const EASE: Record<Easing, string> = {
   out: "cubic-bezier(0.22, 1, 0.36, 1)",
   "in-out": "cubic-bezier(0.65, 0, 0.35, 1)",
   dramatic: "cubic-bezier(0.19, 1, 0.22, 1)",

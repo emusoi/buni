@@ -10,6 +10,8 @@ import { NameDialog } from "./Ask.tsx";
 import { OwnersContext } from "./owners.ts";
 import { SmallSizes } from "./SmallSizes.tsx";
 import { Tokens } from "./Tokens.tsx";
+import { curvePoints, motionSentence } from "./moments.ts";
+import { EASE } from "buni/tools/html.ts";
 import { Widths } from "./Widths.tsx";
 import { ComponentVariants, PageStates } from "./Variants.tsx";
 import { CodeView } from "./CodeView.tsx";
@@ -437,50 +439,69 @@ const COLOR = /^(color|background|border)/;
 const short = (v: string | undefined) => v?.replace(/var\(--([\w-]+)\)/g, "$1").split(",")[0]?.replace(/"/g, "").trim();
 const KIND_ICON: Record<Node["kind"], LucideIcon> = { frame: Square, text: Type, image: Image, svg: Component, instance: Component };
 
-/** A labelled input in a row: a short prefix ("W", "Aa") and the stored value. */
-const TRIGGER_LABEL: Record<MotionTrigger, string> = { load: "On load", scroll: "Into view", hover: "Hover", press: "Press" };
+const TRIGGER_LABEL: Record<MotionTrigger, string> = { load: "Load", scroll: "Scroll", hover: "Hover", press: "Press" };
 const EFFECT_DEFAULT_MS: Record<MotionTrigger, number> = { load: 700, scroll: 600, hover: 150, press: 120 };
+const EFFECT_LABEL: Record<string, string> = { "slide-left": "Slide ←", "slide-right": "Slide →" };
 
-/** How the layer moves in Play and on the exported site: one row per trigger, the same choices set_motion has. */
+/** The curve drawn small: a cubic-bezier from the bottom-left to the top-right of its box. */
+function Curve({ motion }: { motion: Motion }) {
+  const [a, b, c, d] = curvePoints(motion);
+  const w = 72, h = 44, pad = 4;
+  const x = (v: number) => pad + v * (w - 2 * pad);
+  const y = (v: number) => h - pad - v * (h - 2 * pad);
+  return (
+    <svg className="motion-curve" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <path d={`M${x(0)} ${y(0)}H${x(1)}`} className="axis" />
+      <path d={`M${x(0)} ${y(0)}C${x(a)} ${y(b)} ${x(c)} ${y(d)} ${x(1)} ${y(1)}`} className="line" />
+    </svg>
+  );
+}
+
+/**
+ * How the layer moves in Play and on the exported site: one trigger at a time, its motion read as a sentence, the
+ * same choices set_motion has. The canvas shows the layer at rest; the Moments strip under it shows the timing.
+ */
 function MotionSection({ node, onError }: { node: Node; onError: (m: string | undefined) => void }) {
   const list = node.motion ?? [];
+  const [trigger, setTrigger] = useState<MotionTrigger>(() => list[0]?.trigger ?? "load");
+  const m = list.find((x) => x.trigger === trigger);
+  const effects = entersOn(trigger) ? ENTRANCES : RESPONSES;
   const save = async (next: Motion[]) => {
     const r = await window.buni.edit("set_motion", { node: node.id, motion: next });
     onError(r.ok ? undefined : r.reply);
   };
-  const change = (t: MotionTrigger, m: Motion | undefined) => void save(MOTION_TRIGGERS.flatMap((x) => (x === t ? (m ? [m] : []) : list.filter((y) => y.trigger === x))));
+  const change = (next: Motion | undefined) => void save(MOTION_TRIGGERS.flatMap((x) => (x === trigger ? (next ? [next] : []) : list.filter((y) => y.trigger === x))));
   const ms = (v: string) => Math.max(0, Math.min(10_000, Math.round(Number.parseFloat(v) || 0)));
   return (
-    <Group title="Motion" empty={!list.length} summary={list.length ? list.map((m) => m.trigger).join(", ") : "Still"}>
-      {MOTION_TRIGGERS.map((t) => {
-        const m = list.find((x) => x.trigger === t);
-        const effects = entersOn(t) ? ENTRANCES : RESPONSES;
-        return (
-          <div key={t} className="motion-row">
-            <div className="data-row">
-              <span className="prop-name">{TRIGGER_LABEL[t]}</span>
-              <Select
-                title={entersOn(t) ? "How it enters" : "How it answers the pointer"}
-                value={m?.effect ?? ""}
-                options={[["", "Still"], ...effects.map((e): [string, string] => [e, e.replace("-", " ")])]}
-                onChange={(v) => {
-                  const effect = effects.find((e) => e === v);
-                  change(t, effect ? { ...(m ?? { trigger: t, durationMs: EFFECT_DEFAULT_MS[t], easing: "out" }), effect } : undefined);
-                }}
-              />
-            </div>
-            {m && (
-              <div className="motion-timing">
-                <Num prefix="ms" title={t === "scroll" ? "How far down the scroll it plays, in ms of reading" : "Duration"} value={String(m.durationMs)} onSave={(v) => change(t, { ...m, durationMs: ms(v) })} />
-                {entersOn(t) && <Num prefix="+" title="Delay, ms" value={m.delayMs === undefined ? "" : String(m.delayMs)} placeholder="0" onSave={(v) => { const { delayMs: _d, ...rest } = m; change(t, v.trim() ? { ...rest, delayMs: ms(v) } : rest); }} />}
-                {entersOn(t) && <Num prefix="⋯" title="Stagger the children, ms apart" value={m.staggerMs === undefined ? "" : String(m.staggerMs)} placeholder="—" onSave={(v) => { const { staggerMs: _s, ...rest } = m; change(t, v.trim() ? { ...rest, staggerMs: ms(v) } : rest); }} />}
-                <Select title="Easing" value={m.easing} options={EASINGS.map((e): [string, string] => [e, e])} onChange={(v) => { const easing = EASINGS.find((e) => e === v); if (easing) change(t, { ...m, easing }); }} />
-              </div>
-            )}
+    <Group title="Motion" empty={!list.length} summary={list.length ? list.map((x) => motionSentence(x)).join(" ") : "Still"}>
+      <p className={`motion-sentence${m ? "" : " still"}`}>{m ? motionSentence(m) : `${entersOn(trigger) ? "Enters" : "Answers"} as it is: pick how it ${entersOn(trigger) ? "enters" : "responds"}.`}</p>
+      <div className="segmented motion-triggers" role="tablist">
+        {MOTION_TRIGGERS.map((t) => (
+          <button type="button" key={t} role="tab" aria-selected={t === trigger} className={t === trigger ? "on" : ""} onClick={() => setTrigger(t)}>
+            {TRIGGER_LABEL[t]}{list.some((x) => x.trigger === t) && <span className="motion-dot" aria-label="has motion" />}
+          </button>
+        ))}
+      </div>
+      <div className="chips motion-effects">
+        {effects.map((e) => (
+          <button type="button" key={e} className={`chip-btn${m?.effect === e ? " on" : ""}`} aria-pressed={m?.effect === e}
+            onClick={() => change(m?.effect === e ? undefined : { ...(m ?? { trigger, durationMs: EFFECT_DEFAULT_MS[trigger], easing: "out" }), effect: e })}>
+            {EFFECT_LABEL[e] ?? e[0]?.toUpperCase() + e.slice(1)}
+          </button>
+        ))}
+      </div>
+      {m && (
+        <>
+          <div className="motion-rows">
+            <div className="motion-row"><span className="prop-name">{trigger === "scroll" ? "Reads over" : "Duration"}</span><Num prefix="ms" title={trigger === "scroll" ? "How far down the scroll it plays, in ms of reading" : "Duration"} value={String(m.durationMs)} onSave={(v) => change({ ...m, durationMs: ms(v) })} /></div>
+            <div className="motion-row"><span className="prop-name">Easing</span><Select title="Easing" value={m.easing} options={EASINGS.map((e): [string, string] => [e, e])} onChange={(v) => { const easing = EASINGS.find((e) => e === v); if (easing) { const { curve: _c, ...rest } = m; change({ ...rest, easing }); } }} /></div>
+            {entersOn(trigger) && <div className="motion-row"><span className="prop-name">Delay</span><Num prefix="ms" title="Delay before it starts" value={m.delayMs === undefined ? "" : String(m.delayMs)} placeholder="0" onSave={(v) => { const { delayMs: _d, ...rest } = m; change(v.trim() ? { ...rest, delayMs: ms(v) } : rest); }} /></div>}
+            {entersOn(trigger) && <div className="motion-row"><span className="prop-name">Children one by one</span><Num prefix="ms" title="The children enter one after another, this far apart" value={m.staggerMs === undefined ? "" : String(m.staggerMs)} placeholder="Off" onSave={(v) => { const { staggerMs: _s, ...rest } = m; change(v.trim() ? { ...rest, staggerMs: ms(v) } : rest); }} /></div>}
           </div>
-        );
-      })}
-      <p className="hint">Plays in Play and on the exported site; the canvas shows the layer at rest.</p>
+          <div className="motion-curve-row"><Curve motion={m} /><span className="mono dim">{m.curve ?? EASE[m.easing]}</span></div>
+        </>
+      )}
+      <p className="hint">People who ask for less motion see the layer at rest. One motion per trigger; what this can’t say goes in a comment on the layer.</p>
     </Group>
   );
 }

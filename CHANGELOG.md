@@ -5,6 +5,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: motion in the editor reads as a sentence. The Inspector's Motion section shows one trigger at a time (Load,
+  Scroll, Hover, Press, a dot on those set), the effect as chips, duration, easing, delay and children one by one,
+  and draws the curve. A page whose layers enter gets a Moments strip under the canvas: six frames from rest to
+  the last arrival, each held at its time (the same `buni shot --frames` draws), Play beside them, and a Reduced
+  motion switch showing what people who ask for less see.
 - Added: a page drawn in a token mode of its own (☾ beside its label on the board), over the canvas-wide one; the
   layer being dragged travels with the pointer; SVG or HTML on the clipboard pastes as layers into the selected frame;
   a mesh gradient fill (◍ beside the fill) from the design's colours.

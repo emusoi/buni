@@ -1338,8 +1338,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .tool-card-frame { display: block; width: 100%; border: 0; background: transparent; color-scheme: normal; }
 .msg .prose > :last-child, .msg .prose li > :last-child { margin-bottom: 0; }
 
-.motion-row { display: flex; flex-direction: column; gap: 4px; }
-.motion-timing { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 4px; padding-left: 8px; }
 
 /* Finding a page in a long list. */
 .rail-filter { width: calc(100% - 16px); margin: 0 8px 6px; height: 28px; font-size: 12px; }
@@ -2153,3 +2151,33 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .tablet-dot.on { background: var(--green); }
 .arch-ink { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 1; }
 .ink-pin.answered circle { fill: var(--green); }
+
+/* Motion: one trigger at a time, read as a sentence; the curve drawn small. */
+.motion-sentence { margin: 0 0 8px; padding: 8px 10px; border-radius: 6px; background: var(--accent-tint); font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--ink); }
+.motion-sentence.still { background: var(--sidebar); font-weight: 400; color: var(--ink-2); }
+.motion-triggers { flex: none; margin-bottom: 8px; }
+.motion-triggers button { position: relative; height: 24px; font-weight: 500; }
+.motion-dot { width: 5px; height: 5px; border-radius: 3px; background: var(--accent); }
+.motion-effects { order: 0; flex: none; margin-bottom: 10px; }
+.chip-btn.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+.motion-rows { display: flex; flex-direction: column; gap: 4px; }
+.motion-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.motion-row .prop-name { width: auto; flex: 1; }
+.motion-row .num, .motion-row .select { width: 92px; flex: none; }
+.motion-curve-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.motion-curve .axis { stroke: var(--rule); fill: none; }
+.motion-curve .line { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+.motion-curve-row .mono { font-size: 11px; }
+
+/* Moments: the page's entrances held at six times under the canvas. */
+.moments { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: 8px; padding: 10px 16px 12px; background: var(--surface); border-top: 1px solid var(--rule); }
+.moments-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink); }
+.moments-head .icon-btn { width: 24px; height: 24px; }
+.moments-row { display: flex; gap: 12px; overflow-x: auto; }
+.moment { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.moment-frame { position: relative; overflow: hidden; border-radius: 3px; background: var(--sidebar); box-shadow: var(--shadow-1); }
+.moment-frame iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+.moment figcaption { font-size: 11px; color: var(--label); }
+.switch-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.app.editor .moments { left: var(--float-left); right: var(--float-right); }
+.app.editor .canvas-wrap:has(.moments) .insert-bar { bottom: 140px; }

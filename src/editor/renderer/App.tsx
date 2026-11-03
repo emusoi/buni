@@ -25,6 +25,7 @@ import { agentColor, agentInitials, ConnectAgent } from "./Connect.tsx";
 import { Palette, type Action } from "./Palette.tsx";
 import { pageOfNode, type Hit } from "./search.ts";
 import { Journey } from "./Journey.tsx";
+import { Moments } from "./Moments.tsx";
 import { OwnersContext } from "./owners.ts";
 import { Play } from "./Play.tsx";
 import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
@@ -1059,6 +1060,7 @@ export function App({ snap }: { snap: Snapshot }) {
               onOpenElsewhere={openElsewhere}
             />
             <InsertBar doc={doc} node={selected ? doc.nodes[selected] : undefined} root={frame?.id} onAdded={setSelected} onError={setToast} />
+            {!component && activePage && doc.pages[activePage] && <Moments doc={doc} page={activePage} dir={snap.dir} mode={modeAt[activePage] ?? tokenMode} onPlay={() => setPlay({ page: activePage })} />}
             </div>
           )}
           {panelOpen && (
