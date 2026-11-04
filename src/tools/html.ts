@@ -718,8 +718,14 @@ export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
       },
     }).render();
     // On the website the page is the browser's: as wide as the window, and at least as tall as it.
-    const frameHeight = doc.nodes[p.frame]?.style.height;
+    // A layer drawn the page's size (a backdrop holding the page) stretches with it.
+    const frameStyle = doc.nodes[p.frame]?.style ?? {};
+    const frameHeight = frameStyle.height;
     pages += r.css + cssRule(`.b-${p.frame}`, { width: "100%", ...(frameHeight ? { height: `max(${frameHeight}, 100vh)` } : { minHeight: "100vh" }) });
+    for (const c of childrenOf(doc, p.frame)) {
+      const fill = { ...(c.style.width !== undefined && c.style.width === frameStyle.width ? { width: "100%" } : {}), ...(c.style.height !== undefined && c.style.height === frameHeight ? { height: "100%" } : {}) };
+      if (Object.keys(fill).length) pages += cssRule(`.b-${c.id}`, fill);
+    }
     files.set(
       file,
       [
