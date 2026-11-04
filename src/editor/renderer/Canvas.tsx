@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { childrenOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
+import { childrenOf, optionsOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
 import { diffCss, diffVersion, docAtVersion } from "./pageVersions.ts";
 import { ago } from "./Home.tsx";
 import { NameDialog } from "./Ask.tsx";
@@ -343,6 +343,8 @@ const Artboard = memo(function Artboard(props: {
   const { doc, pageId } = props;
   /** An older version looked at in place, beside the live page. */
   const [looking, setLooking] = useState<Id>();
+  /** A take shown on the card in the live page's place, flipped to with ‹ › or ← →. */
+  const [flip, setFlip] = useState<Id>();
   const [naming, setNaming] = useState(false);
   // A board is a page or a component.
   const page = doc.pages[pageId];
@@ -667,7 +669,7 @@ const Artboard = memo(function Artboard(props: {
   if ((!page && !component) || !live) return null;
   const { uses } = props;
   return (
-    <div className={`artboard${looking !== undefined && props.close ? " looking" : ""}`} style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
+    <div className={`artboard${(looking !== undefined || flip !== undefined) && props.close ? " looking" : ""}`} style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
       <button
         type="button"
         className={`artboard-label${props.active ? " active" : ""}${component ? " component" : ""}`}
@@ -707,7 +709,8 @@ const Artboard = memo(function Artboard(props: {
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
-      {page && props.close && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
+      {page && props.close && (props.takes ?? 0) > 0 && <TakeFlip doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} active={Boolean(props.active)} showing={flip} onShow={(t) => { setFlip(t); setLooking(undefined); }} liveFrame={frame} />}
+      {page && props.close && flip === undefined && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
       {page && props.close && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
@@ -759,6 +762,72 @@ const Artboard = memo(function Artboard(props: {
     </div>
   );
 });
+
+/**
+ * A page's takes flipped on its own card: ‹ › (or ← → while the page is open) show each take in the card's place, at
+ * full size where it lives; the dots say where you are and which is live. Use this take makes the one shown live,
+ * with a why in a line; Esc, or flipping back to the live one, shows the page again.
+ */
+function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFrame }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; active: boolean; showing: Id | undefined; onShow: (take: Id | undefined) => void; liveFrame: RefObject<HTMLIFrameElement | null> }) {
+  const takes = useMemo(() => [page, ...optionsOf(doc, page).map((p) => p.id)], [doc, page]);
+  const at = Math.max(0, showing === undefined ? 0 : takes.indexOf(showing));
+  const [why, setWhy] = useState("");
+  const go = (i: number) => { const n = (i + takes.length) % takes.length; onShow(n === 0 ? undefined : takes[n]); };
+  useEffect(() => {
+    if (!active) return;
+    const key = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(at - 1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(at + 1); }
+      else if (e.key === "Escape" && showing !== undefined) onShow(undefined);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
+  const shown = doc.pages[takes[at] ?? page];
+  const html = useMemo(() => (showing ? srcdoc(doc, showing, dir, "", mode) : undefined), [doc, showing, dir, mode]);
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (!html) { setUrl(undefined); return; }
+    const next = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [html]);
+  const use = async () => {
+    if (!showing) return;
+    const r = await window.buni.edit("pick_option", { option: showing, why: why.trim() || "Picked on the canvas" });
+    if (r.ok) { setWhy(""); onShow(undefined); }
+  };
+  const height = liveFrame.current?.offsetHeight || 900;
+  return (
+    <>
+      <div className="flip-bar" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flip-row">
+          <button type="button" className="flip-arrow" aria-label="Previous take" onClick={() => go(at - 1)}>‹</button>
+          <span className="flip-about">
+            <b>{at === 0 ? "Live" : shown?.name.replace(/^.*·\s*/, "")}</b>
+            <span className="dim"> · take {at + 1} of {takes.length}</span>
+            {at > 0 && shown?.option?.idea && <span className="flip-idea">{shown.option.idea}</span>}
+          </span>
+          <span className="flip-dots">{takes.map((t, i) => <span key={t} className={`flip-dot${i === at ? " on" : ""}${i === 0 ? " live" : ""}`} />)}</span>
+          <button type="button" className="flip-arrow" aria-label="Next take" onClick={() => go(at + 1)}>›</button>
+        </div>
+        {showing && (
+          <form className="flip-use" onSubmit={(e) => { e.preventDefault(); void use(); }}>
+            <button type="submit" className="btn small primary">Use this take</button>
+            <input className="field" placeholder="why, in a line (optional)" value={why} onChange={(e) => setWhy(e.target.value)} />
+          </form>
+        )}
+      </div>
+      {showing && (
+        <div className="ghost flip-take" style={{ width }}>
+          <div className="ghost-frame" style={{ width, height }}>{url && <iframe title={shown?.name} sandbox={shown?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={height} />}</div>
+        </div>
+      )}
+    </>
+  );
+}
 
 /**
  * The page's points in time under its label: v1 — v2 — v3, then the page as it is. An older one opens beside the

@@ -5,6 +5,9 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: flip a page's takes on its own card. A bar above the card reads ‹ name · take 2 of 3 · dots ›; the arrows,
+  or ← → while the page is open, show each take in the card's place at full size; Use this take makes the one shown
+  live, with a why in a line; Esc goes back. The side panels each have a show and hide button in the top bar.
 - Changed: a screen the design already has is never a second page. `create_page` and `import_html_page` take
   `take_of`: the new page is a take of that page, under one card; `make_take` turns a page made by mistake into one.
   The agents' instructions say so; "Screen · Now" and "Screen · Next" pages are gone from the guidance.
