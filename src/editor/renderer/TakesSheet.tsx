@@ -9,6 +9,18 @@ import { widthOf } from "./layout.ts";
 const CARD = 340;
 const TALL = 212;
 
+/** A page's own height from its frame, for fitting a picture of it; 900 when it has none. */
+function heightOf(doc: Doc, page: Id): number {
+  const style = doc.nodes[doc.pages[page]?.frame ?? ""]?.style;
+  const given = style?.height ?? style?.minHeight ?? "";
+  return /^\d+(?:\.\d+)?px$/.test(given) ? Number.parseFloat(given) : 900;
+}
+/** The picture fits the card: a wide page by width, a tall phone screen by height, so nothing is cut off. */
+export function fit(width: number, height: number): { scale: number; w: number; h: number } {
+  const scale = Math.min(CARD / width, TALL / height);
+  return { scale, w: Math.round(width * scale), h: Math.round(height * scale) };
+}
+
 /** The page whose takes these are: a take's parent, else the page itself. */
 export function liveOf(doc: Doc, page: Id): Page | undefined {
   const p = doc.pages[page];
@@ -24,10 +36,10 @@ function Thumb({ doc, page, dir, mode }: { doc: Doc; page: Id; dir: string; mode
     return () => URL.revokeObjectURL(next);
   }, [html]);
   const width = widthOf(doc, page);
-  const scale = CARD / width;
+  const { scale, w, h } = fit(width, heightOf(doc, page));
   return (
-    <div className="take-thumb" style={{ width: CARD, height: TALL }}>
-      {url && <iframe title={doc.pages[page]?.name} sandbox={doc.pages[page]?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={Math.round(TALL / scale)} style={{ transform: `scale(${scale})` }} />}
+    <div className="take-thumb" style={{ width: w, height: h }}>
+      {url && <iframe title={doc.pages[page]?.name} sandbox={doc.pages[page]?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={Math.round(h / scale)} style={{ transform: `scale(${scale})` }} />}
     </div>
   );
 }
@@ -74,7 +86,7 @@ export function TakesSheet({ doc, dir, page, mode, onClose, onPlay, onEdit, onTo
           {takes.map((t) => {
             const isLive = t.id === live.id;
             return (
-              <article key={t.id} className={`take${isLive ? " live" : ""}`}>
+              <article key={t.id} className={`take${isLive ? " live" : ""}`} style={{ width: Math.max(200, fit(widthOf(doc, t.id), heightOf(doc, t.id)).w) }}>
                 <div className="take-pic">
                   <Thumb doc={doc} page={t.id} dir={dir} mode={mode} />
                   {isLive && <span className="take-live">Live now</span>}

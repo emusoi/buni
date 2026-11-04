@@ -30,3 +30,9 @@ test("a page's moments run from rest to the last arrival, staggers counted", () 
   expect(momentTimes(1000, 6)).toEqual([0, 200, 400, 600, 800, 1000]);
   expect(momentTimes(700, 1)).toEqual([700]);
 });
+
+test("a take's picture fits its card: a wide page by width, a phone screen by height", async () => {
+  const { fit } = await import("./TakesSheet.tsx");
+  expect(fit(1440, 900)).toEqual({ scale: 212 / 900, w: 339, h: 212 });
+  expect(fit(390, 844)).toEqual({ scale: 212 / 844, w: 98, h: 212 });
+});
