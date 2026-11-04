@@ -5,6 +5,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Added: tasks. What the person asks for, in their words, is a task: added from the Agents panel (or `add_task`),
+  queued until an agent takes it (`take_task`), working beside the agent's name, done with the agent's note
+  (`finish_task`). An agent hears of a new task on its next call; `tasks` lists them, queued first.
+- Added: the why stays on the canvas. `pick_option` records why a page won and what it was chosen over
+  (`picked` on the page); the canvas draws a dashed line from a page to each of its options and the why beside the
+  winner, so a rejected direction stays in view with its reason.
 - Added: moments of a live page. The Moments strip and `buni shot --frames` hold a live page's own script at each
   time as well: the page runs on a held clock (`performance.now`, `requestAnimationFrame`, `setTimeout` and every
   Web Animation it makes), stepped 16 ms at a time to the moment, so Motion or GSAP work lands where it would be;

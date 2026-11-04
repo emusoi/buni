@@ -82,6 +82,9 @@ import {
   LIBRARY_HOSTS,
   type Library,
   type LivePage,
+  TASK_STATES,
+  type Picked,
+  type Task,
 } from "./doc.ts";
 
 export interface FormatError {
@@ -400,9 +403,31 @@ export class Reader {
     return { libraries, ...(o.css !== undefined ? { css: this.str(o.css, join(path, "css")) } : {}), ...(o.js !== undefined ? { js: this.str(o.js, join(path, "js")) } : {}) };
   }
 
+  picked(v: unknown, path: string): Picked {
+    const o = this.obj(v, path, ["why", "at", "over"]);
+    return { why: this.str(o.why, join(path, "why")), at: this.str(o.at, join(path, "at")), over: this.list(o.over, join(path, "over"), (x, p) => this.str(x, p)) };
+  }
+
+  task(v: unknown, path: string): Task {
+    const o = this.obj(v, path, ["id", "title", "detail", "state", "page", "by", "note", "at", "taken", "done", "index"]);
+    return {
+      id: this.str(o.id, join(path, "id")),
+      title: this.str(o.title, join(path, "title")),
+      ...(o.detail !== undefined ? { detail: this.str(o.detail, join(path, "detail")) } : {}),
+      state: this.oneOf(o.state, join(path, "state"), TASK_STATES),
+      ...(o.page !== undefined ? { page: this.str(o.page, join(path, "page")) } : {}),
+      ...(o.by !== undefined ? { by: this.str(o.by, join(path, "by")) } : {}),
+      ...(o.note !== undefined ? { note: this.str(o.note, join(path, "note")) } : {}),
+      at: this.str(o.at, join(path, "at")),
+      ...(o.taken !== undefined ? { taken: this.str(o.taken, join(path, "taken")) } : {}),
+      ...(o.done !== undefined ? { done: this.str(o.done, join(path, "done")) } : {}),
+      index: this.str(o.index, join(path, "index")),
+    };
+  }
+
   page(v: unknown, path: string): Page {
     // "client" is legacy (LEGACY_COLLECTIONS): allowed, never read.
-    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option", "live"]);
+    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option", "live", "picked"]);
     const x = this.optNum(o.x, join(path, "x"));
     const y = this.optNum(o.y, join(path, "y"));
     if ((x === undefined) !== (y === undefined)) this.fail(path, "a canvas position needs both x and y");
@@ -418,6 +443,7 @@ export class Reader {
       ...(o.widths !== undefined ? { widths: this.widths(o.widths, join(path, "widths")) } : {}),
       ...(o.option !== undefined ? { option: this.pageOption(o.option, join(path, "option")) } : {}),
       ...(o.live !== undefined ? { live: this.livePage(o.live, join(path, "live")) } : {}),
+      ...(o.picked !== undefined ? { picked: this.picked(o.picked, join(path, "picked")) } : {}),
     };
   }
 
@@ -929,7 +955,7 @@ export class Reader {
   doc(v: unknown): Doc {
     const o = this.obj(v, "", [
       "buni", "imports", "tokensRef", "tokens", "modes", "pages", "nodes", "shared", "connections",
-      "flows", "journeys", "comments", "sections", "rules", "attachments", "architecture",
+      "flows", "journeys", "comments", "tasks", "sections", "rules", "attachments", "architecture",
       ...LEGACY_COLLECTIONS,
     ]);
     if (o.buni !== FORMAT_VERSION) this.fail("buni", `unsupported format version (expected ${FORMAT_VERSION})`);
@@ -952,6 +978,8 @@ export class Reader {
     doc.flows = this.byId(o.flows, "flows", (x, p) => this.flow(x, p));
     doc.journeys = this.byId(o.journeys, "journeys", (x, p) => this.journey(x, p));
     doc.comments = this.byId(o.comments, "comments", (x, p) => this.comment(x, p));
+    // Tasks arrived after the format did; files without them simply have none.
+    doc.tasks = o.tasks === undefined ? {} : this.byId(o.tasks, "tasks", (x, p) => this.task(x, p));
     // The design doc arrived after the format did; files without one simply have none.
     doc.sections = o.sections === undefined ? {} : this.byId(o.sections, "sections", (x, p) => this.section(x, p));
     doc.rules = this.byId(o.rules, "rules", (x, p) => this.rule(x, p));

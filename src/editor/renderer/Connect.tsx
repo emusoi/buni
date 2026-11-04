@@ -3,6 +3,7 @@ import { Copy, MessageSquare, Pause, Play, Undo2 } from "lucide-react";
 import type { Edit } from "../api.ts";
 import type { AgentState } from "buni/tools/protocol.ts";
 import { ago } from "./Home.tsx";
+import { Tasks } from "./Tasks.tsx";
 import type { Doc, Id } from "buni/format/doc.ts";
 import { pageOfNode } from "./search.ts";
 
@@ -19,7 +20,7 @@ export const agentInitials = (name: string) => {
  * The coding agents connected to this file and
  * where each last worked, then how to connect another.
  */
-export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [], onShow, onToast, onUndo }: { doc: Doc; mcpUrl: string; connected: readonly string[]; recent: Record<string, readonly Id[]>; edits: readonly Edit[]; agents?: readonly AgentState[]; onShow: (node: Id) => void; onToast: (t: string) => void; onUndo?: () => void }) {
+export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [], page, onShow, onShowPage, onToast, onUndo }: { doc: Doc; mcpUrl: string; connected: readonly string[]; recent: Record<string, readonly Id[]>; edits: readonly Edit[]; agents?: readonly AgentState[]; page?: Id | undefined; onShow: (node: Id) => void; onShowPage?: (page: Id) => void; onToast: (t: string) => void; onUndo?: () => void }) {
   const [asking, setAsking] = useState<string>();
   const [words, setWords] = useState("");
   const tell = async (name: string) => {
@@ -57,6 +58,7 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [
   const names = [...new Set([...connected, ...Object.keys(recent).filter((n) => n !== "you")])];
   return (
     <div className="connect-agent">
+      <Tasks doc={doc} page={page} now={now} onShowPage={(p) => onShowPage?.(p)} onToast={onToast} />
       {names.length > 0 && (
         <section className="agent-cards">
           {names.map((name) => {

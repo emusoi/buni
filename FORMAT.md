@@ -34,11 +34,12 @@ are the normative definition; this page is the map.
 |---|---|
 | `tokens` | Design tokens: CSS custom property name (`--` then letters, digits, `-` and `_`) → value. |
 | `modes` | Optional. Other appearances of the tokens, by mode name (`dark`: lowercase letters, digits and `-`): only the tokens that differ there, to their values. A page is drawn in a mode on the canvas, in Play and on the exported site (`<html data-mode="dark">`); `dark` also follows the system's choice where nothing asked. |
-| `pages` | Screens and boards: name, `route`, its root `frame`, optional `state` (Empty, Error…), canvas position, `option` `{of, idea}` for another take on page `of` (an option has no `route` while it is one), and `live` for a live page: `{libraries: [{name, url}], css, js}`, its libraries pinned to a version on cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or fonts.googleapis.com, and its own stylesheet and script as attachments under `live/`. Scripts run in a live page's preview and on the exported site. |
+| `pages` | Screens and boards: name, `route`, its root `frame`, optional `state` (Empty, Error…), canvas position, `option` `{of, idea}` for another take on page `of` (an option has no `route` while it is one), `picked` `{why, at, over}` on a page chosen over its options (the why stays on the canvas), and `live` for a live page: `{libraries: [{name, url}], css, js}`, its libraries pinned to a version on cdnjs.cloudflare.com, cdn.jsdelivr.net, unpkg.com or fonts.googleapis.com, and its own stylesheet and script as attachments under `live/`. Scripts run in a live page's preview and on the exported site. |
 | `nodes` | The layer tree: frames, text, images, svg and component instances, each with a `parent`, `index` and CSS `style`; `classes` (one word each) for a live page's files and libraries to find a layer by, beside its `b-ID` class. |
 | `shared` | Components: a reusable root, placed into pages as instances with overrides (per layer: `text`, `style`, styles `at` other widths, and `markup` for an svg layer, held to the same rules as an svg layer's own). A component may hold uses of other components, never of itself; a use overrides a layer inside one by the path of use ids to it (`"nav-item/label"`). |
 | `connections` | Links from a node to a page: what a click does. |
 | `flows`, `journeys` | Named paths through the screens, and the experience they describe. |
+| `tasks` | What the person asked for, in their words: title, detail, the page it is about, `state` queued, working or done, who took it (`by`), the note it was finished with, and when each happened. |
 | `attachments` | Files beside the design (images, briefs), by path relative to the `.buni` file. |
 
 **The design's reasoning**

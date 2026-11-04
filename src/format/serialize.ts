@@ -22,5 +22,7 @@ function sortKeys(value: unknown): JsonValue {
  * diffs show only what changed.
  */
 export function serializeDoc(doc: Doc): string {
-  return `${JSON.stringify(sortKeys(doc), null, 2)}\n`;
+  // Tasks arrived after the format did: a file without any is written as it was.
+  const { tasks, ...rest } = doc;
+  return `${JSON.stringify(sortKeys(Object.keys(tasks).length ? doc : rest), null, 2)}\n`;
 }

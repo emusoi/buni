@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo,
 import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
+import { branchPath, lineage } from "./lineage.ts";
 import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
 import { sketchesOpen } from "buni/tools/ink.ts";
 import { fontFaces, fontSlug, renderComponent, renderPage, liveHead } from "buni/tools/html.ts";
@@ -982,6 +983,8 @@ export function Canvas(props: Props) {
     }];
   })), [pages, own, props.doc, props.viewAt, at, loads]);
   const nearby = useMemo(() => nearbyBoards(boxes, view, canvasSize), [boxes, view, canvasSize]);
+  // Options hang off their page; a page that won says why. The why stays in view with what it was chosen over.
+  const why = useMemo(() => lineage(props.doc, boxes), [props.doc, boxes]);
   const [away, setAway] = useState<ReturnType<typeof exits>>([]);
   useLayoutEffect(() => { setLinks(arrows(props.doc, boxes, boards.current)); setAway(exits(props.doc, boxes, boards.current)); }, [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
@@ -1302,6 +1305,11 @@ export function Canvas(props: Props) {
             <span className="comment-pin-face">{(p.by[0] ?? "?").toUpperCase()}</span>{p.n > 1 && <span className="comment-pin-n">{p.n}</span>}
           </button>
         ))}
+        {view.zoom >= FAR && why.whys.map((w) => (
+          <div key={w.page} className="why-tag" style={{ left: w.x, top: w.y, transform: `scale(${1 / view.zoom})` }} title={w.over.length ? `Chosen over ${w.over.join(", ")}` : "Chosen"}>
+            <b>Picked</b> {w.why}{w.over.length ? <span className="dim"> · over {w.over.join(", ")}</span> : null}
+          </div>
+        ))}
         {tags.map((t) => (
           <div key={t.spot.agent} className="agent-tag" style={{ left: t.x, top: t.y, background: t.spot.color, transform: `translateY(-100%) scale(${1 / view.zoom})` }}>
             ✦ {t.spot.label}
@@ -1319,6 +1327,7 @@ export function Canvas(props: Props) {
               </marker>
             ))}
           </defs>
+          {why.branches.map((b) => <path key={`${b.from}-${b.to}`} className="branch" d={branchPath(b)} strokeWidth={1.5 / view.zoom} strokeDasharray={`${6 / view.zoom} ${5 / view.zoom}`} />)}
           {routed.filter((link) => view.zoom >= FAR || link.kind === "out").map(({ a, kind, d, lx, ly }) => {
             const w = 1 / view.zoom;
             return <g key={a.id} className={`link ${kind}`}>

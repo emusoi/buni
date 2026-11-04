@@ -246,7 +246,8 @@ export const pagesTools = {
       // The chosen one takes the live page's place: its route and spot in the list.
       const { option: _o, ...chosenRest } = chosen;
       const { route: _r, ...liveRest } = live;
-      ops.push({ kind: "put", collection: "pages", value: { ...chosenRest, index: live.index, ...(live.route !== undefined ? { route: live.route } : {}) } });
+      // The why stays with the winner, on the canvas, beside what it was chosen over.
+      ops.push({ kind: "put", collection: "pages", value: { ...chosenRest, index: live.index, ...(live.route !== undefined ? { route: live.route } : {}), picked: { why: a.why, at: ctx.now(), over: [live.id, ...rest.map((p) => p.id)] } } });
       ops.push({ kind: "put", collection: "pages", value: { ...liveRest, index: chosen.index, option: { of: chosen.id, idea: `As it was live until ${ctx.now().slice(0, 10)}` } } });
       for (const c of Object.values(doc.connections)) if (c.to === live.id) ops.push({ kind: "put", collection: "connections", value: { ...c, to: chosen.id } });
       for (const f of Object.values(doc.flows)) if (f.start === live.id) ops.push({ kind: "put", collection: "flows", value: { ...f, start: chosen.id } });

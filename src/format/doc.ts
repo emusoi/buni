@@ -174,6 +174,8 @@ export interface Page extends SourceOwner {
   terminal?: TerminalScreen;
   /** A live page: scripts run in its preview, and it has a stylesheet, a script and libraries of its own. */
   live?: LivePage;
+  /** It won over its options (pick_option): why, when, and which pages it was chosen over. The why stays on the canvas. */
+  picked?: Picked;
   /**
    * Other widths the page must work at, in px (390, 768). With any, the page fills the window, and layers can
    * change their style at each width (NodeBase.at).
@@ -205,6 +207,14 @@ export interface Library {
 export const LIBRARY_HOSTS = /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com|fonts\.googleapis\.com)\//;
 /** A library that is a stylesheet (a font, a CSS file) rather than a script. */
 export const libraryIsStyle = (url: string): boolean => /\.css(\?|$)/.test(url) || url.startsWith("https://fonts.googleapis.com/");
+
+export interface Picked {
+  why: string;
+  /** ISO 8601 timestamp. */
+  at: string;
+  /** The pages it was chosen over, as they were then; some may be gone since. */
+  over: Id[];
+}
 
 export interface PageOption {
   of: Id;
@@ -364,6 +374,27 @@ export interface Stroke {
   color: string;
   width: number;
   points: number[];
+}
+
+export const TASK_STATES = ["queued", "working", "done"] as const;
+export type TaskState = (typeof TASK_STATES)[number];
+/** One thing the person asked for, in their words: an agent takes it, works, and finishes it with a note. */
+export interface Task {
+  id: Id;
+  title: string;
+  detail?: string;
+  state: TaskState;
+  /** The page it is about, when it is about one. */
+  page?: Id;
+  /** Who took it. */
+  by?: string;
+  /** What was done, in the agent's words, when finished. */
+  note?: string;
+  /** ISO 8601: asked, taken, finished. */
+  at: string;
+  taken?: string;
+  done?: string;
+  index: string;
 }
 
 export interface Comment extends SourceOwner {
@@ -750,6 +781,8 @@ export interface Doc {
   flows: Record<Id, Flow>;
   journeys: Record<Id, Journey>;
   comments: Record<Id, Comment>;
+  /** What the person asked for, for an agent to take: queued, working, done. */
+  tasks: Record<Id, Task>;
   /** The design doc every agent reads first. */
   sections: Record<Id, Section>;
   rules: Record<Id, Rule>;
@@ -769,6 +802,7 @@ export function emptyDoc(): Doc {
     flows: {},
     journeys: {},
     comments: {},
+    tasks: {},
     sections: {},
     rules: {},
     attachments: {},

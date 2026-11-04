@@ -3,7 +3,7 @@ import { validateDoc, type FormatError } from "../format/parse.ts";
 
 export type DocCollection =
   | "pages" | "nodes" | "shared" | "connections" | "flows"
-  | "journeys" | "comments" | "sections" | "rules" | "attachments";
+  | "journeys" | "comments" | "tasks" | "sections" | "rules" | "attachments";
 /** A collection of the document, or of its architecture (doc.architecture.parts, …). */
 export type Collection = DocCollection | ArchCollection;
 
@@ -280,6 +280,10 @@ function restore(doc: Doc, collection: Collection, id: Id): Op {
       const v = doc.comments[id];
       return v ? { kind: "put", collection: "comments", value: v } : { kind: "delete", collection: "comments", id };
     }
+    case "tasks": {
+      const v = doc.tasks[id];
+      return v ? { kind: "put", collection: "tasks", value: v } : { kind: "delete", collection: "tasks", id };
+    }
     case "rules": {
       const v = doc.rules[id];
       return v ? { kind: "put", collection: "rules", value: v } : { kind: "delete", collection: "rules", id };
@@ -305,7 +309,7 @@ export function invert(doc: Doc, ops: readonly Op[]): Op[] {
 }
 
 const COLLECTIONS: readonly DocCollection[] = [
-  "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "sections", "rules", "attachments",
+  "pages", "nodes", "shared", "connections", "flows", "journeys", "comments", "tasks", "sections", "rules", "attachments",
 ];
 
 // The casts below: TypeScript can't tie a generic collection to its own value inside the Op union, though they match.

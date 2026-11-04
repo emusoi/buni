@@ -94,8 +94,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     asking: Map<string, Asking & { answer: (text: string | undefined) => void }>;
     /** The tabs on the file and where each person is, by tab; gone when the tab's feed closes. */
     present: Map<string, Presence>;
-    /** Each agent by name: what it runs, whether the person paused it, what they said to it since its last call. */
-    agents: Map<string, AgentState & { notes: string[]; release?: () => void }>;
+    /** Each agent by name: what it runs, whether the person paused it, what they said to it since its last call, which queued tasks it has heard of. */
+    agents: Map<string, AgentState & { notes: string[]; told: Set<string>; release?: () => void }>;
   }
   /** This run of the server: a tab that reconnects to a different one reloads, so it never runs yesterday's code. */
   const BUILD = Date.now().toString(36);
@@ -171,14 +171,21 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
   /** The agent's record, made on first sight. */
   const agentOf = (o: Open, name: string) => {
     let a = o.agents.get(name);
-    if (!a) { a = { name, busy: false, paused: false, notes: [] }; o.agents.set(name, a); }
+    if (!a) { a = { name, busy: false, paused: false, notes: [], told: new Set() }; o.agents.set(name, a); }
     return a;
   };
   /** Before an agent's call: waits while the person has it paused, then hands over what they said meanwhile. */
   function holdAgent(o: Open, name: string): Promise<string[]> {
     const a = agentOf(o, name);
     const tell = () => o.listeners.forEach((fn) => fn());
-    const take = () => { const notes = a.notes; a.notes = []; return notes; };
+    const take = () => {
+      // A task queued since the agent last heard is mentioned once; the agent takes it or not.
+      const fresh = Object.values(o.ws.view().tasks).filter((t) => t.state === "queued" && !a.told.has(t.id));
+      for (const t of fresh) a.told.add(t.id);
+      const notes = [...a.notes, ...(fresh.length ? [`${fresh.length === 1 ? "A task is" : `${fresh.length} tasks are`} waiting: ${fresh.map((t) => `${t.id} "${t.title}"`).join(", ")}. take_task one before you work on it; tasks lists them all.`] : [])];
+      a.notes = [];
+      return notes;
+    };
     if (!a.paused) return Promise.resolve(take());
     a.busy = true;
     tell();
