@@ -24,7 +24,7 @@ export const EDIT_TOOLS = [
   "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
   "make_component", "create_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "comment", "mark", "merge_components", "delete_component", "rename_component",
-  "set_motion", "connect", "disconnect", "set_flow", "set_screen", "set_live", "write_file", "add_task", "take_task", "finish_task", "delete_task", "pick_option", "save_version", "restore_version", "branch_version", "delete_version",
+  "set_motion", "connect", "disconnect", "set_flow", "set_screen", "set_live", "write_file", "add_task", "take_task", "finish_task", "delete_task", "pick_option", "make_take", "save_version", "restore_version", "branch_version", "delete_version",
   // Architecture mode: a person writes the architecture with the same tools agents use.
   "merge_plan", "delete_architecture", "set_part", "link_parts", "unlink", "set_group", "set_build", "set_api", "set_operation", "set_environment", "set_cluster",
   "set_namespace", "set_workload", "set_release", "set_migration", "set_plan", "set_stage", "set_play", "place_architecture",

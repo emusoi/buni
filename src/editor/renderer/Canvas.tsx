@@ -215,6 +215,8 @@ const LABEL = 19;
 const MIN_ZOOM = 0.005;
 /** Below this, page names would overlap the row above: only row titles are shown. */
 const FAR = 0.15;
+/** Closer than this, a board shows its chrome (play, mode, the version rail); further out, only its label. */
+const CLOSE = 0.45;
 const OVERVIEW_PAD = 192;
 
 /** Discrete preview resolutions avoid rebuilding a bitmap for every small zoom step. */
@@ -300,6 +302,8 @@ const Artboard = memo(function Artboard(props: {
   active: boolean;
   retained: boolean;
   detail: boolean;
+  /** Close enough to show the board's chrome: play, mode, the version rail. */
+  close: boolean;
   near: boolean;
   resources: Map<string, Promise<string>>;
   heights: Map<Id, number>;
@@ -700,8 +704,8 @@ const Artboard = memo(function Artboard(props: {
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
-      {page && props.detail && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
-      {page && props.detail && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
+      {page && props.close && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
+      {page && props.close && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => {
@@ -719,7 +723,7 @@ const Artboard = memo(function Artboard(props: {
             setTimeout(() => s.remove(), motionEnd(props.doc, page.id) + 200);
           }}>▷</button>
       )}
-      {page && props.detail && props.modes && props.modes.length > 0 && props.onMode && (
+      {page && props.close && props.modes && props.modes.length > 0 && props.onMode && (
         <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
           onPointerDown={(e) => e.stopPropagation()} onClick={() => { const i = props.mode ? props.modes!.indexOf(props.mode) : -1; props.onMode?.(props.modes![i + 1]); }}>
           {props.mode === "dark" ? "☾" : props.mode ? props.mode[0]?.toUpperCase() : "☼"}
@@ -1391,6 +1395,7 @@ export function Canvas(props: Props) {
             onOpenTakes={props.onOpenTakes}
             retained={retained.has(p.id)}
             detail={view.zoom >= FAR}
+            close={view.zoom >= CLOSE}
             near={nearby.has(p.id)}
             resources={resources}
             heights={heights.current}

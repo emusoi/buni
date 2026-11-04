@@ -19,6 +19,12 @@ import { findIcons } from "../icons.ts";
 import { marksText } from "../ink.ts";
 import { Ids, type Tool, ToolError, pageOf, deleted, draftOps, forget, indexAt, nextIndex, node, page, onTerminal, rootOf, screenStyle, styleValues, subtree, terminalScreen, tool } from "../kit.ts";
 
+/** The page a take belongs under: the one named, or the page it is itself a take of. */
+function takeOf(doc: Doc, id: string): Page {
+  const p = page(doc, id);
+  return p.option ? page(doc, p.option.of) : p;
+}
+
 /**
  * A copy of a page as a new page: every layer with a new id, and its links from the copied layers. `twins` keeps each
  * layer pointing at the one it copies (a state, which follows its screen's styles); otherwise the copy is its own.
@@ -54,7 +60,7 @@ function placeFor(doc: Doc, a: { parent?: string | undefined; after?: string | u
 }
 
 /** A captured page as layers: its images become attachments, then its HTML is imported where `a` says. */
-async function importCaptured(doc: Doc, result: CapturedHtml, width: number, a: { parent?: string | undefined; after?: string | undefined; page?: { name: string; route?: string | undefined } | undefined }, ctx: ToolContext): Promise<ToolOutput> {
+async function importCaptured(doc: Doc, result: CapturedHtml, width: number, a: { parent?: string | undefined; after?: string | undefined; page?: { name: string; route?: string | undefined; take_of?: string | undefined } | undefined }, ctx: ToolContext): Promise<ToolOutput> {
   const ids = new Ids(doc, ctx);
   const attachments = { ...doc.attachments };
   const ops: Op[] = [];
@@ -111,12 +117,14 @@ export const pagesTools = {
       width: z.number().int().positive().default(1440),
       height: z.number().int().positive().optional(),
       terminal: terminalScreen.optional().describe("Make it a terminal screen, sized in cells; width and height are then ignored. Read the terminal skill first"),
+      take_of: z.string().optional().describe("The page this is another version of: the new page is a take of it (an option), beside it under one card, not a page of its own. Use it whenever the screen is already in the design"),
     },
     run: async (doc, a, ctx) => {
       const ids = new Ids(doc, ctx);
       const pageId = ids.next();
       const frameId = ids.next();
       const last = pagesInOrder(doc).at(-1)?.index ?? null;
+      const of = a.take_of === undefined ? undefined : takeOf(doc, a.take_of);
       const style: Style = a.terminal
         ? screenStyle(a.terminal)
         : { width: `${a.width}px`, ...(a.height ? { height: `${a.height}px`, overflow: "hidden" } : {}) };
@@ -127,7 +135,7 @@ export const pagesTools = {
           {
             kind: "put", collection: "pages",
             value: {
-              id: pageId, name: a.name, ...(a.sources?.length ? { sources: a.sources } : {}), ...(a.route !== undefined ? { route: a.route } : {}), ...(a.state !== undefined ? { state: a.state } : {}), frame: frameId, index: generateKeyBetween(last, null),
+              id: pageId, name: a.name, ...(a.sources?.length ? { sources: a.sources } : {}), ...(of ? { option: { of: of.id, idea: `${a.name}: another take` } } : a.route !== undefined ? { route: a.route } : {}), ...(a.state !== undefined && !of ? { state: a.state } : {}), frame: frameId, index: generateKeyBetween(last, null),
               ...(a.terminal ? { terminal: a.terminal } : {}),
             },
           },
@@ -232,6 +240,20 @@ export const pagesTools = {
     },
   }),
 
+  make_take: tool({
+    description: "Make a page that is already in the design a take of another page: it leaves its route and sits under that page's card as one of its options (a snapshot made as a page of its own, a copy that is really another version). idea says what it tries, in a line.",
+    input: { page: z.string(), of: z.string(), idea: z.string().min(1).max(200).optional() },
+    run: async (doc, a) => {
+      const p = page(doc, a.page);
+      const live = takeOf(doc, a.of);
+      if (live.id === p.id) throw new ToolError("a page can't be a take of itself");
+      if (optionsOf(doc, p.id).length) throw new ToolError(`${p.name} has takes of its own; pick one of them first`);
+      const { route: _r, state: _s, picked: _k, x: _x, y: _y, ...rest } = p;
+      const value = { ...rest, option: { of: live.id, idea: a.idea?.trim() || `${p.name}, as it was made` } };
+      return { label: `${p.name} is a take of ${live.name}`, ops: [{ kind: "put", collection: "pages", value }], reply: `${p.name} is now a take of ${live.name}; pick_option makes it the live one.` };
+    },
+  }),
+
   pick_option: tool({
     description:
       "Make an option the live page: it takes the page's route, links and flows to the page now reach it, and the page that was live becomes one of its options. " +
@@ -296,7 +318,7 @@ export const pagesTools = {
     description: "Import prepared, inline-styled HTML as editable layers, either into a parent frame or onto a new page, in one undoable edit. Images use asset: attachment ids; per-element data-buni-sources retains implementation context.",
     input: {
       html: z.string().min(1), parent: z.string().optional(), after: z.string().optional(),
-      page: z.object({ name: z.string().min(1), width: z.number().int().positive().default(1440), route: z.string().optional() }).optional(),
+      page: z.object({ name: z.string().min(1), width: z.number().int().positive().default(1440), route: z.string().optional(), take_of: z.string().optional().describe("The page this is another version of: the import becomes a take of it, not a page of its own") }).optional(),
     },
     run: async (doc, a, ctx) => {
       if (Boolean(a.parent) === Boolean(a.page)) throw new ToolError("Choose a parent frame or a new page.");
@@ -309,7 +331,8 @@ export const pagesTools = {
       if (a.page) {
         parent = ids.next(); madePage = ids.next();
         ops.push({ kind: "put", collection: "nodes", value: { id: parent, kind: "frame", name: a.page.name, index: "a0", style: { width: `${a.page.width}px` } } });
-        ops.push({ kind: "put", collection: "pages", value: { id: madePage, name: a.page.name, frame: parent, index: generateKeyBetween(pagesInOrder(doc).at(-1)?.index ?? null, null), ...(a.page.route !== undefined ? { route: a.page.route } : {}), ...(drafts[0]?.sources ? { sources: drafts[0].sources } : {}) } });
+        const of = a.page.take_of === undefined ? undefined : takeOf(doc, a.page.take_of);
+        ops.push({ kind: "put", collection: "pages", value: { id: madePage, name: a.page.name, frame: parent, index: generateKeyBetween(pagesInOrder(doc).at(-1)?.index ?? null, null), ...(of ? { option: { of: of.id, idea: `${a.page.name}, as imported` } } : a.page.route !== undefined ? { route: a.page.route } : {}), ...(drafts[0]?.sources ? { sources: drafts[0].sources } : {}) } });
       } else if (!parent || node(doc, parent).kind !== "frame") throw new ToolError("Import into a frame or a new page.");
       if (!parent) throw new ToolError("No destination frame.");
       const created: Id[] = [];
@@ -328,7 +351,7 @@ export const pagesTools = {
     description: "Convert a static HTML page or selected section into editable Buni layers, with resolved CSS, images and source context. Give exactly one of html, url or file, and either a new page or a parent frame. selector picks one element; width resolves responsive styles. Needs Chrome/Chromium/Edge on the host. Scripts and cookies are excluded unless live is set: live opens the url with its scripts running (local Buni only), cookies signs it in, wait_for waits for what must show. The design import is one undoable edit.",
     input: {
       ...htmlPageInput, parent: z.string().optional(), after: z.string().optional(),
-      page: z.object({ name: z.string().min(1), width: z.number().int().min(240).max(3840).optional(), route: z.string().optional() }).optional(),
+      page: z.object({ name: z.string().min(1), width: z.number().int().min(240).max(3840).optional(), route: z.string().optional(), take_of: z.string().optional().describe("The page in the design this is a version of: the import becomes a take of it (an option), not a page of its own. A snapshot of a screen the design has goes here") }).optional(),
     },
     run: async (doc, a, ctx): Promise<ToolOutput> => {
       const width = placeFor(doc, a);

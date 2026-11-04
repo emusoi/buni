@@ -95,8 +95,9 @@ Snap from Chrome:   buni extension writes a Chrome extension; with it the person
                     snapped into before. "My latest snap": buni snaps lists them, newest first, with the person's
                     brief; read the file with buni tree and redesign from the snapshot (critique skill). To keep it,
                     buni adopt SCRATCH.buni PROJECT_FOLDER moves it into a project.
-Improve a real page: snapshot it with import_html_page onto "<Screen> · Now", find what's wrong there, fix it on a
-                    duplicate_page "<Screen> · Next". Read buni skills critique first.
+Improve a real page: snapshot it with import_html_page (page: {take_of: PAGE} when the screen is in the design already:
+                    the snapshot is a take of it), find what's wrong, save_version, then fix the page in place; or make
+                    takes (explore_page) and pick_option one. A screen the design has is never a second page. Read buni skills critique first.
 Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"name":"Proof first","idea":"…"}]}'; change each copy,
                     then compare_options '{"page":"PAGE"}' and pick_option '{"option":"ID","why":"…"}'
 Inspiration:        buni call FILE find_inspiration '{"query":"settings page"}' finds finished UI patterns (buni's and the

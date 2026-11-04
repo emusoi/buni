@@ -36,10 +36,13 @@ function Thumb({ doc, page, dir, mode }: { doc: Doc; page: Id; dir: string; mode
     return () => URL.revokeObjectURL(next);
   }, [html]);
   const width = widthOf(doc, page);
-  const { scale, w, h } = fit(width, heightOf(doc, page));
+  // Fitted by the page's own height first, then by the height it draws at (a phone screen is taller than it is wide).
+  const [drawn, setDrawn] = useState<number>();
+  const { scale, w, h } = fit(width, drawn ?? heightOf(doc, page));
   return (
     <div className="take-thumb" style={{ width: w, height: h }}>
-      {url && <iframe title={doc.pages[page]?.name} sandbox={doc.pages[page]?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={Math.round(h / scale)} style={{ transform: `scale(${scale})` }} />}
+      {url && <iframe title={doc.pages[page]?.name} sandbox={doc.pages[page]?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={Math.round(h / scale)} style={{ transform: `scale(${scale})` }}
+        onLoad={(e) => { const d = e.currentTarget.contentDocument; const tall = d?.documentElement.scrollHeight; if (tall && Math.abs(tall - (drawn ?? heightOf(doc, page))) > 8) setDrawn(tall); }} />}
     </div>
   );
 }

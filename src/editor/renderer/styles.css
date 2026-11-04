@@ -2224,7 +2224,7 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .take-thumb { position: relative; overflow: hidden; border-radius: 6px; background: var(--sidebar); box-shadow: var(--shadow-1); }
 .take.live .take-thumb { box-shadow: 0 0 0 2px var(--accent); }
 .take-thumb iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
-.take-live { position: absolute; left: 10px; top: 10px; height: 20px; padding: 0 8px; border-radius: 10px; background: var(--accent); color: var(--on-ink); font-size: 11px; font-weight: 600; line-height: 20px; }
+.take-live { position: absolute; left: 10px; bottom: 10px; height: 20px; padding: 0 8px; border-radius: 10px; background: var(--accent); color: var(--on-ink); font-size: 11px; font-weight: 600; line-height: 20px; }
 .take-name { display: flex; align-items: baseline; gap: 8px; font-size: 14px; color: var(--ink); }
 .take-name small { color: var(--label); font-size: 11px; }
 .take-idea { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-2); }

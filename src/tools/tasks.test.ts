@@ -61,3 +61,26 @@ test("picking an option keeps the why on the winner; the rest become its takes",
   const back = parseDoc(serializeDoc(ws.view()));
   expect(back.ok && back.doc.pages[proof.id]?.picked?.over.length).toBe(2);
 });
+
+test("a screen the design has is never a second page: create_page and import_html take_of make a take; make_take turns a stray page into one", async () => {
+  const ws = await Workspace.open(file);
+  const made = await ws.call("claude", "create_page", { name: "Pricing · tighter", route: "/pricing-2", take_of: "pricing" });
+  expect(made.ok).toBe(true);
+  const take = Object.values(ws.view().pages).find((p) => p.name === "Pricing · tighter")!;
+  expect(take.option).toEqual({ of: "pricing", idea: "Pricing · tighter: another take" });
+  expect(take.route).toBeUndefined();
+  // A take of a take lands under the same page.
+  const again = await ws.call("claude", "import_html", { html: "<main><h1>Pricing, as it ships</h1></main>", page: { name: "Pricing · Now", take_of: take.id } });
+  expect(again.ok).toBe(true);
+  const snap = Object.values(ws.view().pages).find((p) => p.name === "Pricing · Now")!;
+  expect(snap.option?.of).toBe("pricing");
+  expect(snap.option?.idea).toBe("Pricing · Now, as imported");
+  // A page made as a page of its own becomes a take after the fact.
+  const stray = await ws.call("claude", "create_page", { name: "Pricing · Next", route: "/pricing-next" });
+  const strayId = stray.reply.match(/page (\w+)/)?.[1] ?? "";
+  const fixed = await ws.call("you", "make_take", { page: strayId, of: "pricing", idea: "Tighter tiers" });
+  expect(fixed.ok).toBe(true);
+  expect(ws.view().pages[strayId]).toMatchObject({ option: { of: "pricing", idea: "Tighter tiers" } });
+  expect(ws.view().pages[strayId]?.route).toBeUndefined();
+  expect((await ws.call("you", "make_take", { page: "pricing", of: "pricing" })).ok).toBe(false);
+});

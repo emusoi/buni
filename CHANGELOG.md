@@ -5,6 +5,12 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 
 ## Unreleased
 
+- Changed: a screen the design already has is never a second page. `create_page` and `import_html_page` take
+  `take_of`: the new page is a take of that page, under one card; `make_take` turns a page made by mistake into one.
+  The agents' instructions say so; "Screen · Now" and "Screen · Next" pages are gone from the guidance.
+- Fixed: a take's picture is fitted to the page as it draws, so a phone screen shows whole; the Live now badge sits
+  at the bottom, off a phone's status bar. The board's play and mode chips and the version rail show only when
+  zoomed close enough to read them.
 - Added: a page's versions. `save_version` keeps a page as it is, with a note; the editor keeps one on its own at
   the start of each stretch of an agent's work. On the canvas a rail under the page's label reads v1 — v2 — v3:
   click an older one to look at it in place, greyed beside the live page; Restore puts it back as one edit;
