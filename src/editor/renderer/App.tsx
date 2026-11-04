@@ -249,6 +249,17 @@ export function App({ snap }: { snap: Snapshot }) {
   }, [doc.nodes]);
   const pages = pagesInOrder(doc);
   const activePage = page && doc.pages[page] ? page : pages[0]?.id;
+  // The open page stopped being the live one (a pick undone, another take picked elsewhere): follow the live page,
+  // so what the canvas shows in that spot is what ships.
+  // Only for the same page turning into a take: opening a take on purpose (Edit in the takes sheet) stays there.
+  const wasTake = useRef<{ page: Id | undefined; take: boolean }>({ page: undefined, take: false });
+  useEffect(() => {
+    const p = activePage ? doc.pages[activePage] : undefined;
+    const isTake = Boolean(p?.option);
+    const before = wasTake.current;
+    wasTake.current = { page: activePage, take: isTake };
+    if (isTake && before.page === activePage && !before.take && p?.option && doc.pages[p.option.of]) openPage(p.option.of);
+  }, [doc.pages, activePage]); // eslint-disable-line react-hooks/exhaustive-deps
   const connected = snap.connected ?? [];
   const colorOf = agentColor;
   // What agents changed in the last few seconds lands on the canvas in their colour; a tick clears it after.
@@ -761,10 +772,10 @@ export function App({ snap }: { snap: Snapshot }) {
                     const here = spots.find((sp) => sp.nodes[0] !== undefined && pageOfNode(doc, sp.nodes[0]) === p.id);
                     return here && <span className="page-agent" style={{ background: here.color }} title={`${here.agent} is working here`} />;
                   })()}
-                  <span className="meta">{p.option ? "option" : (() => {
+                  <span className="meta">{p.option ? "take" : (() => {
                     // Other takes on this page wait under it (explore_page); pick_option makes one live.
                     const n = optionsOf(doc, p.id).length;
-                    return n ? `${pageLabel(doc, p)} · ${n} option${n === 1 ? "" : "s"}` : pageLabel(doc, p);
+                    return n ? `${pageLabel(doc, p)} · ${n} take${n === 1 ? "" : "s"}` : pageLabel(doc, p);
                   })()}</span>
                 </button>
               </Fragment>

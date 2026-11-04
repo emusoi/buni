@@ -867,6 +867,8 @@ export function pagesInOrder(doc: Doc): Page[] {
 
 /** What a page is at a glance: its route, or a graphic's size ("512×512"). */
 export function pageLabel(doc: Doc, page: Page): string {
+  // A take says whose it is: it has no route of its own while it waits under that page.
+  if (page.option) return `take of ${doc.pages[page.option.of]?.name ?? "a page"}`;
   const t = page.terminal;
   if (t) return `${t.surface.replace("-", " ")} · ${t.cols}${t.rows !== undefined ? `×${t.rows}` : " cols"}`;
   if (page.route !== undefined) return page.state ? `${page.route} · ${page.state}` : page.route;
