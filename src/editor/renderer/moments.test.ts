@@ -51,3 +51,26 @@ test("a page at one of its versions: the layers then, not the ones added since",
   expect(then.nodes.old?.name).toBe("Old as it was");
   expect(doc.nodes.added).toBeDefined();
 });
+
+test("what differs between a page and one of its versions: gone, new, text, style, moved", async () => {
+  const { diffVersion, diffCss } = await import("./pageVersions.ts");
+  const doc: Doc = { ...emptyDoc(), nodes: {} };
+  doc.pages.p = { id: "p", name: "Home", route: "/", frame: "root" } as Doc["pages"][string];
+  doc.nodes.root = frame("root", undefined, "a");
+  doc.nodes.title = { id: "title", parent: "root", index: "a", name: "Title", style: { color: "red" }, kind: "text", text: "Now" } as Node;
+  doc.nodes.added = frame("added", "root", "b", { name: "Added" });
+  doc.nodes.moved = frame("moved", "root", "c", { name: "Moved" });
+  const v = { id: "v", page: "p", n: 1, at: "2026-11-04T00:00:00Z", by: "you", nodes: {
+    root: frame("root", undefined, "a"),
+    title: { id: "title", parent: "root", index: "a", name: "Title", style: { color: "blue" }, kind: "text", text: "Then" } as Node,
+    gone: frame("gone", "root", "b", { name: "Gone" }),
+    moved: frame("moved", "root", "a0", { name: "Moved" }),
+  } };
+  const d = diffVersion(doc, v);
+  expect(d.added.map((n) => n.name)).toEqual(["Added"]);
+  expect(d.removed.map((n) => n.name)).toEqual(["Gone"]);
+  expect(d.changed.map((c) => [c.node.name, c.what])).toEqual([["Title", "text · color"], ["Moved", "moved"]]);
+  expect(diffCss(d, "then")).toContain(".b-gone{");
+  expect(diffCss(d, "then")).not.toContain(".b-added{");
+  expect(diffCss(d, "now")).toContain(".b-added{");
+});

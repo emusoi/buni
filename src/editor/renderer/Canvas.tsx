@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { childrenOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
-import { docAtVersion } from "./pageVersions.ts";
+import { diffCss, diffVersion, docAtVersion } from "./pageVersions.ts";
 import { ago } from "./Home.tsx";
 import { NameDialog } from "./Ask.tsx";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
@@ -700,7 +700,7 @@ const Artboard = memo(function Artboard(props: {
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
-      {page && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} />}
+      {page && props.detail && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
       {page && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
@@ -757,11 +757,24 @@ const Artboard = memo(function Artboard(props: {
  * The page's points in time under its label: v1 — v2 — v3, then the page as it is. An older one opens beside the
  * page, greyed and read only, with Restore and Branch a take; Save a version keeps the page as it is, with a note.
  */
-function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void }) {
+function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming, liveFrame }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void; liveFrame: RefObject<HTMLIFrameElement | null> }) {
   const versions = pageVersionsOf(doc, page);
   const seen = looking !== undefined ? doc.versions[looking] : undefined;
   const now = Date.now();
-  const ghost = useMemo(() => (seen ? srcdoc(docAtVersion(doc, seen), page, dir, "", mode) : undefined), [doc, seen, page, dir, mode]);
+  // What differs between then and now: outlined on both boards, listed under the version.
+  const diff = useMemo(() => (seen ? diffVersion(doc, seen) : undefined), [doc, seen]);
+  const ghost = useMemo(() => (seen && diff ? srcdoc(docAtVersion(doc, seen), page, dir, diffCss(diff, "then"), mode) : undefined), [doc, seen, diff, page, dir, mode]);
+  useEffect(() => {
+    const d = liveFrame.current?.contentDocument;
+    if (!d) return;
+    d.getElementById("buni-diff")?.remove();
+    if (!diff) return;
+    const s = d.createElement("style");
+    s.id = "buni-diff";
+    s.textContent = diffCss(diff, "now");
+    d.head.append(s);
+    return () => s.remove();
+  }, [diff, liveFrame]);
   const [url, setUrl] = useState<string>();
   useEffect(() => {
     if (!ghost) { setUrl(undefined); return; }
@@ -769,11 +782,8 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
     setUrl(next);
     return () => URL.revokeObjectURL(next);
   }, [ghost]);
-  if (!versions.length && !naming) return (
-    <div className="version-rail" onPointerDown={(e) => e.stopPropagation()}>
-      <button type="button" className="vdot add" onClick={() => onNaming(true)}>+ Save a version</button>
-    </div>
-  );
+  // A page without versions shows no rail: Save a version is in the Inspector.
+  if (!versions.length) return null;
   const act = (tool: "restore_version" | "branch_version", v: PageVersion) => void window.buni.edit(tool, { version: v.id }).then(() => onLook(undefined));
   return (
     <>
@@ -788,11 +798,19 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
         <div className="ghost" style={{ left: width + 80, width }} onPointerDown={(e) => e.stopPropagation()}>
           <div className="ghost-label">
             <b>v{seen.n}</b><span className="dim">{seen.by} · {ago(seen.at, now)}{seen.note ? ` · ${seen.note}` : ""}</span>
+            {diff && <span className="dim">· {diff.added.length + diff.removed.length + diff.changed.length === 0 ? "the same as now" : `${diff.added.length + diff.removed.length + diff.changed.length} layers differ`}</span>}
             <span className="grow" />
             <button type="button" className="link-btn" onClick={() => act("restore_version", seen)}>Restore</button>
             <button type="button" className="link-btn" onClick={() => act("branch_version", seen)}>Branch a take</button>
             <button type="button" className="link-btn" aria-label="Close" onClick={() => onLook(undefined)}>×</button>
           </div>
+          {diff && (diff.added.length + diff.removed.length + diff.changed.length) > 0 && (
+            <ul className="ghost-diff">
+              {diff.removed.slice(0, 6).map((n) => <li key={`r${n.id}`}><b>{n.name}</b> gone since</li>)}
+              {diff.added.slice(0, 6).map((n) => <li key={`a${n.id}`}><b>{n.name}</b> new since</li>)}
+              {diff.changed.slice(0, 8).map((c) => <li key={`c${c.node.id}`}><b>{c.node.name}</b> {c.what}</li>)}
+            </ul>
+          )}
           <div className="ghost-frame" style={{ width }}>{url && <iframe title={`v${seen.n}`} sandbox="allow-same-origin" src={url} width={width} height={900} />}</div>
         </div>
       )}

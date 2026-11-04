@@ -9,7 +9,8 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   the start of each stretch of an agent's work. On the canvas a rail under the page's label reads v1 — v2 — v3:
   click an older one to look at it in place, greyed beside the live page; Restore puts it back as one edit;
   Branch a take starts a direction from it (`restore_version`, `branch_version`, `versions`, `delete_version`).
-  Versions live in the file (`versions`); a file without any is written as it was.
+  Beside the version, what differs from the page now is outlined on both and listed: layers gone since, new since,
+  text, style, moved. Versions live in the file (`versions`); a file without any is written as it was.
 - Added: tasks. What the person asks for, in their words, is a task: added from the Agents panel (or `add_task`),
   queued until an agent takes it (`take_task`), working beside the agent's name, done with the agent's note
   (`finish_task`). An agent hears of a new task on its next call; `tasks` lists them, queued first.
