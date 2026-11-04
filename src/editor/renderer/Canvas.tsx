@@ -5,7 +5,8 @@ import { linkLabel, routeAll, type Arrow } from "./links.ts";
 import { branchPath, lineage } from "./lineage.ts";
 import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
 import { sketchesOpen } from "buni/tools/ink.ts";
-import { fontFaces, fontSlug, renderComponent, renderPage, liveHead } from "buni/tools/html.ts";
+import { fontFaces, fontSlug, renderComponent, renderPage, liveHead, motionCss } from "buni/tools/html.ts";
+import { entrancesOn, motionEnd } from "./moments.ts";
 
 interface Props {
   /** The design with what it imports: imported components render in instances, but aren't boards here. */
@@ -681,6 +682,24 @@ const Artboard = memo(function Artboard(props: {
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
         {page?.live && <span className="board-live" title="A live page: its scripts and libraries run here">Scripts run</span>}
       </button>
+      {page && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
+        <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => {
+            const f = frame.current;
+            if (!f) return;
+            // A live page runs again from the top; a still one gets its motion for as long as it plays, then rests.
+            if (page.live) { f.src = f.src; return; }
+            const d = f.contentDocument;
+            if (!d) return;
+            d.getElementById("buni-play")?.remove();
+            const s = d.createElement("style");
+            s.id = "buni-play";
+            s.textContent = motionCss(props.doc, { scrollByTime: true });
+            d.head.append(s);
+            setTimeout(() => s.remove(), motionEnd(props.doc, page.id) + 200);
+          }}>▷</button>
+      )}
       {page && props.modes && props.modes.length > 0 && props.onMode && (
         <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
           onPointerDown={(e) => e.stopPropagation()} onClick={() => { const i = props.mode ? props.modes!.indexOf(props.mode) : -1; props.onMode?.(props.modes![i + 1]); }}>

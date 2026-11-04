@@ -11,11 +11,14 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 - Added: the why stays on the canvas. `pick_option` records why a page won and what it was chosen over
   (`picked` on the page); the canvas draws a dashed line from a page to each of its options and the why beside the
   winner, so a rejected direction stays in view with its reason.
-- Added: moments of a live page. The Moments strip and `buni shot --frames` hold a live page's own script at each
-  time as well: the page runs on a held clock (`performance.now`, `requestAnimationFrame`, `setTimeout` and every
-  Web Animation it makes), stepped 16 ms at a time to the moment, so Motion or GSAP work lands where it would be;
-  the first three seconds when nothing says when it ends, a loop caught where it is. Headless drawing inlines the
-  page's files, since a file document can't load a module script.
+- Added: ▷ on a page's board plays its motion there, on the canvas: a still page's entrances run once and it rests
+  again; a live page runs from the top. The Moments strip of a day earlier is gone: six held frames under the
+  canvas were more than the question needed.
+- Added: `buni shot --frames` holds a live page's own script at each time as well: the page runs on a held clock
+  (`performance.now`, `requestAnimationFrame`, `setTimeout` and every Web Animation it makes), stepped 16 ms at a
+  time to the moment, so Motion or GSAP work lands where it would be; the first three seconds when nothing says
+  when it ends, a loop caught where it is. Headless drawing inlines the page's files, since a file document can't
+  load a module script.
 - Added: agent state in the editor. The Agents panel shows, for each connected agent, the tool it runs now (or ran
   last) and when, and three ways to steer it: Pause holds its next call until Continue, Ask it says something the
   agent reads on top of its next tool reply, Undo last takes back its latest edit. The host hooks are `hold` and
@@ -30,9 +33,7 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
   URL), and edits the files in place; the board says "Scripts run".
 - Added: motion in the editor reads as a sentence. The Inspector's Motion section shows one trigger at a time (Load,
   Scroll, Hover, Press, a dot on those set), the effect as chips, duration, easing, delay and children one by one,
-  and draws the curve. A page whose layers enter gets a Moments strip under the canvas: six frames from rest to
-  the last arrival, each held at its time (the same `buni shot --frames` draws), Play beside them, and a Reduced
-  motion switch showing what people who ask for less see.
+  and draws the curve.
 - Added: a page drawn in a token mode of its own (☾ beside its label on the board), over the canvas-wide one; the
   layer being dragged travels with the pointer; SVG or HTML on the clipboard pastes as layers into the selected frame;
   a mesh gradient fill (◍ beside the fill) from the design's colours.
