@@ -10,20 +10,23 @@
    canvas carry the colour. The layout keeps Apple's structure (designs/buni-hig); the look is buni's own
    (designs/buni-hig/identity.buni, page Minimal). */
 :root {
-  --sidebar: #f6f6f4;
+  --window: #f2f2f7;
+  --sidebar: #f9f9fb;
+  --seg: rgba(118, 118, 128, 0.12);
   --hover: rgba(24, 24, 27, 0.05);
   --content: #ffffff;
   --chip: rgba(24, 24, 27, 0.05);
-  --canvas: #f6f6f4;
-  --ink: #18181b;
-  --ink-2: #6b6b73;
+  --canvas: #f2f2f7;
+  --ink: #1c1c1e;
+  --ink-2: #6c6c70;
   --label: #a1a1a8;
   --placeholder: #b4b4ba;
-  --rule: rgba(24, 24, 27, 0.08);
+  --rule: rgba(60, 60, 67, 0.12);
   --green: #1f8a4c;
-  --accent: #2f6bff;
-  --accent-ink: #1f55d6;
-  --accent-tint: rgba(47, 107, 255, 0.1);
+  /* Wazo's blue, darkened to #0062CC so white text on it and it on white both pass AA (#007AFF gets 4.0:1). */
+  --accent: #0062cc;
+  --accent-ink: #0062cc;
+  --accent-tint: rgba(0, 98, 204, 0.1);
   --warn: #b45309;
   --warn-tint: #fff6e8;
   --radius: 6px;
@@ -31,7 +34,7 @@
   --shadow-1: 0 0 0 1px rgba(24, 24, 27, 0.08);
   --shadow-2: 0 0 0 1px rgba(24, 24, 27, 0.08), 0 8px 24px rgba(24, 24, 27, 0.08);
   --control: 28px;
-  --font: "Instrument Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Instrument Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --surface-2: #fafafa;
   --on-ink: #ffffff;
@@ -798,11 +801,13 @@ svg { flex-shrink: 0; }
 /* Dark: the same restraint, on near-black graphite. Designs on the canvas keep their own colours. */
 @media (prefers-color-scheme: dark) {
 :root {
-    --sidebar: #111113;
+    --window: #000000;
+    --sidebar: #1c1c1e;
+    --seg: rgba(118, 118, 128, 0.24);
     --hover: rgba(255, 255, 255, 0.06);
     --content: #18181b;
     --chip: rgba(255, 255, 255, 0.07);
-    --canvas: #111113;
+    --canvas: #000000;
     --ink: #ededef;
     --ink-2: #9f9fa9;
   --ink-3: #8a8a92;
@@ -813,11 +818,11 @@ svg { flex-shrink: 0; }
     --line-2: rgba(255, 255, 255, 0.13);
     --wire: #5a5a62;
     --green: #3ecf7a; --green-tint: rgba(62, 207, 122, 0.14);
-    --accent: #5b8cff;
-    --accent-ink: #8aaeff;
-    --accent-tint: rgba(91, 140, 255, 0.16);
+    --accent: #0a84ff;
+    --accent-ink: #409cff;
+    --accent-tint: rgba(10, 132, 255, 0.18);
     --warn: #f5a524; --warn-tint: rgba(245, 165, 36, 0.14);
-    --surface: #18181b;
+    --surface: #2c2c2e;
     --surface-2: #1c1c20;
   --on-ink: #ffffff;
     --purple: #b98cf0; --purple-ink: #cdb0f5; --purple-tint: rgba(185, 140, 240, 0.16);
@@ -2300,3 +2305,31 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .flip-use .field { width: 240px; height: 30px; padding: 0 9px; border: 0; border-radius: 6px; background: var(--sidebar); font-size: 12px; color: var(--ink); }
 .vdot.more { cursor: default; color: var(--label); }
 .vdot.more:hover { background: none; color: var(--label); }
+
+/* ---------- Wazo look (designs/buni-web, "· Wazo look" pages) ----------
+   The window is grouped grey; the sidebar and the inspector float on it as inset rounded cards, the canvas sits open
+   between them. The inspector's sections are grouped cells, its tabs a segmented control, and buttons are capsules. */
+body, .app { background: var(--window); }
+.app { padding: 8px; gap: 8px; }
+.sidebar { border-radius: 22px; background: var(--sidebar); box-shadow: 0 0 0 0.5px var(--rule); overflow: hidden; }
+.main { background: transparent; box-shadow: none; }
+.workspace { border-top: 0; gap: 8px; }
+.inspector-panel { border-left: 0; border-radius: 22px; background: var(--sidebar); box-shadow: 0 0 0 0.5px var(--rule); }
+.app.editor { padding: 0; }
+.app.editor > .sidebar, .app.editor .inspector-panel { border-radius: 22px; background: var(--sidebar); box-shadow: 0 0 0 0.5px var(--rule), 0 12px 32px -16px rgba(0, 0, 0, 0.22); }
+.segmented, .app .panel-tabs .segmented, .app.editor .segmented, .app.editor .side-tabs { justify-content: stretch; gap: 2px; padding: 2px; border-radius: 9px; background: var(--seg); }
+.segmented button, .app .panel-tabs .segmented button, .app.editor .segmented button, .app.editor .side-tabs button { flex: 1; padding: 0 8px; border-radius: 7px; font-weight: 500; color: var(--ink); }
+.segmented button.on, .app .panel-tabs .segmented button.on, .app.editor .segmented button.on, .app.editor .side-tabs button.on { background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); font-weight: 600; }
+.app .panel-tabs { height: auto; padding: 12px 12px 4px; border-bottom: 0; }
+.app .panel-tabs .segmented { flex: 1; }
+.app.editor .side-tabs { flex: none; margin: 8px 8px 0; }
+.inspector { padding: 12px; }
+.inspector > section, .inspector > .page-summary { padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
+.row { border-radius: 8px; }
+.btn, .bar-btn { border-radius: 999px; }
+.btn { border: 0; background: var(--seg); color: var(--accent-ink); }
+.btn:hover { background: var(--hover); }
+.btn.primary { background: var(--accent); color: #fff; }
+.home { border-top: 0; }
+.card { border-radius: 14px; box-shadow: none; }
+.card:hover { box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.25); }
