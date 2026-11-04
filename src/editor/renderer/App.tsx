@@ -772,11 +772,12 @@ export function App({ snap }: { snap: Snapshot }) {
                     const here = spots.find((sp) => sp.nodes[0] !== undefined && pageOfNode(doc, sp.nodes[0]) === p.id);
                     return here && <span className="page-agent" style={{ background: here.color }} title={`${here.agent} is working here`} />;
                   })()}
-                  <span className="meta">{p.option ? "take" : (() => {
-                    // Other takes on this page wait under it (explore_page); pick_option makes one live.
-                    const n = optionsOf(doc, p.id).length;
-                    return n ? `${pageLabel(doc, p)} · ${n} take${n === 1 ? "" : "s"}` : pageLabel(doc, p);
-                  })()}</span>
+                  <span className="meta">{p.option ? "take" : pageLabel(doc, p)}</span>
+                  {/* Other takes on this page wait under it (explore_page); pick_option makes one live. The count never clips. */}
+                  {(() => {
+                    const n = p.option ? 0 : optionsOf(doc, p.id).length;
+                    return n > 0 && <span className="takes" title={`${n} take${n === 1 ? "" : "s"} waiting on this page`}><GitBranch size={11} strokeWidth={2} />{n}</span>;
+                  })()}
                 </button>
               </Fragment>
             );

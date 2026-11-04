@@ -169,8 +169,15 @@ function LinkSection({ doc, node, onError }: { doc: Doc; node: Node; onError: (m
   const component = componentOf(doc, node);
   if (node.parent === undefined || owners[component?.id ?? ""] !== undefined) return null;
   // A component's layer links on every use of it: here, and in the designs that build on this one (a core's nav).
+  const clicks = (id: Id) => Object.values(doc.connections).find((c) => c.node === id && c.trigger === "click" && !c.condition);
+  const own = Object.values(doc.connections).some((c) => c.node === node.id);
+  // A button's label clicks through to the button: say so, rather than "None" on a layer that does go somewhere.
+  let up = own ? undefined : node.parent;
+  while (up !== undefined && !clicks(up)) up = doc.nodes[up]?.parent;
+  const via = up === undefined ? undefined : clicks(up);
   return (
-    <Group title={component ? "Link on every use" : "Link"} empty={!Object.values(doc.connections).some((c) => c.node === node.id)} summary={Object.values(doc.connections).some((c) => c.node === node.id) ? undefined : "None"}>
+    <Group title={component ? "Link on every use" : "Link"} empty={!own} summary={own ? undefined : via ? `Via parent · ${pageName(doc, via.to)}` : "None"}>
+      {via && <span className="hint">Clicking it goes where the layer around it goes. A link here sets its own.</span>}
       <LinkPicker doc={doc} node={node.id} page={component?.id} onError={onError} />
     </Group>
   );
