@@ -115,7 +115,8 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
   const [spaces, setSpaces] = useState<Space[]>([]);
   useEffect(() => { void window.buni.spaces?.().then(setSpaces, () => undefined); }, []);
   const [spaceRoot, setSpaceRoot] = useState<string>(() => { try { return localStorage.getItem("buni:space") ?? ""; } catch { return ""; } });
-  const space = spaces.length > 1 ? spaces.find((s) => s.root === spaceRoot) ?? spaces[0] : undefined;
+  // One space still sets how folders read (each design starts in a folder of its own); the switcher shows from two.
+  const space = spaces.find((s) => s.root === spaceRoot) ?? spaces[0];
   const pickSpace = (root: string) => { setSpaceRoot(root); setFolder(undefined); try { localStorage.setItem("buni:space", root); } catch { /* a private window */ } };
   const inSpace = useMemo(() => (files ?? []).filter((f) => !space || f.space?.root === space.root), [files, space]);
 
@@ -148,7 +149,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           </label>
         </div>
         <nav className="tree">
-          {space && (
+          {space && spaces.length > 1 && (
             <>
               <div className="section-label">Spaces</div>
               <div className="nav">
@@ -214,7 +215,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         <div className="home">
           {files && files.length > 0 && <header className="home-head">
             <div>
-              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space ? space.name : "Designs"}</h1>
+              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space && spaces.length > 1 ? space.name : "Designs"}</h1>
               {onlyAgents && <p>Designs a coding agent is editing right now.</p>}
             </div>
             <div className="home-actions">
