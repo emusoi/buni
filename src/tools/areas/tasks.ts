@@ -31,6 +31,9 @@ export const tasksTools = {
     input: { title: z.string().min(1).max(200), detail: z.string().max(4000).optional(), page: z.string().optional() },
     run: async (doc, a, ctx) => {
       if (a.page !== undefined && !doc.pages[a.page]) throw new ToolError(`page "${a.page}" does not exist`);
+      // The same ask, still open, is the same task: asking twice doesn't queue it twice.
+      const same = Object.values(doc.tasks).find((t) => t.state !== "done" && t.page === a.page && t.title.trim().toLowerCase() === a.title.trim().toLowerCase());
+      if (same) return { label: "Ask", ops: [], reply: `Task ${same.id} is already ${same.state}: ${same.title}` };
       const last = tasksInOrder(doc).at(-1)?.index ?? null;
       const task: Task = { id: new Ids(doc, ctx).next(), title: a.title.trim(), ...(a.detail?.trim() ? { detail: a.detail.trim() } : {}), state: "queued", ...(a.page ? { page: a.page } : {}), at: ctx.now(), index: generateKeyBetween(last, null) };
       return { label: `Ask: ${task.title}`, ops: [{ kind: "put", collection: "tasks", value: task }], reply: `Task ${task.id} is queued: ${task.title}` };

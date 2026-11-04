@@ -22,6 +22,9 @@ test("a task is queued in the person's words, taken by one agent, finished with 
   const id = added.reply.match(/Task (\w+) is queued/)?.[1] ?? "";
   expect(ws.view().tasks[id]).toMatchObject({ title: "Make the pricing cards scan faster", state: "queued", page: "pricing" });
   expect((await ws.call("you", "add_task", { title: "x", page: "nope" })).ok).toBe(false);
+  // Asking again, while it is open, doesn't queue a second one.
+  expect((await ws.call("you", "add_task", { title: "make the pricing cards scan faster ", page: "pricing" })).reply).toContain(`Task ${id} is already queued`);
+  expect(Object.keys(ws.view().tasks).length).toBe(1);
 
   const listed = (await ws.call("claude", "tasks", {})).reply;
   expect(listed).toContain(`${id} [queued] Make the pricing cards scan faster (on Pricing)`);
