@@ -496,7 +496,7 @@ async function login(server: string | undefined, withPassword: boolean): Promise
 }
 
 /** A command on a design kept on your buni server, named as `buni ls` shows it. */
-async function remoteCommand(cmd: string | undefined, name: string, args: readonly string[], as: string, out: (r: Reply) => number): Promise<number> {
+async function remoteCommand(cmd: string | undefined, name: string, args: readonly string[], as: string, out: (r: Reply) => number | Promise<number>): Promise<number> {
   const { bearer, download, findDesign, mcpUrl, proxyMcp } = await import("./account/remote.ts");
   const account = await signedIn();
   const path = await findDesign(account, name);
@@ -577,10 +577,11 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
   const handled = await ext?.run(cmd, file, args, flags);
   if (handled !== undefined) return handled;
   if (cmd !== undefined && AGENT_COMMANDS.has(cmd)) return needsAgent(cmd);
-  const out = (r: Reply) => {
-    console.log(json ? JSON.stringify({ ok: r.ok, reply: r.text }) : r.text);
-    return r.ok ? 0 : 1;
-  };
+  // Waits for the write to land: a reply over 64 KB piped into another command was cut off when the process ended
+  // before the pipe drained.
+  const out = (r: Reply): Promise<number> => new Promise((done) => {
+    process.stdout.write(`${json ? JSON.stringify({ ok: r.ok, reply: r.text }) : r.text}\n`, () => done(r.ok ? 0 : 1));
+  });
 
   switch (cmd) {
     case undefined:
