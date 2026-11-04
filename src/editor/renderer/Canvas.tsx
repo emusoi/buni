@@ -1,5 +1,8 @@
 import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
+import { childrenOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
+import { docAtVersion } from "./pageVersions.ts";
+import { ago } from "./Home.tsx";
+import { NameDialog } from "./Ask.tsx";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
 import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
@@ -331,6 +334,9 @@ const Artboard = memo(function Artboard(props: {
   onOpenTakes?: ((page: Id) => void) | undefined;
 }) {
   const { doc, pageId } = props;
+  /** An older version looked at in place, beside the live page. */
+  const [looking, setLooking] = useState<Id>();
+  const [naming, setNaming] = useState(false);
   // A board is a page or a component.
   const page = doc.pages[pageId];
   const component = doc.shared[pageId];
@@ -694,6 +700,7 @@ const Artboard = memo(function Artboard(props: {
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
+      {page && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} />}
       {page && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
@@ -745,6 +752,57 @@ const Artboard = memo(function Artboard(props: {
     </div>
   );
 });
+
+/**
+ * The page's points in time under its label: v1 — v2 — v3, then the page as it is. An older one opens beside the
+ * page, greyed and read only, with Restore and Branch a take; Save a version keeps the page as it is, with a note.
+ */
+function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void }) {
+  const versions = pageVersionsOf(doc, page);
+  const seen = looking !== undefined ? doc.versions[looking] : undefined;
+  const now = Date.now();
+  const ghost = useMemo(() => (seen ? srcdoc(docAtVersion(doc, seen), page, dir, "", mode) : undefined), [doc, seen, page, dir, mode]);
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (!ghost) { setUrl(undefined); return; }
+    const next = URL.createObjectURL(new Blob([ghost], { type: "text/html" }));
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [ghost]);
+  if (!versions.length && !naming) return (
+    <div className="version-rail" onPointerDown={(e) => e.stopPropagation()}>
+      <button type="button" className="vdot add" onClick={() => onNaming(true)}>+ Save a version</button>
+    </div>
+  );
+  const act = (tool: "restore_version" | "branch_version", v: PageVersion) => void window.buni.edit(tool, { version: v.id }).then(() => onLook(undefined));
+  return (
+    <>
+      <div className="version-rail" onPointerDown={(e) => e.stopPropagation()}>
+        {versions.map((v) => (
+          <button type="button" key={v.id} className={`vdot${looking === v.id ? " on" : ""}`} title={`${v.by} · ${ago(v.at, now)}${v.note ? ` · ${v.note}` : ""}`} onClick={() => onLook(looking === v.id ? undefined : v.id)}>v{v.n}</button>
+        ))}
+        <button type="button" className="vdot now" disabled title="The page as it is">now</button>
+        <button type="button" className="vdot add" onClick={() => onNaming(true)}>+ Save a version</button>
+      </div>
+      {seen && (
+        <div className="ghost" style={{ left: width + 80, width }} onPointerDown={(e) => e.stopPropagation()}>
+          <div className="ghost-label">
+            <b>v{seen.n}</b><span className="dim">{seen.by} · {ago(seen.at, now)}{seen.note ? ` · ${seen.note}` : ""}</span>
+            <span className="grow" />
+            <button type="button" className="link-btn" onClick={() => act("restore_version", seen)}>Restore</button>
+            <button type="button" className="link-btn" onClick={() => act("branch_version", seen)}>Branch a take</button>
+            <button type="button" className="link-btn" aria-label="Close" onClick={() => onLook(undefined)}>×</button>
+          </div>
+          <div className="ghost-frame" style={{ width }}>{url && <iframe title={`v${seen.n}`} sandbox="allow-same-origin" src={url} width={width} height={900} />}</div>
+        </div>
+      )}
+      {naming && (
+        <NameDialog title="Save a version" label="What this point is" initial="" action="Save" onClose={() => onNaming(false)}
+          onSubmit={(note) => { onNaming(false); void window.buni.edit("save_version", { page, note }); }} />
+      )}
+    </>
+  );
+}
 
 /** Which links the canvas draws: the active page's, all of them, or none. */
 type LinkMode = "page" | "all" | "off";

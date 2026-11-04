@@ -39,6 +39,7 @@ are the normative definition; this page is the map.
 | `shared` | Components: a reusable root, placed into pages as instances with overrides (per layer: `text`, `style`, styles `at` other widths, and `markup` for an svg layer, held to the same rules as an svg layer's own). A component may hold uses of other components, never of itself; a use overrides a layer inside one by the path of use ids to it (`"nav-item/label"`). |
 | `connections` | Links from a node to a page: what a click does. |
 | `flows`, `journeys` | Named paths through the screens, and the experience they describe. |
+| `versions` | A page's points in time: `page`, `n` (1, 2, 3… on that page), `at`, `by`, a `note`, and `nodes`, its layers then, with their ids. Restoring one puts those layers back as one edit; a take can be branched from one. |
 | `tasks` | What the person asked for, in their words: title, detail, the page it is about, `state` queued, working or done, who took it (`by`), the note it was finished with, and when each happened. |
 | `attachments` | Files beside the design (images, briefs), by path relative to the `.buni` file. |
 

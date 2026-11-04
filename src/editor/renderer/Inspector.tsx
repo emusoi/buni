@@ -1,7 +1,7 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, isUseLink, optionsOf, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, isUseLink, optionsOf, pageVersionsOf, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
@@ -10,6 +10,7 @@ import { NameDialog } from "./Ask.tsx";
 import { OwnersContext } from "./owners.ts";
 import { SmallSizes } from "./SmallSizes.tsx";
 import { Tokens } from "./Tokens.tsx";
+import { ago } from "./Home.tsx";
 import { curvePoints, motionSentence } from "./moments.ts";
 import { EASE } from "buni/tools/html.ts";
 import { Widths } from "./Widths.tsx";
@@ -742,6 +743,32 @@ function LiveSection({ doc, page, dir, onError }: { doc: Doc; page: Id; dir: str
   );
 }
 
+/** A page's points in time, newest first: who, when, what; Restore puts one back, Branch a take goes another way from it. */
+function VersionsSection({ doc, page, onError }: { doc: Doc; page: Id; onError: (m: string | undefined) => void }) {
+  const versions = pageVersionsOf(doc, page).slice().reverse();
+  const [naming, setNaming] = useState(false);
+  const now = Date.now();
+  const run = (tool: EditTool, args: Record<string, unknown>) => void window.buni.edit(tool, args).then((r) => onError(r.ok ? undefined : r.reply));
+  return (
+    <Group title="Versions" empty={!versions.length} summary={versions.length ? `${versions.length}` : "None yet"}>
+      <div className="takes-rows">
+        {versions.map((v) => (
+          <div key={v.id} className="version-row">
+            <span className="takes-dot" />
+            <span className="version-body"><b>v{v.n}</b> <span className="dim">{v.by} · {ago(v.at, now)}</span>{v.note && <span className="version-note">{v.note}</span>}</span>
+            <button type="button" className="link-btn" onClick={() => run("restore_version", { version: v.id })}>Restore</button>
+          </div>
+        ))}
+      </div>
+      <div className="takes-actions">
+        <button type="button" className="btn small" onClick={() => setNaming(true)}>Save a version</button>
+        <span className="hint">A point to come back to; ⌘Z is still there for the last edit.</span>
+      </div>
+      {naming && <NameDialog title="Save a version" label="What this point is" initial="" action="Save" onClose={() => setNaming(false)} onSubmit={(note) => { setNaming(false); run("save_version", { page, note }); }} />}
+    </Group>
+  );
+}
+
 /** A page's takes: the live one and its options, listed; Open shows them side by side to pick. */
 function TakesSection({ doc, page, onOpenTakes, onJump, onError }: { doc: Doc; page: Id; onOpenTakes: (page: Id) => void; onJump: (hit: Hit) => void; onError: (m: string | undefined) => void }) {
   const p = doc.pages[page];
@@ -827,6 +854,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onCompare={onCompare} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
+        {page && doc.pages[page] && <VersionsSection doc={doc} page={page} onError={setNotice} />}
         {page && doc.pages[page] && onOpenTakes && <TakesSection doc={doc} page={page} onOpenTakes={onOpenTakes} onJump={onJump} onError={setNotice} />}
         {page && doc.pages[page] && !doc.pages[page]?.terminal && <LiveSection doc={doc} page={page} dir={dir} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}

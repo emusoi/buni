@@ -1,6 +1,8 @@
 /// <reference path="./raw.d.ts" />
 import { readImportResource } from "./import-resource.ts";
 import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts";
+import { pagesChanged, versionOp } from "buni/tools/areas/page-versions.ts";
+import { Ids } from "buni/tools/kit.ts";
 import { checkImage } from "buni/tools/assets.ts";
 import { fontSlug } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
@@ -205,6 +207,18 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     lastEdit.set(key, now);
     if (now - last < 10 * 60_000) return;
     void saveVersion(store, o.ws, `Before ${author}'s changes`, author, before).then(() => o.listeners.forEach((fn) => fn()), () => undefined);
+    // Each page the stretch's first edit touched keeps a version of itself as it was, beside the design-level one.
+    const live = o.ws.view();
+    const pages = pagesChanged(before, live);
+    if (!pages.length) return;
+    const ids = new Ids(live, { author, now: () => new Date().toISOString(), randomId: () => crypto.randomUUID().replace(/-/g, "").slice(0, 8), readAttachment: async () => "", readImportFile: async () => { throw new Error("no"); }, saveImportImage: async () => { throw new Error("no"); } });
+    const at = new Date().toISOString();
+    const versions = { ...live.versions };
+    for (const p of pages) {
+      const op = versionOp(before, { ...live, versions }, p, author, at, `Before ${author}'s changes`, ids);
+      if (op.kind === "put" && op.collection === "versions") versions[op.value.id] = op.value;
+    }
+    void o.ws.restore(author, `Keep ${pages.length === 1 ? "a version" : `${pages.length} versions`} before ${author}'s changes`, { ...live, versions }).catch(() => undefined);
   }
 
   async function mcp(file: string, req: Request): Promise<Response> {

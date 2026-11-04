@@ -85,6 +85,7 @@ import {
   TASK_STATES,
   type Picked,
   type Task,
+  type PageVersion,
 } from "./doc.ts";
 
 export interface FormatError {
@@ -406,6 +407,21 @@ export class Reader {
   picked(v: unknown, path: string): Picked {
     const o = this.obj(v, path, ["why", "at", "over"]);
     return { why: this.str(o.why, join(path, "why")), at: this.str(o.at, join(path, "at")), over: this.list(o.over, join(path, "over"), (x, p) => this.str(x, p)) };
+  }
+
+  version(v: unknown, path: string): PageVersion {
+    const o = this.obj(v, path, ["id", "page", "n", "at", "by", "note", "nodes"]);
+    const n = o.n;
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 1) this.fail(join(path, "n"), "a version is numbered from 1");
+    return {
+      id: this.str(o.id, join(path, "id")),
+      page: this.str(o.page, join(path, "page")),
+      n: n as number,
+      at: this.str(o.at, join(path, "at")),
+      by: this.str(o.by, join(path, "by")),
+      ...(o.note !== undefined ? { note: this.str(o.note, join(path, "note")) } : {}),
+      nodes: this.byId(o.nodes, join(path, "nodes"), (x, p) => this.node(x, p)),
+    };
   }
 
   task(v: unknown, path: string): Task {
@@ -955,7 +971,7 @@ export class Reader {
   doc(v: unknown): Doc {
     const o = this.obj(v, "", [
       "buni", "imports", "tokensRef", "tokens", "modes", "pages", "nodes", "shared", "connections",
-      "flows", "journeys", "comments", "tasks", "sections", "rules", "attachments", "architecture",
+      "flows", "journeys", "comments", "tasks", "versions", "sections", "rules", "attachments", "architecture",
       ...LEGACY_COLLECTIONS,
     ]);
     if (o.buni !== FORMAT_VERSION) this.fail("buni", `unsupported format version (expected ${FORMAT_VERSION})`);
@@ -980,6 +996,7 @@ export class Reader {
     doc.comments = this.byId(o.comments, "comments", (x, p) => this.comment(x, p));
     // Tasks arrived after the format did; files without them simply have none.
     doc.tasks = o.tasks === undefined ? {} : this.byId(o.tasks, "tasks", (x, p) => this.task(x, p));
+    doc.versions = o.versions === undefined ? {} : this.byId(o.versions, "versions", (x, p) => this.version(x, p));
     // The design doc arrived after the format did; files without one simply have none.
     doc.sections = o.sections === undefined ? {} : this.byId(o.sections, "sections", (x, p) => this.section(x, p));
     doc.rules = this.byId(o.rules, "rules", (x, p) => this.rule(x, p));

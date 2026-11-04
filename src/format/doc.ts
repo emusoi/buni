@@ -376,6 +376,25 @@ export interface Stroke {
   points: number[];
 }
 
+/** A page as it was at one point: its layers then, with their ids, so a restore is one edit and the links hold. */
+export interface PageVersion {
+  id: Id;
+  page: Id;
+  /** 1, 2, 3… on that page. */
+  n: number;
+  /** ISO 8601. */
+  at: string;
+  by: string;
+  /** What this point is, in a line: "Before claude's changes", "Headline shortened". */
+  note?: string;
+  nodes: Record<Id, Node>;
+}
+
+/** A page's versions, oldest first. */
+export function pageVersionsOf(doc: Doc, pageId: Id): PageVersion[] {
+  return Object.values(doc.versions).filter((v) => v.page === pageId).sort((a, b) => a.n - b.n);
+}
+
 export const TASK_STATES = ["queued", "working", "done"] as const;
 export type TaskState = (typeof TASK_STATES)[number];
 /** One thing the person asked for, in their words: an agent takes it, works, and finishes it with a note. */
@@ -783,6 +802,8 @@ export interface Doc {
   comments: Record<Id, Comment>;
   /** What the person asked for, for an agent to take: queued, working, done. */
   tasks: Record<Id, Task>;
+  /** Points in time of a page: its layers as they were, to look at, restore or branch a take from. */
+  versions: Record<Id, PageVersion>;
   /** The design doc every agent reads first. */
   sections: Record<Id, Section>;
   rules: Record<Id, Rule>;
@@ -803,6 +824,7 @@ export function emptyDoc(): Doc {
     journeys: {},
     comments: {},
     tasks: {},
+    versions: {},
     sections: {},
     rules: {},
     attachments: {},

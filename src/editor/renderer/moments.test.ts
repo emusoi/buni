@@ -36,3 +36,18 @@ test("a take's picture fits its card: a wide page by width, a phone screen by he
   expect(fit(1440, 900)).toEqual({ scale: 212 / 900, w: 339, h: 212 });
   expect(fit(390, 844)).toEqual({ scale: 212 / 844, w: 98, h: 212 });
 });
+
+test("a page at one of its versions: the layers then, not the ones added since", async () => {
+  const { docAtVersion } = await import("./pageVersions.ts");
+  const doc: Doc = { ...emptyDoc(), nodes: {} };
+  doc.pages.p = { id: "p", name: "Home", route: "/", frame: "root" } as Doc["pages"][string];
+  doc.nodes.root = frame("root", undefined, "a");
+  doc.nodes.old = frame("old", "root", "a", { name: "Old" });
+  doc.nodes.added = frame("added", "root", "b", { name: "Added since" });
+  doc.nodes.elsewhere = frame("elsewhere", undefined, "a");
+  const v = { id: "v", page: "p", n: 1, at: "2026-11-04T00:00:00Z", by: "you", nodes: { root: frame("root", undefined, "a"), old: frame("old", "root", "a", { name: "Old as it was" }) } };
+  const then = docAtVersion(doc, v);
+  expect(Object.keys(then.nodes).sort()).toEqual(["elsewhere", "old", "root"]);
+  expect(then.nodes.old?.name).toBe("Old as it was");
+  expect(doc.nodes.added).toBeDefined();
+});
