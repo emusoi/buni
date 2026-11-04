@@ -546,6 +546,14 @@ export function App({ snap }: { snap: Snapshot }) {
   const app = useMemo(() => withProject(doc, others), [doc, others]);
   const fileOfPage = useMemo(() => new Map(project.flatMap((f) => f.pages.filter((p) => !snap.view.pages[p.id]).map((p) => [p.id, f.path] as const))), [project, snap.view.pages]);
   /** Opens a page here, or in the design of the project it belongs to. */
+  // The page as the website it is, in a tab of its own: real routes, links, scrolling and typing. A page with no route
+  // (a graphic) or a state of a screen isn't on the site; those play here.
+  const openSite = (page: Id) => {
+    const p = doc.pages[page];
+    const file = new URLSearchParams(location.search).get("file");
+    if (!file || p?.route === undefined || p.state !== undefined) return setPlay({ page, ...(shownJourney ? { flow: shownJourney } : {}) });
+    window.open(`/site${file.split("/").map(encodeURIComponent).join("/")}/?page=${encodeURIComponent(page)}`, `buni-site-${file}`);
+  };
   const showPage = (page: Id) => { const file = fileOfPage.get(page); if (file && !snap.view.pages[page]) openAt(file, page); else openPage(page); };
   /** Opens another design of the project, at one of its pages if given. */
   const openAt = (path: string, page?: Id) => {
@@ -788,7 +796,7 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "ask", title: "Connect a coding agent…", detail: "Claude Code or Codex", icon: Sparkles, run: () => setPanel("agent") },
     { id: "keys", title: "Keyboard shortcuts", icon: Keyboard, run: () => setKeysShown(true) },
     { id: "guides", title: "Design guides", icon: BookOpen, run: () => setGuides(true) },
-    ...(activePage ? [{ id: "play", title: `Play from ${doc.pages[activePage]?.name ?? "this page"}`, icon: PlayIcon, run: () => setPlay({ page: activePage }) }] : []),
+    ...(activePage ? [{ id: "site", title: `Open ${doc.pages[activePage]?.name ?? "this page"} as a website`, icon: PlayIcon, run: () => openSite(activePage) }, { id: "play", title: `Review a flow from ${doc.pages[activePage]?.name ?? "this page"}`, detail: "Play, with notes", icon: PlayIcon, run: () => setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) }) }] : []),
     { id: "site", title: "Share as a website…", detail: "HTML + CSS", icon: Share, run: () => void window.buni.exportSite().then((r) => r && setToast(`Exported ${r.files} files to ${tilde(r.dir)}`)) },
     { id: "undo", title: "Undo", keys: "⌘Z", icon: Undo2, run: () => void window.buni.undo().then((r) => setToast(r.reply)) },
     { id: "redo", title: "Redo", keys: "⇧⌘Z", icon: Redo2, run: () => void window.buni.redo().then((r) => setToast(r.reply)) },
@@ -852,7 +860,7 @@ export function App({ snap }: { snap: Snapshot }) {
           {panelOpen ? <PanelRightClose size={16} strokeWidth={1.75} /> : <PanelRightOpen size={16} strokeWidth={1.75} />}
         </button>
         {activePage && mode === "screens" && (
-          <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
+          <button type="button" className="icon-btn" title="Open as a website" aria-label="Open as a website" onClick={() => activePage && openSite(activePage)}>
             <PlayIcon size={16} strokeWidth={1.75} />
           </button>
         )}

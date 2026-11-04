@@ -4,7 +4,7 @@ import { restoreVersion, saveVersion, versionsOf } from "buni/tools/versions.ts"
 import { pagesChanged, versionOp } from "buni/tools/areas/page-versions.ts";
 import { Ids } from "buni/tools/kit.ts";
 import { checkImage } from "buni/tools/assets.ts";
-import { fontSlug } from "buni/tools/html.ts";
+import { exportSite, fontSlug, siteLayout } from "buni/tools/html.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { homedir, tmpdir, userInfo } from "node:os";
 import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins } from "./guard.ts";
@@ -973,6 +973,29 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       // Uploaded files are shown, never run: an SVG or HTML among them gets no scripts and no access to this origin.
       // HEAD answers with the size alone (an image's picker shows it without fetching the file again).
       return new Response(req.method === "HEAD" ? null : bytes, { headers: { "content-type": Bun.file(path).type, "content-length": String(bytes.length), "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } });
+    }
+    // The design as its website, at its routes: /site/<design>.buni/<route>/. The pages, links and live scripts are the
+    // exported site's, drawn from the design as it is now; a refresh shows the latest edit.
+    const site = url.pathname.match(/^\/site(\/.+?\.buni)(\/.*)?$/);
+    if (site && (req.method === "GET" || req.method === "HEAD")) {
+      const design = decodeURIComponent(site[1] ?? "");
+      if (!isDesignPath(design, dir)) return new Response("not found", { status: 404 });
+      const doc = (await need(design)).system();
+      const page = url.searchParams.get("page");
+      // ?page= opens that page wherever the site put it; a folder without its slash gets one, so relative links resolve.
+      if (page !== null) {
+        const at = siteLayout(doc).fileOf.get(page);
+        return at === undefined ? new Response("That page has no route, so it isn't part of the website.", { status: 404 }) : new Response(null, { status: 303, headers: { location: `/site${site[1]}/${at.replace(/index\.html$/, "")}` } });
+      }
+      const rest = decodeURIComponent(site[2] ?? "");
+      if (!rest.endsWith("/") && !/\.[a-z0-9]+$/i.test(rest)) return new Response(null, { status: 301, headers: { location: `/site${site[1]}${rest}/${url.search}` } });
+      const rel = rest.slice(1) + (rest.endsWith("/") ? "index.html" : "");
+      const text = exportSite(doc, (family) => `/fonts/${fontSlug(family)}.woff2`).get(rel);
+      if (text !== undefined) return new Response(text, { headers: { "content-type": rel.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8", "cache-control": "no-store" } });
+      // Anything else is one of the design's own files: its images, its live scripts and styles.
+      const path = `${design.slice(0, design.lastIndexOf("/"))}/${rel}`;
+      const bytes = isDesignFile(path, dir) ? await store.readBytes(path).catch(() => undefined) : undefined;
+      return bytes ? new Response(bytes, { headers: { "content-type": Bun.file(path).type, "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } }) : new Response("not found", { status: 404 });
     }
     try {
       // The Chrome extension: which designs it can snap into, and the snap itself, imported as the person sees it.

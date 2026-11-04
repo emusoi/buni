@@ -7,7 +7,7 @@ import { TAGS, UNSAFE_TAGS } from "../format/parse.ts";
 import { z } from "zod";
 import {
   CLASS_NAME,
-  libraryIsStyle, CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Style } from "../format/doc.ts";
+  libraryIsStyle, CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Page, type Style } from "../format/doc.ts";
 
 // ---------------------------------------------------------------------------
 // HTML in: agent markup to node drafts
@@ -448,7 +448,8 @@ class Renderer {
  * past it; the way designers and agents expect boxes to measure. Every page, board and export starts with it.
  */
 // Text with no font of its own reads in the system face, not the browser's Times.
-const BASE_CSS = "*, *::before, *::after {\n  box-sizing: border-box;\n}\nbody {\n  font-family: system-ui, sans-serif;\n}\n";
+// A layer that links is wrapped in an <a>: the wrapper draws nothing, so the layer lays out and looks as designed.
+const BASE_CSS = "*, *::before, *::after {\n  box-sizing: border-box;\n}\nbody {\n  margin: 0;\n  font-family: system-ui, sans-serif;\n}\na.b-link {\n  display: contents;\n  color: inherit;\n  text-decoration: none;\n}\n";
 
 function tokensCss(doc: Doc): string {
   // In name order, as the file keeps them: the CSS of a page doesn't change when only the tokens' order did.
@@ -674,25 +675,31 @@ function folderOf(route: string): string {
   return parts.length === 0 ? "" : `${parts.join("/")}/`;
 }
 
+/** The site's pages and the file each is written to: `<route>/index.html`, or `<id>.html` beside it. */
+export function siteLayout(doc: Doc): { sitePages: (Page & { route: string })[]; fileOf: Map<Id, string> } {
+  // Graphics (pages without a route) are boards, not part of the site.
+  // States share their screen's route: the site has the screen, not each of its states.
+  const sitePages = pagesInOrder(doc).flatMap((p) => (p.route === undefined || p.state !== undefined ? [] : [{ ...p, route: p.route }]));
+  const taken = new Set<string>();
+  const fileOf = new Map<Id, string>();
+  for (const p of sitePages) {
+    // Dynamic segments (":id") and collisions get their own file in the parent folder.
+    const folder = folderOf(p.route);
+    let file = `${folder}index.html`;
+    if (taken.has(file) || p.route.split("/").some(isParam)) file = `${folder}${p.id}.html`;
+    taken.add(file);
+    fileOf.set(p.id, file);
+  }
+  return { sitePages, fileOf };
+}
+
 /**
  * Every page as a static file tree: `<route>/index.html`, plus stylesheets for
  * tokens, shared sections and pages. Relative links, so it opens from disk.
  */
 export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
   const files = new Map<string, string>();
-  // Graphics (pages without a route) are boards, not part of the site.
-  // States share their screen's route: the site has the screen, not each of its states.
-  const sitePages = pagesInOrder(doc).flatMap((p) => (p.route === undefined || p.state !== undefined ? [] : [{ ...p, route: p.route }]));
-  const folders = new Map(sitePages.map((p) => [p.id, folderOf(p.route)]));
-  const taken = new Set<string>();
-  const fileOf = new Map<Id, string>();
-  for (const p of sitePages) {
-    // Dynamic segments (":id") and collisions get their own file in the parent folder.
-    let file = `${folders.get(p.id)}index.html`;
-    if (taken.has(file) || p.route.split("/").some(isParam)) file = `${folders.get(p.id)}${p.id}.html`;
-    taken.add(file);
-    fileOf.set(p.id, file);
-  }
+  const { sitePages, fileOf } = siteLayout(doc);
 
   let pages = "";
   for (const p of sitePages) {
