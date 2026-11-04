@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
+import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, PanelLeftClose, PanelRightOpen, PanelRightClose, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -820,6 +820,9 @@ export function App({ snap }: { snap: Snapshot }) {
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
       <header className="tabs topbar">
         <div className="bar-lead">
+          <button type="button" className={`icon-btn panel-toggle${sidebarOpen ? " on" : ""}`} title={sidebarOpen ? "Hide pages (⌘\\ hides both)" : "Show pages"} aria-label={sidebarOpen ? "Hide pages" : "Show pages"} aria-pressed={sidebarOpen} onClick={() => toggleSidebar(!sidebarOpen)}>
+            {sidebarOpen ? <PanelLeftClose size={16} strokeWidth={1.75} /> : <PanelLeftOpen size={16} strokeWidth={1.75} />}
+          </button>
           <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
           <Changes version={snap.view} onToast={setToast} />
         </div>
@@ -844,6 +847,9 @@ export function App({ snap }: { snap: Snapshot }) {
         )}
         <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
         <TabletButton onToast={setToast} />
+        <button type="button" className={`icon-btn panel-toggle${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
+          {panelOpen ? <PanelRightClose size={16} strokeWidth={1.75} /> : <PanelRightOpen size={16} strokeWidth={1.75} />}
+        </button>
         {activePage && mode === "screens" && (
           <button type="button" className="icon-btn" title="Play from this page" aria-label="Play from this page" onClick={() => activePage && setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) })}>
             <PlayIcon size={16} strokeWidth={1.75} />
