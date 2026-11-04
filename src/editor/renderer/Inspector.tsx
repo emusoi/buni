@@ -789,7 +789,7 @@ function TakesSection({ doc, page, onOpenTakes, onJump, onError }: { doc: Doc; p
       </div>
       {live.picked && <p className="motion-sentence"><b>Picked</b> {live.picked.why}</p>}
       <div className="takes-actions">
-        <button type="button" className="btn small" onClick={() => onOpenTakes(live.id)}>Open the {takes.length} takes</button>
+        <button type="button" className="btn small" onClick={() => onOpenTakes(live.id)}>See all side by side</button>
         <button type="button" className="link-btn" onClick={() => void window.buni.edit("add_task", { title: `Another take of ${live.name}`, page: live.id }).then((r) => onError(r.ok ? undefined : r.reply))}>+ Ask for another take</button>
       </div>
     </Group>

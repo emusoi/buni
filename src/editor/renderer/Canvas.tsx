@@ -700,12 +700,8 @@ const Artboard = memo(function Artboard(props: {
         <span className="route">{page ? pageLabel(props.doc, page) : component?.variant ? `${Object.entries(component.variant).map(([k, v]) => `${k}: ${v}`).join(" · ")} · ${uses} use${uses === 1 ? "" : "s"}` : `component · ${uses} use${uses === 1 ? "" : "s"}`}</span>
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
         {page?.live && <span className="board-live" title="A live page: its scripts and libraries run here">Scripts run</span>}
-        {page && (props.takes ?? 0) > 0 && (
-          <span role="button" tabIndex={0} className="board-takes" title="Open the takes side by side, to pick one"
-            onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); props.onOpenTakes?.(pageId); }} onKeyDown={(e) => { if (e.key === "Enter") props.onOpenTakes?.(pageId); }}>
-            ⧉ {props.takes} takes
-          </span>
-        )}
+        {/* Far out, where the flip bar is hidden, the label still says the page has takes. */}
+        {page && !props.close && (props.takes ?? 0) > 0 && <span className="board-takes">{(props.takes ?? 0) + 1} takes</span>}
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
@@ -864,7 +860,8 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
   return (
     <>
       <div className="version-rail" onPointerDown={(e) => e.stopPropagation()}>
-        {versions.map((v) => (
+        {versions.length > 4 && <span className="vdot more" title={`${versions.length - 4} older: in the Inspector's Versions`}>+{versions.length - 4} older</span>}
+        {versions.slice(-4).map((v) => (
           <button type="button" key={v.id} className={`vdot${looking === v.id ? " on" : ""}`} title={`${v.by} · ${ago(v.at, now)}${v.note ? ` · ${v.note}` : ""}`} onClick={() => onLook(looking === v.id ? undefined : v.id)}>v{v.n}</button>
         ))}
         <button type="button" className={`vdot now${looking === undefined ? " on" : ""}`} title="The page as it is" onClick={() => onLook(undefined)}>now</button>

@@ -46,6 +46,10 @@ export const pageVersionsTools = {
     input: { page: z.string(), note: z.string().max(200).optional() },
     run: async (doc, a, ctx) => {
       const p = page(doc, a.page);
+      // Nothing changed since the last version: that one already is this point.
+      const last = pageVersionsOf(doc, p.id).at(-1);
+      const now = Object.fromEntries(subtree(doc, p.frame).map((n) => [n.id, n]));
+      if (last && JSON.stringify(last.nodes) === JSON.stringify(now)) return { label: "Save a version", ops: [], reply: `${p.name} is the same as v${last.n}; nothing to save.` };
       const op = versionOp(doc, doc, p.id, ctx.author, ctx.now(), a.note?.trim(), new Ids(doc, ctx));
       const v = op.kind === "put" && op.collection === "versions" ? op.value : undefined;
       return { label: `Save v${v?.n ?? "?"} of ${p.name}`, ops: [op], reply: v ? `Saved v${v.n} of ${p.name} (${v.id}).` : "Saved." };

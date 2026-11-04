@@ -25,6 +25,9 @@ test("a page's versions: saved with a note, restored as one edit, branched into 
   expect(v1.ok).toBe(true);
   const id1 = v1.reply.match(/\((\w+)\)/)?.[1] ?? "";
   expect(pageVersionsOf(ws.view(), "pricing").map((v) => [v.n, v.by, v.note])).toEqual([[1, "you", "As designed"]]);
+  // The same page again is the same point.
+  expect((await ws.call("you", "save_version", { page: "pricing", note: "again" })).reply).toContain("same as v1");
+  expect(pageVersionsOf(ws.view(), "pricing").length).toBe(1);
 
   // Change the page, then put v1 back: the added layer goes, as one undoable edit.
   const frame = ws.view().pages.pricing!.frame;

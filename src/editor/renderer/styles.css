@@ -2298,3 +2298,5 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .flip-use { display: flex; gap: 8px; }
 .flip-use .btn.small { flex: none; height: 30px; padding: 0 12px; font-size: 12px; }
 .flip-use .field { width: 240px; height: 30px; padding: 0 9px; border: 0; border-radius: 6px; background: var(--sidebar); font-size: 12px; color: var(--ink); }
+.vdot.more { cursor: default; color: var(--label); }
+.vdot.more:hover { background: none; color: var(--label); }
