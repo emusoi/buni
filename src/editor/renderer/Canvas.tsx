@@ -701,7 +701,7 @@ const Artboard = memo(function Artboard(props: {
       </button>
       {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
       {page && props.detail && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
-      {page && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
+      {page && props.detail && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => {
@@ -719,7 +719,7 @@ const Artboard = memo(function Artboard(props: {
             setTimeout(() => s.remove(), motionEnd(props.doc, page.id) + 200);
           }}>▷</button>
       )}
-      {page && props.modes && props.modes.length > 0 && props.onMode && (
+      {page && props.detail && props.modes && props.modes.length > 0 && props.onMode && (
         <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
           onPointerDown={(e) => e.stopPropagation()} onClick={() => { const i = props.mode ? props.modes!.indexOf(props.mode) : -1; props.onMode?.(props.modes![i + 1]); }}>
           {props.mode === "dark" ? "☾" : props.mode ? props.mode[0]?.toUpperCase() : "☼"}
