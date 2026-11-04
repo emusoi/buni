@@ -212,7 +212,10 @@ function cssVars(vars: Record<`--${string}`, number>): CSSProperties {
 /** Height of a board's name above its frame, at 100%. */
 const LABEL = 19;
 /** Allow thousand-page files to fit without clipping their bottom rows. */
-const MIN_ZOOM = 0.005;
+/** Further out than this the boards are specks and every label and link stands over them: no use to anyone. */
+const MIN_ZOOM = 0.02;
+/** Below this, labels, set frames and links hide: the boards alone say where things are. */
+const SPECK = 0.05;
 /** Below this, page names would overlap the row above: only row titles are shown. */
 const FAR = 0.15;
 /** Closer than this, a board shows its chrome (play, mode, the version rail); further out, only its label. */
@@ -976,7 +979,8 @@ export function Canvas(props: Props) {
   }, []);
   const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>());
   // A take (an option) sits under its page's card; it shows as a board of its own only while it is the open page.
-  const pages = useMemo(() => pagesInOrder(props.doc).filter((p) => !p.option || p.id === props.activePage), [props.doc.pages, props.activePage]);
+  const openTakeOf = props.activePage ? props.doc.pages[props.activePage]?.option?.of : undefined;
+  const pages = useMemo(() => pagesInOrder(props.doc).filter((p) => (!p.option || p.id === props.activePage) && p.id !== openTakeOf), [props.doc.pages, props.activePage, openTakeOf]);
   const takesOf = useMemo(() => {
     const n = new Map<Id, number>();
     for (const p of Object.values(props.doc.pages)) if (p.option) n.set(p.option.of, (n.get(p.option.of) ?? 0) + 1);
@@ -1380,7 +1384,7 @@ export function Canvas(props: Props) {
       <div ref={world} className="world" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, ...cssVars({ "--zoom": view.zoom, "--inv": 1 / view.zoom }) }}>
         {sets.map((s) => (
           <div key={s.name} className="component-set" style={{ left: s.x - 24, top: s.y - 56, width: s.w + 48, height: s.h + 80 }}>
-            <span className="set-label">◆ {s.name} · {s.count} {s.variants ? "variants" : "in this set"}</span>
+            {view.zoom >= SPECK && <span className="set-label">◆ {s.name} · {s.count} {s.variants ? "variants" : "in this set"}</span>}
           </div>
         ))}
         {[...pages, ...Object.values(own.shared)].filter((p) => nearby.has(p.id) || p.id === props.activePage || retained.has(p.id) || p.id === dragging?.page).map((p) => (
@@ -1441,7 +1445,7 @@ export function Canvas(props: Props) {
               </marker>
             ))}
           </defs>
-          {routed.filter((link) => view.zoom >= FAR || link.kind === "out").map(({ a, kind, d, lx, ly }) => {
+          {routed.filter((link) => view.zoom >= SPECK && (view.zoom >= FAR || link.kind === "out")).map(({ a, kind, d, lx, ly }) => {
             const w = 1 / view.zoom;
             return <g key={a.id} className={`link ${kind}`}>
               <path d={d} strokeWidth={(kind === "out" ? 2 : 1.5) * w} markerEnd={`url(#arrow-${kind})`} />

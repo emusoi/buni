@@ -750,7 +750,7 @@ function VersionsSection({ doc, page, onError }: { doc: Doc; page: Id; onError: 
   const now = Date.now();
   const run = (tool: EditTool, args: Record<string, unknown>) => void window.buni.edit(tool, args).then((r) => onError(r.ok ? undefined : r.reply));
   return (
-    <Group title="Versions" empty={!versions.length} summary={versions.length ? `${versions.length}` : "None yet"}>
+    <Group title="Versions" summary={versions.length ? `${versions.length}` : "None yet"}>
       <div className="takes-rows">
         {versions.map((v) => (
           <div key={v.id} className="version-row">
