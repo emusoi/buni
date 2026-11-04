@@ -25,6 +25,7 @@ import { agentColor, agentInitials, ConnectAgent } from "./Connect.tsx";
 import { Palette, type Action } from "./Palette.tsx";
 import { pageOfNode, type Hit } from "./search.ts";
 import { Journey } from "./Journey.tsx";
+import { TakesSheet } from "./TakesSheet.tsx";
 import { OwnersContext } from "./owners.ts";
 import { Play } from "./Play.tsx";
 import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
@@ -232,6 +233,8 @@ export function App({ snap }: { snap: Snapshot }) {
   /** Component board in focus on the canvas, instead of a page. */
   const [component, setComponent] = useState<Id>();
   const [play, setPlay] = useState<{ page: Id; flow?: Id }>();
+  /** The page whose takes are open side by side, to pick one. */
+  const [takes, setTakes] = useState<Id>();
   /** Screens (pages, components, flows) or Architecture (how the app behind them is built and shipped); ?arch= opens the second. */
   const [mode, setMode] = useState<"screens" | "architecture">(() => (archParams(location.search) ? "architecture" : "screens"));
 
@@ -1057,6 +1060,7 @@ export function App({ snap }: { snap: Snapshot }) {
               owners={snap.owners}
               usedElsewhere={usedElsewhere}
               onOpenElsewhere={openElsewhere}
+              onOpenTakes={setTakes}
             />
             <InsertBar doc={doc} node={selected ? doc.nodes[selected] : undefined} root={frame?.id} onAdded={setSelected} onError={setToast} />
             </div>
@@ -1098,7 +1102,7 @@ export function App({ snap }: { snap: Snapshot }) {
               </div>
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
-            {panel === "design" && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
+            {panel === "design" && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} onOpenTakes={setTakes} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
             {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} agents={snap.agents} page={activePage} onShowPage={(p) => { openPage(p); setReveal({ page: p, at: Date.now() }); }} onUndo={() => void window.buni.undo().then((r) => setToast(r.reply))} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} />}
             {panel === "marks" && activePage && <MarksPanel doc={doc} page={activePage} lit={litMark} onLight={setLitMark} onShow={(node) => { setSelected(node); setReveal({ page: activePage, at: Date.now() }); }} onToast={setToast} />}
@@ -1146,6 +1150,9 @@ export function App({ snap }: { snap: Snapshot }) {
         { id: f.path, title: f.name, detail: f.pages.length ? `${f.pages.length} page${f.pages.length === 1 ? "" : "s"}` : `${f.components.length} components`, icon: FolderOpen, run: () => openAt(f.path) },
         ...f.pages.map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),
       ])} />}
+      {takes && doc.pages[takes] && (
+        <TakesSheet doc={doc} dir={snap.dir} page={takes} mode={modeAt[takes] ?? tokenMode} onClose={() => setTakes(undefined)} onPlay={(p) => { setTakes(undefined); setPlay({ page: p }); }} onEdit={(p) => { setTakes(undefined); openPage(p); }} onToast={setToast} />
+      )}
       {play && doc.pages[play.page] && (
         <Play
           doc={app}

@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo,
 import { childrenOf, pageLabel, pagesInOrder, type Doc, type Id } from "buni/format/doc.ts";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
-import { branchPath, lineage } from "./lineage.ts";
 import { InkLayer, StrokePaths } from "./tablet/Ink.tsx";
 import { sketchesOpen } from "buni/tools/ink.ts";
 import { fontFaces, fontSlug, renderComponent, renderPage, liveHead, motionCss } from "buni/tools/html.ts";
@@ -26,6 +25,8 @@ interface Props {
   /** Pages drawn in a mode of their own, over the canvas-wide one. */
   modeAt?: Readonly<Record<Id, string>>;
   onModeAt?: (page: Id, mode: string | undefined) => void;
+  /** Shows a page's takes side by side, to pick one. */
+  onOpenTakes?: ((page: Id) => void) | undefined;
   /** Where each busy agent is working: outlined and tagged in its colour; the first is scrolled into view. */
   focus: readonly AgentSpot[];
   /** What agents just changed, to show it arriving. */
@@ -325,6 +326,9 @@ const Artboard = memo(function Artboard(props: {
   onSelectNode: (id: Id | undefined, add?: boolean) => void;
   /** A right-click on a layer, after it's selected: where to open its menu. */
   onMenu?: (x: number, y: number) => void;
+  /** How many takes (options) this page has, and how to open them side by side. */
+  takes?: number;
+  onOpenTakes?: ((page: Id) => void) | undefined;
 }) {
   const { doc, pageId } = props;
   // A board is a page or a component.
@@ -681,7 +685,15 @@ const Artboard = memo(function Artboard(props: {
         <span className="route">{page ? pageLabel(props.doc, page) : component?.variant ? `${Object.entries(component.variant).map(([k, v]) => `${k}: ${v}`).join(" · ")} · ${uses} use${uses === 1 ? "" : "s"}` : `component · ${uses} use${uses === 1 ? "" : "s"}`}</span>
         {page && props.viewWidth !== undefined && <span className="view-width">at {props.viewWidth} px</span>}
         {page?.live && <span className="board-live" title="A live page: its scripts and libraries run here">Scripts run</span>}
+        {page && (props.takes ?? 0) > 0 && (
+          <span role="button" tabIndex={0} className="board-takes" title="Open the takes side by side, to pick one"
+            onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); props.onOpenTakes?.(pageId); }} onKeyDown={(e) => { if (e.key === "Enter") props.onOpenTakes?.(pageId); }}>
+            ⧉ {props.takes} takes
+          </span>
+        )}
+        {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
+      {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
       {page && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
@@ -706,6 +718,7 @@ const Artboard = memo(function Artboard(props: {
           {props.mode === "dark" ? "☾" : props.mode ? props.mode[0]?.toUpperCase() : "☼"}
         </button>
       )}
+      {page?.picked && <div className="why-line" title={page.picked.over.map((id) => doc.pages[id]?.name).filter(Boolean).join(", ")}><b>Picked</b> {page.picked.why}</div>}
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
         {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox={page?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={height} onLoad={measure} />
@@ -882,7 +895,13 @@ export function Canvas(props: Props) {
     };
   }, []);
   const boards = useRef(new Map<Id, { frame: HTMLDivElement; iframe: HTMLIFrameElement | undefined }>());
-  const pages = useMemo(() => pagesInOrder(props.doc), [props.doc.pages]);
+  // A take (an option) sits under its page's card; it shows as a board of its own only while it is the open page.
+  const pages = useMemo(() => pagesInOrder(props.doc).filter((p) => !p.option || p.id === props.activePage), [props.doc.pages, props.activePage]);
+  const takesOf = useMemo(() => {
+    const n = new Map<Id, number>();
+    for (const p of Object.values(props.doc.pages)) if (p.option) n.set(p.option.of, (n.get(p.option.of) ?? 0) + 1);
+    return n;
+  }, [props.doc.pages]);
   // This file's own boards; imported components are drawn inside instances only, and edited in their own file.
   const own = useMemo(() => !props.imported?.size ? props.doc : { ...props.doc, shared: Object.fromEntries(Object.entries(props.doc.shared).filter(([id]) => !props.imported?.has(id))) }, [props.doc, props.imported]);
   const resources = useMemo(() => new Map<string, Promise<string>>(), [props.dir]);
@@ -994,7 +1013,7 @@ export function Canvas(props: Props) {
     const page = props.doc.pages[board.id];
     const style = props.doc.nodes[page?.frame ?? props.doc.shared[board.id]?.root ?? ""]?.style;
     const given = style?.height ?? style?.minHeight ?? "";
-    const p = at.get(board.id) ?? ORIGIN;
+    const p = at.get(board.id) ?? (page?.option ? at.get(page.option.of) : undefined) ?? ORIGIN;
     return [board.id, {
       x: p.x, y: p.y + LABEL + 10,
       width: page ? props.viewAt?.[board.id] ?? widthOf(props.doc, board.id) : componentWidth(props.doc, board.id),
@@ -1002,8 +1021,6 @@ export function Canvas(props: Props) {
     }];
   })), [pages, own, props.doc, props.viewAt, at, loads]);
   const nearby = useMemo(() => nearbyBoards(boxes, view, canvasSize), [boxes, view, canvasSize]);
-  // Options hang off their page; a page that won says why. The why stays in view with what it was chosen over.
-  const why = useMemo(() => lineage(props.doc, boxes), [props.doc, boxes]);
   const [away, setAway] = useState<ReturnType<typeof exits>>([]);
   useLayoutEffect(() => { setLinks(arrows(props.doc, boxes, boards.current)); setAway(exits(props.doc, boxes, boards.current)); }, [props.doc, loads, boxes]);
   // Components named "Group / Name" are the variants of one set, drawn inside one frame, as a component set is.
@@ -1292,8 +1309,10 @@ export function Canvas(props: Props) {
             doc={props.doc}
             dir={props.dir}
             pageId={p.id}
-            at={at.get(p.id) ?? ORIGIN}
+            at={at.get(p.id) ?? (props.doc.pages[p.id]?.option ? at.get(props.doc.pages[p.id]!.option!.of) : undefined) ?? ORIGIN}
             active={p.id === props.activePage}
+            takes={takesOf.get(p.id) ?? 0}
+            onOpenTakes={props.onOpenTakes}
             retained={retained.has(p.id)}
             detail={view.zoom >= FAR}
             near={nearby.has(p.id)}
@@ -1324,11 +1343,6 @@ export function Canvas(props: Props) {
             <span className="comment-pin-face">{(p.by[0] ?? "?").toUpperCase()}</span>{p.n > 1 && <span className="comment-pin-n">{p.n}</span>}
           </button>
         ))}
-        {view.zoom >= FAR && why.whys.map((w) => (
-          <div key={w.page} className="why-tag" style={{ left: w.x, top: w.y, transform: `scale(${1 / view.zoom})` }} title={w.over.length ? `Chosen over ${w.over.join(", ")}` : "Chosen"}>
-            <b>Picked</b> {w.why}{w.over.length ? <span className="dim"> · over {w.over.join(", ")}</span> : null}
-          </div>
-        ))}
         {tags.map((t) => (
           <div key={t.spot.agent} className="agent-tag" style={{ left: t.x, top: t.y, background: t.spot.color, transform: `translateY(-100%) scale(${1 / view.zoom})` }}>
             ✦ {t.spot.label}
@@ -1346,7 +1360,6 @@ export function Canvas(props: Props) {
               </marker>
             ))}
           </defs>
-          {why.branches.map((b) => <path key={`${b.from}-${b.to}`} className="branch" d={branchPath(b)} strokeWidth={1.5 / view.zoom} strokeDasharray={`${6 / view.zoom} ${5 / view.zoom}`} />)}
           {routed.filter((link) => view.zoom >= FAR || link.kind === "out").map(({ a, kind, d, lx, ly }) => {
             const w = 1 / view.zoom;
             return <g key={a.id} className={`link ${kind}`}>

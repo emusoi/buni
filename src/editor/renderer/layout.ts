@@ -81,7 +81,8 @@ export function pageRows(doc: Doc): Id[][] {
     }
     if (row.length) rows.push(row);
   }
-  const rest = pagesInOrder(doc).map((p) => p.id).filter((p) => !seen.has(p));
+  // A take (an option of a page) sits under its page's card, not in a row of its own.
+  const rest = pagesInOrder(doc).filter((p) => !p.option).map((p) => p.id).filter((p) => !seen.has(p));
   if (rest.length) rows.push(rest);
   return rows;
 }

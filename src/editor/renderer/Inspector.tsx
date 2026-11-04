@@ -1,7 +1,7 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
-import { EASINGS, ENTRANCES, isUseLink, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
+import { EASINGS, ENTRANCES, isUseLink, optionsOf, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
 import type { Hit } from "./search.ts";
@@ -742,13 +742,40 @@ function LiveSection({ doc, page, dir, onError }: { doc: Doc; page: Id; dir: str
   );
 }
 
+/** A page's takes: the live one and its options, listed; Open shows them side by side to pick. */
+function TakesSection({ doc, page, onOpenTakes, onJump, onError }: { doc: Doc; page: Id; onOpenTakes: (page: Id) => void; onJump: (hit: Hit) => void; onError: (m: string | undefined) => void }) {
+  const p = doc.pages[page];
+  const live = p?.option ? doc.pages[p.option.of] : p;
+  if (!live) return null;
+  const takes = [live, ...optionsOf(doc, live.id)];
+  if (takes.length < 2 && !live.picked) return null;
+  return (
+    <Group title="Takes" summary={`${takes.length}`}>
+      <div className="takes-rows">
+        {takes.map((t) => (
+          <button type="button" key={t.id} className={`takes-row${t.id === page ? " here" : ""}`} onClick={() => onJump({ kind: "page", id: t.id, title: t.name, detail: "" })}>
+            <span className={`takes-dot${t.id === live.id ? " live" : ""}`} />
+            <span className="takes-name">{t.name}</span>
+            <small>{t.id === live.id ? "live" : t.option?.idea ? "" : ""}</small>
+          </button>
+        ))}
+      </div>
+      {live.picked && <p className="motion-sentence"><b>Picked</b> {live.picked.why}</p>}
+      <div className="takes-actions">
+        <button type="button" className="btn small" onClick={() => onOpenTakes(live.id)}>Open the {takes.length} takes</button>
+        <button type="button" className="link-btn" onClick={() => void window.buni.edit("add_task", { title: `Another take of ${live.name}`, page: live.id }).then((r) => onError(r.ok ? undefined : r.reply))}>+ Ask for another take</button>
+      </div>
+    </Group>
+  );
+}
+
 /** The open design's path, for what depends on its project (the other designs a link may go to). */
 export const OpenFile = createContext("");
 
 /** How often other designs of the project place this file's components, by component: they change with it too. */
 export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
 
-export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onWiden, viewWidth, onViewWidth, onCompare, dir }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onOpenTakes, onWiden, viewWidth, onViewWidth, onCompare, dir }: {
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
   ownTokens?: Doc["tokens"] | undefined;
@@ -776,6 +803,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   onOpenComponent: (id: Id) => void;
   /** Opens the file a page of another file lives in, at that page. */
   onOpenElsewhere?: ((page: Id) => void) | undefined;
+  /** Shows a page's takes side by side, to pick one. */
+  onOpenTakes?: ((page: Id) => void) | undefined;
 }) {
   const [notice, setNotice] = useState<string>();
   const [namingComponent, setNamingComponent] = useState(false);
@@ -798,6 +827,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onCompare={onCompare} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
+        {page && doc.pages[page] && onOpenTakes && <TakesSection doc={doc} page={page} onOpenTakes={onOpenTakes} onJump={onJump} onError={setNotice} />}
         {page && doc.pages[page] && !doc.pages[page]?.terminal && <LiveSection doc={doc} page={page} dir={dir} onError={setNotice} />}
         {(() => { const open = Object.values(doc.shared).find((x) => x.root === root); return open ? <ComponentVariants doc={doc} component={open.id} onOpen={onOpenComponent} onError={setNotice} /> : null; })()}
         {notice && <div className="notice">{notice}</div>}

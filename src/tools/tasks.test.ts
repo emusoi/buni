@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseDoc } from "../format/parse.ts";
 import { serializeDoc } from "../format/serialize.ts";
-import { lineage } from "../editor/renderer/lineage.ts";
 import { Workspace } from "./workspace.ts";
 
 const example = new URL("../../examples/portal.buni", import.meta.url).pathname;
@@ -43,7 +42,7 @@ test("a task is queued in the person's words, taken by one agent, finished with 
   expect(ws.view().tasks[id]).toBeUndefined();
 });
 
-test("picking an option keeps the why on the winner, and the canvas hangs options off their page", async () => {
+test("picking an option keeps the why on the winner; the rest become its takes", async () => {
   const ws = await Workspace.open(file);
   const made = await ws.call("claude", "explore_page", { page: "pricing", options: [{ name: "Proof first", idea: "Lead times before prices" }, { name: "One plan", idea: "A single price, no table" }] });
   expect(made.ok).toBe(true);
@@ -57,12 +56,8 @@ test("picking an option keeps the why on the winner, and the canvas hangs option
   expect(winner.picked?.over).toContain("pricing");
   expect(winner.route).toBe("/pricing");
 
-  const boxes = new Map(Object.keys(ws.view().pages).map((id, i) => [id, { x: i * 1600, y: 0, width: 1440, height: 900 }]));
-  const { branches, whys } = lineage(ws.view(), boxes);
-  // The old live page and the other option now hang off the winner.
-  expect(branches.map((b) => b.from)).toEqual(expect.arrayContaining([proof.id, proof.id]));
-  expect(branches.length).toBe(2);
-  expect(whys).toEqual([{ page: proof.id, x: boxes.get(proof.id)!.x, y: 0, why: "Buyers trust lead times before they ask for a price.", over: expect.arrayContaining(["Pricing"]) }]);
+  // The old live page and the other option are now its takes.
+  expect(Object.values(ws.view().pages).filter((p) => p.option?.of === proof.id).length).toBe(2);
   const back = parseDoc(serializeDoc(ws.view()));
   expect(back.ok && back.doc.pages[proof.id]?.picked?.over.length).toBe(2);
 });

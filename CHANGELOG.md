@@ -8,9 +8,11 @@ the `.buni` format has its own version (see [FORMAT.md](FORMAT.md)).
 - Added: tasks. What the person asks for, in their words, is a task: added from the Agents panel (or `add_task`),
   queued until an agent takes it (`take_task`), working beside the agent's name, done with the agent's note
   (`finish_task`). An agent hears of a new task on its next call; `tasks` lists them, queued first.
-- Added: the why stays on the canvas. `pick_option` records why a page won and what it was chosen over
-  (`picked` on the page); the canvas draws a dashed line from a page to each of its options and the why beside the
-  winner, so a rejected direction stays in view with its reason.
+- Added: takes. A page's options are its takes: on the canvas the page is one card, the live take showing and the
+  others stacked under it, with a chip saying how many. The chip, or Open in the Inspector, lays them side by side
+  to play, edit, or pick one; the why is written when you pick and stays with the page (`picked`), read under the
+  card. Picking opens the winner in the old one's place. Rejected takes are kept unless Delete the others is on;
+  Ask for another take queues a task for the agent.
 - Added: ▷ on a page's board plays its motion there, on the canvas: a still page's entrances run once and it rests
   again; a live page runs from the top. The Moments strip of a day earlier is gone: six held frames under the
   canvas were more than the question needed.
