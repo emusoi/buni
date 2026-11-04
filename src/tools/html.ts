@@ -717,7 +717,9 @@ export function exportSite(doc: Doc, font: FontSrc): Map<string, string> {
         return file === undefined ? undefined : up + file;
       },
     }).render();
-    pages += r.css;
+    // On the website the page is the browser's: as wide as the window, and at least as tall as it.
+    const frameHeight = doc.nodes[p.frame]?.style.height;
+    pages += r.css + cssRule(`.b-${p.frame}`, { width: "100%", ...(frameHeight ? { height: `max(${frameHeight}, 100vh)` } : { minHeight: "100vh" }) });
     files.set(
       file,
       [
