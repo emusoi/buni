@@ -2331,6 +2331,8 @@ body, .app { background: var(--window); }
 .inspector { padding: 12px; }
 .inspector > section, .inspector > .page-summary { padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
 .row { border-radius: 8px; }
+.connect-agent { padding: 12px; gap: 8px; }
+.connect-agent > .tasks, .connect-agent > .connect-ways, .connect-agent > .agent-cards > .agent-card { padding: 12px; border: 0; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
 .btn, .bar-btn { border-radius: 999px; }
 .btn { border: 0; background: var(--seg); color: var(--accent-ink); }
 .btn:hover { background: var(--hover); }
