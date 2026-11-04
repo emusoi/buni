@@ -729,7 +729,7 @@ const Artboard = memo(function Artboard(props: {
           {props.mode === "dark" ? "☾" : props.mode ? props.mode[0]?.toUpperCase() : "☼"}
         </button>
       )}
-      {page?.picked && <div className="why-line" title={page.picked.over.map((id) => doc.pages[id]?.name).filter(Boolean).join(", ")}><b>Picked</b> {page.picked.why}</div>}
+      {page?.picked && props.close && <div className="why-line" title={page.picked.over.map((id) => doc.pages[id]?.name).filter(Boolean).join(", ")}><b>Picked</b> {page.picked.why}</div>}
       <div ref={box} className={`frame${props.active ? " active" : ""}${component ? " component" : ""}${page?.terminal ? " terminal" : ""}`} style={{ width, height }}>
         {url ? (
           <iframe ref={frame} title={page?.name ?? component?.name} sandbox={page?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={height} onLoad={measure} />

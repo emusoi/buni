@@ -1043,6 +1043,8 @@ button.insert-where:hover { color: var(--ink); }
 .app.editor .zoom { left: calc(var(--float-left) + 16px); }
 .app.editor .zoom.canvas-tools { left: auto; right: calc(var(--float-right) + 16px); }
 .app.editor .insert-bar { left: calc(50% + (var(--float-left) - var(--float-right)) / 2); }
+/* A narrow canvas has no room for the zoom control beside the insert bar: it sits above it. */
+@container canvas (max-width: 1500px) { .app.editor .zoom:not(.canvas-tools) { bottom: 60px; } }
 .app.editor .sidebar .section-label { padding: 14px 8px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--label); }
 .app.editor .sidebar .section-label .n { letter-spacing: 0; }
 /* Toolbar: what you're in on the left, actions on the right with the primary last. */
