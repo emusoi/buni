@@ -22,3 +22,9 @@ test("terminal screens gather under Terminal, even alone", () => {
   const items = groupPages([page("home", "/"), screen("quotes"), screen("help")]);
   expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}: ${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "Terminal: quotes,help"]);
 });
+
+test("a take is listed right under its page, never among the graphics", () => {
+  const page = (id: string, extra: Partial<Page> = {}) => ({ id, name: id, frame: id, index: id, ...extra }) as Page;
+  const items = groupPages([page("home", { route: "/" }), page("logo"), page("home-b", { option: { of: "home", idea: "b" } })]);
+  expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}:${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "home-b", "Graphics:logo"]);
+});

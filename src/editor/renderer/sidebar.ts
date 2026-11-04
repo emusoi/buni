@@ -19,15 +19,21 @@ export function groupPages(pages: readonly Page[]): PageItem[] {
   };
   const counts = new Map<string, number>();
   for (const p of pages) {
+    if (p.option) continue;
     const s = segment(p);
     if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
   }
   const out: PageItem[] = [];
   const groups = new Map<string, Extract<PageItem, { kind: "group" }>>();
+  // A take sits right under its page, wherever that page is listed, never among the graphics.
+  const takes = new Map<string, Page[]>();
+  for (const p of pages) if (p.option && pages.some((q) => q.id === p.option?.of)) takes.set(p.option.of, [...(takes.get(p.option.of) ?? []), p]);
+  const under = (p: Page) => takes.get(p.id) ?? [];
   for (const p of pages) {
+    if (p.option && takes.get(p.option.of)?.includes(p)) continue;
     const s = segment(p);
     if (!s || (s !== GRAPHICS && s !== TERMINAL && (counts.get(s) ?? 0) < 2)) {
-      out.push({ kind: "page", page: p });
+      out.push({ kind: "page", page: p }, ...under(p).map((t): PageItem => ({ kind: "page", page: t })));
       continue;
     }
     let g = groups.get(s);
@@ -38,7 +44,7 @@ export function groupPages(pages: readonly Page[]): PageItem[] {
       groups.set(s, g);
       out.push(g);
     }
-    g.pages.push(p);
+    g.pages.push(p, ...under(p));
   }
   return out;
 }

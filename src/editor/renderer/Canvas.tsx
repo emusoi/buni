@@ -667,7 +667,7 @@ const Artboard = memo(function Artboard(props: {
   if ((!page && !component) || !live) return null;
   const { uses } = props;
   return (
-    <div className="artboard" style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
+    <div className={`artboard${looking !== undefined && props.close ? " looking" : ""}`} style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
       <button
         type="button"
         className={`artboard-label${props.active ? " active" : ""}${component ? " component" : ""}`}
@@ -798,11 +798,12 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
         {versions.map((v) => (
           <button type="button" key={v.id} className={`vdot${looking === v.id ? " on" : ""}`} title={`${v.by} · ${ago(v.at, now)}${v.note ? ` · ${v.note}` : ""}`} onClick={() => onLook(looking === v.id ? undefined : v.id)}>v{v.n}</button>
         ))}
-        <button type="button" className="vdot now" disabled title="The page as it is">now</button>
+        <button type="button" className={`vdot now${looking === undefined ? " on" : ""}`} title="The page as it is" onClick={() => onLook(undefined)}>now</button>
         <button type="button" className="vdot add" onClick={() => onNaming(true)}>+ Save a version</button>
       </div>
       {seen && (
-        <div className="ghost" style={{ left: width + 80, width }} onPointerDown={(e) => e.stopPropagation()}>
+        // In place: the card shows the version until now is picked again, so it never lands on a neighbour.
+        <div className="ghost" style={{ width }} onPointerDown={(e) => e.stopPropagation()}>
           <div className="ghost-label">
             <b>v{seen.n}</b><span className="dim">{seen.by} · {ago(seen.at, now)}{seen.note ? ` · ${seen.note}` : ""}</span>
             {diff && <span className="dim">· {diff.added.length + diff.removed.length + diff.changed.length === 0 ? "the same as now" : `${diff.added.length + diff.removed.length + diff.changed.length} layers differ`}</span>}
@@ -818,7 +819,7 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
               {diff.changed.slice(0, 8).map((c) => <li key={`c${c.node.id}`}><b>{c.node.name}</b> {c.what}</li>)}
             </ul>
           )}
-          <div className="ghost-frame" style={{ width }}>{url && <iframe title={`v${seen.n}`} sandbox="allow-same-origin" src={url} width={width} height={900} />}</div>
+          <div className="ghost-frame" style={{ width, height: liveFrame.current?.offsetHeight || 900 }}>{url && <iframe title={`v${seen.n}`} sandbox="allow-same-origin" src={url} width={width} height={liveFrame.current?.offsetHeight || 900} />}</div>
         </div>
       )}
       {naming && (
