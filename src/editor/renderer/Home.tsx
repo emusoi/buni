@@ -224,6 +224,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
             </div>
           </header>}
           {error && <div className="notice dismissable" role="alert">{error}<button type="button" className="icon-btn small" aria-label="Dismiss" onClick={() => setError(undefined)}><X size={13} /></button></div>}
+          {!files && <div className="home-loading" aria-label="Loading designs">{[0, 1, 2, 3].map((i) => <span key={i} />)}</div>}
           {files && files.length === 0 && (
             <div className="welcome">
               <p className="welcome-lede">Design the screens, the flows between them and the journeys through them.<span>Then hand it to an agent to build.</span></p>
@@ -251,7 +252,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
                 <button type="button" className="card" onClick={() => void run(window.buni.open(f.path))} title={f.path}>
                   <Thumb file={f} badge={f.agentNote} />
                   <span className="card-name">{f.name}</span>
-                  <span className="card-meta">{f.pages} page{f.pages === 1 ? "" : "s"} · edited {ago(f.modified, now)}{folders.length > 1 || (named.get(f.name) ?? 0) > 1 ? ` · ${short(f.folder, f.space)}` : ""}</span>
+                  <span className="card-meta">{f.pages} page{f.pages === 1 ? "" : "s"} · edited {ago(f.modified, now)}{(folders.length > 1 || (named.get(f.name) ?? 0) > 1) && short(f.folder, f.space) !== f.name ? ` · ${short(f.folder, f.space)}` : ""}</span>
                 </button>
                 <FileActions file={f} onAsk={setAsking} />
               </div>
