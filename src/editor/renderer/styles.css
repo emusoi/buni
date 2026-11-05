@@ -930,18 +930,19 @@ button.insert-where:hover { color: var(--ink); }
 /* The editor window: a 52px toolbar, then the canvas edge to edge, with the side panels floating over it as glass. */
 .app.editor { position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); --float-left: 268px; }
 .app.editor.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); --float-left: 0px; }
-/* A plain 48px bar on the canvas's own colour: where you are, then only Play and its menu. */
-.app.editor > .topbar { position: absolute; z-index: 7; top: 0; left: 0; right: 0; height: 48px; gap: 8px; padding: 0 12px 0 84px; background: none; box-shadow: none; }
+/* No top bar: the sidebar holds where you are and how to move, and the panels reach the window's top edge. */
+.file-strip { position: absolute; z-index: 7; top: 8px; left: 50%; transform: translateX(-50%); -webkit-app-region: drag; }
+.file-strip:empty { display: none; }
 .app.editor > .sidebar, .app.editor .inspector-panel {
   position: absolute; z-index: 6; bottom: 8px; border-radius: 10px; overflow: hidden;
   background: var(--glass); box-shadow: var(--glass-shadow);
 }
-.app.editor > .sidebar { left: 8px; top: 48px; width: 250px; padding-top: 4px; }
-.app.editor .inspector-panel { top: 48px; right: 8px; border-left: 0; }
+.app.editor > .sidebar { left: 8px; top: 8px; width: 250px; display: flex; flex-direction: column; }
+.app.editor .inspector-panel { top: 8px; right: 8px; border-left: 0; }
 .app.editor > .main { grid-column: 1; grid-row: 1; grid-template-rows: minmax(0, 1fr); box-shadow: none; background: var(--canvas); }
 .app.editor .workspace { position: relative; grid-template-columns: minmax(0, 1fr); border-top: 0; }
 /* Views that aren't the canvas keep clear of the panels. */
-.app.editor .workspace > .journey { margin: 48px var(--float-right) 0 var(--float-left); }
+.app.editor .workspace > .journey { margin: 8px var(--float-right) 0 var(--float-left); }
 .app.editor .zoom { left: calc(var(--float-left) + 16px); }
 .app.editor .zoom.canvas-tools { left: auto; right: calc(var(--float-right) + 16px); }
 .app.editor .insert-bar { left: calc(50% + (var(--float-left) - var(--float-right)) / 2); }
@@ -949,17 +950,29 @@ button.insert-where:hover { color: var(--ink); }
 @container canvas (max-width: 1500px) { .app.editor .zoom:not(.canvas-tools) { bottom: 60px; } }
 .app.editor .sidebar .section-label { padding: 14px 8px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--label); }
 .app.editor .sidebar .section-label .n { letter-spacing: 0; }
-/* Toolbar: what you're in on the left, actions on the right with the primary last. */
-.bar-lead, .bar-trail { display: flex; align-items: center; gap: 4px; min-width: 0; -webkit-app-region: no-drag; }
-.bar-trail { margin-left: auto; }
 .project-switch .title { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
 .project-switch .title b { font-size: 13px; font-weight: 600; color: var(--ink); }
 .project-switch .title small { font-size: 11px; color: var(--ink-2); }
 .presence { gap: 6px; padding: 0 10px 0 3px; background: var(--chip); }
 .presence-dot { border-color: var(--sidebar); }
 .presence-text { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
-/* The web has no window buttons to clear. */
-[data-host="web"] .app.editor > .topbar { padding-left: 14px; }
+/* The sidebar's head: the window's buttons and the panel toggles, then the design. On the desktop its top row is
+   the window's handle and leaves the traffic lights their room; the web has none to clear. */
+.side-head { flex: none; display: flex; flex-direction: column; gap: 4px; padding: 8px 8px 6px; }
+.side-head-row { display: flex; align-items: center; gap: 2px; height: 28px; padding-left: 72px; -webkit-app-region: drag; }
+.side-head-row button { -webkit-app-region: no-drag; }
+[data-host="web"] .side-head-row { padding-left: 0; }
+.side-head-row .grow { flex: 1; }
+.side-head-file { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.side-head-file .project-switch { flex: 1; min-width: 0; }
+.side-nav { flex: none; display: flex; flex-direction: column; gap: 1px; padding: 0 10px 6px; }
+.side-nav .row > svg { flex: none; color: var(--accent); }
+.side-nav .row .meta { margin-left: auto; font-family: var(--font); font-size: 12px; color: var(--label); }
+.side-foot .icon-btn { color: var(--ink-2); }
+.side-presence { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.side-presence .presence-dot { width: 18px; height: 18px; font-size: 9px; }
+.side-foot { flex: none; margin-top: auto; display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-top: 0.5px solid var(--rule); }
+.side-foot .grow { flex: 1; }
 [data-host="web"] .sidebar-top { padding-left: 16px; }
 
 /* Canvas zoom sits bottom-left, out of the way of the boards and the insert bar. */
@@ -1323,7 +1336,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 /* The sidebar folded to a strip of icons, floating where it was. */
 .app.editor.sidebar-collapsed { --float-left: 72px; }
 .side-rail {
-  position: absolute; z-index: 6; left: 8px; top: 48px; bottom: 8px; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0;
+  position: absolute; z-index: 6; left: 8px; top: 8px; bottom: 8px; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0;
   border-radius: 10px; background: var(--glass); box-shadow: var(--glass-shadow);
 }
 .side-rail .icon-btn { position: relative; width: 36px; height: 36px; border-radius: 9px; }
@@ -1356,7 +1369,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .presence:not(:has(.presence-dot)) { padding-left: 10px; }
 .history-by { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 4px; vertical-align: 1px; }
 /* An agent's question, floating under the toolbar until it's answered. */
-.ask-card { position: absolute; z-index: 9; top: 62px; left: 50%; transform: translateX(-50%); width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--menu); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 18px 48px rgb(0 0 0 / 0.24); animation: tag-in 160ms ease-out; }
+.ask-card { position: absolute; z-index: 9; top: 16px; left: 50%; transform: translateX(-50%); width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: var(--menu); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 18px 48px rgb(0 0 0 / 0.24); animation: tag-in 160ms ease-out; }
 .ask-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .ask-head .presence-dot { border-color: transparent; }
 .ask-layer { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 0; border-radius: 11px; background: var(--chip); color: var(--ink-2); font-size: 11px; }
@@ -1391,7 +1404,7 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .app.editor .presence-dot + .presence-dot { margin-left: -2px; }
 .more-menu { left: auto; right: 0; width: 230px; }
 /* Sidebar rows say their name; an icon that's the same on every row says nothing. Counts show when you look. */
-.app.editor > .sidebar .row:not(.layer) > svg:first-child { display: none; }
+.app.editor > .sidebar .tree .row:not(.layer) > svg:first-child { display: none; }
 .app.editor > .sidebar .row .count { opacity: 0; transition: opacity 0.12s; }
 .app.editor > .sidebar .row:hover .count, .app.editor > .sidebar .row.active .count { opacity: 1; }
 .app.editor > .sidebar .row { padding-left: 10px; }
@@ -1523,18 +1536,10 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .home-flow > svg { flex: none; color: var(--label); }
 .home-flow:hover > svg:last-child { color: var(--ink); }
 
-/* ---------- Screens · Architecture ---------- */
-/* The two modes sit in the middle of the top bar, as words: the one you're in is bold. */
-.modes-bar { position: absolute; left: 50%; top: 8px; height: 32px; padding: 0 14px; border-radius: 8px; background: var(--canvas); transform: translateX(-50%); display: flex; align-items: center; gap: 24px; -webkit-app-region: no-drag; }
-.modes-bar button { height: 28px; padding: 0; border: 0; background: none; font-size: 13px; color: var(--ink-2); }
-.modes-bar button.on { color: var(--ink); font-weight: 600; }
-.modes-bar button:hover { color: var(--ink); }
-@media (max-width: 760px) { .modes-bar { position: static; transform: none; gap: 12px; margin: 0 auto; } }
 
 /* Architecture follows the app's theme: its colours are the --arch-* tokens, light in :root, dark beside the rest. */
 .app.editor.arch-mode { background: var(--canvas); color: var(--ink); }
-.app.editor.arch-mode > .topbar { height: 48px; background: var(--canvas); border-bottom: 1px solid var(--arch-line); }
-.arch { position: absolute; inset: 49px 0 0 0; display: flex; flex-direction: column; min-height: 0; background: var(--canvas); color: var(--ink); font-family: var(--font); }
+.arch { position: absolute; inset: 0 0 0 var(--float-left); display: flex; flex-direction: column; min-height: 0; background: var(--canvas); color: var(--ink); font-family: var(--font); }
 .arch button { color: inherit; }
 .arch-views { flex: none; display: flex; flex-direction: column; align-items: stretch; min-width: 0; border-bottom: 1px solid var(--arch-line); }
 .arch-views-row { display: flex; align-items: center; gap: 8px 16px; min-height: 36px; padding: 0 16px; min-width: 0; }
@@ -2200,8 +2205,6 @@ body, .app { background: var(--window); }
 .home { border-top: 0; }
 .card { border-radius: 14px; box-shadow: none; }
 .card:hover { box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.25); }
-/* The bar floats over the canvas: frosted, so labels scrolling under it stay out of the way. */
-.app.editor > .topbar { background: color-mix(in srgb, var(--canvas) 80%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
 .app.editor .source-links { padding: 10px 12px; margin: 0; border: 0; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Home before the designs arrive: the grid's shape, quietly. */

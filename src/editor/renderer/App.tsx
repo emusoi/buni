@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, PanelLeftClose, PanelRightOpen, PanelRightClose, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
+import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, PanelLeftClose, PanelRightOpen, PanelRightClose, Network, LayoutTemplate, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -191,7 +191,7 @@ export function App({ snap }: { snap: Snapshot }) {
     return next;
   }), []);
   /** The left sidebar shows pages and flows, or the component library. */
-  const [sideTab, setSideTab] = useState<"pages" | "library">("pages");
+  const [sideTab, setSideTab] = useState<"pages" | "flows" | "library">("pages");
   const [outline, setOutline] = useState<"pages" | "layers">("pages");
   const [reveal, setReveal] = useState<{ page: Id; at: number } | undefined>(() => { const p = new URLSearchParams(location.search).get("page"); return p ? { page: p, at: Date.now() } : undefined; });
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -837,88 +837,11 @@ export function App({ snap }: { snap: Snapshot }) {
   const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
   return (
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
-      <header className="tabs topbar">
-        <div className="bar-lead">
-          <button type="button" className={`icon-btn panel-toggle${sidebarOpen ? " on" : ""}`} title={sidebarOpen ? "Hide pages (⌘\\ hides both)" : "Show pages"} aria-label={sidebarOpen ? "Hide pages" : "Show pages"} aria-pressed={sidebarOpen} onClick={() => toggleSidebar(!sidebarOpen)}>
-            {sidebarOpen ? <PanelLeftClose size={16} strokeWidth={1.75} /> : <PanelLeftOpen size={16} strokeWidth={1.75} />}
-          </button>
-          <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
-          <Changes version={snap.view} onToast={setToast} />
-        </div>
-        <FileTabs />
-        <nav className="modes-bar" role="tablist" aria-label="Mode">
-          {([["screens", "Screens"], ["architecture", "Architecture"]] as const).map(([m, label]) => (
-            <button type="button" key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => setMode(m)}>{label}</button>
-          ))}
-        </nav>
-        <div className="bar-trail">
-        {/* Who's in the file and what they're doing; clicking opens the agent panel. Saving is silent: it always happens. */}
-        {presence && (
-          <button type="button" className="presence" title="Agents" aria-label="Open the agent panel" onClick={() => setPanel("agent")}>
-            {connected.map((name) => (
-              <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>
-            ))}
-            {people.map((name) => (
-              <span key={`person:${name}`} className="presence-dot person" style={{ background: agentColor(name) }} title={`${name} · here`}>{agentInitials(name)}</span>
-            ))}
-            <span className="presence-text" title={presence}>{[...connected, ...people].length ? [...connected, ...people].join(", ") : working.join(", ")}</span>
-          </button>
-        )}
-        <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
-        <TabletButton onToast={setToast} />
-        <button type="button" className={`icon-btn panel-toggle${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
-          {panelOpen ? <PanelRightClose size={16} strokeWidth={1.75} /> : <PanelRightOpen size={16} strokeWidth={1.75} />}
-        </button>
-        {activePage && mode === "screens" && (
-          <button type="button" className="icon-btn" title="Open as a website" aria-label="Open as a website" onClick={() => activePage && openSite(activePage)}>
-            <PlayIcon size={16} strokeWidth={1.75} />
-          </button>
-        )}
-        <Export
-          shown={sheet === "export"}
-          onClose={() => setSheet(undefined)}
-        >
-          {window.buni.downloadFile && (
-            <button type="button" className="menu-chat preset" onClick={() => void window.buni.downloadFile?.().then((r) => setToast(`Saved ${r.path}; commit it, or open it in the desktop app`))}>
-              <span className="menu-name">The .buni file</span>
-              <span className="menu-state">to keep in a repo</span>
-            </button>
-          )}
-          <button type="button" className="menu-chat preset" onClick={() => void window.buni.exportSite().then((r) => r && setToast(`Exported ${r.files} files to ${tilde(r.dir)}`))}>
-            <span className="menu-name">Website…</span>
-            <span className="menu-state">HTML + CSS</span>
-          </button>
-          {activePage && pageExports(doc, activePage).map(([label, detail, as]) => (
-            <button type="button" key={`${label} ${detail}`} className="menu-chat preset" onClick={() => exportAs(activePage, as)}>
-              <span className="menu-name">{doc.pages[activePage]?.name} as {label}</span>
-              <span className="menu-state">{detail}</span>
-            </button>
-          ))}
-        </Export>
-        {/* Everything else the window can do, one click away and out of sight until then. */}
-        <span className="export-anchor" ref={moreRef}>
-          <button type="button" className="icon-btn" aria-label="More" aria-expanded={more} title="More" onClick={() => setMore((m) => !m)}><Ellipsis size={17} /></button>
-          {more && (
-            <div className="agent-menu export-menu more-menu" role="menu" onClick={() => setMore(false)}>
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("versions")}><span className="menu-name">Versions…</span><span className="menu-state">save, go back</span></button>
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("export")}><span className="menu-name">Export…</span><span className="menu-state">file, site, PDF</span></button>
-              {activePage && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setComparing(true)}><span className="menu-name">Every width side by side</span><span className="menu-state">⇧3</span></button>}
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>
-              <div className="menu-rule" />
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => togglePanel()}><span className="menu-name">{panelOpen ? "Hide" : "Show"} inspector</span><span className="menu-state">⌘\ both</span></button>
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setKeysShown(true)}><span className="menu-name">Keyboard shortcuts</span><span className="menu-state">?</span></button>
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setGuides(true)}><span className="menu-name">Design guides</span><span className="menu-state">what agents read</span></button>
-              <div className="menu-rule" />
-              <button type="button" role="menuitem" className="menu-chat preset" onClick={() => void window.buni.close()}><span className="menu-name">All designs</span><span className="menu-state" /></button>
-            </div>
-          )}
-        </span>
-        </div>
-      </header>
+      {/* The desktop's open files, floating at the top; the web has its browser tabs. */}
+      <div className="file-strip"><FileTabs /></div>
       {mode === "architecture" && <ArchitectureMode doc={doc} name={fileName} onToast={setToast} />}
       {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
-      {mode === "screens" && !sidebarOpen && (
+      {!sidebarOpen && (
         <nav className="side-rail" aria-label="Sidebar">
           <button type="button" className="icon-btn" title="Find anything (⌘K)" aria-label="Find anything" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
           <button type="button" className="icon-btn" title="Other designs in this project (⌘P)" aria-label="Other designs" onClick={() => setSwitching(true)}><FolderTree size={17} strokeWidth={1.75} /></button>
@@ -929,19 +852,52 @@ export function App({ snap }: { snap: Snapshot }) {
               toggleSidebar(true);
             }}><Icon size={17} strokeWidth={1.75} /></button>
           ))}
+          <button type="button" className={`icon-btn${mode === "architecture" ? " on" : ""}`} title="Architecture" aria-label="Architecture" onClick={() => setMode(mode === "architecture" ? "screens" : "architecture")}><Network size={17} strokeWidth={1.75} /></button>
+          <button type="button" className="icon-btn" title="Agents" aria-label="Agents" onClick={() => { setPanel("agent"); togglePanel(true); }}><Sparkles size={17} strokeWidth={1.75} /></button>
           <span className="grow" />
           <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeftOpen size={17} strokeWidth={1.75} /></button>
+          <button type="button" className={`icon-btn${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} onClick={() => togglePanel(!panelOpen)}>{panelOpen ? <PanelRightClose size={17} strokeWidth={1.75} /> : <PanelRightOpen size={17} strokeWidth={1.75} />}</button>
         </nav>
       )}
-      {mode === "screens" && <>
+      {sidebarOpen && (
       <aside className="sidebar">
-        {sideTab === "pages" && (
+        {/* Everything that moves you around lives here, as in a Mac app's sidebar: the design, then where in it. */}
+        <div className="side-head">
+          <div className="side-head-row">
+            <span className="grow" />
+            <button type="button" className="icon-btn" title="Hide the sidebar (⌘\\ hides both)" aria-label="Hide the sidebar" onClick={() => toggleSidebar(false)}><PanelLeftClose size={16} strokeWidth={1.75} /></button>
+            <button type="button" className="icon-btn" title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
+              {panelOpen ? <PanelRightClose size={16} strokeWidth={1.75} /> : <PanelRightOpen size={16} strokeWidth={1.75} />}
+            </button>
+          </div>
+          <div className="side-head-file">
+            <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
+            <Changes version={snap.view} onToast={setToast} />
+          </div>
+        </div>
+        <nav className="side-nav" aria-label="Go to">
+          <button type="button" className="row" onClick={() => setFinding(true)}><Search size={16} strokeWidth={1.75} /><span className="name">Search</span><span className="meta">⌘K</span></button>
+          <button type="button" className={`row${mode === "screens" && sideTab === "pages" && !shownJourney ? " active" : ""}`} aria-current={mode === "screens" && sideTab === "pages" ? "page" : undefined} onClick={() => { setMode("screens"); setSideTab("pages"); setJourney(undefined); }}><LayoutTemplate size={16} strokeWidth={1.75} /><span className="name">Screens</span><span className="meta">{pages.length || ""}</span></button>
+          <button type="button" className={`row${mode === "screens" && sideTab === "flows" ? " active" : ""}`} onClick={() => { setMode("screens"); setSideTab("flows"); }}><Workflow size={16} strokeWidth={1.75} /><span className="name">Flows</span><span className="meta">{flows.length || ""}</span></button>
+          <button type="button" className={`row${mode === "architecture" ? " active" : ""}`} aria-current={mode === "architecture" ? "page" : undefined} onClick={() => setMode("architecture")}><Network size={16} strokeWidth={1.75} /><span className="name">Architecture</span></button>
+          <button type="button" className={`row${mode === "screens" && sideTab === "library" ? " active" : ""}`} onClick={() => { setMode("screens"); setSideTab("library"); }}><Component size={16} strokeWidth={1.75} /><span className="name">Components</span><span className="meta">{Object.keys(doc.shared).length || ""}</span></button>
+          {/* Who's in the file and what they're doing; it opens the agent panel. */}
+          <button type="button" className={`row${panelOpen && panel === "agent" ? " active" : ""}`} title={presence || "Agents"} onClick={() => { setPanel("agent"); togglePanel(true); }}>
+            <Sparkles size={16} strokeWidth={1.75} /><span className="name">Agents</span>
+            <span className="side-presence">
+              {connected.map((name) => <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>)}
+              {people.map((name) => <span key={`person:${name}`} className="presence-dot person" style={{ background: agentColor(name) }} title={`${name} · here`}>{agentInitials(name)}</span>)}
+              {!connected.length && !people.length && working.length > 0 && <span className="meta">{working.join(", ")}</span>}
+            </span>
+          </button>
+        </nav>
+        {mode === "screens" && sideTab === "pages" && (
           <div className="side-tabs" role="tablist" aria-label="Outline">
             <button type="button" role="tab" aria-selected={outline === "pages"} className={outline === "pages" ? "on" : ""} onClick={() => setOutline("pages")}>Pages</button>
             <button type="button" role="tab" aria-selected={outline === "layers"} className={outline === "layers" ? "on" : ""} onClick={() => setOutline("layers")}>Layers</button>
           </div>
         )}
-        <nav className="tree">
+        {mode === "screens" && <nav className="tree">
           {sideTab === "pages" && outline === "pages" && project.length > 1 && (
             // The project's designs, one click apart; ⌘P finds one, or a page in one, by name.
             <div className="project-list">
@@ -960,6 +916,40 @@ export function App({ snap }: { snap: Snapshot }) {
             frame && activePage
               ? <Layers doc={doc} root={frame} depth={0} selected={selected} also={also} expanded={new Set([...expanded, frame.id])} onToggle={toggle} onSelect={selectNode} />
               : <p className="rail-empty">Open a page to see its layers.</p>
+          ) : sideTab === "flows" ? (
+            <>
+          <div className="section-label with-action">
+            Flows <span className="n">{flows.length || ""}</span>
+            {activePage && (
+              <button type="button" className="icon-btn small" title={`New flow starting on ${doc.pages[activePage]?.name}`} aria-label="New flow" onClick={() => void window.buni.edit("set_flow", { name: `From ${doc.pages[activePage]?.name ?? "here"}`, start: activePage }).then((r) => {
+                if (!r.ok) return setToast(r.reply);
+                const id = r.reply.match(/^Flow (\S+) /)?.[1];
+                if (id) { setJourney(id); setRenaming(id); }
+              })}>
+                <Plus size={14} />
+              </button>
+            )}
+          </div>
+          {flows.length === 0 && <p className="rail-empty">A flow is a path through linked pages that you can play. + starts one on the page you're on.</p>}
+          {flows.map((f) => renaming === f.id ? (
+            <form key={f.id} className="row rename" onSubmit={(e) => { e.preventDefault(); const name = new FormData(e.currentTarget).get("name"); if (typeof name === "string" && name.trim()) void window.buni.edit("set_flow", { flow: f.id, name: name.trim() }).then((r) => !r.ok && setToast(r.reply)); setRenaming(undefined); }}>
+              <Workflow size={16} strokeWidth={1.75} />
+              <input name="name" className="field" defaultValue={f.name} autoFocus onFocus={(e) => e.currentTarget.select()} aria-label="Flow name" onBlur={(e) => e.currentTarget.form?.requestSubmit()} onKeyDown={(e) => e.key === "Escape" && setRenaming(undefined)} />
+            </form>
+          ) : (
+            <button type="button" key={f.id} className={`row flow-row${f.id === shownJourney ? " active" : ""}`} onClick={() => setJourney(f.id)} onDoubleClick={() => setRenaming(f.id)} title="Double-click to rename">
+              <Workflow size={16} strokeWidth={1.75} />
+              <span className="name">{f.name}</span>
+              <span className="meta">{(() => {
+                // Counted here; a flow that walks on into another design says so, its full count shown when opened.
+                const walk = walkFlow(app, f.start);
+                const on = walk.pages.some((p) => Object.values(app.connections).some((c) => c.page === p && !app.pages[c.to] && !c.nav));
+                return `${walk.pages.length}${on ? "+" : ""} screens`;
+              })()}</span>
+              <span className="row-x" role="button" aria-label={`Remove flow ${f.name}`} title="Remove this flow (the pages stay)" onClick={(e) => { e.stopPropagation(); if (shownJourney === f.id) setJourney(undefined); void window.buni.edit("set_flow", { flow: f.id, remove: true }).then((r) => setToast(r.reply)); }}><X size={12} /></span>
+            </button>
+          ))}
+            </>
           ) : sideTab === "pages" ? (
             <>
               <div className="section-label with-action" ref={newMenuAnchor}>
@@ -993,40 +983,11 @@ export function App({ snap }: { snap: Snapshot }) {
                 if (!next.delete(key)) next.add(key);
                 return next;
               })} />
-          <div className="section-label with-action">
-            Flows <span className="n">{flows.length || ""}</span>
-            {activePage && (
-              <button type="button" className="icon-btn small" title={`New flow starting on ${doc.pages[activePage]?.name}`} aria-label="New flow" onClick={() => void window.buni.edit("set_flow", { name: `From ${doc.pages[activePage]?.name ?? "here"}`, start: activePage }).then((r) => {
-                if (!r.ok) return setToast(r.reply);
-                const id = r.reply.match(/^Flow (\S+) /)?.[1];
-                if (id) { setJourney(id); setRenaming(id); }
-              })}>
-                <Plus size={14} />
-              </button>
-            )}
-          </div>
-          {flows.length === 0 && <p className="rail-empty">A flow is a path through linked pages that you can play. + starts one on the page you're on.</p>}
-          {flows.map((f) => renaming === f.id ? (
-            <form key={f.id} className="row rename" onSubmit={(e) => { e.preventDefault(); const name = new FormData(e.currentTarget).get("name"); if (typeof name === "string" && name.trim()) void window.buni.edit("set_flow", { flow: f.id, name: name.trim() }).then((r) => !r.ok && setToast(r.reply)); setRenaming(undefined); }}>
-              <Workflow size={16} strokeWidth={1.75} />
-              <input name="name" className="field" defaultValue={f.name} autoFocus onFocus={(e) => e.currentTarget.select()} aria-label="Flow name" onBlur={(e) => e.currentTarget.form?.requestSubmit()} onKeyDown={(e) => e.key === "Escape" && setRenaming(undefined)} />
-            </form>
+            </>
           ) : (
-            <button type="button" key={f.id} className={`row flow-row${f.id === shownJourney ? " active" : ""}`} onClick={() => setJourney(f.id)} onDoubleClick={() => setRenaming(f.id)} title="Double-click to rename">
-              <Workflow size={16} strokeWidth={1.75} />
-              <span className="name">{f.name}</span>
-              <span className="meta">{(() => {
-                // Counted here; a flow that walks on into another design says so, its full count shown when opened.
-                const walk = walkFlow(app, f.start);
-                const on = walk.pages.some((p) => Object.values(app.connections).some((c) => c.page === p && !app.pages[c.to] && !c.nav));
-                return `${walk.pages.length}${on ? "+" : ""} screens`;
-              })()}</span>
-              <span className="row-x" role="button" aria-label={`Remove flow ${f.name}`} title="Remove this flow (the pages stay)" onClick={(e) => { e.stopPropagation(); if (shownJourney === f.id) setJourney(undefined); void window.buni.edit("set_flow", { flow: f.id, remove: true }).then((r) => setToast(r.reply)); }}><X size={12} /></span>
-            </button>
-          ))}
+            <>
           <div className="section-label with-action">
             Components <span className="n">{Object.keys(doc.shared).length || ""}</span>
-            <button type="button" className="icon-btn small" title="Components: open the library to make or place one" aria-label="Open the component library" onClick={() => setSideTab("library")}><Plus size={14} /></button>
           </div>
           {Object.keys(doc.shared).length === 0 && <p className="rail-empty">Make a layer a component to reuse it across pages; the library keeps them.</p>}
           {Object.values(doc.shared).sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
@@ -1045,13 +1006,6 @@ export function App({ snap }: { snap: Snapshot }) {
               </button>
             )
           ))}
-            </>
-          ) : (
-            <>
-              <button type="button" className="row" onClick={() => setSideTab("pages")}>
-                <ChevronLeft size={14} className="dim" />
-                <span className="name">Pages</span>
-              </button>
               <LibraryPanel doc={doc} imported={imported} path={snap.path} dir={snap.dir} page={activePage} open={component} onOpen={openComponent} onInsert={() => setInserting(true)} onHealth={() => setHealth(true)} />
               <Inspiration page={activePage && doc.pages[activePage] ? { id: activePage, name: doc.pages[activePage]!.name } : undefined} onSaved={setToast}
                 onUse={(file, name) => void window.buni.edit("use_inspiration", { pattern: file }).then((r) => setToast(r.ok ? `${name} is on a page of its own now: take its structure, make it yours.` : r.reply))} />
@@ -1063,8 +1017,57 @@ export function App({ snap }: { snap: Snapshot }) {
               )}
             </>
           )}
-        </nav>
+        </nav>}
+        <div className="side-foot">
+          {activePage && mode === "screens" && <button type="button" className="icon-btn" title="Open as a website" aria-label="Open as a website" onClick={() => openSite(activePage)}><PlayIcon size={16} strokeWidth={1.75} /></button>}
+          <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
+          <TabletButton onToast={setToast} />
+          <span className="grow" />
+          <button type="button" className="icon-btn" title="Share or export" aria-label="Share or export" onClick={() => setSheet("export")}><Share size={16} strokeWidth={1.75} /></button>
+          <Export
+            shown={sheet === "export"}
+            onClose={() => setSheet(undefined)}
+          >
+            {window.buni.downloadFile && (
+              <button type="button" className="menu-chat preset" onClick={() => void window.buni.downloadFile?.().then((r) => setToast(`Saved ${r.path}; commit it, or open it in the desktop app`))}>
+                <span className="menu-name">The .buni file</span>
+                <span className="menu-state">to keep in a repo</span>
+              </button>
+            )}
+            <button type="button" className="menu-chat preset" onClick={() => void window.buni.exportSite().then((r) => r && setToast(`Exported ${r.files} files to ${tilde(r.dir)}`))}>
+              <span className="menu-name">Website…</span>
+              <span className="menu-state">HTML + CSS</span>
+            </button>
+            {activePage && pageExports(doc, activePage).map(([label, detail, as]) => (
+              <button type="button" key={`${label} ${detail}`} className="menu-chat preset" onClick={() => exportAs(activePage, as)}>
+                <span className="menu-name">{doc.pages[activePage]?.name} as {label}</span>
+                <span className="menu-state">{detail}</span>
+              </button>
+            ))}
+          </Export>
+          {/* Everything else the window can do, one click away and out of sight until then. */}
+          <span className="export-anchor" ref={moreRef}>
+            <button type="button" className="icon-btn" aria-label="More" aria-expanded={more} title="More" onClick={() => setMore((m) => !m)}><Ellipsis size={17} /></button>
+            {more && (
+              <div className="agent-menu export-menu more-menu" role="menu" onClick={() => setMore(false)}>
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("versions")}><span className="menu-name">Versions…</span><span className="menu-state">save, go back</span></button>
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setSheet("export")}><span className="menu-name">Export…</span><span className="menu-state">file, site, PDF</span></button>
+                {activePage && <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setComparing(true)}><span className="menu-name">Every width side by side</span><span className="menu-state">⇧3</span></button>}
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setImportingHtml(true)}><span className="menu-name">Import HTML…</span><span className="menu-state" /></button>
+                <div className="menu-rule" />
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => toggleSidebar()}><span className="menu-name">{sidebarOpen ? "Hide" : "Show"} sidebar</span><span className="menu-state" /></button>
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => togglePanel()}><span className="menu-name">{panelOpen ? "Hide" : "Show"} inspector</span><span className="menu-state">⌘\ both</span></button>
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setKeysShown(true)}><span className="menu-name">Keyboard shortcuts</span><span className="menu-state">?</span></button>
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => setGuides(true)}><span className="menu-name">Design guides</span><span className="menu-state">what agents read</span></button>
+                <div className="menu-rule" />
+                <button type="button" role="menuitem" className="menu-chat preset" onClick={() => void window.buni.close()}><span className="menu-name">All designs</span><span className="menu-state" /></button>
+              </div>
+            )}
+          </span>
+        </div>
       </aside>
+      )}
+      {mode === "screens" && <>
       <main className="main">
         <div className="workspace">
           {shownJourney ? (
