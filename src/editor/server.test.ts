@@ -232,3 +232,39 @@ test("opening a file held by a headless MCP server cannot replace its writer", a
     await rm(dir, { recursive: true, force: true });
   }
 }, 10_000);
+
+test("a design is served as its website: a take plays in its page's place, and each page follows the design", async () => {
+  const root = await mkdtemp(join(tmpdir(), "buni-site-"));
+  await mkdir(join(root, "a/Shop"), { recursive: true });
+  const store = new DiskStore(root, "/people");
+  const file = "/people/a/Shop/Shop.buni";
+  await store.write(file, serializeDoc(emptyDoc()));
+  const editor = await createEditor({ store, origin: "https://buni.test", assets: () => ({ files: new Map(), client: "", styles: "" }) });
+  const get = (path: string) => editor.fetch(new Request(`https://buni.test${path}`, { headers: { host: "buni.test" } }), "/people/a");
+  const edit = async (tool: string, args: unknown) => ((await (await editor.fetch(new Request(`https://buni.test/rpc/edit?file=${encodeURIComponent(file)}`, {
+    method: "POST", headers: { host: "buni.test", "content-type": "application/json" }, body: JSON.stringify([tool, args]),
+  }), "/people/a")).json()) as { value: { reply: string } }).value.reply;
+  const frameOf = (reply: string) => reply.match(/root frame (\S+)\./)?.[1] ?? "";
+  try {
+    const home = await edit("create_page", { name: "Home", route: "/" });
+    await edit("write_html", { parent: frameOf(home), html: "<p>As live</p>" });
+    const take = await edit("create_page", { name: "Home bolder", take_of: home.match(/Created page (\S+?)[ .]/)?.[1] });
+    await edit("write_html", { parent: frameOf(take), html: "<p>Bolder</p>" });
+    const site = "/site/people/a/Shop/Shop.buni";
+    const live = await (await get(`${site}/`)).text();
+    expect(live).toContain("As live");
+    // The page listens for edits, to the design it was drawn from.
+    expect(live).toContain(`new EventSource("/events?file=" + encodeURIComponent("${file}"))`);
+    const takeId = take.match(/Created page (\S+?)[ .]/)?.[1] ?? "";
+    const to = (await get(`${site}/?page=${takeId}`)).headers.get("location");
+    expect(to).toBe(`${site}/~${takeId}/`);
+    const played = await (await get(to ?? "")).text();
+    expect(played).toContain("Bolder");
+    expect(played).not.toContain("As live");
+    expect((await get(`${site}/~${takeId}/styles/pages.css`)).status).toBe(200);
+    expect((await get(`${site}/~nope/`)).status).toBe(404);
+  } finally {
+    editor.stop();
+    await rm(root, { recursive: true, force: true });
+  }
+});

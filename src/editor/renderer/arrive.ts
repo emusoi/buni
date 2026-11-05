@@ -1,14 +1,14 @@
-// Where a design opens when another design or Home sends you there: a page, playing or not, and the flow to play.
+// Where a design opens when another design or Home sends you there: a page. And where a page is as a website.
 import type { Id } from "buni/format/doc.ts";
 
 export const ARRIVE = "buni.arrive";
 
-export interface Arrival { page: Id; play: boolean; flow?: Id }
+export interface Arrival { page: Id }
 
-export const isArrival = (v: unknown): v is Arrival =>
-  typeof v === "object" && v !== null && "page" in v && typeof v.page === "string" && "play" in v && typeof v.play === "boolean" && (!("flow" in v) || typeof v.flow === "string");
+export const isArrival = (v: unknown): v is Arrival => typeof v === "object" && v !== null && "page" in v && typeof v.page === "string";
 
-/** Asks the next design to open at `page`; kept for this tab only. */
-export function arriveAt(a: Arrival): void {
-  try { sessionStorage.setItem(ARRIVE, JSON.stringify(a)); } catch { /* the design opens at its start */ }
-}
+/** The design at `file` as its website, opened at `page` (a take opens in its page's place). */
+export const siteHref = (file: string, page: Id): string => `/site${file.split("/").map(encodeURIComponent).join("/")}/?page=${encodeURIComponent(page)}`;
+
+/** Opens the website in its own tab, one per design, so ▷ again brings that tab back. */
+export const openSiteTab = (file: string, page: Id): void => void window.open(siteHref(file, page), `buni-site-${file}`);

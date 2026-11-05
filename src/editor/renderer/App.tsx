@@ -13,7 +13,7 @@ import { AskCard } from "./AskCard.tsx";
 import { Changes } from "./Changes.tsx";
 import { Breakpoints } from "./Breakpoints.tsx";
 import { Guides } from "./Guides.tsx";
-import { ARRIVE, isArrival } from "./arrive.ts";
+import { ARRIVE, isArrival, openSiteTab } from "./arrive.ts";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
 import { History } from "./History.tsx";
@@ -27,7 +27,6 @@ import { pageOfNode, type Hit } from "./search.ts";
 import { Journey } from "./Journey.tsx";
 import { TakesSheet } from "./TakesSheet.tsx";
 import { OwnersContext } from "./owners.ts";
-import { Play } from "./Play.tsx";
 import { Inspiration, LibraryHealth, LibraryPanel, QuickInsert, type InsertMode } from "./Library.tsx";
 import { PageList } from "./PageList.tsx";
 import { ProjectSwitch, siblings } from "./ProjectSwitch.tsx";
@@ -232,7 +231,6 @@ export function App({ snap }: { snap: Snapshot }) {
   const [renaming, setRenaming] = useState<Id>();
   /** Component board in focus on the canvas, instead of a page. */
   const [component, setComponent] = useState<Id>();
-  const [play, setPlay] = useState<{ page: Id; flow?: Id }>();
   /** The page whose takes are open side by side, to pick one. */
   const [takes, setTakes] = useState<Id>();
   /** Screens (pages, components, flows) or Architecture (how the app behind them is built and shipped); ?arch= opens the second. */
@@ -344,22 +342,21 @@ export function App({ snap }: { snap: Snapshot }) {
     if (select !== undefined) setSelected(select);
     else if (was !== id) setSelected(undefined);
   }, []);
-  /** Opens the file a page or component of another file lives in, at it; playing the page, if `play`. */
-  const openElsewhere = (page: Id, play = false) => {
+  /** Opens the file a page or component of another file lives in, at it. */
+  const openElsewhere = (page: Id) => {
     const file = snap.owners[page];
     if (!file) return;
     // Handed to the next window by the tab, as hosts open a file with no more than its path.
-    try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page, play })); } catch { /* the file opens at its start */ }
+    try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page })); } catch { /* the file opens at its start */ }
     void window.buni.open(besideFile(snap.path, file));
   };
-  // Arrived by a link from another file: go to its page, playing if the link was followed in Play.
+  // Arrived by a link from another file: go to its page.
   useEffect(() => {
     let arrive: unknown;
     try { arrive = JSON.parse(sessionStorage.getItem(ARRIVE) ?? "null"); sessionStorage.removeItem(ARRIVE); } catch { return; }
     if (!isArrival(arrive)) return;
     if (snap.view.shared[arrive.page]) { openComponent(arrive.page); setReveal({ page: arrive.page, at: Date.now() }); }
     else if (!snap.view.pages[arrive.page]) return;
-    else if (arrive.play) setPlay({ page: arrive.page, ...(arrive.flow ? { flow: arrive.flow } : {}) });
     else openPage(arrive.page);
   }, []);
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and
@@ -522,7 +519,7 @@ export function App({ snap }: { snap: Snapshot }) {
   // The whole app, this design and the project's others in full, for walking and playing flows that cross from one
   // into the next: loaded only when Play or a flow's board is open, not with every design.
   const [others, setOthers] = useState<Doc[]>([]);
-  const crossing = play !== undefined || journey !== undefined;
+  const crossing = journey !== undefined;
   useEffect(() => {
     if (!crossing || project.length < 2) return;
     // An agent may be editing another design while you play: the summaries say when one changed, cheaply, and
@@ -546,18 +543,18 @@ export function App({ snap }: { snap: Snapshot }) {
   const app = useMemo(() => withProject(doc, others), [doc, others]);
   const fileOfPage = useMemo(() => new Map(project.flatMap((f) => f.pages.filter((p) => !snap.view.pages[p.id]).map((p) => [p.id, f.path] as const))), [project, snap.view.pages]);
   /** Opens a page here, or in the design of the project it belongs to. */
-  // The page as the website it is, in a tab of its own: real routes, links, scrolling and typing. A page with no route
-  // (a graphic) or a state of a screen isn't on the site; those play here.
+  // The page as the website it is, in a tab of its own: real routes, links, scrolling and typing. A take plays in its
+  // page's place. A page with no route (a graphic) or a state of a screen isn't on the site.
   const openSite = (page: Id) => {
-    const p = doc.pages[page];
-    const file = new URLSearchParams(location.search).get("file");
-    if (!file || p?.route === undefined || p.state !== undefined) return setPlay({ page, ...(shownJourney ? { flow: shownJourney } : {}) });
-    window.open(`/site${file.split("/").map(encodeURIComponent).join("/")}/?page=${encodeURIComponent(page)}`, `buni-site-${file}`);
+    const p = app.pages[page];
+    const on = p?.option ? app.pages[p.option.of] : p;
+    if (!on || on.route === undefined || on.state !== undefined) return setToast(`${p?.name ?? "This page"} has no route, so it isn't on the website. Give it one under Page in the inspector.`);
+    openSiteTab(fileOfPage.get(page) ?? snap.path, page);
   };
   const showPage = (page: Id) => { const file = fileOfPage.get(page); if (file && !snap.view.pages[page]) openAt(file, page); else openPage(page); };
   /** Opens another design of the project, at one of its pages if given. */
   const openAt = (path: string, page?: Id) => {
-    if (page) try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page, play: false })); } catch { /* opens at its start */ }
+    if (page) try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page })); } catch { /* opens at its start */ }
     void window.buni.open(path);
   };
   const [keysShown, setKeysShown] = useState(false);
@@ -796,7 +793,7 @@ export function App({ snap }: { snap: Snapshot }) {
     { id: "ask", title: "Connect a coding agent…", detail: "Claude Code or Codex", icon: Sparkles, run: () => setPanel("agent") },
     { id: "keys", title: "Keyboard shortcuts", icon: Keyboard, run: () => setKeysShown(true) },
     { id: "guides", title: "Design guides", icon: BookOpen, run: () => setGuides(true) },
-    ...(activePage ? [{ id: "site", title: `Open ${doc.pages[activePage]?.name ?? "this page"} as a website`, icon: PlayIcon, run: () => openSite(activePage) }, { id: "play", title: `Review a flow from ${doc.pages[activePage]?.name ?? "this page"}`, detail: "Play, with notes", icon: PlayIcon, run: () => setPlay({ page: activePage, ...(shownJourney ? { flow: shownJourney } : {}) }) }] : []),
+    ...(activePage ? [{ id: "open-site", title: `Open ${doc.pages[activePage]?.name ?? "this page"} as a website`, icon: PlayIcon, run: () => openSite(activePage) }] : []),
     { id: "site", title: "Share as a website…", detail: "HTML + CSS", icon: Share, run: () => void window.buni.exportSite().then((r) => r && setToast(`Exported ${r.files} files to ${tilde(r.dir)}`)) },
     { id: "undo", title: "Undo", keys: "⌘Z", icon: Undo2, run: () => void window.buni.undo().then((r) => setToast(r.reply)) },
     { id: "redo", title: "Redo", keys: "⇧⌘Z", icon: Redo2, run: () => void window.buni.redo().then((r) => setToast(r.reply)) },
@@ -1058,7 +1055,7 @@ export function App({ snap }: { snap: Snapshot }) {
       <main className="main">
         <div className="workspace">
           {shownJourney ? (
-            <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={(page) => setPlay({ page, flow: shownJourney })} onOpenPage={showPage} />
+            <Journey doc={app} dir={snap.dir} flow={shownJourney} onPlay={openSite} onOpenPage={showPage} />
           ) : comparing && activePage && doc.pages[activePage] ? (
             <Breakpoints doc={doc} page={activePage} dir={snap.dir} onClose={() => setComparing(false)} onEdit={(w) => { viewWidth(activePage, w); setComparing(false); }} />
           ) : (
@@ -1177,23 +1174,7 @@ export function App({ snap }: { snap: Snapshot }) {
         ...f.pages.map((p) => ({ id: `${f.path}#${p.id}`, title: p.name, detail: `${f.name}${p.route ? ` · ${p.route}` : ""}`, icon: FileText, run: () => openAt(f.path, p.id) })),
       ])} />}
       {takes && doc.pages[takes] && (
-        <TakesSheet doc={doc} dir={snap.dir} page={takes} mode={modeAt[takes] ?? tokenMode} onClose={() => setTakes(undefined)} onPlay={(p) => { setTakes(undefined); setPlay({ page: p }); }} onEdit={(p) => { setTakes(undefined); openPage(p); }} onToast={setToast} />
-      )}
-      {play && doc.pages[play.page] && (
-        <Play
-          doc={app}
-          dir={snap.dir}
-          mode={modeAt[play.page] ?? tokenMode}
-          start={play.page}
-          {...(play.flow ? { flow: play.flow } : {})}
-          startWidth={viewAt[play.page]}
-          onClose={() => setPlay(undefined)}
-          onLeave={(page) => openElsewhere(page, true)}
-          onSend={(request) => {
-            setPlay(undefined);
-            askAgent(request);
-          }}
-        />
+        <TakesSheet doc={doc} dir={snap.dir} page={takes} mode={modeAt[takes] ?? tokenMode} onClose={() => setTakes(undefined)} onPlay={(p) => { setTakes(undefined); openSite(p); }} onEdit={(p) => { setTakes(undefined); openPage(p); }} onToast={setToast} />
       )}
       {importingHtml && <ImportHtml at={selNode?.kind === "frame" ? { parent: selNode.id } : selNode?.parent ? { parent: selNode.parent, after: selNode.id } : frame ? { parent: frame.id } : undefined} onClose={() => setImportingHtml(false)} onImported={(page, node, message) => { setImportingHtml(false); if (page) openPage(page); if (node) setSelected(node); setToast(message); }} />}
       {keysShown && <Shortcuts onClose={() => setKeysShown(false)} />}

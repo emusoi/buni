@@ -980,18 +980,24 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     if (site && (req.method === "GET" || req.method === "HEAD")) {
       const design = decodeURIComponent(site[1] ?? "");
       if (!isDesignPath(design, dir)) return new Response("not found", { status: 404 });
-      const doc = (await need(design)).system();
+      const full = (await need(design)).system();
+      // A take plays in its page's place, under /~<take>/, so its links and the rest of the site go on around it.
+      const [, take, tail = ""] = decodeURIComponent(site[2] ?? "").match(/^(?:\/~([\w-]+))?(\/.*)?$/) ?? [];
+      const doc = take === undefined ? full : withTake(full, take);
+      if (!doc) return new Response("not found", { status: 404 });
       const page = url.searchParams.get("page");
       // ?page= opens that page wherever the site put it; a folder without its slash gets one, so relative links resolve.
       if (page !== null) {
-        const at = siteLayout(doc).fileOf.get(page);
-        return at === undefined ? new Response("That page has no route, so it isn't part of the website.", { status: 404 }) : new Response(null, { status: 303, headers: { location: `/site${site[1]}/${at.replace(/index\.html$/, "")}` } });
+        const of = doc.pages[page]?.option?.of;
+        const at = siteLayout(doc).fileOf.get(of ?? page);
+        return at === undefined ? new Response("That page has no route, so it isn't part of the website.", { status: 404 }) : new Response(null, { status: 303, headers: { location: `/site${site[1]}${of ? `/~${page}` : ""}/${at.replace(/index\.html$/, "")}` } });
       }
-      const rest = decodeURIComponent(site[2] ?? "");
-      if (!rest.endsWith("/") && !/\.[a-z0-9]+$/i.test(rest)) return new Response(null, { status: 301, headers: { location: `/site${site[1]}${rest}/${url.search}` } });
-      const rel = rest.slice(1) + (rest.endsWith("/") ? "index.html" : "");
+      const base = `/site${site[1]}${take === undefined ? "" : `/~${take}`}`;
+      if (!tail.endsWith("/") && !/\.[a-z0-9]+$/i.test(tail)) return new Response(null, { status: 301, headers: { location: `${base}${tail}/${url.search}` } });
+      const rel = tail.slice(1) + (tail.endsWith("/") ? "index.html" : "");
       const text = exportSite(doc, (family) => `/fonts/${fontSlug(family)}.woff2`).get(rel);
-      if (text !== undefined) return new Response(text, { headers: { "content-type": rel.endsWith(".css") ? "text/css; charset=utf-8" : "text/html; charset=utf-8", "cache-control": "no-store" } });
+      if (text !== undefined && rel.endsWith(".css")) return new Response(text, { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-store" } });
+      if (text !== undefined) return new Response(text.replace(/<\/body>/, `${liveReload(design)}</body>`), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
       // Anything else is one of the design's own files: its images, its live scripts and styles.
       const path = `${design.slice(0, design.lastIndexOf("/"))}/${rel}`;
       const bytes = isDesignFile(path, dir) ? await store.readBytes(path).catch(() => undefined) : undefined;
@@ -1137,4 +1143,45 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
     void tabletServer.stop(true);
     throw error;
   }
+}
+
+/** The design with `take` drawn in its page's place; undefined when `take` isn't a take. */
+function withTake(doc: Doc, take: string): Doc | undefined {
+  const t = doc.pages[take];
+  const page = t?.option ? doc.pages[t.option.of] : undefined;
+  return t && page ? { ...doc, pages: { ...doc.pages, [page.id]: { ...page, frame: t.frame } } } : undefined;
+}
+
+/**
+ * A website page follows the design: on each change it fetches itself and its styles again and, when they differ, swaps
+ * the body in place, keeping what was typed into its fields. A page with scripts of its own reloads instead.
+ */
+function liveReload(design: string): string {
+  return `<script>(() => {
+  const sheets = () => [...document.querySelectorAll('link[rel=stylesheet]')].filter((l) => l.href.startsWith(location.origin));
+  const get = (u) => fetch(u, { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
+  const all = () => Promise.all([get(location.href), ...sheets().map((l) => get(l.href.split("?")[0]))]);
+  let last, timer, busy = false, again = false;
+  all().then((t) => (last = t)).catch(() => {});
+  const check = async () => {
+    if (busy) return void (again = true);
+    busy = true;
+    try {
+      const now = await all();
+      if (!last || now[0] !== last[0]) {
+        const next = new DOMParser().parseFromString(now[0], "text/html");
+        if (next.querySelectorAll("script").length > 1 || document.querySelectorAll("body script").length > 1) return location.reload();
+        const typed = new Map([...document.querySelectorAll("input, textarea, select")].map((e) => [e.className, e.type === "checkbox" || e.type === "radio" ? e.checked : e.value]));
+        const focus = document.activeElement?.className;
+        document.title = next.title;
+        document.body.replaceWith(next.body);
+        for (const e of document.querySelectorAll("input, textarea, select")) if (typed.has(e.className)) { const v = typed.get(e.className); if (typeof v === "boolean") e.checked = v; else e.value = v; }
+        if (focus) document.getElementsByClassName(focus)[0]?.focus?.();
+      }
+      sheets().forEach((l, i) => { if (last && now[i + 1] !== last[i + 1]) l.href = l.href.split("?")[0] + "?v=" + Date.now(); });
+      last = now;
+    } catch { location.reload(); } finally { busy = false; if (again) { again = false; check(); } }
+  };
+  new EventSource("/events?file=" + encodeURIComponent(${JSON.stringify(design).replace(/</g, "\\u003c")})).onmessage = () => { clearTimeout(timer); timer = setTimeout(check, 250); };
+})();</script>`;
 }

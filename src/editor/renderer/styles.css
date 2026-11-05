@@ -233,108 +233,12 @@ svg { flex-shrink: 0; }
 .links text { fill: var(--accent-ink); font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--canvas); }
 .links .head.out { fill: var(--accent); }
 .links .head.in, .links .head.other { fill: var(--label); }
-.play-from { -webkit-app-region: no-drag; color: var(--ink); }
-
-.play { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; background: #1e1e20; color: #ecebe6; }
-/* Play covers the window, so its bar leaves the traffic lights their 84px and shares their 22px centre line. */
-.play-bar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 14px 0 84px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); -webkit-app-region: drag; }
-.play-bar button, .play-bar label { -webkit-app-region: no-drag; }
-.play-icon { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 6px; background: none; color: #fff; }
-.play-icon:hover, .play-tool:hover { background: rgba(255, 255, 255, 0.08); }
-.play-flow, .play-tool { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font-size: 12px; font-weight: 600; color: #98989d; white-space: nowrap; }
-.play-flow { background: rgba(255, 255, 255, 0.06); color: #fff; font-size: 13px; }
-.play-flow select, .play-tool select { appearance: none; border: 0; background: none; font: inherit; color: inherit; outline: none; cursor: pointer; }
-.play-flow select option, .play-tool select option { color: #302f29; }
-.play-tool.on { background: rgba(255, 255, 255, 0.1); color: #fff; }
-.play-tool .count { padding: 0 6px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 10px; }
-.play-rail { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; }
-.play-step-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.play-sep { width: 20px; height: 1.5px; flex: none; background: #48484a; }
-.play-step { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px; border: 0; border-radius: 15px; background: none; font-size: 12.5px; font-weight: 600; color: #98989d; white-space: nowrap; }
-.play-step .dot { width: 18px; height: 18px; flex: none; display: grid; place-items: center; border-radius: 9px; border: 1.5px solid #48484a; font-size: 10px; font-weight: 700; }
-.play-step.now { background: rgba(255, 255, 255, 0.08); color: #fff; }
-.play-step.now .dot { border: 0; background: #fff; color: #1e1e20; }
-.play-step.done { color: #b9b8b2; }
-.play-step.done .dot { border: 0; background: var(--green); color: #fff; }
-.play-step:hover { color: #fff; }
-.play-finish { display: inline-flex; align-items: center; gap: 5px; height: 26px; margin-left: 8px; padding: 0 10px; border: 0; border-radius: 13px; background: var(--green); color: #fff; font-size: 12px; font-weight: 600; }
-.play-body { flex: 1; min-height: 0; display: flex; }
-.play-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.play-stage { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 14px; padding: 18px 48px 24px; }
-.play-screen { flex: none; }
 /* The keys a terminal screen answers to; press them, or click one. */
-.play-keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 720px; }
-.play-keys button { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 0; border-radius: 6px; background: #2c2c2e; color: #d6d5cf; font-size: 12px; }
-.play-keys button:hover { background: #33322d; }
-.play-screen { position: relative; flex-shrink: 0; background: #fff; overflow: hidden; border-radius: 10px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-.play-screen iframe { display: block; border: 0; pointer-events: none; }
-.play-screen.terminal { background: #101010; border-radius: 8px; }
-.play-screen .hit { position: absolute; inset: 0; cursor: default; }
-.play-screen.noting .hit { cursor: crosshair; }
-.play-pin { position: absolute; z-index: 2; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 13px 13px 13px 3px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(48, 47, 41, 0.4); pointer-events: none; }
-.play-noting { position: absolute; z-index: 2; left: 50%; top: 12px; transform: translateX(-50%); padding: 6px 12px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; pointer-events: none; }
-.play-note-editor { position: absolute; z-index: 3; width: 300px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: #fff; color: var(--ink); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3); }
-.play-note-editor .where { font-size: 11px; color: var(--label); }
-.play-note-editor textarea { resize: none; border: 0; outline: none; font: inherit; font-size: 13px; line-height: 1.5; color: var(--ink); }
-.play-note-editor .foot { display: flex; align-items: center; justify-content: space-between; padding: 0; font-size: 11px; color: var(--label); }
-.play-note-editor .btn { flex: none; padding: 0 12px; }
-.play-journey { flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; margin: 0 48px; padding: 14px 20px 16px; border-radius: 10px 10px 0 0; background: #2c2c2e; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-.play-journey .head { display: flex; align-items: center; gap: 12px; font-size: 12px; }
-.play-journey .head b { color: #fff; }
-.play-journey .conf { display: inline-flex; align-items: center; gap: 3px; }
-.play-journey .conf span { width: 8px; height: 8px; border-radius: 4px; background: #48484a; }
-.play-journey .conf span.on { background: #fff; }
-.play-journey .conf em { margin-left: 6px; font-style: normal; font-size: 11px; color: #98989d; }
-.play-journey .grow { flex: 1; }
-.play-journey .evidence { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 11px; color: #98989d; }
-.play-link { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; font-size: 11px; font-weight: 600; color: #98989d; }
-.play-journey .lanes { display: flex; gap: 28px; }
-.play-journey .lane { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.play-journey .lane span { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; color: #98989d; }
-.play-journey .lane p { margin: 0; font-size: 13px; line-height: 1.45; color: #ecebe6; }
-.play-journey .lane.warn p { color: #f0c38a; }
-.play-journey .play-empty { margin: 0; font-size: 12px; color: #98989d; }
-.play-journey-closed { align-self: flex-end; display: inline-flex; align-items: center; gap: 4px; margin: 0 48px; padding: 6px 12px; border: 0; border-radius: 8px 8px 0 0; background: #2c2c2e; font-size: 11px; font-weight: 600; color: #98989d; }
-.play-keys { flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 18px; height: 34px; font-size: 11px; color: #8e8e93; }
-.play kbd { padding: 1px 5px; border-radius: 3px; background: #2e2d29; color: #b9b8b2; font-family: var(--mono); font-size: 10.5px; }
-.play-notes { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; margin: 18px 16px 16px 0; padding: 14px; border-radius: 10px; background: #2c2c2e; }
-.play-notes .head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-.play-notes .head span, .play-notes .hint, .play-notes .play-empty { font-size: 11px; color: #98989d; }
-.play-notes .hint, .play-notes .play-empty { margin: 0; line-height: 1.5; }
-.play-notes .list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
-.play-notes .note { display: flex; gap: 10px; padding: 10px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, 0.05); text-align: left; color: #ecebe6; font-size: 12.5px; line-height: 1.45; }
-.play-notes .note:hover { background: rgba(255, 255, 255, 0.09); }
-.play-notes .note small { display: block; font-size: 11px; color: #98989d; }
-.play-notes .pin { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 11px 11px 11px 3px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; }
-.play-add { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px dashed #48484a; border-radius: 8px; background: none; font-size: 12px; font-weight: 600; color: #b9b8b2; }
 .play-send { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; }
 .play-send:disabled { opacity: 0.4; cursor: default; }
-.play-end { position: absolute; inset: 44px 0 0; z-index: 4; display: grid; place-items: center; background: rgba(30, 30, 32, 0.72); }
-.play-end .card { width: 560px; display: flex; flex-direction: column; gap: 16px; padding: 26px; border-radius: 14px; background: #fff; color: var(--ink); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); }
-.play-end .title { display: flex; align-items: center; gap: 12px; }
-.play-end .flag { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 18px; background: #e6f0ea; color: var(--green); }
-.play-end h2 { margin: 0; font-size: 18px; }
-.play-end .title p { margin: 2px 0 0; font-size: 12.5px; color: var(--label); }
-.play-end .stats { display: flex; gap: 8px; }
-.play-end .stats div { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 8px; background: var(--sidebar); }
-.play-end .stats b { font-size: 20px; }
-.play-end .stats span, .play-end .issue span, .play-end .more, .play-end .none { font-size: 11.5px; color: var(--label); }
-.play-end .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--label); margin-bottom: -8px; }
-.play-end .bars { display: flex; gap: 4px; padding: 12px 8px 8px; border-radius: 8px; background: var(--sidebar); }
-.play-end .bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 88px; }
-.play-end .bar { width: 28px; border-radius: 4px 4px 0 0; background: #e0a458; }
-.play-end .bar.good { background: var(--green); }
-.play-end .bars em { font-style: normal; font-size: 11px; color: var(--ink-2); }
-.play-end .issues { display: flex; flex-direction: column; gap: 10px; }
-.play-end .issue { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: var(--warn); }
-.play-end .issue b { display: block; color: var(--ink); }
-.play-end .none { margin: 0; }
-.play-end .actions { display: flex; gap: 8px; padding-top: 4px; }
-.play-end .actions .play-send { flex: 1; }
-.play-end .actions .btn { flex: none; padding: 0 14px; height: 36px; }
-@keyframes play-fade { from { opacity: 0; } }
-@keyframes play-slide-left { from { transform: translateX(48px); opacity: 0; } }
-@keyframes play-slide-right { from { transform: translateX(-48px); opacity: 0; } }
+
+
+
 
 .journey { overflow: auto; background: var(--content); padding: 28px 32px 48px; }
 .journey-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; max-width: 1200px; }
@@ -754,17 +658,6 @@ svg { flex-shrink: 0; }
 .board-placeholder { width: 100%; height: 100%; background: #fff; }
 
 /* ---------- play: compact rail for long flows ---------- */
-.play-step { flex-shrink: 0; }
-.play-icon.small { width: 28px; height: 28px; flex: none; }
-.play-icon:disabled { opacity: 0.3; cursor: default; }
-.play-step.picker { position: relative; max-width: 360px; cursor: pointer; }
-.play-step.picker .picker-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.play-step.picker select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.play-segments { display: flex; gap: 3px; margin-left: 10px; min-width: 0; }
-.play-segments button { width: 10px; height: 6px; flex: 0 1 10px; min-width: 3px; padding: 0; border: 0; border-radius: 3px; background: #48484a; }
-.play-segments button.done { background: var(--green); }
-.play-segments button.now { background: #fff; width: 18px; flex-basis: 18px; }
-.play-segments button:hover { background: #98989d; }
 
 .panel-resize { position: absolute; z-index: 5; left: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; }
 .panel-resize:hover, .panel-resize:active { background: linear-gradient(90deg, transparent 2px, var(--accent) 2px, var(--accent) 4px, transparent 4px); }
@@ -1119,17 +1012,6 @@ button.insert-where:hover { color: var(--ink); }
 .agent-edits span small { font-size: 11px; color: var(--label); overflow: hidden; text-overflow: ellipsis; }
 
 /* A crowded step bar: other steps give way, down to their number; the current step and Finish stay whole. */
-.play-step-wrap:has(.play-step:not(.now)) { flex-shrink: 1; }
-.play-step:not(.now) { flex-shrink: 1; min-width: 0; }
-.play-step-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.play-finish { flex: none; }
-.play-step-wrap:has(.play-step.now) { flex-shrink: 0; }
-.play-choice { position: absolute; z-index: 5; display: flex; flex-direction: column; gap: 2px; width: 280px; padding: 6px; border-radius: 10px; background: #2c2c2e; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08); color: #f1f0ee; }
-.play-choice .where { padding: 6px 8px 4px; font-size: 11px; color: #8f8e89; }
-.play-choice button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px; border: 0; border-radius: 7px; background: none; color: inherit; text-align: left; }
-.play-choice button:hover, .play-choice button:focus-visible { background: rgba(255, 255, 255, 0.08); }
-.play-choice small { font-size: 11px; color: #b9b8b2; }
-.play-choice b { font-size: 13px; font-weight: 600; }
 /* The doc reads as text and edits in place; the editor grows with what is in it, so nothing scrolls inside a scroll. */
 .doc-body { field-sizing: content; min-height: 3lh; overflow: hidden; resize: none; }
 .doc-read { padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: text; }
@@ -1437,18 +1319,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .palette-row { border-radius: 8px; }
 .palette-row.on { background: var(--accent); color: #fff; }
 .palette-row.on svg, .palette-row.on .meta { color: rgba(255, 255, 255, 0.8); }
-.play { background: #1e1e20; color: #f5f5f7; }
-/* Play's controls float at the foot of the window as one frosted capsule; the screen has the window above it. */
-.play::before { content: ""; flex: none; height: 28px; -webkit-app-region: drag; }
-.play-bar {
-  order: 2; align-self: center; height: 48px; max-width: calc(100% - 40px); margin: 0 0 16px; padding: 0 8px; gap: 6px;
-  border: 0; border-radius: 24px; background: rgba(58, 58, 60, 0.72);
-  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 12px 40px rgba(0, 0, 0, 0.45); -webkit-app-region: no-drag;
-}
-.play-bar .play-icon { border-radius: 18px; width: 34px; height: 34px; }
-.play-bar .play-flow { border-radius: 16px; }
-.play-bar .play-rail { flex: 0 1 auto; }
-.play-end { inset: 0; }
 
 /* The sidebar folded to a strip of icons, floating where it was. */
 .app.editor.sidebar-collapsed { --float-left: 72px; }
@@ -1570,14 +1440,6 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   .app.editor .project-switch .title { display: block; max-width: 38vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .app.editor .insert-bar, .app.editor .canvas-tools, .app.editor .changes-btn { display: none; }
 }
-/* Play in a narrow window: the key hints go, the capsule scrolls instead of spilling, the journey's columns pair up. */
-@media (max-width: 700px) {
-  .play-keys { display: none; }
-  .play-bar { max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; }
-  .play-journey { margin: 0 8px; }
-  .play-journey .lanes { flex-wrap: wrap; gap: 12px 20px; }
-  .play-journey .lane { flex: 1 1 40%; }
-}
 .select.unset select { color: var(--label); }
 /* Git, beside the title: the branch and how much changed; the popover lists it and commits. */
 .changes-btn { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 0; border-radius: 12px; background: none; font-size: 12px; color: var(--label); }
@@ -1654,10 +1516,12 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 /* Home's flows: the paths through the designs, each one click from playing. */
 .home-flows { display: flex; flex-direction: column; margin-top: 36px; max-width: 760px; }
 .home-flows h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
-.home-flow { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 4px 0 2px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); }
+.home-flow { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border: 0; border-top: 1px solid var(--rule); background: none; font: inherit; font-size: 13px; color: var(--ink-2); text-align: left; cursor: pointer; }
+.home-flow:hover { background: var(--hover); }
 .home-flow b { font-weight: 500; color: var(--ink); }
 .home-flow span { flex: 1; color: var(--label); }
-.home-flow > svg { color: var(--label); }
+.home-flow > svg { flex: none; color: var(--label); }
+.home-flow:hover > svg:last-child { color: var(--ink); }
 
 /* ---------- Screens · Architecture ---------- */
 /* The two modes sit in the middle of the top bar, as words: the one you're in is bold. */

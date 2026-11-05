@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, FilePlus, Play, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, UserRound, Users, X } from "lucide-react";
+import { BookOpen, FilePlus, SquareArrowOutUpRight, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, UserRound, Users, X } from "lucide-react";
 import type { HomeFile, Space } from "../api.ts";
 import { srcdoc } from "./Canvas.tsx";
 import { ConfirmDialog, NameDialog } from "./Ask.tsx";
@@ -10,7 +10,7 @@ import { Profile, ThemeSwitch } from "./Profile.tsx";
 import { widthOf } from "./layout.ts";
 import { NewDesign } from "./NewDesign.tsx";
 import { walkFlow } from "buni/format/doc.ts";
-import { arriveAt } from "./arrive.ts";
+import { openSiteTab } from "./arrive.ts";
 
 const THUMB_W = 200;
 
@@ -259,19 +259,19 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
             ))}
           </div>
           {(() => {
-            // The paths through the designs shown, each played from its first screen.
+            // The paths through the designs shown, each opened as a website at its first screen.
             const paths = shown.flatMap((f) => Object.values(f.doc.flows).map((flow) => ({ f, flow, screens: walkFlow(f.doc, flow.start).pages.length })));
             if (!paths.length || onlyAgents) return null;
             return (
               <section className="home-flows">
                 <h2>Flows</h2>
                 {paths.map(({ f, flow, screens }) => (
-                  <div key={`${f.path} ${flow.id}`} className="home-flow">
+                  <button type="button" key={`${f.path} ${flow.id}`} className="home-flow" title={`Open ${flow.name} as a website, from its first screen`} onClick={() => openSiteTab(f.path, flow.start)}>
                     <Workflow size={15} />
                     <b>{flow.name}</b>
                     <span>{f.name} · {screens} {screens === 1 ? "screen" : "screens"}</span>
-                    <button type="button" className="icon-btn" title={`Play ${flow.name}`} aria-label={`Play ${flow.name}`} onClick={() => { arriveAt({ page: flow.start, play: true, flow: flow.id }); void run(window.buni.open(f.path)); }}><Play size={15} /></button>
-                  </div>
+                    <SquareArrowOutUpRight size={14} />
+                  </button>
                 ))}
               </section>
             );
