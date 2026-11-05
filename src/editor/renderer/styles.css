@@ -1162,8 +1162,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--rule); bo
 .drag-ghost { position: absolute; z-index: 6; pointer-events: none; border: calc(1.5px * var(--inv, 1)) solid #3346d3; border-radius: calc(3px * var(--inv, 1)); background: rgb(51 70 211 / 0.08); }
 .drag-ghost span { position: absolute; left: 0; bottom: 100%; transform: scale(var(--inv, 1)); transform-origin: 0 100%; padding: 1px 6px; border-radius: 4px 4px 4px 0; background: #3346d3; color: #fff; font: 600 10px var(--mono); white-space: nowrap; }
 /* A page's own token mode, on its board beside the label. */
-.board-mode { position: absolute; right: 0; top: 0; transform: translateY(-100%) scale(var(--inv, 1)); transform-origin: 100% 100%; height: 19px; min-width: 24px; padding: 0 6px; border: 0; border-radius: 5px; background: var(--hover); color: var(--ink-2); font-size: 12px; cursor: pointer; }
-.board-mode:hover, .board-mode.on { color: var(--ink); background: var(--chip); }
 .measure.x { height: calc(1px * var(--inv, 1)); transform: translateY(-50%); }
 .measure.y { width: calc(1px * var(--inv, 1)); transform: translateX(-50%); }
 .measure span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(var(--inv, 1)); padding: 1px 5px; border-radius: 4px; background: #e0457b; color: #fff; font: 600 10px var(--mono); white-space: nowrap; }
@@ -2048,8 +2046,6 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .motion-curve-row .mono { font-size: 11px; }
 
 /* Plays a page's motion on its board, where it is. */
-.board-play { position: absolute; right: 26px; top: 0; transform: translateY(-100%) scale(var(--inv, 1)); transform-origin: 100% 100%; height: 19px; min-width: 24px; padding: 0 6px; border: 0; border-radius: 5px; background: var(--hover); color: var(--ink-2); font-size: 12px; cursor: pointer; }
-.board-play:hover { color: var(--ink); background: var(--chip); }
 .artboard:not(:has(.board-mode)) .board-play { right: 0; }
 
 /* A live page: its libraries and files, edited in place. */
@@ -2135,18 +2131,10 @@ button.arch-step-n { padding: 0; background: none; font-family: inherit; }
 .task:hover .task-remove { opacity: 1; }
 
 /* Versions: a rail under the page's label; an older one looked at beside the page. */
-.version-rail { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; height: calc(20px * var(--inv, 1)); margin: -2px 0 2px; transform: scale(var(--inv, 1)); transform-origin: 0 0; width: max-content; }
-.vdot { flex: none; white-space: nowrap; display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border: 0; border-radius: 10px; background: none; font-size: 12px; font-weight: 500; color: var(--label); cursor: pointer; }
-.vdot:hover { background: var(--hover); color: var(--ink); }
-.vdot.on { background: var(--surface); box-shadow: var(--shadow-1); color: var(--ink); font-weight: 600; }
-.vdot.now { color: var(--ink); font-weight: 600; cursor: default; }
-.vdot.add { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
 /* A version or take drawn in place of the page; div, so .bar-btn.ghost buttons keep their own layout. */
 div.ghost { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 10px; }
 .artboard.looking > .frame, .artboard.looking > .why-line { display: none; }
-.ghost-label { display: flex; align-items: center; gap: 8px; height: 19px; transform: scale(var(--inv, 1)); transform-origin: 0 0; width: max-content; font-size: 14px; color: var(--ink); }
-.ghost-label .link-btn { border: 0; background: none; padding: 0; font-size: 13px; color: var(--accent); cursor: pointer; }
-.ghost-frame { overflow: hidden; background: var(--surface); box-shadow: 0 0 0 2px var(--label); filter: grayscale(0.6); }
+.ghost-frame { overflow: hidden; background: var(--surface); box-shadow: 0 0 0 2px var(--amber); filter: grayscale(0.5); }
 .ghost-frame iframe { border: 0; pointer-events: none; }
 .version-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 12px; }
 .version-row .takes-dot { margin-top: 5px; }
@@ -2154,26 +2142,11 @@ div.ghost { position: relative; z-index: 1; display: flex; flex-direction: colum
 .version-note { color: var(--ink-2); }
 .version-row .link-btn { border: 0; background: none; padding: 0; font-size: 12px; color: var(--ink-2); cursor: pointer; }
 .takes-actions .hint { font-size: 11px; }
-.ghost-diff { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; width: max-content; max-width: calc(var(--w) * 1px); transform: scale(var(--inv, 1)); transform-origin: 0 0; font-size: 12px; color: var(--ink-2); }
-.ghost-diff b { color: var(--ink); font-weight: 600; }
 
 /* Takes flipped on the card: a bar under it with ‹ name · dots ›, and Use this take while one is shown. */
 .flip-take .ghost-frame { filter: none; box-shadow: 0 0 0 2px var(--accent); }
 /* Above the card, under its label: in reach whatever the page's height. */
 /* zoom, not transform: the bar takes the room it is drawn at, so the card below starts under it. */
-/* Takes on the canvas: one pill, ‹ Live · 1 of 3 ›, and the take's idea under it. */
-.flip-bar { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: max-content; margin-bottom: 8px; zoom: var(--inv, 1); }
-.flip-row { display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 2px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
-.flip-arrow { width: 28px; height: 28px; flex: none; border: 0; border-radius: 14px; background: none; font-size: 16px; line-height: 1; color: var(--ink-2); cursor: pointer; }
-.flip-arrow:hover { background: var(--chip); color: var(--ink); }
-.flip-about { padding: 0 6px; font-size: 13px; line-height: 1; white-space: nowrap; color: var(--ink); }
-.flip-about .dim { font-size: 12px; font-variant-numeric: tabular-nums; }
-.flip-idea { max-width: 420px; margin: 0; font-size: 12px; line-height: 1.4; color: var(--ink-2); }
-.flip-use { display: flex; gap: 8px; }
-.flip-use .btn.small { flex: none; height: 30px; padding: 0 12px; font-size: 12px; }
-.flip-use .field { width: 240px; height: 30px; padding: 0 9px; border: 0; border-radius: 6px; background: var(--sidebar); font-size: 12px; color: var(--ink); }
-.vdot.more { cursor: default; color: var(--label); }
-.vdot.more:hover { background: none; color: var(--label); }
 
 /* ---------- Wazo look (designs/buni-web, "· Wazo look" pages) ----------
    The window is grouped grey; the sidebar and the inspector float on it as inset rounded cards, the canvas sits open
@@ -2211,3 +2184,47 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .home-loading span { height: 160px; border-radius: 14px; background: var(--seg); animation: home-pulse 1.4s ease-in-out infinite alternate; }
 @keyframes home-pulse { from { opacity: 0.55; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .home-loading span { animation: none; } }
+
+/* A page's head on the canvas: the label on the left, its tools on the right, in one row (buni-web, 18 · Canvas ·
+   Versions and takes). The row keeps its size on screen at any zoom, as the label does. What you're doing with the
+   page, looking at a version or trying a take, shows in one bar under it, and only then. */
+.board-tools { position: absolute; z-index: 5; top: 0; right: 0; height: 19px; display: flex; align-items: center; gap: 6px; transform: scale(var(--inv, 1)); transform-origin: 100% 100%; }
+.flip-pill, .version-chip, .board-play, .board-mode { display: inline-flex; align-items: center; height: 26px; border: 0; border-radius: 13px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule), 0 1px 2px rgb(0 0 0 / 0.06); font-size: 12px; color: var(--ink); white-space: nowrap; cursor: pointer; }
+.flip-pill { order: 1; gap: 4px; padding: 0 2px; cursor: default; }
+.flip-pill button { width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 11px; background: none; color: inherit; cursor: pointer; }
+.flip-pill button:hover { background: var(--hover); }
+.flip-pill b { font-weight: 600; }
+.flip-pill .of { margin-right: 2px; opacity: 0.6; font-variant-numeric: tabular-nums; }
+.flip-pill.on { background: var(--accent); color: #fff; box-shadow: none; }
+.flip-pill.on button:hover { background: rgb(255 255 255 / 0.18); }
+.version-chip-wrap { order: 2; position: relative; display: inline-flex; }
+.version-chip { gap: 5px; padding: 0 10px; }
+.version-chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.version-chip:hover, .version-chip.open, .board-play:hover, .board-mode:hover { background: var(--hover); }
+.version-chip.looking { background: var(--amber-tint); color: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
+.board-play { order: 3; width: 26px; justify-content: center; color: var(--accent); }
+.board-mode { order: 4; min-width: 26px; justify-content: center; padding: 0 6px; color: var(--ink-2); }
+.board-mode.on { color: var(--ink); }
+.version-menu { position: absolute; z-index: 10; top: calc(100% + 6px); right: 0; width: 330px; padding: 6px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule), 0 16px 40px -12px rgb(0 0 0 / 0.3); }
+.version-menu-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px 8px; font-size: 12px; font-weight: 600; color: var(--label); }
+.version-menu-head span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-menu-head .link-btn { color: var(--accent); }
+.version-menu > .version-row + .version-row { margin-top: 1px; }
+.version-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: none; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer; }
+.version-row:hover { background: var(--hover); }
+.version-row.on { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.version-row b { flex: none; width: 36px; font-size: 12px; font-weight: 600; }
+.version-row.on b { color: var(--accent); }
+.version-row .note { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-row .who { flex: none; font-size: 12px; color: var(--label); }
+.version-menu-foot { margin: 6px 0 0; padding: 8px 10px 4px; border-top: 0.5px solid var(--rule); font-size: 12px; line-height: 1.4; color: var(--label); }
+.board-bar { box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: calc(var(--w) * 1px / var(--inv, 1)); zoom: var(--inv, 1); padding: 7px 8px 7px 12px; border-radius: 10px; font-size: 13px; color: var(--ink); }
+.board-bar b { flex: none; font-weight: 600; white-space: nowrap; }
+.board-bar .say { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-2); }
+.board-bar .icon { flex: none; color: var(--amber); }
+.board-bar .link-btn { flex: none; color: var(--accent); }
+.board-bar .link-btn.plain { color: var(--ink-2); }
+.board-bar .btn.small { flex: none; height: 28px; padding: 0 12px; font-size: 12px; }
+.board-bar .field { flex: none; width: 160px; height: 28px; padding: 0 9px; border: 0; border-radius: 7px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); font-size: 12px; color: var(--ink); }
+.board-bar.looking { background: var(--amber-tint); box-shadow: 0 0 0 1px var(--amber); }
+.board-bar.trying { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }

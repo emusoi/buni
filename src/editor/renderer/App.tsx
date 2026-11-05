@@ -1,6 +1,6 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeftOpen, PanelLeftClose, PanelRightOpen, PanelRightClose, Network, LayoutTemplate, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
+import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeft, PanelRight, Network, LayoutTemplate, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
 import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
@@ -843,20 +843,17 @@ export function App({ snap }: { snap: Snapshot }) {
       {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
       {!sidebarOpen && (
         <nav className="side-rail" aria-label="Sidebar">
-          <button type="button" className="icon-btn" title="Find anything (⌘K)" aria-label="Find anything" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
-          <button type="button" className="icon-btn" title="Other designs in this project (⌘P)" aria-label="Other designs" onClick={() => setSwitching(true)}><FolderTree size={17} strokeWidth={1.75} /></button>
-          {([["pages", FileText, "Pages"], ["layers", LayersIcon, "Layers"], ["library", Library, "Components"]] as const).map(([at, Icon, label]) => (
-            <button type="button" key={at} className={`icon-btn${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} onClick={() => {
-              if (at === "library") setSideTab("library");
-              else { setSideTab("pages"); setOutline(at); }
-              toggleSidebar(true);
-            }}><Icon size={17} strokeWidth={1.75} /></button>
+          {/* The sidebar's own places, by the same icons. */}
+          <button type="button" className="icon-btn" title="Search (⌘K)" aria-label="Search" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
+          {([["pages", LayoutTemplate, "Screens"], ["flows", Workflow, "Flows"]] as const).map(([at, Icon, label]) => (
+            <button type="button" key={at} className={`icon-btn${mode === "screens" && sideTab === at ? " on" : ""}${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} onClick={() => { setMode("screens"); setSideTab(at); toggleSidebar(true); }}><Icon size={17} strokeWidth={1.75} /></button>
           ))}
           <button type="button" className={`icon-btn${mode === "architecture" ? " on" : ""}`} title="Architecture" aria-label="Architecture" onClick={() => setMode(mode === "architecture" ? "screens" : "architecture")}><Network size={17} strokeWidth={1.75} /></button>
-          <button type="button" className="icon-btn" title="Agents" aria-label="Agents" onClick={() => { setPanel("agent"); togglePanel(true); }}><Sparkles size={17} strokeWidth={1.75} /></button>
+          <button type="button" className={`icon-btn${mode === "screens" && sideTab === "library" ? " on" : ""}`} title="Components" aria-label="Components" onClick={() => { setMode("screens"); setSideTab("library"); toggleSidebar(true); }}><Component size={17} strokeWidth={1.75} /></button>
+          <button type="button" className={`icon-btn${panelOpen && panel === "agent" ? " on" : ""}`} title="Agents" aria-label="Agents" onClick={() => { setPanel("agent"); togglePanel(true); }}><Sparkles size={17} strokeWidth={1.75} /></button>
           <span className="grow" />
-          <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeftOpen size={17} strokeWidth={1.75} /></button>
-          <button type="button" className={`icon-btn${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} onClick={() => togglePanel(!panelOpen)}>{panelOpen ? <PanelRightClose size={17} strokeWidth={1.75} /> : <PanelRightOpen size={17} strokeWidth={1.75} />}</button>
+          <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeft size={17} strokeWidth={1.75} /></button>
+          <button type="button" className={`icon-btn${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} onClick={() => togglePanel(!panelOpen)}><PanelRight size={17} strokeWidth={1.75} /></button>
         </nav>
       )}
       {sidebarOpen && (
@@ -865,9 +862,9 @@ export function App({ snap }: { snap: Snapshot }) {
         <div className="side-head">
           <div className="side-head-row">
             <span className="grow" />
-            <button type="button" className="icon-btn" title="Hide the sidebar (⌘\\ hides both)" aria-label="Hide the sidebar" onClick={() => toggleSidebar(false)}><PanelLeftClose size={16} strokeWidth={1.75} /></button>
+            <button type="button" className="icon-btn" title="Hide the sidebar (⌘\\ hides both)" aria-label="Hide the sidebar" onClick={() => toggleSidebar(false)}><PanelLeft size={16} strokeWidth={1.75} /></button>
             <button type="button" className="icon-btn" title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
-              {panelOpen ? <PanelRightClose size={16} strokeWidth={1.75} /> : <PanelRightOpen size={16} strokeWidth={1.75} />}
+              <PanelRight size={16} strokeWidth={1.75} />
             </button>
           </div>
           <div className="side-head-file">

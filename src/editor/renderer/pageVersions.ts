@@ -48,5 +48,6 @@ export function diffVersion(doc: Doc, v: PageVersion): VersionDiff {
 /** Outlines for a board: on the version, what is gone or different since; on the page, what is new or different. */
 export function diffCss(d: VersionDiff, side: "then" | "now"): string {
   const ids = side === "then" ? [...d.removed, ...d.changed.map((c) => c.node)] : [...d.added, ...d.changed.map((c) => c.node)];
-  return ids.map((n) => `.b-${n.id}{outline:2px solid #3346d3;outline-offset:2px}`).join("");
+  // Dashed amber, the colour of the bar that says a version is showing.
+  return ids.map((n) => `.b-${n.id}{outline:2px dashed #f5a524;outline-offset:3px}`).join("");
 }
