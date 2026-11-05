@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, FilePlus, SquareArrowOutUpRight, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, UserRound, Users, X } from "lucide-react";
+import { Check, Circle, FilePlus, FileText, SquareArrowOutUpRight, Workflow, Sparkles, Folder, FolderOpen, LayoutGrid, ListChecks, Pencil, Plus, Search, Sparkle, Terminal, Trash2, Upload, UserRound, Users, X } from "lucide-react";
+import { tasksInOrder } from "buni/tools/areas/tasks.ts";
 import type { HomeFile, Space } from "../api.ts";
 import { srcdoc } from "./Canvas.tsx";
 import { ConfirmDialog, NameDialog } from "./Ask.tsx";
@@ -10,7 +11,7 @@ import { Profile, ThemeSwitch } from "./Profile.tsx";
 import { widthOf } from "./layout.ts";
 import { NewDesign } from "./NewDesign.tsx";
 import { walkFlow } from "buni/format/doc.ts";
-import { openSiteTab } from "./arrive.ts";
+import { ARRIVE, openSiteTab } from "./arrive.ts";
 
 const THUMB_W = 200;
 
@@ -59,17 +60,6 @@ const SORTS: [Sort, string][] = [["recent", "Recent"], ["name", "Name"], ["pages
 const sorted = (files: readonly HomeFile[], by: Sort): HomeFile[] =>
   by === "recent" ? [...files] : [...files].sort((a, b) => (by === "name" ? a.name.localeCompare(b.name) : b.pages - a.pages));
 
-/** Where coding agents connect, on a host whose agents come in over MCP (the web). */
-function AgentsHere() {
-  return (
-    <div className="rail-card">
-      <b><span className="live" /> Agents connect here</b>
-      <code>{location.host}/mcp</code>
-      <span>Open a design for the line to paste into Claude Code or Codex.</span>
-    </div>
-  );
-}
-
 /** Rename and delete, where the host keeps the files itself (the web); the desktop has Finder for that. */
 function FileActions({ file, onAsk }: { file: HomeFile; onAsk: (a: Asking) => void }) {
   if (!window.buni.renameFile || !window.buni.removeFile) return null;
@@ -90,6 +80,9 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
   const [folder, setFolder] = useState<string>();
   const [sort, setSort] = useState<Sort>("recent");
   const [onlyAgents, setOnlyAgents] = useState(false);
+  /** The tasks asked for across the designs here, instead of the designs. */
+  const [onlyTasks, setOnlyTasks] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [asking, setAsking] = useState<Asking>();
   // Where the host names files itself (the web), a new design is named first; the desktop asks where to save it.
   const create = () => (window.buni.renameFile ? setAsking({ kind: "new" }) : void run(window.buni.create()));
@@ -127,6 +120,12 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
   const showProjects = folders.length > 1 && (!space || folders.some((f) => inSpace.filter((x) => x.folder === f).length > 1));
   const q = query.trim().toLowerCase();
   const working = inSpace.filter((f) => f.agentNote).length;
+  // Every design's tasks, newest first, each with the design it belongs to.
+  const tasks = useMemo(() => inSpace.flatMap((f) => tasksInOrder(f.doc).map((t) => ({ f, t }))).sort((a, b) => b.t.at.localeCompare(a.t.at)), [inSpace]);
+  const openTasks = tasks.filter((x) => x.t.state !== "done");
+  const recent = useMemo(() => sorted(inSpace, "recent").slice(0, 5), [inSpace]);
+  /** Opens a design at one of its pages. */
+  const openAt = (path: string, page?: string) => { if (page) try { sessionStorage.setItem(ARRIVE, JSON.stringify({ page })); } catch { /* opens at its start */ } void run(window.buni.open(path)); };
   // Two designs with one name are told apart by their folder.
   const named = new Map<string, number>();
   for (const f of inSpace) named.set(f.name, (named.get(f.name) ?? 0) + 1);
@@ -149,6 +148,24 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           </label>
         </div>
         <nav className="tree">
+          {/* As buni-web's 04 · Home draws it: where to go, then the spaces, then what was edited last. */}
+          <div className="nav">
+            <button type="button" className={`row${folder === undefined && !onlyAgents && !onlyTasks ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(false); setOnlyTasks(false); }}>
+              <LayoutGrid size={16} strokeWidth={1.75} />
+              <span className="name">All designs</span>
+              {files && <span className="count">{inSpace.length}</span>}
+            </button>
+            <button type="button" className={`row${onlyAgents ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(true); setOnlyTasks(false); }}>
+              <Sparkles size={16} strokeWidth={1.75} />
+              <span className="name">Agents working</span>
+              {working > 0 && <span className="count working">{working}</span>}
+            </button>
+            <button type="button" className={`row${onlyTasks ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(false); setOnlyTasks(true); }}>
+              <ListChecks size={16} strokeWidth={1.75} />
+              <span className="name">Tasks</span>
+              {openTasks.length > 0 && <span className="count">{openTasks.length}</span>}
+            </button>
+          </div>
           {space && spaces.length > 1 && (
             <>
               <div className="section-label">Spaces</div>
@@ -157,28 +174,26 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
                   <button type="button" key={s.root} className={`row${s.root === space.root ? " active" : ""}`} onClick={() => pickSpace(s.root)} title={s.members?.length ? s.members.map((m) => m.name).join(", ") : undefined}>
                     {s.members && s.members.length > 1 ? <Users size={16} strokeWidth={1.75} /> : <UserRound size={16} strokeWidth={1.75} />}
                     <span className="name">{s.name}</span>
-                    <span className="count">{(files ?? []).filter((f) => f.space?.root === s.root).length}</span>
+                    {s.members && s.members.length > 1 && <span className="count">{s.members.length} people</span>}
                   </button>
                 ))}
               </div>
             </>
           )}
-          <div className="nav">
-            <button type="button" className={`row${folder === undefined && !onlyAgents ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(false); }}>
-              <LayoutGrid size={16} strokeWidth={1.75} />
-              <span className="name">All designs</span>
-              {files && <span className="count">{inSpace.length}</span>}
-            </button>
-            <button type="button" className={`row${onlyAgents ? " active" : ""}`} onClick={() => { setFolder(undefined); setOnlyAgents(true); }}>
-              <Sparkles size={16} strokeWidth={1.75} />
-              <span className="name">Agents working</span>
-              {working > 0 && <span className="count working">{working}</span>}
-            </button>
-            <button type="button" className="row" onClick={() => void run(window.buni.openExample())}>
-              <BookOpen size={16} strokeWidth={1.75} />
-              <span className="name">Example</span>
-            </button>
-          </div>
+          {recent.length > 0 && (
+            <>
+              <div className="section-label">Recent</div>
+              <div className="nav">
+                {recent.map((f) => (
+                  <button type="button" key={f.path} className="row" title={f.path} onClick={() => openAt(f.path)}>
+                    <FileText size={16} strokeWidth={1.75} />
+                    <span className="name">{f.name}</span>
+                    <span className="count">{f.pages}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {/* A project is a folder of designs; one is no choice, so projects show when designs live in several. In a
               space, where every design starts in a folder of its own, they show once a folder holds more than one. */}
           {showProjects && <div className="section-label">Projects</div>}
@@ -196,13 +211,6 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           })}
         </nav>
         <div className="rail-foot-stack">
-          {space && space.members && space.members.length > 1 && (
-            <div className="rail-card" title={space.members.map((m) => `${m.name}${m.email ? ` · ${m.email}` : ""}`).join("\n")}>
-              <b><Users size={13} /> In {space.name}</b>
-              <span>{space.members.map((m) => m.name).join(", ")}</span>
-            </div>
-          )}
-          <AgentsHere />
           <ThemeSwitch />
         </div>
         <Profile />
@@ -215,8 +223,9 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
         <div className="home">
           {files && files.length > 0 && <header className="home-head">
             <div>
-              <h1>{onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space && spaces.length > 1 ? space.name : "Designs"}</h1>
+              <h1>{onlyTasks ? "Tasks" : onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space && spaces.length > 1 ? space.name : "Designs"}</h1>
               {onlyAgents && <p>Designs a coding agent is editing right now.</p>}
+              {onlyTasks && <p>What you asked for, across these designs. An agent takes one on its next call.</p>}
             </div>
             <div className="home-actions">
               <button type="button" className="bar-btn ghost" onClick={() => void run(window.buni.open())}><Upload size={14} /> {window.buni.renameFile ? "Import" : "Open…"}</button>
@@ -236,7 +245,23 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
               <p className="welcome-agents"><Terminal size={14} /> Using Claude Code or Codex? <code>buni skill</code> teaches it buni, and <code>buni context FILE</code> hands it a brief.</p>
             </div>
           )}
-          {shown.length > 0 && (
+          {onlyTasks && (
+            <section className="home-tasks" aria-label="Tasks">
+              {openTasks.length === 0 && <p className="home-empty">Nothing waiting. Ask for something in a design's Agents tab.</p>}
+              {[...openTasks, ...(showDone ? tasks.filter((x) => x.t.state === "done") : [])].map(({ f, t }) => (
+                <button type="button" key={t.id} className={`home-task ${t.state}`} onClick={() => openAt(f.path, t.page)} title={`Open ${f.name}`}>
+                  <span className="task-state">{t.state === "done" ? <Check size={13} /> : t.state === "working" ? <span className="task-working" /> : <Circle size={13} strokeWidth={1.5} />}</span>
+                  <span className="task-body">
+                    <span className="task-title">{t.title}</span>
+                    <span className="task-meta">{f.name}{t.page && f.doc.pages[t.page] ? ` · ${f.doc.pages[t.page]?.name.replace(/^\s*\d+\s*·\s*/, "")}` : ""} · {t.state === "queued" ? `waiting · ${ago(t.at, now)}` : t.state === "working" ? `${t.by} is on it · ${ago(t.taken ?? t.at, now)}` : `done · ${ago(t.done ?? t.at, now)}`}</span>
+                    {t.note && <span className="task-note">{t.note}</span>}
+                  </span>
+                </button>
+              ))}
+              {tasks.some((x) => x.t.state === "done") && <button type="button" className="link-btn" onClick={() => setShowDone((s) => !s)}>{showDone ? "Hide done" : `Show ${tasks.filter((x) => x.t.state === "done").length} done`}</button>}
+            </section>
+          )}
+          {shown.length > 0 && !onlyTasks && (
             <div className="home-row">
               <div className="filters">
                 {SORTS.map(([id, label]) => (
@@ -247,7 +272,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           )}
           {onlyAgents && shown.length === 0 && <p className="home-empty">No agent is working in a design right now. Open one for the line that connects Claude Code or Codex.</p>}
           <div className="cards">
-            {shown.map((f) => (
+            {!onlyTasks && shown.map((f) => (
               <div key={f.path} className="card-wrap">
                 <button type="button" className="card" onClick={() => void run(window.buni.open(f.path))} title={f.path}>
                   <Thumb file={f} badge={f.agentNote} />
@@ -261,7 +286,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           {(() => {
             // The paths through the designs shown, each opened as a website at its first screen.
             const paths = shown.flatMap((f) => Object.values(f.doc.flows).map((flow) => ({ f, flow, screens: walkFlow(f.doc, flow.start).pages.length })));
-            if (!paths.length || onlyAgents) return null;
+            if (!paths.length || onlyAgents || onlyTasks) return null;
             return (
               <section className="home-flows">
                 <h2>Flows</h2>

@@ -2302,3 +2302,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .doc-section.open .doc-read, .doc-section.open .doc-body { margin-left: 12px; font-size: 13px; line-height: 1.55; }
 .doc-section .doc-heading { font-size: 12px; font-weight: 600; }
 .doc-skills { padding-top: 10px; border-top: 0; }
+
+/* Home's tasks: what was asked for across the designs, one line each with where and when under it. */
+.home-tasks { display: flex; flex-direction: column; max-width: 760px; margin-top: 8px; padding: 4px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
+.home-task { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 9px 0; border: 0; border-top: 0.5px solid var(--rule); background: none; font-size: 13px; line-height: 1.4; color: var(--ink); text-align: left; cursor: pointer; }
+.home-task:first-child { border-top: 0; }
+.home-task:hover .task-title { color: var(--accent); }
+.home-task .task-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.home-task .task-state { margin-top: 1px; }
+.home-tasks > .link-btn { align-self: flex-start; padding: 8px 0; }
+.home-tasks .home-empty { padding: 12px 0; }
