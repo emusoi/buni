@@ -558,6 +558,8 @@ function Num({ prefix, title, value, placeholder, onSave }: { prefix: string; ti
   );
 }
 
+const FIELD_TYPES: [string, string][] = [["text", "Text"], ["email", "Email"], ["password", "Password"], ["search", "Search"], ["tel", "Phone number"], ["url", "Web address"], ["number", "Number"]];
+
 function Select({ value, options, onChange, title }: { value: string; options: [string, string][]; onChange: (v: string) => void; title: string }) {
   const known = options.some(([v]) => v === value);
   return (
@@ -997,6 +999,10 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.blur();
             }}
           />
+          {node.tag === "input" && (
+            // What the field takes: a password's typing shows as dots, an email field brings the email keyboard.
+            <div className="motion-row"><span className="prop-name">Field</span><Select title="What this field takes" value={node.inputType ?? "text"} options={FIELD_TYPES} onChange={(v) => void run("set_layer", { nodes: [node.id], input_type: v })} /></div>
+          )}
         </Group>
       )}
       {node.kind === "image" && dir !== undefined && (

@@ -14,6 +14,8 @@ export interface SiteData {
   flows: { id: Id; name: string; steps: Id[] }[];
   /** Open threads on this page's layers. */
   comments: SiteComment[];
+  /** The page's other widths, narrowest last: the pill offers these besides the window's own. */
+  widths: number[];
 }
 
 /** What the viewer needs to know of the design, for the page drawn at `page`. `hrefOf` maps a page to its address. */
@@ -28,7 +30,8 @@ export function siteData(doc: Doc, file: string, fileOf: Map<Id, string>, base: 
     return n?.id === frame;
   };
   const comments = frame === undefined ? [] : Object.values(doc.comments).filter((c) => c.state !== "resolved" && !c.ink && onFrame(c.node)).map((c) => ({ id: c.id, node: c.node, state: c.state, posts: c.posts.map((p) => ({ author: p.author, body: p.body })) }));
-  return { file, ...(page !== undefined ? { page } : {}), pages, flows, comments };
+  const widths = [...(page === undefined ? [] : doc.pages[page]?.widths ?? [])].sort((a, b) => b - a);
+  return { file, ...(page !== undefined ? { page } : {}), pages, flows, comments, widths };
 }
 
 /** The tags that go before </body>: the data, then the viewer. Both are marked data-buni: they aren't the page's own. */
@@ -94,7 +97,6 @@ export function viewer(first: SiteData): void {
     };
     hub = own;
     (window as Window & { buniHub?: Hub }).buniHub = own;
-    const sizes: [string, string][] = [["", "Desktop"], ["768", "Tablet"], ["390", "Phone"]];
     const style = `
       :host { all: initial; }
       .pill { position: fixed; z-index: 2147483647; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: calc(100vw - 24px); height: 44px; padding: 0 6px; box-sizing: border-box; border-radius: 22px; background: rgba(28, 28, 30, 0.9); backdrop-filter: blur(20px); box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.14), 0 12px 40px rgba(0, 0, 0, 0.35); display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; font: 13px/1 system-ui, -apple-system, sans-serif; color: #f5f5f7; white-space: nowrap; }
@@ -118,6 +120,10 @@ export function viewer(first: SiteData): void {
       const at = flow && d.page ? flow.steps.indexOf(d.page) : -1;
       const hrefOf = (id: Id | undefined) => d.pages.find((p) => p.id === id)?.href;
       const open = d.comments.length;
+      // The window, then the page's own widths, named by what they're for. A width chosen on another page stays on,
+      // so it can be seen that this page wasn't made for it.
+      const named = (w: number) => (w <= 480 ? `Phone · ${w}` : w <= 1024 ? `Tablet · ${w}` : `${w}`);
+      const sizes: [string, string][] = [["", "Desktop"], ...[...new Set([...d.widths, ...(width ? [Number(width)] : [])])].sort((a, b) => b - a).map((w): [string, string] => [String(w), named(w)])];
       root.querySelector(".pill, .dotwrap")?.remove();
       const bar = document.createElement("div");
       if (hidden) {
@@ -132,8 +138,7 @@ export function viewer(first: SiteData): void {
         <select class="page" aria-label="Page">${d.page ? "" : "<option>—</option>"}${d.pages.map((p) => `<option value="${esc(p.href)}"${p.id === d.page ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
         ${d.flows.length ? `<span class="sep"></span><select class="flow" aria-label="Flow"><option value="">No flow</option>${d.flows.map((f) => `<option value="${esc(f.id)}"${f.id === flow?.id ? " selected" : ""}>${esc(f.name)}</option>`).join("")}</select>` : ""}
         ${flow ? `<button class="prev" aria-label="Previous step" ${at > 0 ? "" : "disabled"}>‹</button><span class="step">${at < 0 ? "–" : at + 1} / ${flow.steps.length}</span><button class="next" aria-label="Next step" ${at < flow.steps.length - 1 ? "" : "disabled"}>›</button>` : ""}
-        <span class="sep"></span>
-        ${sizes.map(([w, name]) => `<button class="size${w === width ? " on" : ""}" data-w="${w}"${w ? ` title="${w} wide"` : ""}>${name}</button>`).join("")}
+        ${sizes.length > 1 ? `<span class="sep"></span>${sizes.map(([w, name]) => `<button class="size${w === width ? " on" : ""}" data-w="${w}"${w ? ` title="${w} px wide${d.widths.includes(Number(w)) ? "" : ": this page has no layout for it"}"` : ""}>${name}</button>`).join("")}` : ""}
         <span class="sep"></span>
         <button class="restart" title="Back to where you started">↺ Restart</button>
         <button class="comment primary${own.mode === "comment" ? " on" : ""}" title="Click a layer to comment on it">Comment${open ? ` · ${open}` : ""}</button>

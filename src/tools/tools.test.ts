@@ -298,6 +298,12 @@ describe("html in", () => {
     expect(layerHtml(ws.view(), field?.id ?? "")).toContain('type="password"');
     const back = parseDoc(serializeDoc(ws.view()));
     expect(back.ok && back.doc.nodes[field?.id ?? ""]).toMatchObject({ inputType: "password" });
+    // The inspector's Field: set_layer makes it plain again, or another kind; only an input takes one.
+    expect((await ws.call(pi, "set_layer", { nodes: [field?.id], input_type: "text" })).ok).toBe(true);
+    expect(ws.view().nodes[field?.id ?? ""]).not.toHaveProperty("inputType");
+    expect((await ws.call(pi, "set_layer", { nodes: [field?.id], input_type: "email" })).ok).toBe(true);
+    expect(renderPage(ws.view(), "home").html).toContain('type="email"');
+    expect((await ws.call(pi, "set_layer", { nodes: ["home-frame"], input_type: "password" })).reply).toContain("isn't an input field");
   });
 
   test("a space between words survives; a space or line break between elements is not a layer", () => {

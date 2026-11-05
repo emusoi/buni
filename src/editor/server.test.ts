@@ -255,7 +255,12 @@ test("a design is served as its website: a take plays in its page's place, and e
     const live = await (await get(`${site}/`)).text();
     expect(live).toContain("As live");
     // The page listens for edits, to the design it was drawn from.
-    const data = JSON.parse(live.match(/<script type="application\/json" id="buni-site-data" data-buni>(.*?)<\/script>/)?.[1] ?? "{}") as { file: string; page: string; pages: { id: string; name: string; href: string }[]; comments: { posts: { body: string }[] }[] };
+    const data = JSON.parse(live.match(/<script type="application\/json" id="buni-site-data" data-buni>(.*?)<\/script>/)?.[1] ?? "{}") as { file: string; page: string; pages: { id: string; name: string; href: string }[]; comments: { posts: { body: string }[] }[]; widths: number[] };
+    expect(data.widths).toEqual([]);
+    // A page made for other widths offers them to the viewer, widest first.
+    await edit("set_widths", { page: data.page, widths: [390, 768] });
+    const wide = await (await get(`${site}/`)).text();
+    expect(JSON.parse(wide.match(/id="buni-site-data" data-buni>(.*?)<\/script>/)?.[1] ?? "{}").widths).toEqual([768, 390]);
     // The page's open threads, to pin on it.
     expect(data.comments.map((c) => c.posts[0]?.body)).toEqual(["Shorter, please"]);
     expect(data.file).toBe(file);

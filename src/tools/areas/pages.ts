@@ -11,7 +11,7 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, LIBRARY_HOSTS, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type LivePage, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, INPUT_TYPES, LIBRARY_HOSTS, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type LivePage, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
 import { embeddedFont } from "../fontdata.ts";
@@ -738,18 +738,24 @@ export const pagesTools = {
   }),
 
   set_layer: tool({
-    description: "Hide or show layers (hidden layers stay in the file but leave the canvas and every export), and lock or unlock them (locked ones can't be picked on the canvas).",
-    input: { nodes: z.array(z.string()).min(1), hidden: z.boolean().optional(), locked: z.boolean().optional() },
+    description: "Hide or show layers (hidden layers stay in the file but leave the canvas and every export), lock or unlock them (locked ones can't be picked on the canvas), and say what an input field takes (input_type: password shows its typing as dots; text is a plain field).",
+    input: { nodes: z.array(z.string()).min(1), hidden: z.boolean().optional(), locked: z.boolean().optional(), input_type: z.enum(["text", ...INPUT_TYPES]).optional() },
     run: async (doc, a) => {
-      if (a.hidden === undefined && a.locked === undefined) throw new ToolError("say hidden or locked");
+      if (a.hidden === undefined && a.locked === undefined && a.input_type === undefined) throw new ToolError("say hidden, locked or input_type");
       const ops: Op[] = a.nodes.map((id) => {
-        const { hidden: _h, locked: _l, ...rest } = node(doc, id);
         const was = node(doc, id);
+        const { hidden: _h, locked: _l, ...rest } = was;
         const hidden = a.hidden ?? was.hidden === true;
         const locked = a.locked ?? was.locked === true;
-        return { kind: "put", collection: "nodes", value: { ...rest, ...(hidden ? { hidden: true as const } : {}), ...(locked ? { locked: true as const } : {}) } };
+        let value: Node = { ...rest, ...(hidden ? { hidden: true as const } : {}), ...(locked ? { locked: true as const } : {}) };
+        if (a.input_type !== undefined) {
+          if (value.kind !== "text" || value.tag !== "input") throw new ToolError(`${was.name} isn't an input field; input_type is for <input> layers`);
+          const { inputType: _t, ...plain } = value;
+          value = a.input_type === "text" ? plain : { ...plain, inputType: a.input_type };
+        }
+        return { kind: "put", collection: "nodes", value };
       });
-      const what = [a.hidden === undefined ? "" : a.hidden ? "Hide" : "Show", a.locked === undefined ? "" : a.locked ? "lock" : "unlock"].filter(Boolean).join(" and ");
+      const what = [a.hidden === undefined ? "" : a.hidden ? "Hide" : "Show", a.locked === undefined ? "" : a.locked ? "lock" : "unlock", a.input_type === undefined ? "" : `make a ${a.input_type} field of`].filter(Boolean).join(" and ");
       return { label: `${what.charAt(0).toUpperCase()}${what.slice(1)} ${a.nodes.length === 1 ? node(doc, a.nodes[0] ?? "").name : `${a.nodes.length} layers`}`, ops, reply: "Done." };
     },
   }),
