@@ -898,20 +898,6 @@ export function App({ snap }: { snap: Snapshot }) {
           </div>
         )}
         {mode === "screens" && <nav className="tree">
-          {sideTab === "pages" && outline === "pages" && project.length > 1 && (
-            // The project's designs, one click apart; ⌘P finds one, or a page in one, by name.
-            <div className="project-list">
-              <div className="section-label">Project <span className="n" title="⌘P goes to any of them">⌘P</span></div>
-              {project.map((f) => (
-                <button type="button" key={f.path} className={`row${f.path === snap.path ? " active" : ""}`} aria-current={f.path === snap.path ? "page" : undefined} title={f.agentNote ?? f.path} onClick={() => f.path !== snap.path && openAt(f.path)}>
-                  <FolderOpen size={15} strokeWidth={1.75} />
-                  <span className="name">{f.name}</span>
-                  {f.agentNote && <span className="page-agent" style={{ background: "var(--accent)" }} />}
-                  <span className="meta">{f.pages.length || f.components.length}</span>
-                </button>
-              ))}
-            </div>
-          )}
           {sideTab === "pages" && outline === "layers" ? (
             frame && activePage
               ? <Layers doc={doc} root={frame} depth={0} selected={selected} also={also} expanded={new Set([...expanded, frame.id])} onToggle={toggle} onSelect={selectNode} />
