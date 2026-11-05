@@ -2263,6 +2263,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Agents and Doc, as buni-web's 21 · Inspector · Agents and Doc draws them: the same cards and 28px rows as the layer
    inspector; one line each, values grey on the right, nothing that reads as a paragraph unless it is one. */
 .connect-agent, .doc-panel { padding: 12px; gap: 10px; }
+.connect-agent .group-title, .doc-panel .group-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .connect-agent > .tasks, .connect-agent > .connect-ways, .connect-agent > .agent-cards > .agent-card, .doc-panel > section { padding: 10px 12px; border: 0; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); display: flex; flex-direction: column; gap: 8px; }
 .tasks .task-add .field { height: 28px; }
 .tasks .task-page { font-size: 11px; color: var(--label); }
