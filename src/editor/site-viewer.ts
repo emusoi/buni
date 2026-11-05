@@ -70,14 +70,13 @@ export function viewer(first: SiteData): void {
   try { hub = framed ? (window.top as Window & { buniHub?: Hub }).buniHub : undefined; } catch { hub = undefined; }
   const width = framed ? "" : session.get("width");
 
-  // The keys: \ hides the controls, C comments, E edits, Esc leaves either. Typing in a field is left alone.
+  // The keys: \ hides the controls, Esc leaves Comment or Edit. No letters: on a page of drawn fields, typing where
+  // there is no real field would flip modes.
   const keys = (e: KeyboardEvent) => {
     const t = e.target as HTMLElement | null;
     if (!hub || e.metaKey || e.ctrlKey || e.altKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return;
     if (e.key === "\\") hub.toggleHidden();
     else if (e.key === "Escape" && hub.mode) hub.setMode(hub.mode);
-    else if (e.key === "c") hub.setMode("comment");
-    else if (e.key === "e") hub.setMode("edit");
   };
   if (!framed) {
     // ---------- The pill, on top ----------
@@ -137,8 +136,8 @@ export function viewer(first: SiteData): void {
         ${sizes.map(([w, name]) => `<button class="size${w === width ? " on" : ""}" data-w="${w}"${w ? ` title="${w} wide"` : ""}>${name}</button>`).join("")}
         <span class="sep"></span>
         <button class="restart" title="Back to where you started">↺ Restart</button>
-        <button class="comment primary${own.mode === "comment" ? " on" : ""}" title="Click a layer to comment on it (C)">Comment${open ? ` · ${open}` : ""}</button>
-        <button class="edit${own.mode === "edit" ? " on" : ""}" title="Click a layer to open it in the editor (E, or ⌥-click any time)">Edit</button>
+        <button class="comment primary${own.mode === "comment" ? " on" : ""}" title="Click a layer to comment on it">Comment${open ? ` · ${open}` : ""}</button>
+        <button class="edit${own.mode === "edit" ? " on" : ""}" title="Click a layer to open it in the editor (or ⌥-click any time)">Edit</button>
         <button class="hide" title="Hide the controls ( \\ )" aria-label="Hide the controls">\\</button>`;
       const on = (sel: string, fn: (e: Event) => void, ev = "click") => bar.querySelector(sel)?.addEventListener(ev, fn);
       on("select.page", (e) => own.go((e.target as HTMLSelectElement).value), "change");
@@ -294,7 +293,8 @@ export function viewer(first: SiteData): void {
     shade.append(h);
   });
   window.addEventListener("click", (e) => {
-    if (e.composedPath().includes(layer)) return;
+    // Clicks on buni's own (the pill, a pin, a card) aren't clicks on the page.
+    if (e.composedPath().some((n) => n instanceof Element && n.tagName.startsWith("BUNI-"))) return;
     const mode = e.altKey ? "edit" : hub?.mode;
     if (!mode) {
       // A click that does nothing shows what does, as a prototype does.
