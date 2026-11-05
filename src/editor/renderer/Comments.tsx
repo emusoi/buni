@@ -20,7 +20,10 @@ export function Comments({ doc, node, onError }: { doc: Doc; node: Node; onError
   };
   return (
     <section className="group comments" aria-label="Comments">
-      <div className="group-title"><MessageSquare size={12} /> Comments{live.length > 0 && <span className="count">{live.length}</span>}</div>
+      <div className="group-title comments-title">
+        <span className="group-name"><MessageSquare size={12} /> Comments{live.length > 0 && <span className="count">{live.length}</span>}</span>
+        {done.length > 0 && <button type="button" className="group-summary as-btn" aria-pressed={showDone} onClick={() => setShowDone((s) => !s)}>{showDone ? "Hide resolved" : `${done.length} resolved`}</button>}
+      </div>
       {[...live, ...(showDone ? done : [])].map((t) => (
         <div key={t.id} className={`sys-thread${t.state === "resolved" ? " resolved" : ""}`}>
           {t.posts.map((p, i) => <p key={i}><b>{who(p.author)}</b> {p.body}</p>)}
@@ -35,10 +38,9 @@ export function Comments({ doc, node, onError }: { doc: Doc; node: Node; onError
           )}
         </div>
       ))}
-      {done.length > 0 && <button type="button" className="link-btn" onClick={() => setShowDone((s) => !s)}>{showDone ? "Hide" : "Show"} {done.length} resolved</button>}
       <form className="sys-grid-row" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) void run({ node: node.id, body: draft.trim() }).then((ok) => ok && setDraft("")); }}>
-        <input className="field" placeholder={`Comment on ${node.name}…`} aria-label="New comment" value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <button type="submit" className="link-btn" disabled={!draft.trim()}>Post</button>
+        <input className="field" placeholder="Add a comment…" aria-label="New comment" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        {draft.trim() && <button type="submit" className="link-btn">Post</button>}
       </form>
     </section>
   );

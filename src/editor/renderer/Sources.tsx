@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Code2, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import type { Doc } from "buni/format/doc.ts";
 import { sourceLabel, sourceRef, sourceTarget, type SourceRef } from "buni/format/sources.ts";
 
@@ -56,8 +56,14 @@ export function Sources({ doc, id, inherited }: { doc: Doc; id: string; inherite
     if (!result.ok) throw new Error(result.reply);
     setError(undefined); setEditing(undefined);
   };
+  const [open, setOpen] = useState(false);
   return <section className="source-links" aria-label="Implementation sources">
-    <header><b><Code2 size={13} /> Source files</b><button type="button" className="link-btn" title="Link the file and symbol that implement this design; any language or file type" onClick={() => setEditing(sources.length)}><Plus size={12} /> Add</button></header>
+    {/* A row while closed: what it holds in a word; open, the links and a way to add one. */}
+    <button type="button" className="group-title fold" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}<span className="group-name">Source files</span>
+      {!open && <span className="group-summary">{sources.length ? `${sources.length} file${sources.length === 1 ? "" : "s"}` : "None"}</span>}
+    </button>
+    {open && <>
     {sources.map((source, i) => <div className="source-item" key={i}>
       <button type="button" className="source-path" title="Edit source link" onClick={() => setEditing(i)}>{sourceLabel(source)}</button>
       <button type="button" className="icon" aria-label={`Remove source ${source.file ?? source.url}`} onClick={() => void save(sources.filter((_, at) => at !== i)).catch((e: Error) => setError(e.message))}><Trash2 size={12} /></button>
@@ -65,5 +71,7 @@ export function Sources({ doc, id, inherited }: { doc: Doc; id: string; inherite
     {inherited?.sources?.length ? <div className="source-inherited"><small>From {inherited.name}</small>{inherited.sources.map((s, i) => <code key={i}>{sourceLabel(s)}</code>)}</div> : null}
     {editing !== undefined && <SourceForm key={`${id}:${editing}`} source={sources[editing]} onCancel={() => setEditing(undefined)} onSave={(source) => save(editing < sources.length ? sources.map((s, i) => i === editing ? source : s) : [...sources, source])} />}
     {error && <p role="alert" className="notice">{error}</p>}
+    <button type="button" className="link-btn" title="Link the file and symbol that implement this design; any language or file type" onClick={() => setEditing(sources.length)}><Plus size={12} /> Add</button>
+    </>}
   </section>;
 }

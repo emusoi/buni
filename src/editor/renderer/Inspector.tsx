@@ -448,6 +448,50 @@ const COLOR = /^(color|background|border)/;
 const short = (v: string | undefined) => v?.replace(/var\(--([\w-]+)\)/g, "$1").split(",")[0]?.replace(/"/g, "").trim();
 const KIND_ICON: Record<Node["kind"], LucideIcon> = { frame: Square, text: Type, image: Image, svg: Component, instance: Component };
 
+/** Tags worth saying in a layer's subtitle: the rest (div, span, p) say nothing a person needs. */
+const TAG_MATTERS = new Set(["h1", "h2", "h3", "h4", "h5", "h6", "button", "a", "input", "textarea", "select", "label", "img", "form", "nav", "header", "footer", "main", "aside"]);
+const GENERIC = new Set(["div", "span", "section", "p", "li", "ul", "ol", "article", "main", "header", "footer", "nav", "aside", "label", "frame"]);
+/** A layer by its name; one named only by its tag reads as what it is: Card, Row, Column, Box, Text. */
+function readName(n: Node): string {
+  if (n.name && !GENERIC.has(n.name.toLowerCase())) return n.name;
+  if (n.kind === "text") return "Text";
+  if (n.kind !== "frame") return n.name;
+  const s = n.style;
+  if (s.background || s.backgroundColor || s.border || s.boxShadow) return "Card";
+  if (s.display?.includes("flex") || s.display === "grid") return s.flexDirection === "column" ? "Column" : "Row";
+  return "Box";
+}
+
+/**
+ * What the page computes for a layer, read from its board on the canvas: the values in force where none is set here,
+ * shown grey in the fields. Read again a moment after each change, once the board has redrawn.
+ */
+function useComputed(id: Id, doc: Doc): { family?: string; weight?: string; size?: string; line?: string; track?: string } {
+  const [c, setC] = useState<{ family?: string; weight?: string; size?: string; line?: string; track?: string }>({});
+  useEffect(() => {
+    const t = setTimeout(() => {
+      for (const f of document.querySelectorAll<HTMLIFrameElement>(".artboard iframe")) {
+        let el: Element | null = null, cs: CSSStyleDeclaration | undefined;
+        try { el = f.contentDocument?.querySelector(`.b-${CSS.escape(id)}`) ?? null; cs = el ? f.contentWindow?.getComputedStyle(el) : undefined; } catch { /* a board of another origin */ }
+        if (!el || !cs) continue;
+        const px = parseFloat(cs.fontSize), lh = parseFloat(cs.lineHeight);
+        const family = cs.fontFamily.split(",")[0]?.replace(/"/g, "").trim() ?? "";
+        setC({
+          family: /^(-apple-system|system-ui|BlinkMacSystemFont)$/i.test(family) ? "System font" : family,
+          weight: cs.fontWeight, size: String(Math.round(px * 10) / 10),
+          // "normal" is about 1.2 in every browser; a number reads in the field where the word would clip.
+          line: Number.isFinite(lh) ? String(Math.round((lh / px) * 100) / 100) : "1.2",
+          track: cs.letterSpacing === "normal" ? "0" : cs.letterSpacing.replace(/px$/, ""),
+        });
+        return;
+      }
+      setC({});
+    }, 250);
+    return () => clearTimeout(t);
+  }, [id, doc]);
+  return c;
+}
+
 const TRIGGER_LABEL: Record<MotionTrigger, string> = { load: "Load", scroll: "Scroll", hover: "Hover", press: "Press" };
 const EFFECT_DEFAULT_MS: Record<MotionTrigger, number> = { load: 700, scroll: 600, hover: 150, press: 120 };
 const EFFECT_LABEL: Record<string, string> = { "slide-left": "Slide ←", "slide-right": "Slide →" };
@@ -848,6 +892,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
   const [namingComponent, setNamingComponent] = useState(false);
   // Design or Code, remembered for next time; a convenience, so a browser that won't store it just starts on Design.
   const [mode, setModeState] = useState<"design" | "code">(() => { try { return localStorage.getItem("buni.inspectorMode") === "code" ? "code" : "design"; } catch { return "design"; } });
+  const computed = useComputed(node?.id ?? "", doc);
   const setMode = (m: "design" | "code") => { setModeState(m); try { localStorage.setItem("buni.inspectorMode", m); } catch { /* not stored */ } };
   const [adding, setAdding] = useState("");
   /** Properties added by name but not given a value yet. */
@@ -921,8 +966,8 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
     <>
       {trail.length > 0 && (
         <nav className="crumbs" aria-label="Where this layer is">
-          {trail.map((n) => (
-            <Fragment key={n.id}><button type="button" onClick={() => onSelect(n.id)}>{n.name}</button><ChevronRight size={11} /></Fragment>
+          {trail.map((n, i) => (
+            <Fragment key={n.id}>{i > 0 && <ChevronRight size={11} />}<button type="button" onClick={() => onSelect(n.id)}>{readName(n)}</button></Fragment>
           ))}
         </nav>
       )}
@@ -930,7 +975,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
         <span className="layer-icon"><KindIcon size={15} /></span>
         <div className="layer-who">
           <b>{node.name}</b>
-          <span>{node.kind === "text" ? "Text" : node.kind === "frame" ? "Frame" : node.kind === "instance" ? "Component use" : node.kind === "svg" ? "SVG" : "Image"}{node.tag ? ` · ${node.tag}` : ""}{parent ? ` · in ${parent.name}` : ""}</span>
+          <span>{node.kind === "text" ? "Text" : node.kind === "frame" ? "Frame" : node.kind === "instance" ? "Component use" : node.kind === "svg" ? "SVG" : "Image"}{node.tag && TAG_MATTERS.has(node.tag) ? ` · ${node.tag}` : ""}{parent ? ` · in ${readName(parent)}` : ""}</span>
         </div>
       </div>
       <div className="mode-tabs" role="tablist" aria-label="Edit as">
@@ -1033,18 +1078,19 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       {(node.kind === "text" || isFrame) && (
         <Group title="Typography" summary={[short(st.fontFamily), st.fontWeight, st.fontSize].filter(Boolean).join(" · ") || "Inherited"}>
           <div className="prow">
-            <Select title="Font" value={st.fontFamily ?? ""} options={[["", "Inherit"], ...fonts.map((f): [string, string] => [f, f.replace(/var\(--([\w-]+)\)/, "$1").split(",")[0]?.replace(/"/g, "") ?? f])]} onChange={(v) => setStyle("fontFamily", v)} />
-            <Select title="Weight" value={st.fontWeight ?? ""} options={[["", "Weight"], ...WEIGHTS]} onChange={(v) => setStyle("fontWeight", v)} />
+            <Select title="Font" value={st.fontFamily ?? ""} options={[["", computed.family ? `${computed.family} · inherited` : "Inherit"], ...fonts.map((f): [string, string] => [f, f.replace(/var\(--([\w-]+)\)/, "$1").split(",")[0]?.replace(/"/g, "") ?? f])]} onChange={(v) => setStyle("fontFamily", v)} />
+            <Select title="Weight" value={st.fontWeight ?? ""} options={[["", computed.weight ? `${WEIGHTS.find(([w]) => w === computed.weight)?.[1] ?? ""} · ${computed.weight}`.replace(/^ · /, "") : "Weight"], ...WEIGHTS]} onChange={(v) => setStyle("fontWeight", v)} />
           </div>
           <div className="prow">
-            <Num prefix="Aa" title="Font size" value={st.fontSize ?? ""} onSave={(v) => setStyle("fontSize", v)} />
-            <Num prefix="↕" title="Line height" value={st.lineHeight ?? ""} onSave={(v) => setStyle("lineHeight", v)} />
-            <Num prefix="↔" title="Letter spacing" value={st.letterSpacing ?? ""} onSave={(v) => setStyle("letterSpacing", v)} />
+            <Num prefix="Size" title="Font size" value={st.fontSize ?? ""} placeholder={computed.size ?? "—"} onSave={(v) => setStyle("fontSize", v)} />
+            <Num prefix="Line" title="Line height" value={st.lineHeight ?? ""} placeholder={computed.line ?? "—"} onSave={(v) => setStyle("lineHeight", v)} />
+            <Num prefix="Track" title="Letter spacing" value={st.letterSpacing ?? ""} placeholder={computed.track ?? "—"} onSave={(v) => setStyle("letterSpacing", v)} />
           </div>
           <div className="prow">
             <Segmented value={st.textAlign} options={[["left", AlignLeft, "Left"], ["center", AlignCenter, "Centre"], ["right", AlignRight, "Right"], ["justify", AlignJustify, "Justify"]]} onChange={(v) => setStyle("textAlign", v)} />
             <ColorField doc={doc} value={st.color ?? ""} onSave={(v) => setStyle("color", v)} />
           </div>
+          <p className="hint small">Grey values are inherited from the layer around it. Type to set one here.</p>
         </Group>
       )}
       {isFrame && (
@@ -1135,8 +1181,9 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       <Comments doc={doc} node={node} onError={setNotice} />
       <Sources key={node.id} doc={doc} id={source?.root === node.id ? source.id : node.id} inherited={node.kind === "instance" ? doc.shared[node.shared] : undefined} />
       <section className="group">
-        <button type="button" className="group-title toggle" onClick={() => setAdvanced((a) => !a)}>
-          {advanced ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Advanced CSS{extra.length ? ` · ${extra.length}` : ""}
+        <button type="button" className="group-title fold" aria-expanded={advanced} onClick={() => setAdvanced((a) => !a)}>
+          {advanced ? <ChevronDown size={12} /> : <ChevronRight size={12} />}<span className="group-name">Advanced CSS</span>
+          {!advanced && <span className="group-summary">{extra.length ? `${extra.length} rule${extra.length === 1 ? "" : "s"}` : "None"}</span>}
         </button>
         {advanced && extra.map(row)}
         {advanced && <div className="prop add">
