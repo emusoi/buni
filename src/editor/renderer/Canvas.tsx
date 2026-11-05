@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, History, Moon, Play, Sun } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Moon, Play, Sun, X } from "lucide-react";
 import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { childrenOf, optionsOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
 import { diffCss, diffVersion, docAtVersion } from "./pageVersions.ts";
@@ -350,6 +350,8 @@ const Artboard = memo(function Artboard(props: {
   const [naming, setNaming] = useState(false);
   /** The row on the label's right where a page's tools sit: its takes, its versions, play and its mode. */
   const [tools, setTools] = useState<HTMLDivElement | null>(null);
+  /** Looking at a version or trying a take: the row holds only what that needs. */
+  const busy = looking !== undefined || flip !== undefined;
   // A board is a page or a component.
   const page = doc.pages[pageId];
   const component = doc.shared[pageId];
@@ -673,7 +675,7 @@ const Artboard = memo(function Artboard(props: {
   if ((!page && !component) || !live) return null;
   const { uses } = props;
   return (
-    <div className={`artboard${(looking !== undefined || flip !== undefined) && props.close ? " looking" : ""}`} style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
+    <div className={`artboard${(looking !== undefined || flip !== undefined) && props.close ? " in-place" : ""}`} style={{ left: props.at.x, top: props.at.y, ...cssVars({ "--w": width }) }}>
       <button
         type="button"
         className={`artboard-label${props.active ? " active" : ""}${component ? " component" : ""}`}
@@ -710,9 +712,9 @@ const Artboard = memo(function Artboard(props: {
       </button>
       {page && !props.close && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
       {page && props.close && <div className="board-tools" ref={setTools} onPointerDown={(e) => e.stopPropagation()} />}
-      {page && props.close && (props.takes ?? 0) > 0 && <TakeFlip doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} active={Boolean(props.active)} showing={flip} onShow={(t) => { setFlip(t); setLooking(undefined); }} liveFrame={frame} tools={tools} />}
-      {page && props.close && !page.option && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={flip === undefined ? looking : undefined} onLook={(v) => { setLooking(v); if (v !== undefined) setFlip(undefined); }} naming={naming} onNaming={setNaming} liveFrame={frame} tools={tools} />}
-      {page && props.close && tools && (page.live || entrancesOn(props.doc, page.id).length > 0) && createPortal(
+      {page && props.close && (props.takes ?? 0) > 0 && <TakeFlip doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} active={Boolean(props.active)} showing={flip} onShow={(t) => { setFlip(t); setLooking(undefined); }} liveFrame={frame} tools={tools} aside={looking !== undefined} />}
+      {page && props.close && !page.option && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={flip === undefined ? looking : undefined} onLook={(v) => { setLooking(v); if (v !== undefined) setFlip(undefined); }} naming={naming} onNaming={setNaming} liveFrame={frame} tools={tools} aside={flip !== undefined} />}
+      {page && props.close && tools && !busy && (page.live || entrancesOn(props.doc, page.id).length > 0) && createPortal(
         <button type="button" className="board-play" title={page.live ? "Run the page again, here" : "Play its motion here"} aria-label="Play here"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => {
@@ -729,7 +731,7 @@ const Artboard = memo(function Artboard(props: {
             d.head.append(s);
             setTimeout(() => s.remove(), motionEnd(props.doc, page.id) + 200);
           }}><Play size={11} fill="currentColor" strokeWidth={0} /></button>, tools)}
-      {page && props.close && tools && props.modes && props.modes.length > 0 && props.onMode && createPortal(
+      {page && props.close && tools && !busy && props.modes && props.modes.length > 0 && props.onMode && createPortal(
         <button type="button" className={`board-mode${props.mode ? " on" : ""}`} title={props.mode ? `Drawn in ${props.mode} mode; click for the next, or back to the tokens as they are` : "Draw this page in a mode"}
           onPointerDown={(e) => e.stopPropagation()} onClick={() => { const i = props.mode ? props.modes!.indexOf(props.mode) : -1; props.onMode?.(props.modes![i + 1]); }}>
           {props.mode === "dark" ? <Moon size={12} strokeWidth={2} /> : props.mode ? props.mode[0]?.toUpperCase() : <Sun size={12} strokeWidth={2} />}
@@ -767,7 +769,7 @@ const Artboard = memo(function Artboard(props: {
  * full size where it lives; the dots say where you are and which is live. Use this take makes the one shown live,
  * with a why in a line; Esc, or flipping back to the live one, shows the page again.
  */
-function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFrame, tools }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; active: boolean; showing: Id | undefined; onShow: (take: Id | undefined) => void; liveFrame: RefObject<HTMLIFrameElement | null>; tools: HTMLElement | null }) {
+function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFrame, tools, aside }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; active: boolean; showing: Id | undefined; onShow: (take: Id | undefined) => void; liveFrame: RefObject<HTMLIFrameElement | null>; tools: HTMLElement | null; aside: boolean }) {
   const takes = useMemo(() => [page, ...optionsOf(doc, page).map((p) => p.id)], [doc, page]);
   const at = Math.max(0, showing === undefined ? 0 : takes.indexOf(showing));
   const [why, setWhy] = useState("");
@@ -785,6 +787,9 @@ function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFr
     return () => window.removeEventListener("keydown", key);
   });
   const shown = doc.pages[takes[at] ?? page];
+  const name = shown?.name.replace(/^.*·\s*/, "") ?? "";
+  const [asking, setAsking] = useState(false);
+  useEffect(() => setAsking(false), [showing]);
   const html = useMemo(() => (showing ? srcdoc(doc, showing, dir, "", mode) : undefined), [doc, showing, dir, mode]);
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -801,24 +806,32 @@ function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFr
   const height = liveFrame.current?.offsetHeight || 900;
   return (
     <>
-      {tools && createPortal(
+      {tools && !aside && createPortal(
         <span className={`flip-pill${showing ? " on" : ""}`} title="Flip through this page's takes (← →)">
           <button type="button" aria-label="Previous take" onClick={() => go(at - 1)}><ChevronLeft size={14} strokeWidth={2} /></button>
-          <b>{at === 0 ? "Live" : shown?.name.replace(/^.*·\s*/, "")}</b>
+          <b>{at === 0 ? "Live" : name}</b>
           <span className="of">{at + 1} of {takes.length}</span>
           <button type="button" aria-label="Next take" onClick={() => go(at + 1)}><ChevronRight size={14} strokeWidth={2} /></button>
         </span>, tools)}
-      {showing && (
-        // While a take shows: what it tries, and the way to make it the page.
-        <form className="board-bar trying" onPointerDown={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); void use(); }}>
-          <b>{shown?.name.replace(/^.*·\s*/, "")}</b>
-          <span className="say">{shown?.option?.idea ?? "Another take of this page."}</span>
-          <input className="field" placeholder="Why, in a line" value={why} onChange={(e) => setWhy(e.target.value)} aria-label="Why this take" />
-          <button type="submit" className="btn small primary">Use this take</button>
-        </form>
-      )}
+      {tools && showing && createPortal(
+        <span className="tool-wrap use">
+          <button type="button" className="tool-pill primary" aria-expanded={asking} onClick={() => setAsking((a) => !a)}>Use this take</button>
+          {asking && (
+            // Asked once, over the canvas: the page swaps in place.
+            <form className="tool-pop" onSubmit={(e) => { e.preventDefault(); void use(); }}>
+              <b>Make {name} the page?</b>
+              <p>Live becomes a take of it, so you can come back.</p>
+              <input className="field" placeholder="Why, in a line (optional)" value={why} autoFocus onChange={(e) => setWhy(e.target.value)} aria-label="Why this take" onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setAsking(false); } }} />
+              <span className="tool-pop-actions">
+                <button type="button" className="tool-pill" onClick={() => setAsking(false)}>Cancel</button>
+                <button type="submit" className="tool-pill primary">Use {name}</button>
+              </span>
+            </form>
+          )}
+        </span>, tools)}
       {showing && (
         <div className="ghost flip-take" style={{ width }}>
+          <span className="board-tag" title={shown?.option?.idea}><b>{name}</b>{shown?.option?.idea && <span>{shown.option.idea}</span>}</span>
           <div className="ghost-frame" style={{ width, height }}>{url && <iframe title={shown?.name} sandbox={shown?.live ? "allow-same-origin allow-scripts" : "allow-same-origin"} src={url} width={width} height={height} />}</div>
         </div>
       )}
@@ -830,7 +843,7 @@ function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFr
  * The page's points in time under its label: v1 — v2 — v3, then the page as it is. An older one opens beside the
  * page, greyed and read only, with Restore and Branch a take; Save a version keeps the page as it is, with a note.
  */
-function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming, liveFrame, tools }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void; liveFrame: RefObject<HTMLIFrameElement | null>; tools: HTMLElement | null }) {
+function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming, liveFrame, tools, aside }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void; liveFrame: RefObject<HTMLIFrameElement | null>; tools: HTMLElement | null; aside: boolean }) {
   const versions = pageVersionsOf(doc, page);
   const seen = looking !== undefined ? doc.versions[looking] : undefined;
   const now = Date.now();
@@ -871,11 +884,19 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
   const differ = diff ? diff.added.length + diff.removed.length + diff.changed.length : 0;
   return (
     <>
-      {tools && createPortal(
-        <span ref={chip} className="version-chip-wrap">
-          <button type="button" className={`version-chip${seen ? " looking" : ""}${open ? " open" : ""}`} aria-expanded={open} title={versions.length ? "Versions of this page" : "Save a version of this page"} onClick={() => setOpen((o) => !o)}>
-            <History size={13} strokeWidth={2} />{seen ? <b>v{seen.n}</b> : latest ? <b>v{latest.n}</b> : null}
-          </button>
+      {tools && !aside && createPortal(
+        <span ref={chip} className="tool-wrap versions">
+          {seen ? (
+            // Looking: the chip says which, × goes back; Branch and Restore sit beside it.
+            <span className="version-chip at-version">
+              <button type="button" className="version-chip-main" aria-expanded={open} title="Versions of this page" onClick={() => setOpen((o) => !o)}><History size={13} strokeWidth={2} /><b>v{seen.n}</b><span className="when">{ago(seen.at, now)}</span></button>
+              <button type="button" className="version-chip-x" aria-label="Back to now" title="Back to now (Esc)" onClick={() => onLook(undefined)}><X size={13} strokeWidth={2} /></button>
+            </span>
+          ) : (
+            <button type="button" className={`version-chip${open ? " open" : ""}`} aria-expanded={open} title={versions.length ? "Versions of this page" : "Save a version of this page"} onClick={() => setOpen((o) => !o)}>
+              <History size={13} strokeWidth={2} />{latest && <b>v{latest.n}</b>}
+            </button>
+          )}
           {open && (
             <div className="version-menu" role="menu">
               <div className="version-menu-head">
@@ -890,21 +911,16 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
                   <b>v{v.n}</b><span className="note">{v.note || "No note"}</span><span className="who">{v.by} · {ago(v.at, now)}</span>
                 </button>
               ))}
-              <p className="version-menu-foot">{versions.length ? "Click one to look at it here. Restore or branch it from there." : "No versions yet. Save this one keeps the page as it is, with a note."}</p>
+              {!versions.length && <p className="version-menu-foot">No versions yet. Save this one keeps the page as it is, with a note.</p>}
             </div>
           )}
         </span>, tools)}
+      {tools && seen && createPortal(<button type="button" className="tool-pill branch" onClick={() => act("branch_version", seen)}>Branch a take</button>, tools)}
+      {tools && seen && createPortal(<button type="button" className="tool-pill restore" onClick={() => act("restore_version", seen)}>Restore v{seen.n}</button>, tools)}
       {seen && (
-        // In place: the page shows the version, greyed, what changed outlined, until now is picked again.
-        <div className="ghost" style={{ width }} onPointerDown={(e) => e.stopPropagation()}>
-          <div className="board-bar looking">
-            <History size={14} strokeWidth={2} className="icon" />
-            <b>Looking at v{seen.n}{seen.note ? ` · ${seen.note}` : ""}</b>
-            <span className="say">{seen.by} · {ago(seen.at, now)}{diff ? ` · ${differ === 0 ? "the same as now" : `${differ} change${differ === 1 ? "" : "s"}, outlined`}` : ""}</span>
-            <button type="button" className="link-btn" onClick={() => act("branch_version", seen)}>Branch a take</button>
-            <button type="button" className="btn small primary" onClick={() => act("restore_version", seen)}>Restore v{seen.n}</button>
-            <button type="button" className="link-btn plain" onClick={() => onLook(undefined)}>Back to now</button>
-          </div>
+        // In the page's own box: the version, greyed, what changed outlined, a tag in its corner.
+        <div className="ghost version" style={{ width }} onPointerDown={(e) => e.stopPropagation()}>
+          <span className="board-tag"><b>v{seen.n}{seen.note ? ` · ${seen.note}` : ""}</b>{diff && <span>{differ === 0 ? "the same as now" : `${differ} change${differ === 1 ? "" : "s"}, outlined`}</span>}</span>
           <div className="ghost-frame" style={{ width, height: liveFrame.current?.offsetHeight || 900 }}>{url && <iframe title={`v${seen.n}`} sandbox="allow-same-origin" src={url} width={width} height={liveFrame.current?.offsetHeight || 900} />}</div>
         </div>
       )}
