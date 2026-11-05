@@ -36,7 +36,7 @@ export function ThemeSwitch() {
   );
 }
 
-/** `compact`: a sign-in button or your picture, beside the agents' status at the foot of a file's rail. */
+/** `compact`: one line, your picture and name (or Sign in), at the foot of a design's sidebar; the menu opens above. */
 export function Profile({ compact = false }: { compact?: boolean }) {
   const account = useAccount();
   const [menu, setMenu] = useState(false);
@@ -81,7 +81,7 @@ export function Profile({ compact = false }: { compact?: boolean }) {
       )}
       <button type="button" className="profile-row" aria-haspopup="menu" aria-expanded={menu} title={compact ? person.name : undefined} onClick={() => setMenu((m) => !m)}>
         <Avatar name={person.name} src={person.avatar} />
-        {!compact && <span className="profile-who"><b>{person.name}</b><small>@{person.username}</small></span>}
+        <span className="profile-who"><b>{person.name}</b>{!compact && <small>@{person.username}</small>}</span>
       </button>
     </div>
   );

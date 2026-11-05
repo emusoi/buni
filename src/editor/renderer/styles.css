@@ -973,8 +973,11 @@ button.insert-where:hover { color: var(--ink); }
 .side-foot .icon-btn { color: var(--ink-2); }
 .side-presence { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
 .side-presence .presence-dot { width: 18px; height: 18px; font-size: 9px; }
-.side-foot { flex: none; margin-top: auto; display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-top: 0.5px solid var(--rule); }
-.side-foot .grow { flex: 1; }
+.side-foot { flex: none; margin-top: auto; display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 6px 8px; border-top: 0.5px solid var(--rule); }
+.side-foot .profile { flex: 1; min-width: 0; margin: 0; }
+.side-foot .profile-row { gap: 8px; padding: 4px 6px; }
+.side-foot .profile-who b { font-size: 13px; font-weight: 500; }
+.side-foot .profile-menu { left: 0; right: auto; width: 248px; }
 [data-host="web"] .sidebar-top { padding-left: 16px; }
 
 /* Canvas zoom sits bottom-left, out of the way of the boards and the insert bar. */

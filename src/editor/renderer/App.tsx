@@ -16,6 +16,7 @@ import { Guides } from "./Guides.tsx";
 import { ARRIVE, isArrival, openSiteTab } from "./arrive.ts";
 import { NameDialog } from "./Ask.tsx";
 import { FileTabs } from "./FileTabs.tsx";
+import { Profile } from "./Profile.tsx";
 import { History } from "./History.tsx";
 import { Shortcuts } from "./Shortcuts.tsx";
 import { placeImage } from "./images.ts";
@@ -1002,10 +1003,11 @@ export function App({ snap }: { snap: Snapshot }) {
           )}
         </nav>}
         <div className="side-foot">
+          {/* You first, as the design draws it; the name gives way before the tools do. */}
+          <Profile compact />
           {activePage && mode === "screens" && <button type="button" className="icon-btn" title="Open as a website" aria-label="Open as a website" onClick={() => openSite(activePage)}><PlayIcon size={16} strokeWidth={1.75} /></button>}
           <History onToast={setToast} shown={sheet === "versions"} onClose={() => setSheet(undefined)} />
           <TabletButton onToast={setToast} />
-          <span className="grow" />
           <button type="button" className="icon-btn" title="Share or export" aria-label="Share or export" onClick={() => setSheet("export")}><Share size={16} strokeWidth={1.75} /></button>
           <Export
             shown={sheet === "export"}
