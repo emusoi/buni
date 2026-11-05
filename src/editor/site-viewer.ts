@@ -92,7 +92,8 @@ export function viewer(first: SiteData): void {
       data,
       render: () => draw(),
       setMode: (m) => { own.mode = own.mode === m ? "" : m; own.content?.refresh(); draw(); },
-      toggleHidden: () => { hidden = !hidden; try { localStorage.setItem("buni-site-hidden", hidden ? "1" : "0"); } catch { /* this page only */ } draw(); },
+      // Shown, the page sits above the pill's strip; hidden, it has the whole window. Either way it loads again.
+      toggleHidden: () => { try { localStorage.setItem("buni-site-hidden", hidden ? "0" : "1"); } catch { /* this page only */ } location.reload(); },
       go: (href) => { if (own.content) own.content.win.location.href = href; else location.href = href; },
     };
     hub = own;
@@ -113,6 +114,9 @@ export function viewer(first: SiteData): void {
       .dot { position: fixed; z-index: 2147483647; right: 16px; bottom: 16px; width: 32px; height: 32px; padding: 0; border-radius: 16px; background: rgba(28, 28, 30, 0.9); color: #f5f5f7; font-weight: 700; }
       .stage { position: fixed; inset: 0; z-index: 2147483646; background: #1c1c1e; display: flex; justify-content: center; padding: 16px 0 80px; box-sizing: border-box; }
       .stage iframe { height: 100%; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+      .stage.full { padding: 0 0 56px; }
+      .stage.full iframe { width: 100%; border-radius: 0; box-shadow: none; }
+      .pill.strip { bottom: 6px; }
     `;
     const draw = () => {
       const d = own.content ? own.data : data;
@@ -133,7 +137,7 @@ export function viewer(first: SiteData): void {
         root.append(bar);
         return;
       }
-      bar.className = "pill";
+      bar.className = width ? "pill" : "pill strip";
       bar.innerHTML = `
         <select class="page" aria-label="Page">${d.page ? "" : "<option>—</option>"}${d.pages.map((p) => `<option value="${esc(p.href)}"${p.id === d.page ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
         ${d.flows.length ? `<span class="sep"></span><select class="flow" aria-label="Flow"><option value="">No flow</option>${d.flows.map((f) => `<option value="${esc(f.id)}"${f.id === flow?.id ? " selected" : ""}>${esc(f.name)}</option>`).join("")}</select>` : ""}
@@ -159,13 +163,15 @@ export function viewer(first: SiteData): void {
     const css = document.createElement("style");
     css.textContent = style;
     root.append(css);
-    if (width) {
-      // At a width: the page runs in a frame that wide, and this window's address follows it.
+    // With the pill shown the page runs in a frame, so the pill sits below it, never over the page's own controls:
+    // the window's width, or one of the page's. This window's address follows the frame.
+    const staged = Boolean(width) || !hidden;
+    if (staged) {
       document.body.style.display = "none";
       const stage = document.createElement("div");
-      stage.className = "stage";
+      stage.className = width ? "stage" : "stage full";
       const frame = document.createElement("iframe");
-      frame.style.width = `${width}px`;
+      if (width) frame.style.width = `${width}px`;
       frame.src = location.href;
       frame.title = "The page";
       frame.addEventListener("load", () => {
@@ -182,7 +188,7 @@ export function viewer(first: SiteData): void {
     document.documentElement.append(host);
     window.addEventListener("keydown", (e) => keys(e));
     draw();
-    if (width) return;
+    if (staged) return;
   }
 
   // ---------- The content: live, with comments and the way to the editor ----------
