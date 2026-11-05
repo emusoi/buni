@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import type { Doc, Node } from "buni/format/doc.ts";
+import { useWho } from "./who.ts";
 
 export function Comments({ doc, node, onError }: { doc: Doc; node: Node; onError: (m: string | undefined) => void }) {
+  const who = useWho();
   const threads = Object.values(doc.comments).filter((c) => c.node === node.id);
   const live = threads.filter((t) => t.state !== "resolved");
   const done = threads.filter((t) => t.state === "resolved");
@@ -21,7 +23,7 @@ export function Comments({ doc, node, onError }: { doc: Doc; node: Node; onError
       <div className="group-title"><MessageSquare size={12} /> Comments{live.length > 0 && <span className="count">{live.length}</span>}</div>
       {[...live, ...(showDone ? done : [])].map((t) => (
         <div key={t.id} className={`sys-thread${t.state === "resolved" ? " resolved" : ""}`}>
-          {t.posts.map((p, i) => <p key={i}><b>{p.author}</b> {p.body}</p>)}
+          {t.posts.map((p, i) => <p key={i}><b>{who(p.author)}</b> {p.body}</p>)}
           {t.state === "addressed" && <span className="sys-addressed">Addressed · resolve it if it's done</span>}
           {t.state === "resolved" ? (
             <button type="button" className="link-btn" onClick={() => void run({ thread: t.id, resolve: false })}>Resolved · reopen</button>

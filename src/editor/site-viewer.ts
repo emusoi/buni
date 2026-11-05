@@ -59,6 +59,9 @@ export function viewer(first: SiteData): void {
     set: (k: string, v: string) => { try { sessionStorage.setItem(`buni-site-${k}`, v); } catch { /* kept for this page only */ } },
   };
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+  // The file records the person's own comments as "you": shown as their name where a hosted buni knows it.
+  let me = "You";
+  fetch("/auth/me").then((r) => (r.ok ? r.json() : undefined)).then((a: { state?: string; person?: { name?: string } } | undefined) => { if (a?.state === "signed-in" && a.person?.name) me = a.person.name; }).catch(() => {});
 
   // ?flow= from the editor picks the flow to step through; the address keeps only the page.
   const q = new URLSearchParams(location.search);
@@ -240,7 +243,7 @@ export function viewer(first: SiteData): void {
     c.className = "card";
     c.style.left = `${Math.min(x, scrollX + innerWidth - 296)}px`;
     c.style.top = `${y}px`;
-    c.innerHTML = `${posts.map((p) => `<div class="post"><div class="who">${esc(p.author === "you" ? "You" : p.author)}</div>${esc(p.body)}</div>`).join("")}
+    c.innerHTML = `${posts.map((p) => `<div class="post"><div class="who">${esc(p.author === "you" ? me : p.author)}</div>${esc(p.body)}</div>`).join("")}
       <textarea placeholder="${posts.length ? "Reply" : "Add a comment"}"></textarea><div class="error" hidden></div>
       <div class="row">${resolve ? `<button class="resolve">Resolve</button>` : `<button class="cancel">Cancel</button>`}<button class="send">${posts.length ? "Reply" : "Comment"}</button></div>`;
     const text = c.querySelector("textarea") as HTMLTextAreaElement;

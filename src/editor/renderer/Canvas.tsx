@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo,
 import { childrenOf, optionsOf, pageLabel, pageVersionsOf, pagesInOrder, type Doc, type Id, type PageVersion } from "buni/format/doc.ts";
 import { diffCss, diffVersion, docAtVersion } from "./pageVersions.ts";
 import { ago } from "./Home.tsx";
+import { useWho } from "./who.ts";
 import { NameDialog } from "./Ask.tsx";
 import { componentWidth, placement, rowTitles, tidy, widthOf, type Point } from "./layout.ts";
 import { linkLabel, routeAll, type Arrow } from "./links.ts";
@@ -847,6 +848,7 @@ function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFr
  */
 function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onNaming, liveFrame, tools, aside }: { doc: Doc; page: Id; dir: string; mode: string | undefined; width: number; looking: Id | undefined; onLook: (v: Id | undefined) => void; naming: boolean; onNaming: (on: boolean) => void; liveFrame: RefObject<HTMLIFrameElement | null>; tools: HTMLElement | null; aside: boolean }) {
   const versions = pageVersionsOf(doc, page);
+  const who = useWho();
   const seen = looking !== undefined ? doc.versions[looking] : undefined;
   const now = Date.now();
   // What differs between then and now: outlined on both boards, listed under the version.
@@ -886,7 +888,8 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
   const differ = diff ? diff.added.length + diff.removed.length + diff.changed.length : 0;
   return (
     <>
-      {tools && !aside && createPortal(
+      {/* A page with no versions shows no chip (Save a version is in the Inspector): the row holds only what it has. */}
+      {tools && !aside && (versions.length > 0 || seen) && createPortal(
         <span ref={chip} className="tool-wrap versions">
           {seen ? (
             // Looking: the chip says which, × goes back; Branch and Restore sit beside it.
@@ -910,10 +913,9 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
               </button>
               {[...versions].reverse().map((v) => (
                 <button type="button" role="menuitem" key={v.id} className={`version-row${looking === v.id ? " on" : ""}`} onClick={() => { setOpen(false); onLook(v.id); }}>
-                  <b>v{v.n}</b><span className="note">{v.note || "No note"}</span><span className="who">{v.by} · {ago(v.at, now)}</span>
+                  <b>v{v.n}</b><span className="note">{v.note || "No note"}</span><span className="who">{who(v.by)} · {ago(v.at, now)}</span>
                 </button>
               ))}
-              {!versions.length && <p className="version-menu-foot">No versions yet. Save this one keeps the page as it is, with a note.</p>}
             </div>
           )}
         </span>, tools)}

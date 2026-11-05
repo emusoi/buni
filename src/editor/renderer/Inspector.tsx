@@ -16,6 +16,7 @@ import { EASE } from "buni/tools/html.ts";
 import { Widths } from "./Widths.tsx";
 import { ComponentVariants, PageStates } from "./Variants.tsx";
 import { CodeView } from "./CodeView.tsx";
+import { useWho } from "./who.ts";
 import { Comments } from "./Comments.tsx";
 import { placeImage } from "./images.ts";
 import { ImagePicker } from "./ImagePicker.tsx";
@@ -754,6 +755,7 @@ function LiveSection({ doc, page, dir, onError }: { doc: Doc; page: Id; dir: str
 
 /** A page's points in time, newest first: who, when, what; Restore puts one back, Branch a take goes another way from it. */
 function VersionsSection({ doc, page, onError }: { doc: Doc; page: Id; onError: (m: string | undefined) => void }) {
+  const who = useWho();
   const versions = pageVersionsOf(doc, page).slice().reverse();
   const [naming, setNaming] = useState(false);
   const now = Date.now();
@@ -764,7 +766,7 @@ function VersionsSection({ doc, page, onError }: { doc: Doc; page: Id; onError: 
         {versions.map((v) => (
           <div key={v.id} className="version-row">
             <span className="takes-dot" />
-            <span className="version-body"><b>v{v.n}</b> <span className="dim">{v.by} · {ago(v.at, now)}</span>{v.note && <span className="version-note">{v.note}</span>}</span>
+            <span className="version-body"><b>v{v.n}</b> <span className="dim">{who(v.by)} · {ago(v.at, now)}</span>{v.note && <span className="version-note">{v.note}</span>}</span>
             <button type="button" className="link-btn" onClick={() => run("restore_version", { version: v.id })}>Restore</button>
           </div>
         ))}
