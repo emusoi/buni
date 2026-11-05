@@ -977,7 +977,7 @@ button.insert-where:hover { color: var(--ink); }
 .side-foot .profile { flex: 1; min-width: 0; margin: 0; }
 .side-foot .profile-row { gap: 8px; padding: 4px 6px; }
 .side-foot .profile-who b { font-size: 13px; font-weight: 500; }
-.side-foot .profile-menu { left: 0; right: auto; width: 248px; }
+.side-foot .profile.compact .profile-menu { left: 0; right: auto; width: 248px; }
 [data-host="web"] .sidebar-top { padding-left: 16px; }
 
 /* Canvas zoom sits bottom-left, out of the way of the boards and the insert bar. */
