@@ -1170,7 +1170,8 @@ function liveReload(design: string): string {
       const now = await all();
       if (!last || now[0] !== last[0]) {
         const next = new DOMParser().parseFromString(now[0], "text/html");
-        if (next.querySelectorAll("script").length > 1 || document.querySelectorAll("body script").length > 1) return location.reload();
+        // Judged on what buni serves: a host may add scripts of its own to the page (a CDN beacon).
+        if (next.querySelectorAll("script").length > 1) return location.reload();
         const typed = new Map([...document.querySelectorAll("input, textarea, select")].map((e) => [e.className, e.type === "checkbox" || e.type === "radio" ? e.checked : e.value]));
         const focus = document.activeElement?.className;
         document.title = next.title;
