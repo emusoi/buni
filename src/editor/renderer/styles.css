@@ -181,6 +181,8 @@ svg { flex-shrink: 0; }
 /* In the margin left of each row, level with the top of its pages, clear of the links drawn above them. */
 .row-title { position: absolute; transform: translateX(-100%); display: flex; flex-direction: column; align-items: flex-end; gap: 2px; max-width: 200px; font-size: 13px; font-weight: 600; line-height: 18px; color: var(--ink); text-align: right; }
 .row-title span { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+/* Over the row when a panel covers the margin: one line above its first page's name. */
+.row-title.over { transform: none; flex-direction: row; align-items: baseline; gap: 6px; max-width: none; white-space: nowrap; }
 .canvas.far .artboard-label { visibility: hidden; }
 .zoom .mono { font-family: var(--mono); font-size: 11px; color: var(--ink-2); padding: 0 4px; }
 .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--label); }

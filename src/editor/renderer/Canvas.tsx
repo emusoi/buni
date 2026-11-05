@@ -934,12 +934,12 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
   );
 }
 
-/** A link label's width at 10px semibold, for the pill it sits on. */
+/** A label's width in semibold at a size (a link's pill, a row's title), to fit what it sits on. */
 let measurer: CanvasRenderingContext2D | null | undefined;
-function textWidth(t: string): number {
+function textWidth(t: string, size = 10): number {
   measurer ??= document.createElement("canvas").getContext("2d");
-  if (!measurer) return t.length * 6.2;
-  measurer.font = `600 10px ${getComputedStyle(document.body).fontFamily}`;
+  if (!measurer) return t.length * size * 0.62;
+  measurer.font = `600 ${size}px ${getComputedStyle(document.body).fontFamily}`;
   return measurer.measureText(t).width;
 }
 
@@ -1412,7 +1412,8 @@ export function Canvas(props: Props) {
     // A narrow canvas (Chrome's side panel) keeps thin margins: the page is what's being watched.
     const narrow = r.width < 640;
     // The folded sidebar's icon rail and the zoom pill still float there, so the page starts clear of them.
-    // One page is centred between the panels, with even room each side; many leave the row titles their margin.
+    // One page is centred between the panels, with even room each side (its row's title moves over it if the margin
+    // has no room); many pages leave the row titles their margin on the left.
     const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length && !narrow && ids.length > 1 ? 240 : narrow ? 76 : 48), floatOf("--float-right") + (narrow ? 12 : 48), narrow ? 112 : 124, narrow ? 24 : 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
@@ -1600,12 +1601,17 @@ export function Canvas(props: Props) {
             shown = t.y;
             return true;
           })
-          .map((t) => (
-            <div key={t.y} className="row-title" style={{ left: t.x * view.zoom + view.x - 20, top: t.y * view.zoom + view.y }}>
-              {t.name}
-              <span>{t.pages} pages</span>
-            </div>
-          ))}
+          .map((t) => {
+            // Beside the row, in the margin; where a panel covers the margin, over the row's first page name instead.
+            const x = t.x * view.zoom + view.x, y = t.y * view.zoom + view.y;
+            const over = x - 20 - Math.min(200, textWidth(t.name, 13) + 4) < floatOf("--float-left") + 12;
+            return (
+              <div key={t.y} className={`row-title${over ? " over" : ""}`} style={over ? { left: x, top: y + 29 * view.zoom - 62 } : { left: x - 20, top: y }}>
+                {t.name}
+                <span>{t.pages} pages</span>
+              </div>
+            );
+          })}
       </div>
       {tags.length > 0 && (
         <div className="agent-jumps">
