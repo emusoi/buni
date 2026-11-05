@@ -862,6 +862,7 @@ export function App({ snap }: { snap: Snapshot }) {
         {/* Everything that moves you around lives here, as in a Mac app's sidebar: the design, then where in it. */}
         <div className="side-head">
           <div className="side-head-row">
+            <button type="button" className="icon-btn" title="Back to all designs" aria-label="Back to all designs" onClick={() => void window.buni.close()}><ArrowLeft size={16} strokeWidth={1.75} /></button>
             <span className="grow" />
             <button type="button" className="icon-btn" title="Hide the sidebar (⌘\\ hides both)" aria-label="Hide the sidebar" onClick={() => toggleSidebar(false)}><PanelLeft size={16} strokeWidth={1.75} /></button>
             <button type="button" className="icon-btn" title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
