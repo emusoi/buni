@@ -286,6 +286,20 @@ describe("html in", () => {
     expect(html).toMatch(/<input class="[^"]+" placeholder="you@example.com">/);
   });
 
+  test("a password field keeps its type: drawn, saved and read back as one, so what's typed shows as dots", async () => {
+    const ws = await Workspace.open(file);
+    await ws.call(pi, "write_html", { parent: "home-frame", html: '<input layer-name="Password" type="password" placeholder="Required"><input layer-name="Odd" type="color" placeholder="Pick">' });
+    const field = Object.values(ws.view().nodes).find((n) => n.name === "Password");
+    expect(field?.kind === "text" && field.inputType).toBe("password");
+    // A type buni doesn't keep is a plain field.
+    const odd = Object.values(ws.view().nodes).find((n) => n.name === "Odd");
+    expect(odd?.kind === "text" && odd.inputType).toBeUndefined();
+    expect(renderPage(ws.view(), "home").html).toMatch(/<input class="[^"]+" type="password" placeholder="Required">/);
+    expect(layerHtml(ws.view(), field?.id ?? "")).toContain('type="password"');
+    const back = parseDoc(serializeDoc(ws.view()));
+    expect(back.ok && back.doc.nodes[field?.id ?? ""]).toMatchObject({ inputType: "password" });
+  });
+
   test("a space between words survives; a space or line break between elements is not a layer", () => {
     const { drafts } = parseHtml('<p><b>Late.</b><span> Try again</span></p> <p>B</p>\n  <p>C</p>');
     expect(drafts.map((d) => d.kind)).toEqual(["frame", "text", "text"]);

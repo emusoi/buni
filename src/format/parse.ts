@@ -2,6 +2,7 @@ import { sourceRefs, SOURCE_COLLECTIONS } from "./sources.ts";
 import { svgProblem } from "./svg.ts";
 import {
   EASINGS,
+  INPUT_TYPES,
   ENTRANCES,
   FORMAT_VERSION,
   overrideTarget,
@@ -283,7 +284,7 @@ export class Reader {
     const base = ["id", "parent", "index", "name", "style", "kind", "tag", "hidden", "locked", "at", "twin", "motion", "classes"];
     const kind = isRecord(v) ? v.kind : undefined;
     const extra =
-      kind === "text" ? ["text", "filled"]
+      kind === "text" ? ["text", "filled", "inputType"]
       : kind === "image" ? ["asset", "alt"]
       : kind === "svg" ? ["markup"]
       : kind === "instance" ? ["shared", "overrides"]
@@ -310,7 +311,9 @@ export class Reader {
         return { ...common, kind: "frame" };
       case "text":
         if (o.filled !== undefined && o.filled !== true) this.fail(at("filled"), "expected true, or leave it out");
-        return { ...common, kind: "text", text: this.str(o.text, at("text")), ...(o.filled === true ? { filled: true as const } : {}) };
+        const inputType = INPUT_TYPES.find((t) => t === o.inputType);
+        if (o.inputType !== undefined && !inputType) this.fail(at("inputType"), `expected one of ${INPUT_TYPES.join(", ")}, or leave it out`);
+        return { ...common, kind: "text", text: this.str(o.text, at("text")), ...(o.filled === true ? { filled: true as const } : {}), ...(inputType ? { inputType } : {}) };
       case "image":
         return { ...common, kind: "image", asset: this.str(o.asset, at("asset")), alt: this.str(o.alt, at("alt")) };
       case "svg":

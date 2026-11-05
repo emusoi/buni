@@ -704,7 +704,7 @@ const Artboard = memo(function Artboard(props: {
         {page && !props.close && (props.takes ?? 0) > 0 && <span className="board-takes">{(props.takes ?? 0) + 1} takes</span>}
         {page?.option && <span className="board-takes" title={`A take of ${doc.pages[page.option.of]?.name ?? "a page"}`}>take</span>}
       </button>
-      {page && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
+      {page && !props.close && (props.takes ?? 0) > 0 && <div className="take-stack" aria-hidden="true" />}
       {page && props.close && (props.takes ?? 0) > 0 && <TakeFlip doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} active={Boolean(props.active)} showing={flip} onShow={(t) => { setFlip(t); setLooking(undefined); }} liveFrame={frame} />}
       {page && props.close && flip === undefined && <VersionRail doc={doc} page={page.id} dir={props.dir} mode={props.mode} width={width} looking={looking} onLook={setLooking} naming={naming} onNaming={setNaming} liveFrame={frame} />}
       {page && props.close && (page.live || entrancesOn(props.doc, page.id).length > 0) && (
@@ -803,12 +803,11 @@ function TakeFlip({ doc, page, dir, mode, width, active, showing, onShow, liveFr
           <button type="button" className="flip-arrow" aria-label="Previous take" onClick={() => go(at - 1)}>‹</button>
           <span className="flip-about">
             <b>{at === 0 ? "Live" : shown?.name.replace(/^.*·\s*/, "")}</b>
-            <span className="dim"> · take {at + 1} of {takes.length}</span>
-            {at > 0 && shown?.option?.idea && <span className="flip-idea">{shown.option.idea}</span>}
+            <span className="dim"> · {at + 1} of {takes.length}</span>
           </span>
-          <span className="flip-dots">{takes.map((t, i) => <span key={t} className={`flip-dot${i === at ? " on" : ""}${i === 0 ? " live" : ""}`} />)}</span>
           <button type="button" className="flip-arrow" aria-label="Next take" onClick={() => go(at + 1)}>›</button>
         </div>
+        {at > 0 && shown?.option?.idea && <p className="flip-idea">{shown.option.idea}</p>}
         {showing && (
           <form className="flip-use" onSubmit={(e) => { e.preventDefault(); void use(); }}>
             <button type="submit" className="btn small primary">Use this take</button>

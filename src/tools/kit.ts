@@ -232,7 +232,7 @@ export function draftOps(ids: Ids, drafts: Draft[], parent: Id, firstIndex: stri
         ops.push(...draftOps(ids, d.children, id, generateKeyBetween(null, null), created, null, idFor, keptIndex));
         break;
       case "text":
-        ops.push({ kind: "put", collection: "nodes", value: { ...base, kind: "text", text: d.text, ...(d.tag ? { tag: d.tag } : {}), ...(d.filled ? { filled: true } : {}) } });
+        ops.push({ kind: "put", collection: "nodes", value: { ...base, kind: "text", text: d.text, ...(d.tag ? { tag: d.tag } : {}), ...(d.filled ? { filled: true } : {}), ...(d.inputType ? { inputType: d.inputType } : {}) } });
         break;
       case "image":
         ops.push({ kind: "put", collection: "nodes", value: { ...base, kind: "image", asset: d.asset, alt: d.alt } });

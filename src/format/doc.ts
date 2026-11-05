@@ -78,7 +78,12 @@ export interface TextNode extends NodeBase {
   text: string;
   /** For an input or textarea: the text is what was typed (its value), not a hint (its placeholder). */
   filled?: true;
+  /** For an input: what it takes, when that isn't plain text. A password's typing shows as dots. */
+  inputType?: InputType;
 }
+
+export const INPUT_TYPES = ["email", "password", "search", "tel", "url", "number"] as const;
+export type InputType = (typeof INPUT_TYPES)[number];
 
 export interface ImageNode extends NodeBase {
   kind: "image";

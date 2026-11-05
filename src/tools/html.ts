@@ -7,7 +7,7 @@ import { TAGS, UNSAFE_TAGS } from "../format/parse.ts";
 import { z } from "zod";
 import {
   CLASS_NAME,
-  libraryIsStyle, CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type Motion, type Node, type Override, type Page, type Style } from "../format/doc.ts";
+  libraryIsStyle, CELL, CURVE, EASINGS, ENTRANCES, MOTION_TRIGGERS, RESPONSES, INPUT_TYPES, childrenOf, entersOn, layered, nestedOverrides, pagesInOrder, type Doc, type Easing, type Id, type InputType, type Motion, type Node, type Override, type Page, type Style } from "../format/doc.ts";
 
 // ---------------------------------------------------------------------------
 // HTML in: agent markup to node drafts
@@ -16,7 +16,7 @@ import {
 /** A node before it has an id, parent and index in a document; notes become comments on it (an import's what-it-lost). */
 export type Draft = SourceOwner & { motion?: Motion[]; notes?: string[]; classes?: string[] } & (
   | { kind: "frame"; name: string; tag?: string; style: Style; children: Draft[] }
-  | { kind: "text"; name: string; tag?: string; style: Style; text: string; filled?: true }
+  | { kind: "text"; name: string; tag?: string; style: Style; text: string; filled?: true; inputType?: InputType }
   | { kind: "image"; name: string; style: Style; asset: Id; alt: string }
   | { kind: "svg"; name: string; style: Style; markup: string }
   | { kind: "instance"; name: string; style: Style; shared: Id });
@@ -27,7 +27,7 @@ export interface ParsedHtml {
   warnings: string[];
 }
 
-const KNOWN_ATTRS = new Set(["class", "data-buni-sources", "data-buni-motion", "data-buni-note", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value"]);
+const KNOWN_ATTRS = new Set(["class", "data-buni-sources", "data-buni-motion", "data-buni-note", "style", "layer-name", "alt", "src", "shared", "name", "size", "stroke-width", "placeholder", "value", "type"]);
 
 /** Form fields whose text is their placeholder: kept as text layers with this tag, drawn as real fields. */
 const FIELD_TAGS = new Set(["input", "textarea"]);
@@ -168,8 +168,10 @@ function bareDraft(el: P.Element, warnings: string[], keep: boolean): Draft | un
   if (FIELD_TAGS.has(tag)) {
     const value = (attr(el, "value") ?? (tag === "textarea" ? el.childNodes.filter(isText).map((t) => t.value).join("") : "")).trim();
     const placeholder = attr(el, "placeholder")?.trim() ?? "";
-    if (value) return { kind: "text", name: layer ?? snippet(value), tag, style, text: value, filled: true };
-    return placeholder ? { kind: "text", name: layer ?? snippet(placeholder), tag, style, text: placeholder } : { kind: "frame", name: layer ?? tag, tag, style, children: [] };
+    const typed = tag === "input" ? INPUT_TYPES.find((t) => t === attr(el, "type")?.trim().toLowerCase()) : undefined;
+    const inputType = typed ? { inputType: typed } : {};
+    if (value) return { kind: "text", name: layer ?? snippet(value), tag, style, text: value, filled: true, ...inputType };
+    return placeholder || typed ? { kind: "text", name: layer ?? snippet(placeholder || typed || tag), tag, style, text: placeholder, ...inputType } : { kind: "frame", name: layer ?? tag, tag, style, children: [] };
   }
   if (tag === "buni-instance") {
     return { kind: "instance", name: layer ?? "Shared section", style, shared: attr(el, "shared") ?? "" };
@@ -396,7 +398,7 @@ class Renderer {
       }
       case "text":
         if (this.terminal) this.css += cssRule(`.b-${n.id}`, { whiteSpace: "pre" });
-        if (tag === "input") out = `${pad}<input class="${cls}" ${n.filled ? "value" : "placeholder"}="${escapeAttr(ov?.text ?? n.text)}">\n`;
+        if (tag === "input") out = `${pad}<input class="${cls}"${n.inputType ? ` type="${n.inputType}"` : ""} ${n.filled ? "value" : "placeholder"}="${escapeAttr(ov?.text ?? n.text)}">\n`;
         else if (tag === "textarea") out = n.filled ? `${pad}<textarea class="${cls}">${escapeText(ov?.text ?? n.text)}</textarea>\n` : `${pad}<textarea class="${cls}" placeholder="${escapeAttr(ov?.text ?? n.text)}"></textarea>\n`;
         else out = `${pad}<${tag} class="${cls}"${anchorHref}>${escapeText(ov?.text ?? n.text)}</${tag}>\n`;
         break;
@@ -774,7 +776,7 @@ export function layerHtml(doc: Doc, id: Id, depth = 0): string {
     }
     case "text": {
       const tag = n.tag ?? "p";
-      if (tag === "input") return `${pad}<input${attrs(snippet(n.text), ` ${n.filled ? "value" : "placeholder"}="${escapeAttr(n.text)}"`)}>`;
+      if (tag === "input") return `${pad}<input${attrs(snippet(n.text), `${n.inputType ? ` type="${n.inputType}"` : ""} ${n.filled ? "value" : "placeholder"}="${escapeAttr(n.text)}"`)}>`;
       if (tag === "textarea") return n.filled ? `${pad}<textarea${attrs(snippet(n.text))}>${escapeText(n.text)}</textarea>` : `${pad}<textarea${attrs(snippet(n.text), ` placeholder="${escapeAttr(n.text)}"`)}></textarea>`;
       return `${pad}<${tag}${attrs(snippet(n.text))}>${escapeText(n.text)}</${tag}>`;
     }
@@ -819,7 +821,7 @@ export function layerJsx(doc: Doc, id: Id, depth = 0): string {
     case "text": {
       const tag = n.tag ?? "p";
       const words = jsxText(n.text);
-      if (tag === "input") return `${pad}<input${style} ${n.filled ? "defaultValue" : "placeholder"}=${JSON.stringify(n.text)} />`;
+      if (tag === "input") return `${pad}<input${style}${n.inputType ? ` type="${n.inputType}"` : ""} ${n.filled ? "defaultValue" : "placeholder"}=${JSON.stringify(n.text)} />`;
       if (tag === "textarea") return `${pad}<textarea${style} ${n.filled ? "defaultValue" : "placeholder"}=${JSON.stringify(n.text)} />`;
       return `${pad}<${tag}${style}>${words}</${tag}>`;
     }
