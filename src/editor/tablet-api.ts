@@ -280,7 +280,7 @@ export function tabletCanvas(doc: Doc, shots: ReadonlyMap<Id, PageShot>): Tablet
     if (!from || !to || c.page === c.to) continue;
     const t = shots.get(c.page)?.targets.find((x) => x.id === c.node);
     arrows.push({ id: c.id, from: c.page, to: c.to, label: linkLabel(doc, c), x: from.x + (t ? t.x + t.width / 2 : from.w / 2), y: from.y + (t?.y ?? 0),
-      sy: from.y, sb: from.y + from.h, tx: to.x, ty: to.y, top: Math.min(from.y, to.y) - 24 });
+      ex: from.x + (t ? t.x + t.width : from.w / 2), ey: from.y + (t ? t.y + t.height / 2 : 24), sy: from.y, sb: from.y + from.h, sr: from.x + from.w, tx: to.x, ty: to.y });
   }
   return {
     width: Math.max(0, ...boards.map((b) => b.x + b.w), ...sketched.map((b) => b.x + b.w + dx)) + MARGIN / 2,
@@ -288,6 +288,6 @@ export function tabletCanvas(doc: Doc, shots: ReadonlyMap<Id, PageShot>): Tablet
     origin: [dx, dy],
     boards,
     titles: rowTitles(doc, at).map((t) => ({ x: t.x + dx, y: t.y + dy, name: t.name, pages: t.pages })),
-    links: routeAll(arrows, 1).map((r) => ({ id: r.a.id, from: r.a.from, to: r.a.to, label: r.a.label, d: r.d, dot: [r.a.x, r.a.y], at: [r.lx, r.ly] })),
+    links: routeAll(arrows, 1).map((r) => ({ id: r.a.id, from: r.a.from, to: r.a.to, label: r.a.label, d: r.d, dot: [r.a.ex, r.a.ey], at: [r.lx, r.ly] })),
   };
 }

@@ -230,7 +230,8 @@ svg { flex-shrink: 0; }
 .links .other path { stroke: var(--label); opacity: 0.55; }
 .links circle { fill: var(--surface); stroke: var(--accent); }
 .links .in circle, .links .other circle { stroke: var(--label); }
-.links text { fill: var(--accent-ink); font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--canvas); }
+.links .link-tag rect { fill: var(--surface); stroke: color-mix(in srgb, var(--accent) 40%, transparent); }
+.links .link-tag text { fill: var(--accent); font-family: var(--font); font-weight: 600; }
 .links .head.out { fill: var(--accent); }
 .links .head.in, .links .head.other { fill: var(--label); }
 /* The keys a terminal screen answers to; press them, or click one. */

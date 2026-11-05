@@ -1078,6 +1078,7 @@ export function App({ snap }: { snap: Snapshot }) {
               focus={spots}
               landing={landing}
               reveal={reveal}
+              panels={`${sidebarOpen} ${panelOpen} ${panelWidth}`}
               onTidy={(at) => void tidyPages(at)}
               owners={snap.owners}
               usedElsewhere={usedElsewhere}

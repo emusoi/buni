@@ -74,7 +74,7 @@ test("a page's picture is redrawn when the page changes, not when a mark is draw
   expect(new Set(ahead).size).toBe(ahead.length);
 });
 
-test("the Screens canvas is laid out as the editor lays it out, its links leaving from what's tapped", async () => {
+test("the Screens canvas is laid out as the editor lays it out, its links leaving from the side of what's tapped", async () => {
   const parsed = parseDoc(await Bun.file(example).text());
   if (!parsed.ok) throw new Error("example doesn't parse");
   const doc = parsed.doc;
@@ -93,8 +93,11 @@ test("the Screens canvas is laid out as the editor lays it out, its links leavin
   expect(c.titles.map((t) => t.name)).toContain("Return an item");
   const link = c.links.find((l) => l.from === "2e00677a" && l.to === "50094e02");
   const from = c.boards.find((b) => b.page === "2e00677a");
-  expect(link?.dot).toEqual([(from?.x ?? 0) + 70, (from?.y ?? 0) + 100]);
-  expect(link?.d.startsWith(`M ${(from?.x ?? 0) + 70} `)).toBe(true);
+  // It leaves from the layer's right side, halfway down (50 in, 40 wide; 100 down, 20 tall), as on the editor's canvas.
+  expect(link?.dot).toEqual([(from?.x ?? 0) + 90, (from?.y ?? 0) + 110]);
+  expect(link?.d.startsWith(`M ${(from?.x ?? 0) + 90} ${(from?.y ?? 0) + 110} `)).toBe(true);
+  // And its label is the page it opens.
+  expect(link?.label).toBe(doc.pages["50094e02"]?.name.replace(/^\s*\d+\s*·\s*/, ""));
   expect(c.width).toBeGreaterThan(Math.max(...c.boards.map((b) => b.x + b.w)));
 });
 

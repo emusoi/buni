@@ -38,6 +38,8 @@ interface Props {
   landing: readonly Landing[];
   /** A page to bring into view and frame, asked for once per `at` (search jumps, an agent's edit clicked). */
   reveal?: { page: Id; at: number } | undefined;
+  /** Which floating panels are open and how wide: when it changes, the canvas keeps what was centred, centred. */
+  panels?: string;
   onSelectPage: (id: Id) => void;
   onSelectNode: (id: Id | undefined, add?: boolean) => void;
   /** A right-click on a layer, after it's selected: where to open its menu. */
@@ -932,6 +934,15 @@ function VersionRail({ doc, page, dir, mode, width, looking, onLook, naming, onN
   );
 }
 
+/** A link label's width at 10px semibold, for the pill it sits on. */
+let measurer: CanvasRenderingContext2D | null | undefined;
+function textWidth(t: string): number {
+  measurer ??= document.createElement("canvas").getContext("2d");
+  if (!measurer) return t.length * 6.2;
+  measurer.font = `600 10px ${getComputedStyle(document.body).fontFamily}`;
+  return measurer.measureText(t).width;
+}
+
 /** Which links the canvas draws: the active page's, all of them, or none. */
 type LinkMode = "page" | "all" | "off";
 const NEXT_MODE: Record<LinkMode, LinkMode> = { page: "all", all: "off", off: "page" };
@@ -950,7 +961,8 @@ export function arrows(doc: Doc, boxes: ReadonlyMap<Id, BoardRect>, boards: Read
       // A key link reads as its key; anything else as the layer that triggers it.
       // A condition is what tells a branch from the usual path out of the same element, so it is the label.
       id: c.id, from: c.page, to: c.to, label: linkLabel(doc, c),
-      x: fx + (r ? r.left + r.width / 2 : from.width / 2), y: fy + (r?.top ?? 0), sy: fy, sb: fy + from.height, tx: to.x, ty, top: Math.min(fy, ty) - 24,
+      x: fx + (r ? r.left + r.width / 2 : from.width / 2), y: fy + (r?.top ?? 0),
+      ex: fx + (r ? r.right : from.width / 2), ey: fy + (r ? r.top + r.height / 2 : 24), sy: fy, sb: fy + from.height, sr: fx + from.width, tx: to.x, ty,
     });
   }
   return out;
@@ -1295,18 +1307,18 @@ export function Canvas(props: Props) {
       ctx.setLineDash(link.kind === "in" ? [6 / v.zoom, 5 / v.zoom] : []);
       ctx.stroke(new Path2D(link.d));
       ctx.setLineDash([]);
-      const tip = link.a.ty - 6, unit = 1 / v.zoom;
+      const [tx, ty] = link.end, unit = 1 / v.zoom;
       ctx.fillStyle = colour;
       ctx.beginPath();
-      ctx.moveTo(link.endX, tip);
-      ctx.lineTo(link.endX - 3.75 * unit, tip - 7.5 * unit);
-      ctx.lineTo(link.endX + 3.75 * unit, tip - 7.5 * unit);
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - 7.5 * unit, ty - 3.75 * unit);
+      ctx.lineTo(tx - 7.5 * unit, ty + 3.75 * unit);
       ctx.closePath();
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.fillStyle = surface;
       ctx.beginPath();
-      ctx.arc(link.a.x, link.a.y, 4 * unit, 0, Math.PI * 2);
+      ctx.arc(link.a.ex, link.a.ey, 4 * unit, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
     }
     ctx.restore();
@@ -1400,7 +1412,8 @@ export function Canvas(props: Props) {
     // A narrow canvas (Chrome's side panel) keeps thin margins: the page is what's being watched.
     const narrow = r.width < 640;
     // The folded sidebar's icon rail and the zoom pill still float there, so the page starts clear of them.
-    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length && !narrow ? 240 : narrow ? 76 : 48), floatOf("--float-right") + (narrow ? 12 : 48), narrow ? 112 : 124, narrow ? 24 : 72];
+    // One page is centred between the panels, with even room each side; many leave the row titles their margin.
+    const [left, right, top, bottom] = [floatOf("--float-left") + (titles.length && !narrow && ids.length > 1 ? 240 : narrow ? 76 : 48), floatOf("--float-right") + (narrow ? 12 : 48), narrow ? 112 : 124, narrow ? 24 : 72];
     const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((r.width - left - right) / (x1 - x0), (r.height - top - bottom) / (y1 - y0))));
     zoomingNow();
     updateView({ zoom, x: left + (r.width - left - right - (x1 - x0) * zoom) / 2 - x0 * zoom, y: top - y0 * zoom });
@@ -1410,6 +1423,16 @@ export function Canvas(props: Props) {
   const fit = useRef({ all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) });
   fit.current = { all: fitAll, page: fitPage, board: (id: Id) => fitTo([id]) };
   const onOpen = useMemo(() => (id: Id) => { props.onSelectPage(id); fit.current.board(id); }, [props.onSelectPage]);
+  // A panel opening or closing moves the open canvas's middle by half its change; the view follows, so the page
+  // that was centred between the panels stays so, and none lands under one.
+  const insets = useRef<[number, number]>(undefined);
+  useLayoutEffect(() => {
+    const now: [number, number] = [floatOf("--float-left"), floatOf("--float-right")];
+    const was = insets.current;
+    insets.current = now;
+    if (!was || (was[0] === now[0] && was[1] === now[1])) return;
+    updateView((v) => ({ ...v, x: v.x + (now[0] - was[0] - (now[1] - was[1])) / 2 }));
+  }, [props.panels]);
   // Asked to show a page (a search result, an agent's edit): frame it, whatever the zoom was.
   useEffect(() => {
     if (props.reveal) requestAnimationFrame(() => fitTo([props.reveal?.page ?? ""]));
@@ -1552,8 +1575,12 @@ export function Canvas(props: Props) {
             const w = 1 / view.zoom;
             return <g key={a.id} className={`link ${kind}`}>
               <path d={d} strokeWidth={(kind === "out" ? 2 : 1.5) * w} markerEnd={`url(#arrow-${kind})`} />
-              <circle cx={a.x} cy={a.y} r={4 * w} strokeWidth={1.5 * w} />
-              {view.zoom >= FAR && kind === "out" && a.label && <text x={lx} y={ly} fontSize={11 * w} strokeWidth={4 * w} textAnchor={lx >= a.x ? "start" : "end"}>{a.label}</text>}
+              <circle cx={a.ex} cy={a.ey} r={4 * w} strokeWidth={1.5 * w} />
+              {view.zoom >= FAR && kind === "out" && a.label && (() => {
+                // The page it opens, on a white pill on the line.
+                const pw = (textWidth(a.label) + 14) * w, ph = 18 * w;
+                return <g className="link-tag"><rect x={lx - pw / 2} y={ly - ph / 2} width={pw} height={ph} rx={8 * w} strokeWidth={0.75 * w} /><text x={lx} y={ly} fontSize={10 * w} textAnchor="middle" dominantBaseline="central">{a.label}</text></g>;
+              })()}
             </g>;
           })}
         </svg>
