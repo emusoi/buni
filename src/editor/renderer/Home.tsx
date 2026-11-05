@@ -266,7 +266,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
               <section className="home-flows">
                 <h2>Flows</h2>
                 {paths.map(({ f, flow, screens }) => (
-                  <button type="button" key={`${f.path} ${flow.id}`} className="home-flow" title={`Open ${flow.name} as a website, from its first screen`} onClick={() => openSiteTab(f.path, flow.start)}>
+                  <button type="button" key={`${f.path} ${flow.id}`} className="home-flow" title={`Open ${flow.name} as a website, from its first screen`} onClick={() => openSiteTab(f.path, flow.start, flow.id)}>
                     <Workflow size={15} />
                     <b>{flow.name}</b>
                     <span>{f.name} · {screens} {screens === 1 ? "screen" : "screens"}</span>

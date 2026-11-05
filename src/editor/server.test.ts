@@ -247,14 +247,21 @@ test("a design is served as its website: a take plays in its page's place, and e
   const frameOf = (reply: string) => reply.match(/root frame (\S+)\./)?.[1] ?? "";
   try {
     const home = await edit("create_page", { name: "Home", route: "/" });
-    await edit("write_html", { parent: frameOf(home), html: "<p>As live</p>" });
+    const said = await edit("write_html", { parent: frameOf(home), html: "<p>As live</p>" });
+    await edit("comment", { node: said.match(/: (\S+?)\./)?.[1], body: "Shorter, please" });
     const take = await edit("create_page", { name: "Home bolder", take_of: home.match(/Created page (\S+?)[ .]/)?.[1] });
     await edit("write_html", { parent: frameOf(take), html: "<p>Bolder</p>" });
     const site = "/site/people/a/Shop/Shop.buni";
     const live = await (await get(`${site}/`)).text();
     expect(live).toContain("As live");
     // The page listens for edits, to the design it was drawn from.
-    expect(live).toContain(`new EventSource("/events?file=" + encodeURIComponent("${file}"))`);
+    const data = JSON.parse(live.match(/<script type="application\/json" id="buni-site-data" data-buni>(.*?)<\/script>/)?.[1] ?? "{}") as { file: string; page: string; pages: { id: string; name: string; href: string }[]; comments: { posts: { body: string }[] }[] };
+    // The page's open threads, to pin on it.
+    expect(data.comments.map((c) => c.posts[0]?.body)).toEqual(["Shorter, please"]);
+    expect(data.file).toBe(file);
+    expect(data.pages).toEqual([{ id: data.page, name: "Home", href: `${site}/` }]);
+    // Only buni's own scripts: the page has none of its own, so an edit swaps it in place rather than reloading it.
+    expect(live.match(/<script(?![^>]*data-buni)/g)).toBeNull();
     const takeId = take.match(/Created page (\S+?)[ .]/)?.[1] ?? "";
     const to = (await get(`${site}/?page=${takeId}`)).headers.get("location");
     expect(to).toBe(`${site}/~${takeId}/`);

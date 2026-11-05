@@ -5,6 +5,7 @@ import { pagesChanged, versionOp } from "buni/tools/areas/page-versions.ts";
 import { Ids } from "buni/tools/kit.ts";
 import { checkImage } from "buni/tools/assets.ts";
 import { exportSite, fontSlug, siteLayout } from "buni/tools/html.ts";
+import { siteData, viewerTags } from "./site-viewer.ts";
 import { FONT_FAMILIES } from "buni/tools/fonts.gen.ts";
 import { homedir, tmpdir, userInfo } from "node:os";
 import { allowedCall, allowedOrigin, EXTENSION_ORIGIN, isDesignFile, isDesignPath, localOrigins } from "./guard.ts";
@@ -975,7 +976,7 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       return new Response(req.method === "HEAD" ? null : bytes, { headers: { "content-type": Bun.file(path).type, "content-length": String(bytes.length), "content-security-policy": "sandbox", "x-content-type-options": "nosniff" } });
     }
     // The design as its website, at its routes: /site/<design>.buni/<route>/. The pages, links and live scripts are the
-    // exported site's, drawn from the design as it is now; a refresh shows the latest edit.
+    // exported site's, drawn from the design as it is now, with the viewer (site-viewer.ts) that follows its edits.
     const site = url.pathname.match(/^\/site(\/.+?\.buni)(\/.*)?$/);
     if (site && (req.method === "GET" || req.method === "HEAD")) {
       const design = decodeURIComponent(site[1] ?? "");
@@ -990,14 +991,18 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
       if (page !== null) {
         const of = doc.pages[page]?.option?.of;
         const at = siteLayout(doc).fileOf.get(of ?? page);
-        return at === undefined ? new Response("That page has no route, so it isn't part of the website.", { status: 404 }) : new Response(null, { status: 303, headers: { location: `/site${site[1]}${of ? `/~${page}` : ""}/${at.replace(/index\.html$/, "")}` } });
+        return at === undefined ? new Response("That page has no route, so it isn't part of the website.", { status: 404 }) : new Response(null, { status: 303, headers: { location: `/site${site[1]}${of ? `/~${page}` : ""}/${at.replace(/index\.html$/, "")}${url.searchParams.has("flow") ? `?flow=${encodeURIComponent(url.searchParams.get("flow") ?? "")}` : ""}` } });
       }
       const base = `/site${site[1]}${take === undefined ? "" : `/~${take}`}`;
       if (!tail.endsWith("/") && !/\.[a-z0-9]+$/i.test(tail)) return new Response(null, { status: 301, headers: { location: `${base}${tail}/${url.search}` } });
       const rel = tail.slice(1) + (tail.endsWith("/") ? "index.html" : "");
       const text = exportSite(doc, (family) => `/fonts/${fontSlug(family)}.woff2`).get(rel);
       if (text !== undefined && rel.endsWith(".css")) return new Response(text, { headers: { "content-type": "text/css; charset=utf-8", "cache-control": "no-store" } });
-      if (text !== undefined) return new Response(text.replace(/<\/body>/, `${liveReload(design)}</body>`), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+      if (text !== undefined) {
+        const { fileOf } = siteLayout(doc);
+        const shown = [...fileOf].find(([, f]) => f === rel)?.[0];
+        return new Response(text.replace(/<\/body>/, () => `${viewerTags(siteData(doc, design, fileOf, base, shown))}</body>`), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+      }
       // Anything else is one of the design's own files: its images, its live scripts and styles.
       const path = `${design.slice(0, design.lastIndexOf("/"))}/${rel}`;
       const bytes = isDesignFile(path, dir) ? await store.readBytes(path).catch(() => undefined) : undefined;
@@ -1150,39 +1155,4 @@ function withTake(doc: Doc, take: string): Doc | undefined {
   const t = doc.pages[take];
   const page = t?.option ? doc.pages[t.option.of] : undefined;
   return t && page ? { ...doc, pages: { ...doc.pages, [page.id]: { ...page, frame: t.frame } } } : undefined;
-}
-
-/**
- * A website page follows the design: on each change it fetches itself and its styles again and, when they differ, swaps
- * the body in place, keeping what was typed into its fields. A page with scripts of its own reloads instead.
- */
-function liveReload(design: string): string {
-  return `<script>(() => {
-  const sheets = () => [...document.querySelectorAll('link[rel=stylesheet]')].filter((l) => l.href.startsWith(location.origin));
-  const get = (u) => fetch(u, { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
-  const all = () => Promise.all([get(location.href), ...sheets().map((l) => get(l.href.split("?")[0]))]);
-  let last, timer, busy = false, again = false;
-  all().then((t) => (last = t)).catch(() => {});
-  const check = async () => {
-    if (busy) return void (again = true);
-    busy = true;
-    try {
-      const now = await all();
-      if (!last || now[0] !== last[0]) {
-        const next = new DOMParser().parseFromString(now[0], "text/html");
-        // Judged on what buni serves: a host may add scripts of its own to the page (a CDN beacon).
-        if (next.querySelectorAll("script").length > 1) return location.reload();
-        const typed = new Map([...document.querySelectorAll("input, textarea, select")].map((e) => [e.className, e.type === "checkbox" || e.type === "radio" ? e.checked : e.value]));
-        const focus = document.activeElement?.className;
-        document.title = next.title;
-        document.body.replaceWith(next.body);
-        for (const e of document.querySelectorAll("input, textarea, select")) if (typed.has(e.className)) { const v = typed.get(e.className); if (typeof v === "boolean") e.checked = v; else e.value = v; }
-        if (focus) document.getElementsByClassName(focus)[0]?.focus?.();
-      }
-      sheets().forEach((l, i) => { if (last && now[i + 1] !== last[i + 1]) l.href = l.href.split("?")[0] + "?v=" + Date.now(); });
-      last = now;
-    } catch { location.reload(); } finally { busy = false; if (again) { again = false; check(); } }
-  };
-  new EventSource("/events?file=" + encodeURIComponent(${JSON.stringify(design).replace(/</g, "\\u003c")})).onmessage = () => { clearTimeout(timer); timer = setTimeout(check, 250); };
-})();</script>`;
 }

@@ -359,6 +359,19 @@ export function App({ snap }: { snap: Snapshot }) {
     else if (!snap.view.pages[arrive.page]) return;
     else openPage(arrive.page);
   }, []);
+  // The website's Edit: show the layer that was clicked there, from its link (?node=) or a message from its tab.
+  const showNode = (node: Id) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } };
+  useEffect(() => { const n = new URLSearchParams(location.search).get("node"); if (n) showNode(n); }, []);
+  useEffect(() => {
+    const heard = (e: MessageEvent<unknown>) => {
+      const m = e.data;
+      if (e.origin !== location.origin || typeof m !== "object" || m === null || !("buni" in m) || m.buni !== "show" || !("node" in m) || typeof m.node !== "string") return;
+      if ("file" in m && m.file !== snap.path) return;
+      showNode(m.node);
+    };
+    window.addEventListener("message", heard);
+    return () => window.removeEventListener("message", heard);
+  });
   // Layer shortcuts, as in other design tools. Copy and paste ride the clipboard events, so they work on the web and
   // under the desktop app's Edit menu alike.
   useEffect(() => {
@@ -549,7 +562,7 @@ export function App({ snap }: { snap: Snapshot }) {
     const p = app.pages[page];
     const on = p?.option ? app.pages[p.option.of] : p;
     if (!on || on.route === undefined || on.state !== undefined) return setToast(`${p?.name ?? "This page"} has no route, so it isn't on the website. Give it one under Page in the inspector.`);
-    openSiteTab(fileOfPage.get(page) ?? snap.path, page);
+    openSiteTab(fileOfPage.get(page) ?? snap.path, page, shownJourney);
   };
   const showPage = (page: Id) => { const file = fileOfPage.get(page); if (file && !snap.view.pages[page]) openAt(file, page); else openPage(page); };
   /** Opens another design of the project, at one of its pages if given. */
