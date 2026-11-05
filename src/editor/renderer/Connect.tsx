@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Copy, MessageSquare, Pause, Play, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, MessageSquare, Pause, Play } from "lucide-react";
 import type { Edit } from "../api.ts";
 import type { AgentState } from "buni/tools/protocol.ts";
 import { ago } from "./Home.tsx";
@@ -16,13 +16,17 @@ export const agentInitials = (name: string) => {
   return (words.length > 1 ? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}` : name.slice(0, 2)).toUpperCase();
 };
 
+/** How many of an agent's edits show before "All n edits". */
+const FEW = 3;
+
 /**
- * The coding agents connected to this file and
- * where each last worked, then how to connect another.
+ * The coding agents on this file, one card each (who, what, whether it's here; where it was last; its edits as rows),
+ * then a row that opens to connect another. Drawn as buni-web's 21 · Inspector · Agents and Doc draws it.
  */
 export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [], page, onShow, onShowPage, onToast, onUndo }: { doc: Doc; mcpUrl: string; connected: readonly string[]; recent: Record<string, readonly Id[]>; edits: readonly Edit[]; agents?: readonly AgentState[]; page?: Id | undefined; onShow: (node: Id) => void; onShowPage?: (page: Id) => void; onToast: (t: string) => void; onUndo?: () => void }) {
   const [asking, setAsking] = useState<string>();
   const [words, setWords] = useState("");
+  const [allOf, setAllOf] = useState<string>();
   const tell = async (name: string) => {
     if (!words.trim() || !window.buni.tellAgent) return;
     await window.buni.tellAgent(name, words.trim());
@@ -56,6 +60,8 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [
     ];
   // Agents connected now, then ones that edited here earlier and have since gone.
   const names = [...new Set([...connected, ...Object.keys(recent).filter((n) => n !== "you")])];
+  // Connecting opens by itself while no agent is here yet.
+  const [connecting, setConnecting] = useState(names.length === 0);
   return (
     <div className="connect-agent">
       <Tasks doc={doc} page={page} now={now} onShowPage={(p) => onShowPage?.(p)} onToast={onToast} />
@@ -63,77 +69,81 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [
         <section className="agent-cards">
           {names.map((name) => {
             const touched = recent[name]?.[0];
-            const page = touched ? doc.pages[pageOfNode(doc, touched) ?? ""]?.name : undefined;
+            const pageName = touched ? doc.pages[pageOfNode(doc, touched) ?? ""]?.name : undefined;
             const live = connected.includes(name);
             const mine = edits.filter((e) => e.author === name).slice(-12).reverse();
+            const last = mine[0];
             const state = agents.find((a) => a.name === name);
             const lastIsTheirs = edits.at(-1)?.author === name;
             const canSteer = live && Boolean(window.buni.pauseAgent);
+            const shown = allOf === name ? mine : mine.slice(0, FEW);
+            // One line on how it is: paused, working (what it runs), here, or gone (since when).
+            const how = state?.paused ? "paused" : live && state?.busy && state.tool ? `working · ${state.tool}` : live ? "here" : last ? `left ${ago(last.at, now)}` : "gone";
             return (
               <div key={name} className="agent-card">
-                <span className="agent-dot" style={{ background: agentColor(name) }}>{agentInitials(name)}</span>
-                <div>
-                  <b>{name} <span className={live ? "live" : "live off"} /> <small>{state?.paused ? "paused" : live ? "connected" : "gone"}</small></b>
-                  <span>{page ? <>Working on <em>{page}</em>. ⌘Z takes any of it back.</> : "Connected; no edits yet."}</span>
-                  {state?.tool && (
-                    <span className={`agent-now${state.busy ? " busy" : ""}`}>
-                      {state.paused && state.busy ? "Held before its next step · last " : state.busy ? "Now: " : "Last: "}<code>{state.tool}</code>{state.at && <> · {ago(state.at, now)}</>}
-                    </span>
-                  )}
-                  {canSteer && (
-                    <div className="agent-controls">
-                      <button type="button" className="btn small" onClick={() => void window.buni.pauseAgent?.(name, !state?.paused)}>
-                        {state?.paused ? <><Play size={12} /> Continue</> : <><Pause size={12} /> Pause</>}
-                      </button>
-                      <button type="button" className="btn small" onClick={() => setAsking(asking === name ? undefined : name)}><MessageSquare size={12} /> Ask it</button>
-                      {onUndo && <button type="button" className="btn small" disabled={!lastIsTheirs} title={lastIsTheirs ? "Take back its last edit" : "Its last edit isn't the latest one; ⌘Z steps back through all of them"} onClick={onUndo}><Undo2 size={12} /> Undo last</button>}
-                    </div>
-                  )}
-                  {asking === name && (
-                    <form className="agent-ask" onSubmit={(e) => { e.preventDefault(); void tell(name); }}>
-                      <input className="field" autoFocus placeholder={`Tell ${name} something; it reads it before its next step`} value={words} onChange={(e) => setWords(e.target.value)} />
-                    </form>
-                  )}
-                  {mine.length > 0 && (
-                    <ol className="agent-edits" aria-label={`What ${name} did last`}>
-                      {mine.map((e) => (
-                        <li key={`${e.at}${e.label}`}>
-                          <button type="button" disabled={!e.nodes[0]} onClick={() => e.nodes[0] && onShow(e.nodes[0])} title={e.nodes[0] ? "Show it on the canvas" : undefined}>
-                            <span>
-                              <b>{(e.nodes[0] && doc.nodes[e.nodes[0]]?.name) || e.label}</b>
-                              <small>{e.label}{e.nodes.length > 1 ? ` · ${e.nodes.length} layers` : ""}</small>
-                            </span>
-                            <time dateTime={e.at}>{ago(e.at, now)}</time>
-                          </button>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
+                <div className="agent-head">
+                  <span className="agent-dot" style={{ background: agentColor(name) }}>{agentInitials(name)}</span>
+                  <span className="agent-who"><b>{name}</b><small>Coding agent · {how}</small></span>
+                  <span className={`live${live ? "" : " off"}${state?.busy && live ? " busy" : ""}`} title={live ? "connected" : "gone"} />
                 </div>
+                <p className="agent-last">{pageName ? <>Last on <em>{pageName}</em>{last ? ` · ${ago(last.at, now)}` : ""}. ⌘Z takes any of it back.</> : "Connected; no edits yet."}</p>
+                {canSteer && (
+                  <div className="agent-controls">
+                    <button type="button" className="btn small" onClick={() => void window.buni.pauseAgent?.(name, !state?.paused)}>
+                      {state?.paused ? <><Play size={12} /> Continue</> : <><Pause size={12} /> Pause</>}
+                    </button>
+                    <button type="button" className="btn small" onClick={() => setAsking(asking === name ? undefined : name)}><MessageSquare size={12} /> Ask it</button>
+                  </div>
+                )}
+                {asking === name && (
+                  <form className="agent-ask" onSubmit={(e) => { e.preventDefault(); void tell(name); }}>
+                    <input className="field" autoFocus placeholder={`Tell ${name} something; it reads it before its next step`} value={words} onChange={(e) => setWords(e.target.value)} />
+                  </form>
+                )}
+                {shown.length > 0 && (
+                  <ol className="agent-edits" aria-label={`What ${name} did last`}>
+                    {shown.map((e, i) => (
+                      <li key={`${e.at}${e.label}`}>
+                        <button type="button" className="agent-edit" disabled={!e.nodes[0]} onClick={() => e.nodes[0] && onShow(e.nodes[0])} title={e.nodes[0] ? "Show it on the canvas" : undefined}>
+                          <span>{e.label}{e.nodes.length > 1 ? ` · ${e.nodes.length} layers` : ""}</span>
+                          <time dateTime={e.at}>{ago(e.at, now)}</time>
+                        </button>
+                        {i === 0 && lastIsTheirs && onUndo && <button type="button" className="link-btn" title="Take back its last edit" onClick={onUndo}>Undo</button>}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {mine.length > FEW && (
+                  <button type="button" className="link-btn" onClick={() => setAllOf(allOf === name ? undefined : name)}>{allOf === name ? "Fewer" : `All ${mine.length} edits`}</button>
+                )}
               </div>
             );
           })}
         </section>
       )}
       <section className="connect-ways">
-        <h3>{names.length ? "Connect another agent" : "Connect a coding agent"}</h3>
-        <p className="hint">It edits this design through buni's tools. You see every change land here.</p>
-        {needsToken && !token && (
-          <div className="connect-way">
-            <b>A token for it</b>
-            <p className="hint">The agent signs in to this server with a token of its own, which you can revoke on your account page. It shows once.</p>
-            <button type="button" className="btn" disabled={making} onClick={makeToken}>{making ? "Making…" : "Make a token"}</button>
-          </div>
-        )}
-        {ways.map((w) => (
-          <div key={w.title} className="connect-way">
-            <b>{w.title}</b>
-            <button type="button" title="Copy" onClick={() => void navigator.clipboard.writeText(w.text).then(() => onToast(`Copied the ${w.title} line.`))}>
-              <code>{w.text}</code>
-              <Copy size={13} />
-            </button>
-          </div>
-        ))}
+        <button type="button" className="group-title fold" aria-expanded={connecting} onClick={() => setConnecting((c) => !c)}>
+          {connecting ? <ChevronDown size={12} /> : <ChevronRight size={12} />}<span className="group-name">{names.length ? "Connect an agent" : "Connect a coding agent"}</span>
+          {!connecting && <span className="group-summary">Claude Code, Codex</span>}
+        </button>
+        {connecting && <>
+          <p className="hint small">It edits this design through buni's tools. You see every change land here.</p>
+          {needsToken && !token && (
+            <div className="connect-way">
+              <p className="hint small">The agent signs in with a token of its own, which you can revoke on your account page. It shows once.</p>
+              <button type="button" className="btn small" disabled={making} onClick={makeToken}>{making ? "Making…" : "Make a token"}</button>
+            </div>
+          )}
+          {ways.map((w) => (
+            <div key={w.title} className="connect-way">
+              <b>{w.title}</b>
+              <button type="button" title="Copy" onClick={() => void navigator.clipboard.writeText(w.text).then(() => onToast(`Copied the ${w.title} line.`))}>
+                <code>{w.text}</code>
+                <Copy size={13} />
+              </button>
+            </div>
+          ))}
+        </>}
       </section>
     </div>
   );

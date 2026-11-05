@@ -2175,11 +2175,12 @@ body, .app { background: var(--window); }
 .app.editor .side-tabs { flex: none; margin: 8px 8px 0; }
 .inspector { padding: 12px; gap: 10px; }
 /* The inspector's rows: 28px, the title left, the value in force on the right in grey. */
-.inspector .group-title.fold, .inspector .comments-title { min-height: 28px; display: flex; align-items: center; }
-.inspector .comments-title .group-name { display: inline-flex; align-items: center; gap: 6px; }
-.inspector .group-summary.as-btn { border: 0; background: none; padding: 0; font: inherit; font-weight: 400; color: var(--label); cursor: pointer; }
-.inspector .group-summary.as-btn:hover { color: var(--ink); }
-.inspector .hint.small { font-size: 11px; line-height: 1.4; }
+.group-title.fold, .group-title.comments-title { min-height: 28px; display: flex; align-items: center; gap: 6px; }
+.group-title.comments-title .group-name { display: inline-flex; align-items: center; gap: 6px; }
+.group-title.comments-title .group-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 400; color: var(--label); }
+.group-summary.as-btn { border: 0; background: none; padding: 0; font: inherit; font-weight: 400; color: var(--label); cursor: pointer; }
+.group-summary.as-btn:hover { color: var(--ink); }
+.hint.small { font-size: 11px; line-height: 1.4; }
 .inspector .source-links .link-btn { align-self: flex-start; }
 .inspector > section, .inspector > .page-summary { padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); }
 .row { border-radius: 8px; }
@@ -2258,3 +2259,45 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .board-tag b { flex: none; font-weight: 600; }
 .board-tag span { min-width: 0; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
 .ghost.version .board-tag { background: #b25000; }
+
+/* Agents and Doc, as buni-web's 21 · Inspector · Agents and Doc draws them: the same cards and 28px rows as the layer
+   inspector; one line each, values grey on the right, nothing that reads as a paragraph unless it is one. */
+.connect-agent, .doc-panel { padding: 12px; gap: 10px; }
+.connect-agent > .tasks, .connect-agent > .connect-ways, .connect-agent > .agent-cards > .agent-card, .doc-panel > section { padding: 10px 12px; border: 0; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--rule); display: flex; flex-direction: column; gap: 8px; }
+.tasks .task-add .field { height: 28px; }
+.tasks .task-page { font-size: 11px; color: var(--label); }
+.task { padding: 7px 0; border-top: 0.5px solid var(--rule); font-size: 13px; line-height: 1.4; }
+.task-list + .link-btn, .tasks > .link-btn { align-self: flex-start; }
+.agent-cards { gap: 10px; }
+.agent-card { display: flex; flex-direction: column; }
+.agent-head { display: flex; align-items: center; gap: 10px; }
+.agent-head .agent-dot { width: 24px; height: 24px; font-size: 10px; }
+.agent-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.agent-who b { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-who small { font-size: 11px; color: var(--label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-head .live { width: 7px; height: 7px; }
+.agent-head .live.busy { animation: pulse 0.8s ease-in-out infinite alternate; }
+.agent-last { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.agent-last em { font-style: normal; font-weight: 600; color: var(--ink); }
+.agent-controls { margin-top: 0; }
+.agent-edits { margin: 0; gap: 0; }
+.agent-edits li { display: flex; align-items: center; gap: 8px; min-height: 28px; border-top: 0.5px solid var(--rule); }
+.agent-edits li:first-child { color: var(--ink); }
+.agent-edits .agent-edit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 0; height: 28px; border: 0; background: none; font-size: 12px; color: var(--ink); text-align: left; }
+.agent-edits .agent-edit span { flex: 1; min-width: 0; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-edits .agent-edit time { flex: none; font-size: 11px; color: var(--label); }
+.agent-edits li .link-btn { flex: none; }
+.agent-card > .link-btn { align-self: flex-start; }
+.connect-ways { padding-top: 10px; border-top: 0; }
+.connect-way b { font-size: 12px; color: var(--ink); }
+.connect-way .btn.small { align-self: flex-start; }
+.doc-head .doc-actions { display: flex; gap: 6px; }
+.doc-head .btn.small { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; font-size: 12px; font-weight: 600; color: var(--ink); background: var(--hover); }
+.doc-section-head { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.doc-section-head .group-title.fold { flex: 1; min-width: 0; }
+.doc-section-head .group-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-section-head .icon-btn { opacity: 1; }
+.doc-first { margin: 0 0 2px 18px; font-size: 12px; line-height: 1.45; color: var(--label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-section.open .doc-read, .doc-section.open .doc-body { margin-left: 12px; font-size: 13px; line-height: 1.55; }
+.doc-section .doc-heading { font-size: 12px; font-weight: 600; }
+.doc-skills { padding-top: 10px; border-top: 0; }
