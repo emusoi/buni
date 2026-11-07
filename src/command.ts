@@ -41,6 +41,7 @@ usage: buni <command> [args] [--as <name>] [--json]
                                     the inspiration libraries agents design from: buni's own, and folders of yours
   open <file.buni|folder>           edit in your browser; a folder opens its newest
       [--port N] [--no-open]          its port; print the address instead
+      [--agent]                       open on the Agents panel with Claude Code running beside the design
       [--new]                         another tab even when one already shows it
       [--no-sync]                     don't mirror it on your buni server (signed in, it is, as it changes)
       [--to NAME]                     mirror it in that organization's space there, not your own
@@ -761,7 +762,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
             return 0;
           }
           console.log(`Already open: ${url}`);
-          if (!args.includes("--no-open")) openUrl(url);
+          if (!args.includes("--no-open")) openUrl(args.includes("--agent") ? `${url}&panel=agent&start=claude` : url);
           return 0;
         }
         console.error("An MCP server is already editing this design. Stop it, open the editor, then reconnect the agent through the editor.");
@@ -796,7 +797,7 @@ export async function main(argv: string[], ext?: Extension): Promise<number> {
         const stopMirror = mirror(account, editor, design, file, (line) => console.log(line), root);
         process.on("exit", stopMirror);
       }
-      if (!args.includes("--no-open")) openUrl(url);
+      if (!args.includes("--no-open")) openUrl(args.includes("--agent") ? `${url}&panel=agent&start=claude` : url);
       return new Promise<number>(() => {});
     }
     case "new":

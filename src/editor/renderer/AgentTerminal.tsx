@@ -85,19 +85,29 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
   }, [api]);
   useEffect(() => {
     void api?.list().then((list) => {
+      // ?start=claude (buni open --agent) starts one when none runs; the address forgets it, so a reload doesn't.
+      const params = new URLSearchParams(location.search);
+      const wanted = params.get("start");
+      if (wanted) {
+        params.delete("start");
+        history.replaceState(history.state, "", `${location.pathname}?${params}`);
+      }
+      const program = (["claude", "codex", "shell"] as const).find((p) => p === wanted);
+      if (program && !list.some((s) => s.alive)) return start(program);
       setSessions(list);
       setEnded(new Set(list.filter((s) => !s.alive).map((s) => s.id)));
       setShown((s) => s ?? list[0]?.id);
     });
   }, [api]);
   if (!api) return <>{activity}</>;
-  const start = (program: Program) => {
+  function start(program: Program) {
+    if (!api) return;
     setError(undefined);
     void api.start(program, 100, 30).then((s) => {
       setSessions((list) => [...list, s]);
       setShown(s.id);
     }, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-  };
+  }
   const close = (id: string) => {
     void api.close(id).then(() => {
       setSessions((list) => {

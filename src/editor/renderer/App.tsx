@@ -177,7 +177,8 @@ export function App({ snap }: { snap: Snapshot }) {
   // A link can open the design on one page (?page=): the extension's "Open in buni" lands on what was captured.
   const [page, setPage] = useState<Id | undefined>(() => new URLSearchParams(location.search).get("page") ?? undefined);
   const [selected, setSelected] = useState<Id>();
-  const [panel, setPanel] = useState<"design" | "agent" | "doc" | "marks">("design");
+  // ?panel=agent opens on the agents and their terminal (buni open --agent).
+  const [panel, setPanel] = useState<"design" | "agent" | "doc" | "marks">(() => (new URLSearchParams(location.search).get("panel") === "agent" ? "agent" : "design"));
   /** Layers shown open in the sidebar; page and component roots start open, everything else closed. */
   const [expanded, setExpanded] = useState<Set<Id>>(() => new Set());
   /** Pages whose layer list is hidden even while open. */

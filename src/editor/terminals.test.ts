@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { cp, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { command } from "./terminals.ts";
+import { BRIEF, command } from "./terminals.ts";
 
 test("agents start already pointed at the design's MCP endpoint", () => {
   const url = "http://localhost:4000/mcp?file=%2Fdesigns%2Fshop%2Fshop.buni";
-  expect(command("claude", url)).toBe(`claude --mcp-config '{"mcpServers":{"buni":{"type":"http","url":"${url}"}}}'`);
+  expect(command("claude", url)).toBe(`claude --mcp-config '{"mcpServers":{"buni":{"type":"http","url":"${url}"}}}' --append-system-prompt '${BRIEF}'`);
   expect(command("codex", url)).toBe(`codex -c 'mcp_servers.buni.url="${url}"'`);
   expect(command("shell", url)).toBeUndefined();
 });

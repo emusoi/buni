@@ -33,13 +33,16 @@ interface Session {
 /** Enough of the past for a reattached tab to see where things are. */
 const KEEP = 256 * 1024;
 
+/** Told to Claude Code as it starts: the design is open beside it, and buni's tools are how to reach it. */
+export const BRIEF = "The person has this design open in buni beside you. Read and change it only through the buni MCP tools (start with buni's read tools), never by editing .buni files on disk; every edit shows on their canvas.";
+
 const quote = (s: string) => `'${s.replaceAll("'", `'\\''`)}'`;
 
 /** The command line a session runs: the agent already pointed at this design's MCP endpoint. */
 export function command(program: Program, mcpUrl: string): string | undefined {
   switch (program) {
     case "claude":
-      return `claude --mcp-config ${quote(JSON.stringify({ mcpServers: { buni: { type: "http", url: mcpUrl } } }))}`;
+      return `claude --mcp-config ${quote(JSON.stringify({ mcpServers: { buni: { type: "http", url: mcpUrl } } }))} --append-system-prompt ${quote(BRIEF)}`;
     case "codex":
       return `codex -c ${quote(`mcp_servers.buni.url=${JSON.stringify(mcpUrl)}`)}`;
     case "shell":
