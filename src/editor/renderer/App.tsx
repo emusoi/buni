@@ -837,7 +837,7 @@ export function App({ snap }: { snap: Snapshot }) {
       </>
     );
   }
-  const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth + 20}px` : "0px" };
+  const floating: CSSProperties & Record<`--${string}`, string> = { "--float-right": panelOpen ? `${panelWidth}px` : "0px" };
   return (
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
       {/* The desktop's open files, floating at the top; the web has its browser tabs. */}

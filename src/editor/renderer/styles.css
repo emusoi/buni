@@ -2335,3 +2335,28 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .term-empty-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
 .term-empty-actions { display: flex; gap: 8px; margin-top: 6px; }
 .term-empty-actions .btn { flex: 0 0 auto; padding: 0 12px; }
+
+/* ---------- flat: panels meet the window's edges ----------
+   The outline and the panel are part of the window, not cards floating over the canvas: flush to its edges, one
+   hairline between them and the canvas, no radius, no shadow. Their tabs are words with a rule under the chosen one. */
+.app.editor { --float-left: 260px; }
+.app.editor > .sidebar, .app.editor .inspector-panel { top: 0; bottom: 0; border-radius: 0; box-shadow: none; }
+.app.editor > .sidebar { left: 0; width: 260px; background: var(--sidebar); border-right: 1px solid var(--rule); }
+.app.editor .inspector-panel { right: 0; background: var(--content); border-left: 1px solid var(--rule); }
+.panel-tabs { height: 44px; padding: 0 16px; }
+.app.editor .panel-tabs .segmented { flex: none; justify-content: flex-start; gap: 20px; padding: 0; border-radius: 0; background: none; }
+.app.editor .panel-tabs .segmented button { flex: none; height: 44px; padding: 0; border-radius: 0; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--label); }
+.app.editor .panel-tabs .segmented button.on { background: none; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); font-weight: 600; }
+.app.editor .sidebar .side-tabs { justify-content: flex-start; gap: 18px; margin: 6px 0 0; padding: 0 18px; border-radius: 0; background: none; border-bottom: 1px solid var(--rule); }
+.app.editor .sidebar .side-tabs button { flex: none; height: 34px; padding: 0; border-radius: 0; box-shadow: none; font-weight: 500; color: var(--label); }
+.app.editor .sidebar .side-tabs button.on { background: none; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); font-weight: 600; }
+.term-bar { padding: 6px 12px; gap: 2px; }
+.term-chip.on { background: none; box-shadow: inset 0 -2px 0 var(--ink); border-radius: 0; }
+/* Inside the panel too: sections are bands divided by a hairline, not cards within the card. */
+.app.editor .inspector { padding: 0; gap: 0; }
+.app.editor .inspector > section, .app.editor .inspector > .page-summary, .app.editor .inspector .source-links,
+.app.editor .connect-agent > .tasks, .app.editor .connect-agent > .connect-ways, .app.editor .connect-agent > .agent-cards > .agent-card {
+  margin: 0; padding: 14px 16px; border: 0; border-radius: 0; background: none; box-shadow: none; border-bottom: 1px solid var(--line);
+}
+.app.editor .connect-agent { padding: 0; gap: 0; }
+.app.editor .panel-tabs { border-bottom: 1px solid var(--rule); }
