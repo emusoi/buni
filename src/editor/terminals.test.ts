@@ -6,7 +6,9 @@ import { BRIEF, command } from "./terminals.ts";
 
 test("agents start already pointed at the design's MCP endpoint", () => {
   const url = "http://localhost:4000/mcp?file=%2Fdesigns%2Fshop%2Fshop.buni";
-  expect(command("claude", url)).toBe(`claude --mcp-config '{"mcpServers":{"buni":{"type":"http","url":"${url}"}}}' --append-system-prompt '${BRIEF}'`);
+  // What the shell hands claude, word for word, quotes and all.
+  const words = Bun.spawnSync(["sh", "-c", `printf '%s\\n' ${command("claude", url)!.replace(/^claude /, "")}`]).stdout.toString().split("\n");
+  expect(words.slice(0, 4)).toEqual(["--mcp-config", JSON.stringify({ mcpServers: { buni: { type: "http", url } } }), "--append-system-prompt", BRIEF]);
   expect(command("codex", url)).toBe(`codex -c 'mcp_servers.buni.url="${url}"'`);
   expect(command("shell", url)).toBeUndefined();
 });
