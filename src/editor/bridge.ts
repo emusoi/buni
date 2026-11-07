@@ -1,3 +1,4 @@
+import type { Program, TermInfo } from "./terminals.ts";
 import type { AccountState, BuniApi, Snapshot, SnapshotUpdate, StripApi, ThemeChoice } from "./api.ts";
 import { exportSite, pageSvg } from "buni/tools/html.ts";
 import { download, iconSet, pagePng, printPage, zip } from "./export.ts";
@@ -318,6 +319,21 @@ const api: BuniApi = {
   inspiration: () => call("inspiration"),
   sendMarks: (page) => call("sendMarks", page),
   sendViewMarks: (view) => call("sendViewMarks", view),
+  // Terminals run on the Mac that runs buni open; a hosted buni has none.
+  ...(accounts || location.protocol !== "http:" ? {} : {
+    terminals: {
+      list: () => fetch(at("/terms")).then((r) => r.json()).then((j: { sessions: TermInfo[] }) => j.sessions),
+      start: (program: Program, cols: number, rows: number) =>
+        fetch(at("/terms"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ program, cols, rows }) })
+          .then((r) => r.json())
+          .then((j: { session?: TermInfo; error?: string }) => {
+            if (!j.session) throw new Error(j.error ?? "The terminal didn't start");
+            return j.session;
+          }),
+      close: (id: string) => fetch(at("/terms/close"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) }).then(() => undefined),
+      socket: (id: string) => new URL(`${at("/term")}&id=${encodeURIComponent(id)}`, location.href.replace(/^http/, "ws")).href,
+    },
+  }),
   // A hosted buni has no cable: tablets plug into the Mac that runs buni open.
   ...(accounts ? {} : {
     tablets: () => call("tablets"),

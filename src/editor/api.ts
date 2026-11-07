@@ -1,3 +1,4 @@
+import type { Program, TermInfo } from "./terminals.ts";
 import type { Person } from "../account/signin.ts";
 import type { Doc, Id } from "buni/format/doc.ts";
 import type { Edit } from "buni/tools/workspace.ts";
@@ -63,6 +64,14 @@ export interface BuniApi {
   spaces?(): Promise<Space[]>;
   /** A new API token for a coding agent to reach this server with, named for what uses it; only where calls need one (the web). */
   agentToken?(name: string): Promise<string>;
+  /** Coding agents in terminals beside the design; only where buni runs on this Mac (buni open), never hosted. */
+  terminals?: {
+    list(): Promise<TermInfo[]>;
+    start(program: Program, cols: number, rows: number): Promise<TermInfo>;
+    close(id: string): Promise<void>;
+    /** The WebSocket address a session's screen and keys go through. */
+    socket(id: string): string;
+  };
   /** Back to the home screen. */
   close(): Promise<void>;
   /** Renames a file on the home screen; only where files have no Finder of their own (the web). Returns its new path. */

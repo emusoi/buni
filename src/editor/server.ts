@@ -13,6 +13,7 @@ import { rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { renderHeadless } from "buni/term/render.ts";
 import { basename, dirname, join, resolve } from "node:path";
+import { PROGRAMS, Terminals, type Program, type TermSocket } from "./terminals.ts";
 import { emptyDoc, pagesInOrder, type Doc } from "buni/format/doc.ts";
 import { parseDoc } from "buni/format/parse.ts";
 import { diffDoc } from "buni/format/patch.ts";
@@ -1090,11 +1091,57 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
   const ready = Promise.withResolvers<Editor>();
   // Each tab's live feed is a WebSocket here: an event stream holds one of the six HTTP/1.1 connections Chrome allows
   // per host, so with six tabs open on this buni a seventh never loads. Sockets don't count against that limit.
-  type Feed = { file: string; tab?: string; stop?: () => void; closed?: boolean };
-  const server = Bun.serve<Feed>({
+  type Feed = { kind?: undefined; file: string; tab?: string; stop?: () => void; closed?: boolean };
+  // Terminals run commands, so only this editor's own page reaches them: right host, this origin (never a missing
+  // one, never the extension), and a design of this server's. Sessions belong to their design.
+  const own = () => localOrigins(Number(server.port));
+  // A browser leaves the origin off a same-origin GET, so listing sessions takes no origin (never another one);
+  // starting one, closing one and its socket must come from this page.
+  const termFile = (req: Request, strict = true): string | undefined => {
+    const url = new URL(req.url);
+    const file = url.searchParams.get("file") ?? undefined;
+    const host = req.headers.get("host") ?? "";
+    const origin = req.headers.get("origin");
+    if (!isDesignPath(file) || ![`localhost:${server.port}`, `127.0.0.1:${server.port}`].includes(host)) return undefined;
+    if (origin === null ? strict : !own().has(origin)) return undefined;
+    return file;
+  };
+  const root = dirname(dirname(localFile));
+  const terminals: Terminals = new Terminals(
+    (file) => {
+      const dir = dirname(join(root, file.slice("/designs/".length)));
+      const top = Bun.spawnSync(["git", "-C", dir, "rev-parse", "--show-toplevel"]);
+      return top.success ? top.stdout.toString().trim() : dir;
+    },
+    (file) => `http://localhost:${server.port}/mcp?file=${encodeURIComponent(file)}`,
+  );
+  async function terminalRoute(req: Request, url: URL): Promise<Response> {
+    const file = termFile(req, req.method !== "GET");
+    if (!file) return new Response("forbidden", { status: 403 });
+    if (req.method === "GET") return Response.json({ sessions: terminals.list(file) });
+    if (req.method !== "POST" || !allowedCall(req, own())) return new Response("forbidden", { status: 403 });
+    const body: Record<string, unknown> = await req.json().then((v: unknown) => (typeof v === "object" && v !== null ? { ...v } : {}), () => ({}));
+    if (url.pathname === "/terms/close") {
+      terminals.close(file, String(body.id ?? ""));
+      return Response.json({ sessions: terminals.list(file) });
+    }
+    const program = PROGRAMS.find((p) => p === body.program);
+    if (!program) return Response.json({ error: "claude, codex or shell" }, { status: 400 });
+    const num = (v: unknown, d: number) => (typeof v === "number" && v > 0 && v < 1000 ? Math.floor(v) : d);
+    return Response.json({ session: terminals.start(file, program as Program, num(body.cols, 100), num(body.rows, 30)) });
+  }
+  const server: Bun.Server<Feed | TermSocket> = Bun.serve<Feed | TermSocket>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,
-    fetch: async (req, srv) => {
+    fetch: async (req, srv): Promise<Response | undefined> => {
       const editor = await ready.promise;
+      const url = new URL(req.url);
+      if (url.pathname === "/term" && req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+        const file = termFile(req);
+        const id = url.searchParams.get("id") ?? "";
+        if (!file || !terminals.owns(file, id)) return new Response("forbidden", { status: 403 });
+        return srv.upgrade(req, { data: { kind: "term", id } }) ? undefined : new Response("upgrade failed", { status: 400 });
+      }
+      if (url.pathname === "/terms" || url.pathname === "/terms/close") return terminalRoute(req, url);
       if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
         const file = editor.socketFile(req);
         if (!file) return new Response("forbidden", { status: 403 });
@@ -1102,8 +1149,21 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
       }
       return editor.fetch(req);
     },
-    websocket: feeds(),
+    websocket: {
+      open(ws) {
+        if (ws.data.kind === "term") terminals.attach(ws as Bun.ServerWebSocket<TermSocket>);
+        else void feed.open?.(ws as Bun.ServerWebSocket<Feed>);
+      },
+      message(ws, raw) {
+        if (ws.data.kind === "term") terminals.message(ws as Bun.ServerWebSocket<TermSocket>, raw);
+      },
+      close(ws, code, reason) {
+        if (ws.data.kind === "term") terminals.detach(ws as Bun.ServerWebSocket<TermSocket>);
+        else void feed.close?.(ws as Bun.ServerWebSocket<Feed>, code, reason);
+      },
+    },
   });
+  const feed = feeds();
   // The tablet's own door, also only on 127.0.0.1: adb reverse brings a tablet on the cable here, and nothing else
   // does. Everything through it goes through the tablet's guard (tabletFetch), never the Mac's.
   const tabletServer = Bun.serve<Feed>({
@@ -1141,7 +1201,7 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
     ready.resolve(editor);
     const design = `/designs/${basename(dirname(localFile))}/${basename(localFile)}`;
     const url = `http://localhost:${server.port}/?file=${encodeURIComponent(design)}`;
-    const stop = () => { editor.stop(); tablets.stop(); void server.stop(true); void tabletServer.stop(true); };
+    const stop = () => { editor.stop(); tablets.stop(); terminals.stop(); void server.stop(true); void tabletServer.stop(true); };
     return { url, stop, editor, design };
   } catch (error) {
     void server.stop(true);

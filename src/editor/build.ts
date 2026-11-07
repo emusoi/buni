@@ -28,7 +28,9 @@ export async function editorSources(): Promise<EditorSources> {
     files.push({ path, body: new Uint8Array(await out.arrayBuffer()), type: "text/javascript; charset=utf-8" });
     if (out.kind === "entry-point") client = path;
   }
-  const css = (await Bun.file(join(import.meta.dir, "renderer/styles.css")).text()).replaceAll('url("fonts/', 'url("/fonts/');
+  // The terminal's own stylesheet goes in with ours.
+  const xterm = await Bun.file(require.resolve("@xterm/xterm/css/xterm.css")).text();
+  const css = (await Bun.file(join(import.meta.dir, "renderer/styles.css")).text()).replaceAll('url("fonts/', 'url("/fonts/') + xterm;
   const styles = new TextEncoder().encode(css);
   const add = (name: string, body: Uint8Array<ArrayBuffer>): string => {
     const path = `/assets/${name}-${Bun.hash(body).toString(36)}.css`;

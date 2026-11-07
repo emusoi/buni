@@ -6,6 +6,7 @@ import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.t
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
+import { AgentsPanel } from "./AgentTerminal.tsx";
 import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
 import { Export } from "./Export.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -1129,7 +1130,7 @@ export function App({ snap }: { snap: Snapshot }) {
             </div>
             <div className={`panel-body${panel === "agent" ? " fill" : ""}`}>
             {panel === "design" && <OwnersContext.Provider value={snap.owners}><UsedElsewhere.Provider value={usedElsewhere}><OpenFile.Provider value={snap.path}><Inspector doc={doc} onOpenElsewhere={openElsewhere} onOpenTakes={setTakes} ownTokens={snap.view.imports?.length ? snap.view.tokens : undefined} node={selected ? doc.nodes[selected] : undefined} also={also.filter((x) => doc.nodes[x])} root={frame?.id} page={component ? undefined : activePage} onJump={jump} preview={activePage && doc.pages[activePage]?.route === undefined && !doc.pages[activePage]?.terminal ? { page: activePage, dir: snap.dir } : undefined} onDeleted={() => setSelected(undefined)} onSelect={setSelected} onOpenComponent={openComponent} onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} viewWidth={activePage ? viewAt[activePage] : undefined} onViewWidth={viewWidth} onCompare={() => setComparing(true)} dir={snap.dir}  /></OpenFile.Provider></UsedElsewhere.Provider></OwnersContext.Provider>}
-            {panel === "agent" && <ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} agents={snap.agents} page={activePage} onShowPage={(p) => { openPage(p); setReveal({ page: p, at: Date.now() }); }} onUndo={() => void window.buni.undo().then((r) => setToast(r.reply))} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />}
+            {panel === "agent" && <AgentsPanel onWiden={() => setPanelWidth((w) => clampPanel(Math.max(w, 560)))} activity={<ConnectAgent doc={doc} mcpUrl={snap.mcpUrl} connected={connected} recent={snap.recent} edits={edits} agents={snap.agents} page={activePage} onShowPage={(p) => { openPage(p); setReveal({ page: p, at: Date.now() }); }} onUndo={() => void window.buni.undo().then((r) => setToast(r.reply))} onShow={(node) => { const p = pageOfNode(doc, node); if (p) { openPage(p, node); setReveal({ page: p, at: Date.now() }); } else setSelected(node); }} onToast={setToast} />} />}
             {panel === "doc" && <DocPanel doc={doc} fileName={fileName} onToast={setToast} />}
             {panel === "marks" && activePage && <MarksPanel doc={doc} page={activePage} lit={litMark} onLight={setLitMark} onShow={(node) => { setSelected(node); setReveal({ page: activePage, at: Date.now() }); }} onToast={setToast} />}
             </div>

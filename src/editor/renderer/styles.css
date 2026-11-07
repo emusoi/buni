@@ -2312,3 +2312,26 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .home-task .task-state { margin-top: 1px; }
 .home-tasks > .link-btn { align-self: flex-start; padding: 8px 0; }
 .home-tasks .home-empty { padding: 12px 0; }
+
+/* ---------- agents in a terminal (buni open) ---------- */
+.agents-term { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.term-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.term-chip { display: inline-flex; align-items: center; height: 24px; border-radius: var(--radius); color: var(--label); }
+.term-chip > button:first-child { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 4px 0 8px; border: 0; background: none; color: inherit; font-size: 12px; }
+.term-chip.on { background: var(--chip); color: var(--ink); font-weight: 600; }
+.term-chip.ended > button:first-child { text-decoration: line-through; }
+.term-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 24px; border: 0; background: none; color: var(--label); border-radius: var(--radius); }
+.term-x:hover { color: var(--ink); }
+.term-dot { width: 6px; height: 6px; border-radius: 3px; }
+.term-add { height: 24px; padding: 0 8px; border: 0; border-radius: var(--radius); background: none; color: var(--label); font-size: 12px; }
+.term-add:hover, .term-add.on { background: var(--chip); color: var(--ink); }
+.term-host { flex: 1; min-height: 0; padding: 8px 4px 4px 12px; background: var(--content); }
+.term-host .xterm { height: 100%; }
+.term-host .xterm-viewport { background: transparent !important; }
+.term-ended { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 12px; color: var(--label); border-bottom: 1px solid var(--line); }
+.term-ended .btn { flex: 0 0 auto; padding: 0 10px; }
+.term-activity { flex: 1; min-height: 0; overflow: auto; }
+.term-empty { display: flex; flex-direction: column; gap: 10px; padding: 28px 20px; }
+.term-empty-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.term-empty-actions { display: flex; gap: 8px; margin-top: 6px; }
+.term-empty-actions .btn { flex: 0 0 auto; padding: 0 12px; }
