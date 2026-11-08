@@ -2360,3 +2360,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .app.editor .connect-agent { padding: 0; gap: 0; }
 .app.editor .panel-tabs { border-bottom: 1px solid var(--rule); }
+/* The canvas's tools: one flat strip along its bottom, between the panels, not three floating pills. */
+.app.editor .canvas-wrap::after { content: ""; position: absolute; left: var(--float-left); right: var(--float-right); bottom: 0; height: 44px; z-index: 2; pointer-events: none; background: var(--content); border-top: 1px solid var(--rule); }
+.app.editor .canvas-wrap .zoom, .app.editor .canvas-wrap .zoom:not(.canvas-tools), .app.editor .canvas-wrap .insert-bar { bottom: 4px; z-index: 3; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.app.editor .canvas-wrap .zoom button, .app.editor .canvas-wrap .insert-bar .add-btn, .app.editor .canvas-wrap .insert-bar .add-component { border-radius: var(--radius); }
