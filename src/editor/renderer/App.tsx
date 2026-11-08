@@ -503,6 +503,8 @@ export function App({ snap }: { snap: Snapshot }) {
   const [sheet, setSheet] = useState<"versions" | "export">();
   const moreRef = useRef<HTMLSpanElement>(null);
   useDismiss(more, useCallback(() => setMore(false), []), moreRef);
+  /** Follow the agents: the canvas goes to each of their edits as it lands. On until you turn it off. */
+  const [following, setFollowing] = useState(true);
   // An agent's edit on a page you aren't looking at: said once, with a way there.
   const [agentNote, setAgentNote] = useState<{ author: string; label: string; page: Id; node: Id | undefined }>();
   const lastNoted = useRef(edits.at(-1)?.at ?? "");
@@ -512,11 +514,14 @@ export function App({ snap }: { snap: Snapshot }) {
     lastNoted.current = e.at;
     const node = e.nodes[0];
     const where = node ? pageOfNode(doc, node) : undefined;
-    if (e.author === "you" || !where || where === activePage) return;
+    if (e.author === "you" || !where) return;
+    // Following (the default), the canvas goes where the agent edits and picks what it changed, so you watch it land.
+    if (following) { openPage(where, node); setReveal({ page: where, at: Date.now() }); return; }
+    if (where === activePage) return;
     // Watching beside a page (compact), the canvas follows the agent to what it's changing, a new "· Next" page and all.
     if (compact !== undefined) { setPage(where); setReveal({ page: where, at: Date.now() }); return; }
     setAgentNote({ author: e.author, label: e.label, page: where, node });
-  }, [edits, doc, activePage, compact]);
+  }, [edits, doc, activePage, compact, following]);
   useEffect(() => {
     if (!agentNote) return;
     const t = setTimeout(() => setAgentNote(undefined), 6000);
@@ -853,6 +858,13 @@ export function App({ snap }: { snap: Snapshot }) {
     <div className={`app editor${sidebarOpen ? "" : " sidebar-collapsed"}${mode === "architecture" ? " arch-mode" : ""}`} style={floating}>
       {/* The desktop's open files, floating at the top; the web has its browser tabs. */}
       <div className="file-strip"><FileTabs /></div>
+      {/* While an agent works, say whether the canvas follows it; one click stops or resumes. */}
+      {working.length > 0 && (
+        <button type="button" className={`follow-pill${following ? " on" : ""}`} aria-pressed={following} title={following ? "The canvas goes to each change as it lands. Click to stop following." : "Click to follow the agent's changes again."} onClick={() => setFollowing((f) => !f)}>
+          <span className="follow-dot" style={{ background: agentColor(working[0] ?? "") }} />
+          {following ? `Following ${working[0]}` : `Follow ${working[0]}`}
+        </button>
+      )}
       {mode === "architecture" && <ArchitectureMode doc={doc} name={fileName} onToast={setToast} />}
       {/* Always at the left edge, as in Figma: one icon per place in the design; the sidebar beside it lists that place,
           and choosing the place that's open folds the list away. */}

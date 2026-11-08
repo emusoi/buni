@@ -2428,3 +2428,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .app.editor .sidebar .segmented, .app.editor .inspector-panel .panel-body .segmented { flex: none; justify-content: flex-start; gap: 16px; padding: 0; border-radius: 0; background: none; box-shadow: inset 0 -1px 0 var(--line); }
 .app.editor .sidebar .segmented button, .app.editor .inspector-panel .panel-body .segmented button { flex: none; height: 30px; padding: 0; border-radius: 0; background: none; box-shadow: none; font-weight: 500; color: var(--label); }
 .app.editor .sidebar .segmented button.on, .app.editor .inspector-panel .panel-body .segmented button.on { background: none; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); font-weight: 600; }
+/* Following an agent: a quiet pill at the top of the canvas while it works. */
+.follow-pill { position: absolute; z-index: 7; top: 10px; left: calc(var(--float-left) + (100% - var(--float-left) - var(--float-right)) / 2); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border: 1px solid var(--rule); border-radius: 14px; background: var(--content); font-size: 12px; font-weight: 500; color: var(--label); }
+.follow-pill.on { color: var(--ink); }
+.follow-dot { width: 7px; height: 7px; border-radius: 4px; }
+.follow-pill:not(.on) .follow-dot { opacity: 0.4; }
