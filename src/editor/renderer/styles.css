@@ -2411,3 +2411,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .app.editor .doc-head .btn.small:hover { text-decoration: underline; }
 .app.editor .doc-section.open .doc-read, .app.editor .doc-section.open .doc-body { margin-left: 18px; font-size: 14px; line-height: 1.6; color: var(--ink); }
 .app.editor .doc-skills { border-top: 0; }
+/* The commit menu opens inside the sidebar it belongs to, so focusing its field never scrolls the sidebar sideways. */
+.app.editor .side-head .changes-menu { left: auto; right: 0; width: 236px; }
+/* What's selected on the canvas, one click (or ⌘L) from the agent. */
+.agent-selection { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--accent-tint); font-size: 12.5px; }
+.agent-selection-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-selection-what b { font-weight: 600; color: var(--ink); }
+.agent-selection .link-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.agent-selection kbd { font: 11px var(--font); color: var(--label); }
+/* Inspiration grouped by kind: a folding heading per kind, the patterns under it by name alone. */
+.pattern-kind { display: flex; align-items: center; gap: 6px; width: 100%; height: 28px; padding: 0 10px; border: 0; background: none; font-size: 12.5px; font-weight: 600; color: var(--ink-2); text-align: left; }
+.pattern-kind:hover { color: var(--ink); }
+.pattern-kind .n { margin-left: auto; font-weight: 400; color: var(--label); }
+.pattern-row { padding-left: 28px; }
+/* Every pill switch in the side panels reads as words with a rule under the chosen one. */
+.app.editor .sidebar .segmented, .app.editor .inspector-panel .panel-body .segmented { flex: none; justify-content: flex-start; gap: 16px; padding: 0; border-radius: 0; background: none; box-shadow: inset 0 -1px 0 var(--line); }
+.app.editor .sidebar .segmented button, .app.editor .inspector-panel .panel-body .segmented button { flex: none; height: 30px; padding: 0; border-radius: 0; background: none; box-shadow: none; font-weight: 500; color: var(--label); }
+.app.editor .sidebar .segmented button.on, .app.editor .inspector-panel .panel-body .segmented button.on { background: none; box-shadow: inset 0 -2px 0 var(--ink); color: var(--ink); font-weight: 600; }

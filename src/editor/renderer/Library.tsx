@@ -331,9 +331,16 @@ export function LibraryHealth({ doc, dir, onClose, onAsk }: { doc: Doc; dir: str
  * The inspiration libraries' patterns (buni's own, and folders the person added with buni inspiration add): finished
  * screens to borrow structure from. Use brings one in as a page of its own. Hidden where the host can't read them.
  */
+function groupBy<T>(items: readonly T[], key: (t: T) => string): Map<string, T[]> {
+  const out = new Map<string, T[]>();
+  for (const t of items) out.set(key(t), [...(out.get(key(t)) ?? []), t]);
+  return out;
+}
+
 export function Inspiration({ page, onUse, onSaved }: { page?: { id: string; name: string } | undefined; onUse: (file: string, name: string) => void; onSaved: (reply: string) => void }) {
   const [patterns, setPatterns] = useState<PatternInfo[] | undefined>(undefined);
   const [query, setQuery] = useState("");
+  const [openKinds, setOpenKinds] = useState<ReadonlySet<string>>(new Set());
   // Saving asks two things in turn: what to call it, then when it is the right choice.
   const [saving, setSaving] = useState<{ step: "name" } | { step: "use"; name: string } | undefined>(undefined);
   const load = () => void window.buni.inspiration?.().then(setPatterns, () => setPatterns([]));
@@ -349,13 +356,24 @@ export function Inspiration({ page, onUse, onSaved }: { page?: { id: string; nam
     </div>
     {all.length === 0 && <p className="rail-empty">Finished screens to borrow from. + keeps the page you're on; buni inspiration add brings a folder of yours.</p>}
     {all.length > 8 && <input className="field rail-filter" type="search" placeholder="Find a pattern" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Find a pattern" />}
-    {shown.map((p) => (
-      <button type="button" key={p.file} className="row" title={`${p.use}\n(${p.library}) Click to bring it in as a page.`} onClick={() => onUse(p.file, p.name)}>
-        <Sparkles size={15} strokeWidth={1.75} className="dim" />
-        <span className="name">{p.name}</span>
-        <span className="meta">{p.library === "buni" ? p.tags[0] ?? "" : p.library}</span>
-      </button>
-    ))}
+    {/* Grouped by kind under folding headings, the rows only names; a search shows every match, unfolded. */}
+    {[...groupBy(shown, (p) => (p.library === "buni" ? p.tags[0] ?? "other" : p.library))].sort(([a], [b]) => a.localeCompare(b)).map(([kind, list]) => {
+      const unfolded = Boolean(q) || openKinds.has(kind);
+      return (
+        <div key={kind} className="pattern-group">
+          <button type="button" className="pattern-kind" aria-expanded={unfolded} onClick={() => setOpenKinds((o) => { const n = new Set(o); if (!n.delete(kind)) n.add(kind); return n; })}>
+            {unfolded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            <span>{kind[0]?.toUpperCase()}{kind.slice(1)}</span>
+            <span className="n">{list.length}</span>
+          </button>
+          {unfolded && list.map((p) => (
+            <button type="button" key={p.file} className="row pattern-row" title={`${p.use}\n(${p.library}) Click to bring it in as a page.`} onClick={() => onUse(p.file, p.name)}>
+              <span className="name">{p.name}</span>
+            </button>
+          ))}
+        </div>
+      );
+    })}
     {saving?.step === "name" && page && <NameDialog title="Keep as inspiration" label="Name" initial={page.name} action="Next" onClose={() => setSaving(undefined)} onSubmit={(name) => setSaving({ step: "use", name })} />}
     {saving?.step === "use" && page && <NameDialog title={`When is “${saving.name}” the right choice?`} label="Use it for" initial="" action="Save" onClose={() => setSaving(undefined)} onSubmit={(use) => {
       const name = saving.name;

@@ -40,7 +40,8 @@ function themeFromPage() {
 }
 
 /** One session's screen: what it prints, and the keys typed into it. */
-function TermView({ socket, onEnded }: { socket: string; onEnded: () => void }) {
+/** `typeRef` is set to a way to type into the session (and focus it), for "ask about the selection". */
+function TermView({ socket, onEnded, typeRef }: { socket: string; onEnded: () => void; typeRef?: { current: ((text: string) => void) | undefined } }) {
   const host = useRef<HTMLDivElement>(null);
   const ended = useRef(onEnded);
   ended.current = onEnded;
@@ -81,9 +82,14 @@ function TermView({ socket, onEnded }: { socket: string; onEnded: () => void }) 
       }
     };
     const typed = term.onData((input) => ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ input })));
+    if (typeRef) typeRef.current = (input) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ input }));
+      term.focus();
+    };
     const resize = new ResizeObserver(size);
     resize.observe(el);
     return () => {
+      if (typeRef) typeRef.current = undefined;
       resize.disconnect();
       typed.dispose();
       ws.close();
@@ -93,6 +99,19 @@ function TermView({ socket, onEnded }: { socket: string; onEnded: () => void }) 
   return <div className="term-host" ref={host} />;
 }
 
+/** The last ⌘L answered, across the panel's remounts. */
+let handledAsk = 0;
+
+/** What is selected on the canvas, for the agent to work on exactly that. */
+export interface Selection {
+  id: string;
+  label: string;
+  page?: string;
+}
+
+/** How a selection is named to an agent: enough for buni's tools to find it, nothing it has to guess. */
+export const aboutSelection = (s: Selection) => `In the buni design, the layer ${s.label} (id ${s.id})${s.page ? ` on the page "${s.page}"` : ""}: `;
+
 /** What to ask about the page the person is on: one click fills the composer. */
 const suggestions = (page?: string): string[] => [
   page ? `Review "${page}" against the design doc and fix what's off` : "Review the design against its doc and fix what's off",
@@ -101,7 +120,10 @@ const suggestions = (page?: string): string[] => [
 ];
 
 /** `onWiden` asks for room: a terminal needs about eighty columns. `page` is the page the person is on. */
-export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; onWiden?: () => void; page?: string }) {
+export function AgentsPanel({ activity, onWiden, page, selection, askNonce }: { activity: ReactNode; onWiden?: () => void; page?: string; selection?: Selection; askNonce?: number }) {
+  const typeInto = useRef<((text: string) => void) | undefined>(undefined);
+  const [draft, setDraft] = useState("");
+  const [loaded, setLoaded] = useState(false);
   const api = window.buni.terminals;
   const [sessions, setSessions] = useState<TermInfo[]>([]);
   // A session's id, or the agents' activity (what they did, connecting by hand).
@@ -114,6 +136,7 @@ export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; 
   }, [api]);
   useEffect(() => {
     void api?.list().then((list) => {
+      setLoaded(true);
       // ?start=claude (buni open --agent) starts one when none runs; the address forgets it, so a reload doesn't.
       const params = new URLSearchParams(location.search);
       const wanted = params.get("start");
@@ -149,6 +172,22 @@ export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; 
     });
   };
   const current = sessions.find((s) => s.id === shown);
+  const live = current && !ended.has(current.id) && current.program !== "shell" ? current : undefined;
+  /** The selection goes to the running agent's prompt, or into the composer when none runs. */
+  const ask = () => {
+    if (!selection) return;
+    const ref = aboutSelection(selection);
+    if (live && typeInto.current) return typeInto.current(ref);
+    setShown(undefined);
+    setDraft((d) => (d.startsWith(ref) ? d : ref + d));
+  };
+  // ⌘L may open this panel and ask at once: it answers once the sessions are known, and each press only once.
+  useEffect(() => {
+    if (loaded && askNonce !== undefined && askNonce > handledAsk) {
+      handledAsk = askNonce;
+      ask();
+    }
+  });
   return (
     <div className="agents-term">
       {(sessions.length > 0 || shown === "activity") && <div className="term-bar" role="tablist" aria-label="Agent sessions">
@@ -168,6 +207,12 @@ export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; 
         <button type="button" className={`term-add${shown === "activity" ? " on" : ""}`} onClick={() => setShown("activity")}>Activity</button>
       </div>}
       {error && <div className="notice">{error}</div>}
+      {selection && shown !== "activity" && (
+        <div className="agent-selection">
+          <span className="agent-selection-what"><span className="hint">Selected</span> <b>{selection.label}</b>{selection.page ? <span className="hint"> on {selection.page}</span> : null}</span>
+          <button type="button" className="link-btn" onClick={ask} title="Name it to the agent, then say what to do (⌘L)">Ask about it <kbd>⌘L</kbd></button>
+        </div>
+      )}
       {shown === "activity" ? (
         <div className="term-activity">{activity}</div>
       ) : current ? (
@@ -178,20 +223,27 @@ export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; 
               <button type="button" className="btn small" onClick={() => { close(current.id); start(current.program); }}>Start again</button>
             </div>
           )}
-          <TermView key={current.id} socket={api.socket(current.id)} onEnded={() => setEnded((e) => new Set(e).add(current.id))} />
+          <TermView key={current.id} socket={api.socket(current.id)} typeRef={typeInto} onEnded={() => setEnded((e) => new Set(e).add(current.id))} />
         </>
       ) : (
-        <Composer page={page} onStart={start} onActivity={() => setShown("activity")} />
+        <Composer page={page} text={draft} setText={setDraft} onStart={start} onActivity={() => setShown("activity")} />
       )}
     </div>
   );
 }
 
 /** No agent running yet: say what to do, and the agent starts on it. */
-function Composer({ page, onStart, onActivity }: { page?: string; onStart: (program: Program, ask?: string) => void; onActivity: () => void }) {
-  const [text, setText] = useState("");
+function Composer({ page, text, setText, onStart, onActivity }: { page?: string; text: string; setText: (t: string) => void; onStart: (program: Program, ask?: string) => void; onActivity: () => void }) {
   const [agent, setAgent] = useState<"claude" | "codex">("claude");
   const box = useRef<HTMLTextAreaElement>(null);
+  // A selection put in: the cursor waits after it, for what to do.
+  useEffect(() => {
+    const el = box.current;
+    if (el && text && document.activeElement !== el) {
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    }
+  }, [text]);
   const send = () => text.trim() && onStart(agent, text.trim());
   return (
     <div className="agent-start">
