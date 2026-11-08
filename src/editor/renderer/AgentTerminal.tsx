@@ -93,8 +93,15 @@ function TermView({ socket, onEnded }: { socket: string; onEnded: () => void }) 
   return <div className="term-host" ref={host} />;
 }
 
-/** `onWiden` asks for room: a terminal needs about eighty columns. */
-export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWiden?: () => void }) {
+/** What to ask about the page the person is on: one click fills the composer. */
+const suggestions = (page?: string): string[] => [
+  page ? `Review "${page}" against the design doc and fix what's off` : "Review the design against its doc and fix what's off",
+  page ? `Add the states "${page}" is missing: empty, loading, error` : "Add the states the screens are missing: empty, loading, error",
+  "Tidy names, spacing and type across the pages",
+];
+
+/** `onWiden` asks for room: a terminal needs about eighty columns. `page` is the page the person is on. */
+export function AgentsPanel({ activity, onWiden, page }: { activity: ReactNode; onWiden?: () => void; page?: string }) {
   const api = window.buni.terminals;
   const [sessions, setSessions] = useState<TermInfo[]>([]);
   // A session's id, or the agents' activity (what they did, connecting by hand).
@@ -144,7 +151,7 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
   const current = sessions.find((s) => s.id === shown);
   return (
     <div className="agents-term">
-      <div className="term-bar" role="tablist" aria-label="Agent sessions">
+      {(sessions.length > 0 || shown === "activity") && <div className="term-bar" role="tablist" aria-label="Agent sessions">
         {sessions.map((s) => (
           <span key={s.id} className={`term-chip${s.id === shown ? " on" : ""}${ended.has(s.id) ? " ended" : ""}`}>
             <button type="button" role="tab" aria-selected={s.id === shown} onClick={() => setShown(s.id)}>
@@ -159,7 +166,7 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
         ))}
         <span className="grow" />
         <button type="button" className={`term-add${shown === "activity" ? " on" : ""}`} onClick={() => setShown("activity")}>Activity</button>
-      </div>
+      </div>}
       {error && <div className="notice">{error}</div>}
       {shown === "activity" ? (
         <div className="term-activity">{activity}</div>
@@ -174,16 +181,47 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
           <TermView key={current.id} socket={api.socket(current.id)} onEnded={() => setEnded((e) => new Set(e).add(current.id))} />
         </>
       ) : (
-        <div className="term-empty">
-          <p className="term-empty-title">Run a coding agent beside the design</p>
-          <p className="hint">It starts in this project with buni's tools connected: every change it makes lands here, and ⌘Z takes it back.</p>
-          <div className="term-empty-actions">
-            <button type="button" className="btn primary" onClick={() => start("claude")}>Start Claude Code</button>
-            <button type="button" className="btn" onClick={() => start("codex")}>Codex</button>
-            <button type="button" className="btn" onClick={() => start("shell")}>Shell</button>
-          </div>
-        </div>
+        <Composer page={page} onStart={start} onActivity={() => setShown("activity")} />
       )}
+    </div>
+  );
+}
+
+/** No agent running yet: say what to do, and the agent starts on it. */
+function Composer({ page, onStart, onActivity }: { page?: string; onStart: (program: Program, ask?: string) => void; onActivity: () => void }) {
+  const [text, setText] = useState("");
+  const [agent, setAgent] = useState<"claude" | "codex">("claude");
+  const box = useRef<HTMLTextAreaElement>(null);
+  const send = () => text.trim() && onStart(agent, text.trim());
+  return (
+    <div className="agent-start">
+      <div className="agent-start-head">
+        <p className="agent-start-title">What should the agent do?</p>
+        <p className="hint">It works in this project with buni's tools, beside you: each change lands on the canvas, and ⌘Z takes it back.</p>
+      </div>
+      <div className="agent-suggest">
+        {suggestions(page).map((s) => (
+          <button key={s} type="button" onClick={() => { setText(s); box.current?.focus(); }}>{s}</button>
+        ))}
+      </div>
+      <span className="grow" />
+      <form className="agent-compose" onSubmit={(e) => { e.preventDefault(); send(); }}>
+        <textarea ref={box} rows={3} value={text} placeholder="Describe a change…" aria-label="Describe a change for the agent" onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
+        <div className="agent-compose-bar">
+          <select value={agent} aria-label="Agent" onChange={(e) => setAgent(e.target.value === "codex" ? "codex" : "claude")}>
+            <option value="claude">Claude Code</option>
+            <option value="codex">Codex</option>
+          </select>
+          <span className="grow" />
+          <button type="button" className="link-btn" onClick={() => onStart(agent)}>Start without a message</button>
+          <button type="submit" className="btn primary" disabled={!text.trim()}>Send</button>
+        </div>
+      </form>
+      <div className="agent-start-foot">
+        <button type="button" className="link-btn" onClick={() => onStart("shell")}>Open a shell</button>
+        <button type="button" className="link-btn" onClick={onActivity}>What agents did</button>
+      </div>
     </div>
   );
 }
