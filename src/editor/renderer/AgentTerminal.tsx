@@ -7,6 +7,28 @@ import { X } from "lucide-react";
 import type { Program, TermInfo } from "../terminals.ts";
 import { agentColor } from "./Connect.tsx";
 
+/** Home hands a new design its first request here; the design's Agents panel picks it up. */
+const ASK = "buni.ask";
+export function askFirst(prompt: string): void {
+  try {
+    sessionStorage.setItem(ASK, JSON.stringify({ prompt, at: Date.now() }));
+  } catch {
+    // no storage: the design opens without the request
+  }
+}
+/** A request home left in the last minute, taken once. */
+export function pendingAsk(take = false): string | undefined {
+  try {
+    const raw = sessionStorage.getItem(ASK);
+    if (!raw) return undefined;
+    const { prompt, at } = JSON.parse(raw) as { prompt?: unknown; at?: unknown };
+    if (take) sessionStorage.removeItem(ASK);
+    return typeof prompt === "string" && typeof at === "number" && Date.now() - at < 60_000 ? prompt : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const NAMES: Record<Program, string> = { claude: "Claude Code", codex: "Codex", shell: "Shell" };
 const SHORT: Record<Program, string> = { claude: "claude", codex: "codex", shell: "zsh" };
 
@@ -93,6 +115,8 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
         history.replaceState(history.state, "", `${location.pathname}?${params}`);
       }
       const program = (["claude", "codex", "shell"] as const).find((p) => p === wanted);
+      const ask = pendingAsk(true);
+      if (ask && !list.some((s) => s.alive)) return start("claude", ask);
       if (program && !list.some((s) => s.alive)) return start(program);
       setSessions(list);
       setEnded(new Set(list.filter((s) => !s.alive).map((s) => s.id)));
@@ -100,10 +124,10 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
     });
   }, [api]);
   if (!api) return <>{activity}</>;
-  function start(program: Program) {
+  function start(program: Program, ask?: string) {
     if (!api) return;
     setError(undefined);
-    void api.start(program, 100, 30).then((s) => {
+    void api.start(program, 100, 30, ask).then((s) => {
       setSessions((list) => [...list, s]);
       setShown(s.id);
     }, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
@@ -161,5 +185,42 @@ export function AgentsPanel({ activity, onWiden }: { activity: ReactNode; onWide
         </div>
       )}
     </div>
+  );
+}
+
+/** A design's name from a request: its first sentence, at most five words. */
+export function designName(prompt: string): string {
+  const first = prompt.split(/[.!?\n:;]/)[0] ?? "";
+  return first.split(/\s+/).filter(Boolean).slice(0, 5).join(" ").replace(/[^\p{L}\p{N} -]/gu, "").trim() || "Untitled";
+}
+
+/**
+ * Home's "describe what you want to build": a new design, named from the words, opened with Claude Code starting on
+ * them beside the canvas. Only where terminals run (buni open).
+ */
+export function Describe({ onError }: { onError: (message: string) => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = () => {
+    const prompt = text.trim();
+    if (!prompt || busy) return;
+    const name = designName(prompt);
+    setBusy(true);
+    askFirst(prompt);
+    window.buni.create(name).catch((e: unknown) => {
+      setBusy(false);
+      onError(e instanceof Error ? e.message : String(e));
+    });
+  };
+  return (
+    <form className="describe" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+      <label htmlFor="describe-input">Describe what you want to build</label>
+      <div className="describe-box">
+        <textarea id="describe-input" rows={2} value={text} placeholder="A calm checkout for a small shop: cart, address, payment, done." onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} />
+        <button type="submit" className="btn primary" disabled={!text.trim() || busy}>{busy ? "Starting…" : "Design it"}</button>
+      </div>
+      <p className="hint">buni makes the design and Claude Code starts on it beside the canvas.</p>
+    </form>
   );
 }

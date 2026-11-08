@@ -11,6 +11,9 @@ test("agents start already pointed at the design's MCP endpoint", () => {
   expect(words.slice(0, 4)).toEqual(["--mcp-config", JSON.stringify({ mcpServers: { buni: { type: "http", url } } }), "--append-system-prompt", BRIEF]);
   expect(command("codex", url)).toBe(`codex -c 'mcp_servers.buni.url="${url}"'`);
   expect(command("shell", url)).toBeUndefined();
+  // The person's first message rides along as one word, whatever it says.
+  const asked = Bun.spawnSync(["sh", "-c", `printf '%s\\n' ${command("claude", url, "a checkout that's calm; no \"dark patterns\" $(rm -rf /)")!.replace(/^claude /, "")}`]).stdout.toString().split("\n");
+  expect(asked[4]).toBe(`a checkout that's calm; no "dark patterns" $(rm -rf /)`);
 });
 
 test("the local editor runs a terminal for its own page only, and keeps it across reconnects", async () => {

@@ -10,6 +10,7 @@ import { FileTabs } from "./FileTabs.tsx";
 import { Profile, ThemeSwitch } from "./Profile.tsx";
 import { widthOf } from "./layout.ts";
 import { NewDesign } from "./NewDesign.tsx";
+import { Describe } from "./AgentTerminal.tsx";
 import { walkFlow } from "buni/format/doc.ts";
 import { ARRIVE, openSiteTab } from "./arrive.ts";
 
@@ -221,6 +222,7 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
           <FileTabs />
         </div>
         <div className="home">
+          {window.buni.terminals && !onlyTasks && !onlyAgents && !folder && <Describe onError={setError} />}
           {files && files.length > 0 && <header className="home-head">
             <div>
               <h1>{onlyTasks ? "Tasks" : onlyAgents ? "Agents working" : folder ? folder.split("/").filter(Boolean).at(-1) : space && spaces.length > 1 ? space.name : "Designs"}</h1>

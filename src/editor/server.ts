@@ -1128,7 +1128,8 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
     const program = PROGRAMS.find((p) => p === body.program);
     if (!program) return Response.json({ error: "claude, codex or shell" }, { status: 400 });
     const num = (v: unknown, d: number) => (typeof v === "number" && v > 0 && v < 1000 ? Math.floor(v) : d);
-    return Response.json({ session: terminals.start(file, program as Program, num(body.cols, 100), num(body.rows, 30)) });
+    const ask = typeof body.ask === "string" ? body.ask.slice(0, 4000) : undefined;
+    return Response.json({ session: terminals.start(file, program as Program, num(body.cols, 100), num(body.rows, 30), ask) });
   }
   const server: Bun.Server<Feed | TermSocket> = Bun.serve<Feed | TermSocket>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,

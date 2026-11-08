@@ -39,12 +39,14 @@ export const BRIEF = "The person has this design open in buni beside you. Read a
 const quote = (s: string) => `'${s.replaceAll("'", `'\\''`)}'`;
 
 /** The command line a session runs: the agent already pointed at this design's MCP endpoint. */
-export function command(program: Program, mcpUrl: string): string | undefined {
+/** `ask` is the person's first message to the agent, sent as it starts. */
+export function command(program: Program, mcpUrl: string, ask?: string): string | undefined {
+  const first = ask?.trim() ? ` ${quote(ask.trim())}` : "";
   switch (program) {
     case "claude":
-      return `claude --mcp-config ${quote(JSON.stringify({ mcpServers: { buni: { type: "http", url: mcpUrl } } }))} --append-system-prompt ${quote(BRIEF)}`;
+      return `claude --mcp-config ${quote(JSON.stringify({ mcpServers: { buni: { type: "http", url: mcpUrl } } }))} --append-system-prompt ${quote(BRIEF)}${first}`;
     case "codex":
-      return `codex -c ${quote(`mcp_servers.buni.url=${JSON.stringify(mcpUrl)}`)}`;
+      return `codex -c ${quote(`mcp_servers.buni.url=${JSON.stringify(mcpUrl)}`)}${first}`;
     case "shell":
       return undefined;
   }
@@ -76,10 +78,10 @@ export class Terminals {
     return this.sessions.get(id)?.file === file;
   }
 
-  start(file: string, program: Program, cols = 100, rows = 30): TermInfo {
+  start(file: string, program: Program, cols = 100, rows = 30, ask?: string): TermInfo {
     const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
     const shell = process.env.SHELL || "/bin/zsh";
-    const run = command(program, this.mcpUrl(file));
+    const run = command(program, this.mcpUrl(file), ask);
     // The agent first; when it ends, the person is left in a shell in the same place rather than a dead pane.
     const argv = run ? [shell, "-lc", `${run}; exec ${shell} -l`] : [shell, "-l"];
     const session: Session = { id, file, program, proc: undefined as unknown as Bun.Subprocess, scroll: [], size: 0, clients: new Set(), alive: true };

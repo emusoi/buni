@@ -6,7 +6,7 @@ import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.t
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
 import { DocPanel } from "./DocPanel.tsx";
-import { AgentsPanel } from "./AgentTerminal.tsx";
+import { AgentsPanel, pendingAsk } from "./AgentTerminal.tsx";
 import { InsertBar, Inspector, OpenFile, UsedElsewhere } from "./Inspector.tsx";
 import { Export } from "./Export.tsx";
 import { ContextMenu } from "./ContextMenu.tsx";
@@ -178,7 +178,7 @@ export function App({ snap }: { snap: Snapshot }) {
   const [page, setPage] = useState<Id | undefined>(() => new URLSearchParams(location.search).get("page") ?? undefined);
   const [selected, setSelected] = useState<Id>();
   // ?panel=agent opens on the agents and their terminal (buni open --agent).
-  const [panel, setPanel] = useState<"design" | "agent" | "doc" | "marks">(() => (new URLSearchParams(location.search).get("panel") === "agent" ? "agent" : "design"));
+  const [panel, setPanel] = useState<"design" | "agent" | "doc" | "marks">(() => (new URLSearchParams(location.search).get("panel") === "agent" || pendingAsk() ? "agent" : "design"));
   /** Layers shown open in the sidebar; page and component roots start open, everything else closed. */
   const [expanded, setExpanded] = useState<Set<Id>>(() => new Set());
   /** Pages whose layer list is hidden even while open. */
