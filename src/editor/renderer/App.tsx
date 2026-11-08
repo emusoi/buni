@@ -843,55 +843,35 @@ export function App({ snap }: { snap: Snapshot }) {
       {/* The desktop's open files, floating at the top; the web has its browser tabs. */}
       <div className="file-strip"><FileTabs /></div>
       {mode === "architecture" && <ArchitectureMode doc={doc} name={fileName} onToast={setToast} />}
-      {/* Folded away, the sidebar leaves a strip of what it holds; each opens it at that place. */}
-      {!sidebarOpen && (
-        <nav className="side-rail" aria-label="Sidebar">
-          {/* The sidebar's own places, by the same icons. */}
-          <button type="button" className="icon-btn" title="Search (⌘K)" aria-label="Search" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
-          {([["pages", LayoutTemplate, "Screens"], ["flows", Workflow, "Flows"]] as const).map(([at, Icon, label]) => (
-            <button type="button" key={at} className={`icon-btn${mode === "screens" && sideTab === at ? " on" : ""}${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} onClick={() => { setMode("screens"); setSideTab(at); toggleSidebar(true); }}><Icon size={17} strokeWidth={1.75} /></button>
-          ))}
-          <button type="button" className={`icon-btn${mode === "architecture" ? " on" : ""}`} title="Architecture" aria-label="Architecture" onClick={() => setMode(mode === "architecture" ? "screens" : "architecture")}><Network size={17} strokeWidth={1.75} /></button>
-          <button type="button" className={`icon-btn${mode === "screens" && sideTab === "library" ? " on" : ""}`} title="Components" aria-label="Components" onClick={() => { setMode("screens"); setSideTab("library"); toggleSidebar(true); }}><Component size={17} strokeWidth={1.75} /></button>
-          <button type="button" className={`icon-btn${panelOpen && panel === "agent" ? " on" : ""}`} title="Agents" aria-label="Agents" onClick={() => { setPanel("agent"); togglePanel(true); }}><Sparkles size={17} strokeWidth={1.75} /></button>
-          <span className="grow" />
-          <button type="button" className="icon-btn" title="Show the sidebar" aria-label="Show the sidebar" onClick={() => toggleSidebar(true)}><PanelLeft size={17} strokeWidth={1.75} /></button>
-          <button type="button" className={`icon-btn${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} onClick={() => togglePanel(!panelOpen)}><PanelRight size={17} strokeWidth={1.75} /></button>
-        </nav>
-      )}
+      {/* Always at the left edge, as in Figma: one icon per place in the design; the sidebar beside it lists that place,
+          and choosing the place that's open folds the list away. */}
+      <nav className="side-rail" aria-label="Go to">
+        <button type="button" className="icon-btn" title="Back to all designs" aria-label="Back to all designs" onClick={() => void window.buni.close()}><ArrowLeft size={17} strokeWidth={1.75} /></button>
+        <span className="rail-gap" />
+        <button type="button" className="icon-btn" title="Search (⌘K)" aria-label="Search" onClick={() => setFinding(true)}><Search size={17} strokeWidth={1.75} /></button>
+        {([["pages", LayoutTemplate, `Screens · ${pages.length}`], ["flows", Workflow, `Flows · ${flows.length}`], ["library", Component, `Components · ${Object.keys(doc.shared).length}`]] as const).map(([at, Icon, label]) => {
+          const on = mode === "screens" && sideTab === at;
+          return (
+            <button type="button" key={at} className={`icon-btn${on && sidebarOpen ? " on" : ""}${spots.length && at === "pages" ? " busy" : ""}`} title={label} aria-label={label} aria-pressed={on && sidebarOpen}
+              onClick={() => { if (on && sidebarOpen) return toggleSidebar(false); setMode("screens"); setSideTab(at); setJourney(undefined); toggleSidebar(true); }}>
+              <Icon size={17} strokeWidth={1.75} />
+            </button>
+          );
+        })}
+        <button type="button" className={`icon-btn${mode === "architecture" ? " on" : ""}`} title="Architecture" aria-label="Architecture" onClick={() => setMode(mode === "architecture" ? "screens" : "architecture")}><Network size={17} strokeWidth={1.75} /></button>
+        <button type="button" className={`icon-btn${panelOpen && panel === "agent" ? " on" : ""}${connected.length ? " busy" : ""}`} title={presence || "Agents"} aria-label="Agents" onClick={() => { if (panelOpen && panel === "agent") return togglePanel(false); setPanel("agent"); togglePanel(true); }}><Sparkles size={17} strokeWidth={1.75} /></button>
+        <span className="grow" />
+        <button type="button" className={`icon-btn${panelOpen ? " on" : ""}`} title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}><PanelRight size={17} strokeWidth={1.75} /></button>
+      </nav>
       {sidebarOpen && (
       <aside className="sidebar">
         {/* Everything that moves you around lives here, as in a Mac app's sidebar: the design, then where in it. */}
         <div className="side-head">
-          <div className="side-head-row">
-            <button type="button" className="icon-btn" title="Back to all designs" aria-label="Back to all designs" onClick={() => void window.buni.close()}><ArrowLeft size={16} strokeWidth={1.75} /></button>
-            <span className="grow" />
-            <button type="button" className="icon-btn" title="Hide the sidebar (⌘\\ hides both)" aria-label="Hide the sidebar" onClick={() => toggleSidebar(false)}><PanelLeft size={16} strokeWidth={1.75} /></button>
-            <button type="button" className="icon-btn" title={panelOpen ? "Hide the inspector (⌘\\ hides both)" : "Show the inspector"} aria-label={panelOpen ? "Hide the inspector" : "Show the inspector"} aria-pressed={panelOpen} onClick={() => togglePanel(!panelOpen)}>
-              <PanelRight size={16} strokeWidth={1.75} />
-            </button>
-          </div>
           <div className="side-head-file">
             <ProjectSwitch path={snap.path} name={fileName.replace(/\.buni$/, "")} detail={snap.path.split("/").at(-2) ?? ""} />
             <Changes version={snap.view} onToast={setToast} />
           </div>
         </div>
-        <nav className="side-nav" aria-label="Go to">
-          <button type="button" className="row" onClick={() => setFinding(true)}><Search size={16} strokeWidth={1.75} /><span className="name">Search</span><span className="meta">⌘K</span></button>
-          <button type="button" className={`row${mode === "screens" && sideTab === "pages" && !shownJourney ? " active" : ""}`} aria-current={mode === "screens" && sideTab === "pages" ? "page" : undefined} onClick={() => { setMode("screens"); setSideTab("pages"); setJourney(undefined); }}><LayoutTemplate size={16} strokeWidth={1.75} /><span className="name">Screens</span><span className="meta">{pages.length || ""}</span></button>
-          <button type="button" className={`row${mode === "screens" && sideTab === "flows" ? " active" : ""}`} onClick={() => { setMode("screens"); setSideTab("flows"); }}><Workflow size={16} strokeWidth={1.75} /><span className="name">Flows</span><span className="meta">{flows.length || ""}</span></button>
-          <button type="button" className={`row${mode === "architecture" ? " active" : ""}`} aria-current={mode === "architecture" ? "page" : undefined} onClick={() => setMode("architecture")}><Network size={16} strokeWidth={1.75} /><span className="name">Architecture</span></button>
-          <button type="button" className={`row${mode === "screens" && sideTab === "library" ? " active" : ""}`} onClick={() => { setMode("screens"); setSideTab("library"); }}><Component size={16} strokeWidth={1.75} /><span className="name">Components</span><span className="meta">{Object.keys(doc.shared).length || ""}</span></button>
-          {/* Who's in the file and what they're doing; it opens the agent panel. */}
-          <button type="button" className={`row${panelOpen && panel === "agent" ? " active" : ""}`} title={presence || "Agents"} onClick={() => { setPanel("agent"); togglePanel(true); }}>
-            <Sparkles size={16} strokeWidth={1.75} /><span className="name">Agents</span>
-            <span className="side-presence">
-              {connected.map((name) => <span key={name} className="presence-dot" style={{ background: agentColor(name) }} title={`${name} · connected`}>{agentInitials(name)}</span>)}
-              {people.map((name) => <span key={`person:${name}`} className="presence-dot person" style={{ background: agentColor(name) }} title={`${name} · here`}>{agentInitials(name)}</span>)}
-              {!connected.length && !people.length && working.length > 0 && <span className="meta">{working.join(", ")}</span>}
-            </span>
-          </button>
-        </nav>
         {mode === "screens" && sideTab === "pages" && (
           <div className="side-tabs" role="tablist" aria-label="Outline">
             <button type="button" role="tab" aria-selected={outline === "pages"} className={outline === "pages" ? "on" : ""} onClick={() => setOutline("pages")}>Pages</button>

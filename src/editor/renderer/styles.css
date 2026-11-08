@@ -2364,3 +2364,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .app.editor .canvas-wrap::after { content: ""; position: absolute; left: var(--float-left); right: var(--float-right); bottom: 0; height: 44px; z-index: 2; pointer-events: none; background: var(--content); border-top: 1px solid var(--rule); }
 .app.editor .canvas-wrap .zoom, .app.editor .canvas-wrap .zoom:not(.canvas-tools), .app.editor .canvas-wrap .insert-bar { bottom: 4px; z-index: 3; padding: 0; border-radius: 0; background: none; box-shadow: none; }
 .app.editor .canvas-wrap .zoom button, .app.editor .canvas-wrap .insert-bar .add-btn, .app.editor .canvas-wrap .insert-bar .add-component { border-radius: var(--radius); }
+/* The rail, always there at the left edge (as Figma's), and the sidebar beside it listing the place it chose. */
+.app.editor { --float-left: 308px; }
+.app.editor.sidebar-collapsed { --float-left: 48px; }
+.app.editor .side-rail { left: 0; top: 0; bottom: 0; width: 48px; padding: 10px 0; gap: 2px; border-radius: 0; box-shadow: none; background: var(--sidebar); border-right: 1px solid var(--rule); }
+.app.editor .side-rail .icon-btn { width: 34px; height: 34px; border-radius: var(--radius); color: var(--ink-2); }
+.app.editor .side-rail .icon-btn.on { background: var(--chip); color: var(--ink); }
+.app.editor .side-rail .rail-gap { height: 8px; }
+.app.editor > .sidebar { left: 48px; }
+.app.editor .side-head { padding-top: 12px; }
+:root:not([data-host="web"]) .app.editor .side-rail { padding-top: 40px; -webkit-app-region: drag; }
+:root:not([data-host="web"]) .app.editor .side-rail button { -webkit-app-region: no-drag; }
+:root:not([data-host="web"]) .app.editor .side-head { padding-top: 40px; -webkit-app-region: drag; }
