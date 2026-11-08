@@ -2378,7 +2378,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 :root:not([data-host="web"]) .app.editor .side-head { padding-top: 40px; -webkit-app-region: drag; }
 /* Home, flat too: the sidebar meets the window's edge. Up top, the request that starts a design with an agent. */
 .app:not(.editor) { padding: 0; gap: 0; }
-.app:not(.editor) > .sidebar { border-radius: 0; box-shadow: none; border-right: 1px solid var(--rule); }
+.app:not(.editor) > .sidebar { margin: 0; border-radius: 0; box-shadow: none; border-right: 1px solid var(--rule); }
 .describe { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 28px; }
 .describe label { font-size: 20px; font-weight: 600; color: var(--ink); }
 .describe-box { display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 12px 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--content); }
@@ -2433,3 +2433,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .follow-pill.on { color: var(--ink); }
 .follow-dot { width: 7px; height: 7px; border-radius: 4px; }
 .follow-pill:not(.on) .follow-dot { opacity: 0.4; }
+/* The sidebar foot's menus (share, more) open upward, across the sidebar: below its foot is the window's edge. */
+.app.editor .side-foot { position: relative; }
+.app.editor .side-foot .export-anchor { position: static; }
+.app.editor .side-foot .export-menu { top: auto; bottom: calc(100% + 6px); left: 8px; right: 8px; width: auto; }
+/* The commit menu's two buttons fit side by side. */
+.app.editor .changes-form .btn, .app.editor .changes-form button { white-space: nowrap; padding: 0 10px; }
