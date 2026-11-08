@@ -1,8 +1,7 @@
 // The Agents panel with a terminal: Claude Code, Codex or a shell running beside the design, already connected to it
 // through buni's MCP tools. Sessions live in buni open, so switching panels or reloading reattaches to them.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Terminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
+import type { Terminal } from "@xterm/xterm";
 import { X } from "lucide-react";
 import type { Program, TermInfo } from "../terminals.ts";
 import { agentColor } from "./Connect.tsx";
@@ -48,7 +47,20 @@ function TermView({ socket, onEnded, typeRef }: { socket: string; onEnded: () =>
   useEffect(() => {
     const el = host.current;
     if (!el) return;
-    const term = new Terminal({
+    // The terminal's code loads with the first terminal: a hosted buni, which has none, never fetches it.
+    let gone = false;
+    let stop = () => {};
+    void Promise.all([import("@xterm/xterm"), import("@xterm/addon-fit")]).then(([{ Terminal }, { FitAddon }]) => {
+      if (gone) return;
+      stop = open(el, Terminal, FitAddon);
+    });
+    return () => {
+      gone = true;
+      stop();
+    };
+  }, [socket]);
+  function open(el: HTMLDivElement, Term: typeof Terminal, Fit: typeof import("@xterm/addon-fit").FitAddon): () => void {
+    const term = new Term({
       fontFamily: '"JetBrainsMono Nerd Font Mono", "JetBrainsMono NFM", "JetBrains Mono", ui-monospace, Menlo, monospace',
       fontSize: 12.5,
       lineHeight: 1.2,
@@ -56,7 +68,7 @@ function TermView({ socket, onEnded, typeRef }: { socket: string; onEnded: () =>
       scrollback: 5000,
       theme: themeFromPage(),
     });
-    const fit = new FitAddon();
+    const fit = new Fit();
     term.loadAddon(fit);
     term.open(el);
     const ws = new WebSocket(socket);
@@ -95,7 +107,7 @@ function TermView({ socket, onEnded, typeRef }: { socket: string; onEnded: () =>
       ws.close();
       term.dispose();
     };
-  }, [socket]);
+  }
   return <div className="term-host" ref={host} />;
 }
 
