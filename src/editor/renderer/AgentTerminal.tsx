@@ -158,14 +158,33 @@ export function AgentsPanel({ activity, onWiden, page, selection, askNonce }: { 
       }
       const program = (["claude", "codex", "shell"] as const).find((p) => p === wanted);
       const ask = pendingAsk(true);
+      setSessions(list);
+      setEnded(new Set(list.filter((s) => !s.alive && !s.saved).map((s) => s.id)));
       if (ask && !list.some((s) => s.alive)) return start("claude", ask);
       if (program && !list.some((s) => s.alive)) return start(program);
-      setSessions(list);
-      setEnded(new Set(list.filter((s) => !s.alive).map((s) => s.id)));
-      setShown((s) => s ?? list[0]?.id);
+      // The latest agent, so a design opened again carries on with the one it was talking to.
+      setShown((s) => s ?? list.at(-1)?.id);
     });
   }, [api]);
+  // Each start of a session's terminal, so its screen reconnects when the session is resumed under the same id.
+  const [runs, setRuns] = useState(0);
+  const resuming = useRef(new Set<string>());
+  const current = sessions.find((s) => s.id === shown);
+  // A remembered agent comes back when it's shown: Claude Code or Codex resumed in its conversation.
+  useEffect(() => {
+    if (current?.saved) resume(current);
+  }, [current?.id, current?.saved]);
   if (!api) return <>{activity}</>;
+  function resume({ id, program }: TermInfo) {
+    if (!api || resuming.current.has(id)) return;
+    resuming.current.add(id);
+    setError(undefined);
+    void api.start(program, 100, 30, undefined, id).then((s) => {
+      setSessions((list) => list.map((x) => (x.id === id ? s : x)));
+      setEnded((e) => new Set([...e].filter((x) => x !== id)));
+      setRuns((n) => n + 1);
+    }, (e: unknown) => setError(e instanceof Error ? e.message : String(e))).finally(() => resuming.current.delete(id));
+  }
   function start(program: Program, ask?: string) {
     if (!api) return;
     setError(undefined);
@@ -183,7 +202,6 @@ export function AgentsPanel({ activity, onWiden, page, selection, askNonce }: { 
       });
     });
   };
-  const current = sessions.find((s) => s.id === shown);
   const live = current && !ended.has(current.id) && current.program !== "shell" ? current : undefined;
   /** The selection goes to the running agent's prompt, or into the composer when none runs. */
   const ask = () => {
@@ -232,10 +250,12 @@ export function AgentsPanel({ activity, onWiden, page, selection, askNonce }: { 
           {ended.has(current.id) && (
             <div className="term-ended">
               <span>{NAMES[current.program]} ended.</span>
-              <button type="button" className="btn small" onClick={() => { close(current.id); start(current.program); }}>Start again</button>
+              {current.program === "shell"
+                ? <button type="button" className="btn small" onClick={() => { close(current.id); start(current.program); }}>Start again</button>
+                : <button type="button" className="btn small" onClick={() => resume(current)}>Resume</button>}
             </div>
           )}
-          <TermView key={current.id} socket={api.socket(current.id)} typeRef={typeInto} onEnded={() => setEnded((e) => new Set(e).add(current.id))} />
+          {current.saved ? <div className="term-ended"><span>Resuming {NAMES[current.program]}…</span></div> : <TermView key={`${current.id}:${runs}`} socket={api.socket(current.id)} typeRef={typeInto} onEnded={() => setEnded((e) => new Set(e).add(current.id))} />}
         </>
       ) : (
         <Composer page={page} text={draft} setText={setDraft} onStart={start} onActivity={() => setShown("activity")} />

@@ -323,8 +323,8 @@ const api: BuniApi = {
   ...(accounts || location.protocol !== "http:" ? {} : {
     terminals: {
       list: () => fetch(at("/terms")).then((r) => r.json()).then((j: { sessions: TermInfo[] }) => j.sessions),
-      start: (program: Program, cols: number, rows: number, ask?: string) =>
-        fetch(at("/terms"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ program, cols, rows, ask }) })
+      start: (program: Program, cols: number, rows: number, ask?: string, resume?: string) =>
+        fetch(at("/terms"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ program, cols, rows, ask, resume }) })
           .then((r) => r.json())
           .then((j: { session?: TermInfo; error?: string }) => {
             if (!j.session) throw new Error(j.error ?? "The terminal didn't start");

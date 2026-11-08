@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { cp, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BRIEF, command } from "./terminals.ts";
+import { BRIEF, command, Terminals } from "./terminals.ts";
 
 test("agents start already pointed at the design's MCP endpoint", () => {
   const url = "http://localhost:4000/mcp?file=%2Fdesigns%2Fshop%2Fshop.buni";
@@ -14,6 +14,24 @@ test("agents start already pointed at the design's MCP endpoint", () => {
   // The person's first message rides along as one word, whatever it says.
   const asked = Bun.spawnSync(["sh", "-c", `printf '%s\\n' ${command("claude", url, "a checkout that's calm; no \"dark patterns\" $(rm -rf /)")!.replace(/^claude /, "")}`]).stdout.toString().split("\n");
   expect(asked[4]).toBe(`a checkout that's calm; no "dark patterns" $(rm -rf /)`);
+  // Claude Code is told its conversation's id, so buni can resume it; resuming falls back to starting it under that id.
+  const id = "8f0c2a4e-1b2d-4c3e-9f00-112233445566";
+  expect(command("claude", url, undefined, { id })).toEndWith(` --session-id '${id}'`);
+  expect(command("claude", url, undefined, { id, resume: true })).toMatch(new RegExp(` --resume '${id}' \\|\\| claude .* --session-id '${id}'$`));
+  expect(command("codex", url, undefined, { id, resume: true })).toStartWith("codex resume --last -c ");
+});
+
+test("a design's agents are remembered past buni, and forgotten when closed", async () => {
+  const store = join(await mkdtemp(join(tmpdir(), "buni-terms-")), "terminals.json");
+  const real = (f: string) => `/work${f}`;
+  await Bun.write(store, JSON.stringify({ "/work/designs/a.buni": [{ id: "c1", program: "claude" }, { id: "x", program: "rm -rf" }], "/work/designs/b.buni": [{ id: "d1", program: "codex" }] }));
+  const terms = new Terminals(() => tmpdir(), () => "http://localhost/mcp", real, store);
+  expect(terms.list("/designs/a.buni")).toEqual([{ id: "c1", program: "claude", alive: false, saved: true }]);
+  // Another design's session is not this one's to resume, and a shell is never remembered.
+  expect(terms.start("/designs/a.buni", "claude", 80, 24, undefined, "d1")).toBeUndefined();
+  terms.close("/designs/a.buni", "c1");
+  expect(terms.list("/designs/a.buni")).toEqual([]);
+  expect(terms.list("/designs/b.buni").map((s) => s.id)).toEqual(["d1"]);
 });
 
 test("the local editor runs a terminal for its own page only, and keeps it across reconnects", async () => {

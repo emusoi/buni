@@ -67,8 +67,9 @@ export interface BuniApi {
   /** Coding agents in terminals beside the design; only where buni runs on this Mac (buni open), never hosted. */
   terminals?: {
     list(): Promise<TermInfo[]>;
-    /** `ask`: the first message the agent gets, as it starts. */
-    start(program: Program, cols: number, rows: number, ask?: string): Promise<TermInfo>;
+    /** `ask`: the first message the agent gets, as it starts. `resume`: an ended or remembered agent's id, started
+     * again where its conversation was. */
+    start(program: Program, cols: number, rows: number, ask?: string, resume?: string): Promise<TermInfo>;
     close(id: string): Promise<void>;
     /** The WebSocket address a session's screen and keys go through. */
     socket(id: string): string;

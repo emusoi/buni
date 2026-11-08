@@ -1114,6 +1114,8 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
       return top.success ? top.stdout.toString().trim() : dir;
     },
     (file) => `http://localhost:${server.port}/mcp?file=${encodeURIComponent(file)}`,
+    (file) => join(root, file.slice("/designs/".length)),
+    join(process.env.BUNI_HOME ?? join(homedir(), ".buni"), "terminals.json"),
   );
   async function terminalRoute(req: Request, url: URL): Promise<Response> {
     const file = termFile(req, req.method !== "GET");
@@ -1129,7 +1131,9 @@ export async function serveEditor(file: string, port = 0): Promise<{ url: string
     if (!program) return Response.json({ error: "claude, codex or shell" }, { status: 400 });
     const num = (v: unknown, d: number) => (typeof v === "number" && v > 0 && v < 1000 ? Math.floor(v) : d);
     const ask = typeof body.ask === "string" ? body.ask.slice(0, 4000) : undefined;
-    return Response.json({ session: terminals.start(file, program as Program, num(body.cols, 100), num(body.rows, 30), ask) });
+    const resume = typeof body.resume === "string" ? body.resume : undefined;
+    const session = terminals.start(file, program as Program, num(body.cols, 100), num(body.rows, 30), ask, resume);
+    return session ? Response.json({ session }) : Response.json({ error: "No such session to resume" }, { status: 404 });
   }
   const server: Bun.Server<Feed | TermSocket> = Bun.serve<Feed | TermSocket>({
     port, hostname: "127.0.0.1", idleTimeout: 0, maxRequestBodySize: 16 * 1024 * 1024,
