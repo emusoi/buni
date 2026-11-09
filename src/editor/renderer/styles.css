@@ -2481,3 +2481,14 @@ details.fold[open] > summary { margin-bottom: 8px; }
 /* A narrow canvas (a wide panel beside it): the strip drops its words first, then the right-hand tools, so nothing overlaps. */
 .app.editor:is(.canvas-narrow, .canvas-tight) .insert-bar .insert-where, .app.editor:is(.canvas-narrow, .canvas-tight) .insert-bar .add-component { display: none; }
 .app.editor.canvas-tight .zoom.canvas-tools { display: none; }
+
+/* Activity as turns: who, where, what, when; a row shows it on the canvas. */
+.timeline { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 12px; }
+.timeline-head { display: flex; align-items: center; gap: 4px; padding: 0 0 8px; }
+.timeline-head .grow { flex: 1; }
+.turn-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border: 0; border-radius: var(--radius); background: none; text-align: left; cursor: pointer; }
+.turn-row:hover:not(:disabled) { background: var(--hover); }
+.turn-row:disabled { cursor: default; }
+.turn-row .turn-dot { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 4px; }
+.turn-row .turn-what { min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
+.turn-row .turn-what .hint { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

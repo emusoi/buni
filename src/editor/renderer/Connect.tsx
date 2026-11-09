@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { turnsOf } from "./TurnCard.tsx";
 import { ChevronDown, ChevronRight, Copy, MessageSquare, Pause, Play } from "lucide-react";
 import type { Edit } from "../api.ts";
 import type { AgentState } from "buni/tools/protocol.ts";
@@ -65,6 +66,7 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [
   return (
     <div className="connect-agent">
       <Tasks doc={doc} page={page} now={now} onShowPage={(p) => onShowPage?.(p)} onToast={onToast} />
+      <Timeline doc={doc} edits={edits} now={now} onShow={onShow} />
       {names.length > 0 && (
         <section className="agent-cards">
           {names.map((name) => {
@@ -146,5 +148,42 @@ export function ConnectAgent({ doc, mcpUrl, connected, recent, edits, agents = [
         </>}
       </section>
     </div>
+  );
+}
+
+/** What happened here, as turns (each author's run of edits), newest first, narrowed to one author with a chip. */
+function Timeline({ doc, edits, now, onShow }: { doc: Doc; edits: readonly Edit[]; now: number; onShow: (node: Id) => void }) {
+  const [who, setWho] = useState<string>();
+  const [all, setAll] = useState(false);
+  const turns = turnsOf(edits);
+  if (!turns.length) return null;
+  const authors = [...new Set(turns.map((t) => t.author))];
+  const shown = turns.filter((t) => !who || t.author === who);
+  return (
+    <section className="timeline" aria-label="Activity">
+      <div className="timeline-head">
+        <b>Activity</b>
+        <span className="grow" />
+        {authors.length > 1 && [undefined, ...authors].map((a) => (
+          <button key={a ?? "all"} type="button" className={`tag-chip${who === a ? " on" : ""}`} aria-pressed={who === a} onClick={() => setWho(a)}>{a ?? "All"}</button>
+        ))}
+      </div>
+      {(all ? shown : shown.slice(0, 6)).map((t) => {
+        const node = t.edits.flatMap((e) => e.nodes).find((n) => doc.nodes[n]);
+        const page = node ? doc.pages[pageOfNode(doc, node) ?? ""]?.name : undefined;
+        const labels = [...new Set(t.edits.map((e) => e.label))];
+        const at = t.edits.at(-1)?.at ?? "";
+        return (
+          <button key={`${t.author}${t.edits[0]?.at}`} type="button" className="turn-row" disabled={!node} onClick={() => node && onShow(node)} title={node ? "Show it on the canvas" : undefined}>
+            <span className="turn-dot" style={{ background: agentColor(t.author) }} />
+            <span className="turn-what">
+              <b>{t.author}{page ? ` · ${page}` : ""}</b>
+              <span className="hint">{labels.slice(-2).join(" · ")}{labels.length > 2 ? ` · ${labels.length - 2} more` : ""} · {ago(at, now)}</span>
+            </span>
+          </button>
+        );
+      })}
+      {shown.length > 6 && <button type="button" className="link-btn" onClick={() => setAll((a) => !a)}>{all ? "Fewer" : `All ${shown.length} turns`}</button>}
+    </section>
   );
 }

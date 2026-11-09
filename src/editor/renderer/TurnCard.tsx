@@ -44,3 +44,14 @@ export function TurnCard({ doc, turn, color, onShow, onUndo, onKeep }: {
     </div>
   );
 }
+
+/** The design's history as turns: runs of edits by one author, newest first. */
+export function turnsOf(edits: readonly Edit[]): Turn[] {
+  const out: Turn[] = [];
+  for (const e of edits) {
+    const last = out.at(-1);
+    if (last?.author === e.author) last.edits.push(e);
+    else out.push({ author: e.author, edits: [e] });
+  }
+  return out.reverse();
+}

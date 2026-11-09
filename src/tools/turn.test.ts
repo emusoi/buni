@@ -3,7 +3,7 @@ import { copyFile, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Workspace } from "./workspace.ts";
-import { currentTurn } from "../editor/renderer/TurnCard.tsx";
+import { currentTurn, turnsOf } from "../editor/renderer/TurnCard.tsx";
 
 test("an agent's turn is what it did since the person last acted, and undoing it keeps everyone else's edits", async () => {
   const file = join(await mkdtemp(join(tmpdir(), "buni-turn-")), "portal.buni");
@@ -26,4 +26,10 @@ test("an agent's turn is what it did since the person last acted, and undoing it
   expect(ws.view().pages[a!]?.tags).toEqual(["mine"]);
   expect(ws.view().pages[b!]?.tags).toEqual(["theirs"]);
   expect((await ws.undoTurn("claude", new Date().toISOString())).ok).toBe(false);
+});
+
+test("history reads as turns: each author's run of edits, newest first", () => {
+  const e = (author: string, label: string) => ({ author, label, nodes: [], at: label });
+  const turns = turnsOf([e("you", "a"), e("claude", "b"), e("claude", "c"), e("codex", "d"), e("claude", "e")]);
+  expect(turns.map((t) => `${t.author}:${t.edits.map((x) => x.label).join("")}`)).toEqual(["claude:e", "codex:d", "claude:bc", "you:a"]);
 });
