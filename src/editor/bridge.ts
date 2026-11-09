@@ -248,6 +248,7 @@ const api: BuniApi = {
   edit: (tool, args) => call("edit", tool, args),
   undo: () => call("undo"),
   redo: () => call("redo"),
+  undoTurn: (author, since) => call("undoTurn", author, since),
   onUndoKey: (fn) => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;

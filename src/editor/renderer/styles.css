@@ -2450,3 +2450,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .page-tags { display: flex; flex-direction: column; gap: 8px; }
 .page-tags .tag-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .page-tags input { height: 22px; width: 90px; padding: 0 8px; border: 1px dashed var(--rule); border-radius: 999px; background: none; font: 12px inherit; color: var(--ink); }
+
+/* An agent's turn, summed up at the foot of the canvas: Show, Undo turn, Keep. */
+.turn-card { position: absolute; z-index: 7; bottom: 60px; left: calc(var(--float-left) + 16px); right: calc(var(--float-right) + 16px); max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 12px; background: var(--content); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+.turn-card .turn-dot { flex: none; width: 8px; height: 8px; border-radius: 4px; }
+.turn-card .turn-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
+.turn-card .turn-what .hint { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.turn-card .btn.small { flex: none; height: 28px; padding: 0 10px; font-size: 12px; white-space: nowrap; }

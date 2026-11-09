@@ -136,6 +136,8 @@ export interface BuniApi {
   exportPage(page: string, as: PageExport): Promise<{ path: string } | undefined>;
   undo(): Promise<EditResult>;
   redo(): Promise<EditResult>;
+  /** Takes back an agent's turn: every edit `author` made from `since` (ISO) on, as one edit; others' stay. */
+  undoTurn(author: string, since: string): Promise<EditResult>;
   /** ⌘Z or ⌘⇧Z from the Edit menu; the window decides between text and design undo. */
   onUndoKey(fn: (which: "undo" | "redo") => void): () => void;
   /** Design skills every agent can read, bundled and the person's own; bodies left out. */

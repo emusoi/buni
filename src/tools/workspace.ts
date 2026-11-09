@@ -21,6 +21,8 @@ interface Undoable {
   /** Who made it and when, in edit order, so one agent's request can be taken back alone. */
   author?: string;
   seq?: number;
+  /** When it was made (ISO 8601), as the edit's note says. */
+  at?: string;
 }
 
 /** One edit as people watching see it: who made it, what it was, which layers it touched, when. */
@@ -385,13 +387,14 @@ export class Workspace {
       const undo = invert(this.view(), out.ops);
       const r = await this.write(author, out.label, out.ops);
       if (!r.ok) return r;
-      this.undos.push({ label: out.label, undo, redo: out.ops, author, seq: ++this.seq });
+      const at = new Date().toISOString();
+      this.undos.push({ label: out.label, undo, redo: out.ops, author, seq: ++this.seq, at });
       // Oldest edits stop being undoable past 500; each holds every node it wrote, and agents make thousands
       if (this.undos.length > 500) this.undos.shift();
       this.redos = [];
       const nodes = nodesOf(out.ops);
       if (nodes.length) this.touched.set(author, nodes);
-      await this.note({ author, label: out.label, nodes, at: new Date().toISOString() });
+      await this.note({ author, label: out.label, nodes, at });
       this.changed();
       // On a terminal screen, what the edit did that a terminal can't draw, for whoever made it to fix.
       const grid = gridProblems(this.view(), nodes);
@@ -446,6 +449,13 @@ export class Workspace {
       this.changed();
       return { ok: true, reply: `${label}: ${mine.length} edit${mine.length === 1 ? "" : "s"}.` };
     });
+  }
+
+  /** Takes back what `author` did from `since` (an edit's ISO time) on: an agent's turn, as one edit. */
+  undoTurn(author: string, since: string): Promise<CallResult> {
+    const first = this.undos.find((u) => u.author === author && (u.at ?? "") >= since);
+    if (!first) return Promise.resolve({ ok: false, reply: `Nothing of ${author}'s to undo since then.` });
+    return this.undoSince(author, (first.seq ?? 1) - 1, `Undo ${author}'s turn`);
   }
 
   /** Takes back the last edit, whoever made it. */

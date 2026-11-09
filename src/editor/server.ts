@@ -633,6 +633,8 @@ export async function createEditor(options: EditorOptions): Promise<Editor> {
     fileText: async (file) => serializeDoc((await need(file)).view()),
     undo: async (file) => (await need(file)).undo(),
     redo: async (file) => (await need(file)).redo(),
+    /** An agent's turn taken back: everything it did from `since` on, others' edits kept. */
+    undoTurn: async (file, author, since) => (await need(file)).undoTurn(str(author, "undoTurn"), str(since, "undoTurn")),
     /** Tablets on the cable, or why there are none. */
     tablets: async () => options.tablets?.list() ?? { error: "Tablets connect to buni open on your Mac, with a USB cable." },
     /** Opens this design on a tablet on the cable, in its Chrome. */

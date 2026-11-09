@@ -26,6 +26,7 @@ import { useDismiss } from "./useDismiss.ts";
 import { agentColor, agentInitials, ConnectAgent } from "./Connect.tsx";
 import { Palette, type Action } from "./Palette.tsx";
 import { pageOfNode, type Hit } from "./search.ts";
+import { currentTurn, TurnCard, type Turn } from "./TurnCard.tsx";
 import { Journey } from "./Journey.tsx";
 import { TakesSheet } from "./TakesSheet.tsx";
 import { OwnersContext } from "./owners.ts";
@@ -512,6 +513,10 @@ export function App({ snap }: { snap: Snapshot }) {
   useDismiss(more, useCallback(() => setMore(false), []), moreRef);
   /** Follow the agents: the canvas goes to each of their edits as it lands. On until you turn it off. */
   const [following, setFollowing] = useState(true);
+  /** Each agent's turn the person kept, by the time of its last edit then: the card shows what came after. */
+  const [kept, setKept] = useState<Record<string, string>>({});
+  const turn = currentTurn(edits, kept);
+  const endTurn = (t: Turn) => setKept((k) => ({ ...k, [t.author]: t.edits.at(-1)?.at ?? "" }));
   // An agent's edit on a page you aren't looking at: said once, with a way there.
   const [agentNote, setAgentNote] = useState<{ author: string; label: string; page: Id; node: Id | undefined }>();
   const lastNoted = useRef(edits.at(-1)?.at ?? "");
@@ -873,6 +878,12 @@ export function App({ snap }: { snap: Snapshot }) {
         </button>
       )}
       {mode === "architecture" && <ArchitectureMode doc={doc} name={fileName} onToast={setToast} />}
+      {turn && mode === "screens" && (
+        <TurnCard doc={doc} turn={turn} color={agentColor(turn.author)}
+          onShow={(where, node) => { openPage(where, node); setReveal({ page: where, at: Date.now() }); }}
+          onKeep={() => endTurn(turn)}
+          onUndo={() => void window.buni.undoTurn(turn.author, turn.edits[0]?.at ?? "").then((r) => { if (r.ok) endTurn(turn); setToast(r.reply); })} />
+      )}
       {/* Always at the left edge, as in Figma: one icon per place in the design; the sidebar beside it lists that place,
           and choosing the place that's open folds the list away. */}
       <nav className="side-rail" aria-label="Go to">
