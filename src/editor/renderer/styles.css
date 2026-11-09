@@ -2477,3 +2477,7 @@ details.fold[open] > summary { margin-bottom: 8px; }
 .state-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .state-chip { height: 26px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 13px; background: none; font-size: 12px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .state-chip.on { background: var(--ink); border-color: var(--ink); color: var(--content, #fff); font-weight: 600; }
+.layer-head .ask-layer { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; font-size: 12px; margin-left: auto; white-space: nowrap; }
+/* A narrow canvas (a wide panel beside it): the strip drops its words first, then the right-hand tools, so nothing overlaps. */
+.app.editor:is(.canvas-narrow, .canvas-tight) .insert-bar .insert-where, .app.editor:is(.canvas-narrow, .canvas-tight) .insert-bar .add-component { display: none; }
+.app.editor.canvas-tight .zoom.canvas-tools { display: none; }

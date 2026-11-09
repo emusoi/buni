@@ -1,6 +1,6 @@
 import { Sources } from "./Sources.tsx";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Square, Trash2, Type, type LucideIcon } from "lucide-react";
+import { Code2, TextCursorInput, AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowRight, ChevronDown, ChevronRight, Component, Heading, Image, LayoutGrid, MousePointerClick, Plus, Sparkles, Square, Trash2, Type, type LucideIcon } from "lucide-react";
 import { EASINGS, ENTRANCES, isUseLink, optionsOf, pageVersionsOf, pageName, pagesInOrder, type Transition, MOTION_TRIGGERS, RESPONSES, entersOn, pickVariant, setOf, variantProperties, childrenOf, type Doc, type Motion, type MotionTrigger, type Id, type InstanceNode, type Node, type Page, type SharedSection, type TerminalScreen } from "buni/format/doc.ts";
 import type { EditResult, EditTool } from "../api.ts";
 import { PageSummary } from "./PageSummary.tsx";
@@ -858,7 +858,9 @@ export const OpenFile = createContext("");
 /** How often other designs of the project place this file's components, by component: they change with it too. */
 export const UsedElsewhere = createContext<Readonly<Record<Id, number>>>({});
 
-export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onOpenTakes, onWiden, viewWidth, onViewWidth, onCompare, dir }: {
+export function Inspector({ doc, ownTokens, node, also = [], root, preview, page, onJump, onDeleted, onSelect, onOpenComponent, onOpenElsewhere, onOpenTakes, onWiden, viewWidth, onViewWidth, onCompare, dir, onAsk }: {
+  /** Names the selected layer to the agent (⌘L); only where agents run beside the design. */
+  onAsk?: (() => void) | undefined;
   doc: Doc;
   /** This file's own tokens, when some come from an imported file. */
   ownTokens?: Doc["tokens"] | undefined;
@@ -979,6 +981,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
           <b>{node.name}</b>
           <span>{node.kind === "text" ? "Text" : node.kind === "frame" ? "Frame" : node.kind === "instance" ? "Component use" : node.kind === "svg" ? "SVG" : "Image"}{node.tag && TAG_MATTERS.has(node.tag) ? ` · ${node.tag}` : ""}{parent ? ` · in ${readName(parent)}` : ""}</span>
         </div>
+        {onAsk && <button type="button" className="btn small ask-layer" title="Name this layer to the agent, then say what to do (⌘L)" onClick={onAsk}><Sparkles size={12} /> Ask agent</button>}
       </div>
       <div className="mode-tabs" role="tablist" aria-label="Edit as">
         {(["design", "code"] as const).map((m) => (
