@@ -1,19 +1,21 @@
 import { Fragment, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Page } from "buni/format/doc.ts";
-import { groupPages, pageWindow } from "./sidebar.ts";
+import { groupPages, pageWindow, type FlowGroup } from "./sidebar.ts";
 
 /** Keep the long page list out of layout and accessibility updates while the canvas moves. */
 export function PageList(props: {
   pages: readonly Page[];
+  /** Flows to group the pages under, in walking order. */
+  flows?: readonly FlowGroup[];
   folded: ReadonlySet<string>;
   onFold: (key: string) => void;
   renderPage: (page: Page, indent: boolean) => ReactNode;
 }) {
   type Row = { kind: "page"; page: Page; indent: boolean } | { kind: "group"; key: string; name: string; count: number };
-  const rows = useMemo(() => groupPages(props.pages).flatMap<Row>((item) => item.kind === "page"
+  const rows = useMemo(() => groupPages(props.pages, props.flows).flatMap<Row>((item) => item.kind === "page"
     ? [{ ...item, indent: false }]
-    : [{ kind: "group", key: item.key, name: item.name, count: item.pages.length }, ...props.folded.has(item.key) ? [] : item.pages.map((page) => ({ kind: "page" as const, page, indent: true }))]), [props.pages, props.folded]);
+    : [{ kind: "group", key: item.key, name: item.name, count: item.pages.length }, ...props.folded.has(item.key) ? [] : item.pages.map((page) => ({ kind: "page" as const, page, indent: true }))]), [props.pages, props.flows, props.folded]);
   const list = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 40 });
   const virtual = rows.length > 200;

@@ -8,7 +8,47 @@ export type PageItem = { kind: "page"; page: Page } | { kind: "group"; key: stri
  * Keeps the sidebar short when a file has dozens of pages. Graphics (pages without a route)
  * always gather under "Graphics", apart from the site; terminal screens gather under "Terminal".
  */
-export function groupPages(pages: readonly Page[]): PageItem[] {
+/** A flow as the sidebar lists it: its name and its pages in walking order. */
+export interface FlowGroup {
+  id: string;
+  name: string;
+  pages: readonly string[];
+}
+
+/**
+ * With flows, the list reads like the product: each flow's pages under its name, in the order a person walks them,
+ * then the pages in no flow, then graphics. A screen's states fold into it (its row says how many), and a take sits
+ * under its page. Without flows, pages group by route as before.
+ */
+export function groupPages(all: readonly Page[], flows: readonly FlowGroup[] = []): PageItem[] {
+  // A state shows under its screen (the inspector lists them), not as a row of its own, when the screen is listed.
+  const screens = new Set(all.filter((p) => p.state === undefined && p.route !== undefined).map((p) => p.route));
+  const pages = all.filter((p) => p.state === undefined || !screens.has(p.route));
+  if (!flows.length) return byRoute(pages);
+  const takes = new Map<string, Page[]>();
+  for (const p of pages) if (p.option && pages.some((q) => q.id === p.option?.of)) takes.set(p.option.of, [...(takes.get(p.option.of) ?? []), p]);
+  const byId = new Map(pages.map((p) => [p.id, p]));
+  const placed = new Set<string>();
+  const out: PageItem[] = [];
+  for (const f of flows) {
+    const mine = f.pages.flatMap((id) => {
+      const p = byId.get(id);
+      if (!p || placed.has(id)) return [];
+      placed.add(id);
+      for (const t of takes.get(id) ?? []) placed.add(t.id);
+      return [p, ...(takes.get(id) ?? [])];
+    });
+    if (mine.length) out.push({ kind: "group", key: `flow:${f.id}`, name: f.name, pages: mine });
+  }
+  const rest = pages.filter((p) => !placed.has(p.id));
+  const site = rest.filter((p) => p.route !== undefined || (p.option && !p.terminal));
+  const loose = byRoute(site).flatMap((i) => (i.kind === "page" ? [i.page] : i.pages));
+  if (loose.length) out.push({ kind: "group", key: "no-flow", name: "Not in a flow", pages: loose });
+  out.push(...byRoute(rest.filter((p) => !site.includes(p))));
+  return out;
+}
+
+function byRoute(pages: readonly Page[]): PageItem[] {
   const GRAPHICS = "\0graphics";
   const TERMINAL = "\0terminal";
   const segment = (p: Page) => {

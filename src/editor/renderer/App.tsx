@@ -1,7 +1,7 @@
 import { ImportHtml } from "./ImportHtml.tsx";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { BookOpen, GitBranch, Ellipsis, FolderOpen, FolderTree, Layers as LayersIcon, PanelLeft, PanelRight, Network, LayoutTemplate, Search, Keyboard, Eye, EyeOff, Lock, Unlock, ArrowLeft, ChevronDown, ChevronLeft, Plus, ChevronRight, Component, FileText, Image, Library, PenTool, Play as PlayIcon, Sparkles, Square, Type, Workflow, X, type LucideIcon, Share, FilePlus, Undo2, Redo2 } from "lucide-react";
-import { childrenOf, optionsOf, pageLabel, pagesInOrder, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
+import { childrenOf, optionsOf, pageLabel, pagesInOrder, statesOf, walkFlow, withProject, type Doc, type Id, type Node } from "buni/format/doc.ts";
 import type { BuniApi, EditTool, HomeFile, PageExport, Snapshot } from "../api.ts";
 import { graphicOf } from "buni/tools/html.ts";
 import { Canvas, type AgentSpot, type Landing } from "./Canvas.tsx";
@@ -749,6 +749,8 @@ export function App({ snap }: { snap: Snapshot }) {
   const frame = activePage ? doc.nodes[doc.pages[activePage]?.frame ?? ""] : undefined;
   const fileName = snap.path.split("/").at(-1) ?? snap.path;
   const flows = Object.values(doc.flows).sort((a, b) => (a.index < b.index ? -1 : 1));
+  // The page list reads by flow: each flow's pages in the order a person walks them.
+  const flowGroups = useMemo(() => flows.map((f) => ({ id: f.id, name: f.name, pages: walkFlow(doc, f.start).pages })), [doc]);
   const shownJourney = journey && doc.flows[journey] ? journey : undefined;
 
   const compRoot = component ? doc.nodes[doc.shared[component]?.root ?? ""] : undefined;
@@ -819,7 +821,11 @@ export function App({ snap }: { snap: Snapshot }) {
                     const here = spots.find((sp) => sp.nodes[0] !== undefined && pageOfNode(doc, sp.nodes[0]) === p.id);
                     return here && <span className="page-agent" style={{ background: here.color }} title={`${here.agent} is working here`} />;
                   })()}
-                  <span className="meta">{p.option ? "take" : pageLabel(doc, p)}</span>
+                  {(() => {
+                    // A screen's states fold into its row: the inspector lists them.
+                    const n = p.option || p.state !== undefined ? 0 : statesOf(doc, p).length;
+                    return <span className="meta">{p.option ? "take" : n ? `${n} state${n === 1 ? "" : "s"}` : pageLabel(doc, p)}</span>;
+                  })()}
                   {/* Other takes on this page wait under it (explore_page); pick_option makes one live. The count never clips. */}
                   {(() => {
                     const n = p.option ? 0 : optionsOf(doc, p.id).length;
@@ -997,7 +1003,7 @@ export function App({ snap }: { snap: Snapshot }) {
                 </div>
               )}
               {(pageFilter.trim() || tagFilter.size > 0) && pages.filter(matchesPage).length === 0 && <p className="rail-empty">No page matches{pageFilter.trim() ? ` “${pageFilter.trim()}”` : ""}{tagFilter.size ? ` with #${[...tagFilter].join(" #")}` : ""}.</p>}
-              <PageList pages={pageFilter.trim() || tagFilter.size > 0 ? pages.filter(matchesPage) : pages} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
+              <PageList flows={flowGroups} pages={pageFilter.trim() || tagFilter.size > 0 ? pages.filter(matchesPage) : pages} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
                 const next = new Set(f);
                 if (!next.delete(key)) next.add(key);
                 return next;

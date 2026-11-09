@@ -1,7 +1,7 @@
 // The other versions of a thing, side by side in the Inspector: a component's variants (its group) and a screen's
 // states. Each opens with a click, and a new one is a copy to change from there.
 import { useState } from "react";
-import { Component, Layers, Plus } from "lucide-react";
+import { Component, Plus } from "lucide-react";
 import { statesOf, type Doc, type Id } from "buni/format/doc.ts";
 
 function AddNamed({ label, placeholder, onAdd }: { label: string; placeholder: string; onAdd: (name: string) => Promise<boolean> }) {
@@ -81,18 +81,21 @@ export function PageStates({ doc, page, onOpen, onError }: { doc: Doc; page: Id;
   return (
     <section className="variants" aria-label="States">
       <div className="variants-head"><b>States</b><span className="hint">{family.length > 1 ? `${family.length - 1} besides the screen` : "Error, empty, loading: each its own copy"}</span></div>
-      {family.map((s) => (
-        <button key={s.id} type="button" className={`variant-row${s.id === page ? " on" : ""}`} onClick={() => onOpen(s.id)}>
-          <Layers size={12} /> {s.state ?? "The screen"}
-        </button>
-      ))}
-      <AddNamed label="State" placeholder="e.g. Empty, Error, Loading" onAdd={async (state) => {
-        const r = await window.buni.edit("duplicate_page", { page: screen.id, state });
-        onError(r.ok ? undefined : r.reply);
-        const id = r.reply.match(/Created page (\S+)/)?.[1];
-        if (r.ok && id) onOpen(id);
-        return r.ok;
-      }} />
+      {/* The screen and its states as chips: one click shows each. */}
+      <div className="state-chips">
+        {family.map((s) => (
+          <button key={s.id} type="button" className={`state-chip${s.id === page ? " on" : ""}`} aria-pressed={s.id === page} onClick={() => onOpen(s.id)}>
+            {s.state ?? "The screen"}
+          </button>
+        ))}
+        <AddNamed label="State" placeholder="e.g. Empty, Error, Loading" onAdd={async (state) => {
+          const r = await window.buni.edit("duplicate_page", { page: screen.id, state });
+          onError(r.ok ? undefined : r.reply);
+          const id = r.reply.match(/Created page (\S+)/)?.[1];
+          if (r.ok && id) onOpen(id);
+          return r.ok;
+        }} />
+      </div>
     </section>
   );
 }

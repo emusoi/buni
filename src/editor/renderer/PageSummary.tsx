@@ -1,6 +1,6 @@
 // The open page, across the file: the flows it is in and the pages it links with. Every row opens what it names.
 import { useContext, useMemo, useState, type ReactNode } from "react";
-import { FileText, Monitor, Workflow, type LucideIcon } from "lucide-react";
+import { ArrowRight, FileText, Monitor, Workflow, type LucideIcon } from "lucide-react";
 import { pageLabel, type Doc, type Id } from "buni/format/doc.ts";
 import { pageSummary } from "./pageSummary.ts";
 import type { Hit } from "./search.ts";
@@ -48,12 +48,14 @@ function PageLook({ doc, frame }: { doc: Doc; frame: Id }) {
     </label>
   );
   if (!colors.length && !fonts.length) return null;
+  const name = (v: string | undefined, none: string) => v?.replace(/^var\(--(.*)\)$/, "$1") || none;
+  // One line until opened: what the page looks like is set once and rarely changed.
   return (
-    <section className="sum-group page-look">
-      <h3>Look</h3>
+    <details className="sum-group page-look fold">
+      <summary><b>Look</b><span className="fold-value">{name(style.background, "White")} · {name(style.fontFamily, "System font")}</span></summary>
       {colors.length > 0 && pick("Page background", "background", colors)}
       {fonts.length > 0 && pick("Page font", "fontFamily", fonts)}
-    </section>
+    </details>
   );
 }
 
@@ -61,6 +63,7 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
   const s = useMemo(() => pageSummary(doc, page), [doc, page]);
   const owners = useContext(OwnersContext);
   if (!s) return null;
+  const go = (p: { id: Id; name: string }) => onJump({ kind: "page", id: p.id, title: p.name, detail: "" });
   const tied = s.flows.length || s.out.length || s.in.length || s.away.length;
   return (
     <div className="page-summary">
@@ -83,10 +86,29 @@ export function PageSummary({ doc, page, onJump, onOpenElsewhere }: { doc: Doc; 
       </div>
 
       <PageLook doc={doc} frame={s.page.frame} />
-      <Group title="In flows" rows={s.flows.map((f) => <Row key={f.id} icon={Workflow} title={f.name} onClick={() => onJump({ kind: "flow", id: f.id, title: f.name, detail: "" })} />)} />
-      <Group title="Goes to" rows={s.out.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => onJump({ kind: "page", id: p.id, title: p.name, detail: "" })} />)} />
-      <Group title="Goes to other files" rows={s.away.map((p) => <Row key={p.id} icon={FileText} title={p.name} detail={owners[p.id]?.replace(/^.*\//, "")} onClick={() => onOpenElsewhere?.(p.id)} />)} />
-      <Group title="Comes from" rows={s.in.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => onJump({ kind: "page", id: p.id, title: p.name, detail: "" })} />)} />
+      {(s.in.length > 0 || s.out.length > 0) && (
+        <section className="sum-group where">
+          <h3>Where it sits <span className="n">{s.in.length} in · {s.out.length + s.away.length} out</span></h3>
+          {/* Where people come from, this page, where they go next: the page in its path at a glance. */}
+          <div className="where-map">
+            {s.in[0] ? <button type="button" className="where-node" title={s.in[0].name} onClick={() => go(s.in[0]!)}>{s.in[0].name}</button> : <span className="where-node none">Start</span>}
+            <ArrowRight size={12} className="dim" />
+            <span className="where-node here">This page</span>
+            <ArrowRight size={12} className="dim" />
+            {s.out[0] ? <button type="button" className="where-node" title={s.out[0].name} onClick={() => go(s.out[0]!)}>{s.out[0].name}</button> : <span className="where-node none">End</span>}
+          </div>
+          {s.flows.length > 0 && <div className="where-flows">{s.flows.map((f) => <button key={f.id} type="button" className="link-btn" onClick={() => onJump({ kind: "flow", id: f.id, title: f.name, detail: "" })}><Workflow size={12} /> {f.name}</button>)}</div>}
+          {(s.in.length > 1 || s.out.length > 1 || s.away.length > 0) && (
+            <details className="where-all">
+              <summary className="link-btn">All {s.in.length + s.out.length + s.away.length} links</summary>
+              <Group title="Comes from" rows={s.in.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => go(p)} />)} />
+              <Group title="Goes to" rows={s.out.map((p) => <Row key={p.id} icon={pageIcon(p)} title={p.name} onClick={() => go(p)} />)} />
+              <Group title="Goes to other files" rows={s.away.map((p) => <Row key={p.id} icon={FileText} title={p.name} detail={owners[p.id]?.replace(/^.*\//, "")} onClick={() => onOpenElsewhere?.(p.id)} />)} />
+            </details>
+          )}
+        </section>
+      )}
+      {!s.in.length && !s.out.length && s.flows.length > 0 && <Group title="In flows" rows={s.flows.map((f) => <Row key={f.id} icon={Workflow} title={f.name} onClick={() => onJump({ kind: "flow", id: f.id, title: f.name, detail: "" })} />)} />}
       {!tied && <p className="hint">Not linked yet. Link its buttons and links to the pages they open, and name the paths through them as flows.</p>}
     </div>
   );

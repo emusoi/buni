@@ -28,3 +28,14 @@ test("a take is listed right under its page, never among the graphics", () => {
   const items = groupPages([page("home", { route: "/" }), page("logo"), page("home-b", { option: { of: "home", idea: "b" } })]);
   expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}:${i.pages.map((p) => p.id).join(",")}`))).toEqual(["home", "home-b", "Graphics:logo"]);
 });
+
+test("with flows, pages list under each flow in walking order; states fold into their screen; the rest after", () => {
+  const p = (id: string, extra: Partial<Page>): Page => ({ id, name: id, frame: `${id}-f`, index: id, ...extra });
+  const items = groupPages([
+    p("find", { route: "/" }), p("find-closed", { route: "/", state: "Window closed" }), p("items", { route: "/items" }),
+    p("label", { route: "/label" }), p("find-next", { option: { of: "find", idea: "b" } }), p("about", { route: "/about" }), p("logo", {}),
+  ], [{ id: "f1", name: "Return an item", pages: ["find", "items", "find-closed"] }, { id: "f2", name: "Again", pages: ["items", "label"] }]);
+  expect(items.map((i) => (i.kind === "page" ? i.page.id : `${i.name}: ${i.pages.map((x) => x.id).join(",")}`))).toEqual([
+    "Return an item: find,find-next,items", "Again: label", "Not in a flow: about", "Graphics: logo",
+  ]);
+});

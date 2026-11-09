@@ -2457,3 +2457,23 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .turn-card .turn-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
 .turn-card .turn-what .hint { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .turn-card .btn.small { flex: none; height: 28px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
+
+/* The page in its path: where people come from, this page, where they go. */
+.where-map { display: grid; grid-template-columns: 1fr 14px 1fr 14px 1fr; align-items: center; gap: 4px; }
+.where-node { min-width: 0; padding: 5px 8px; border: 0; border-radius: 6px; background: var(--fill, rgba(0,0,0,0.04)); font-size: 12px; color: var(--ink-2); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.where-node.here { background: var(--accent-tint, rgba(0,98,204,0.12)); color: var(--accent); font-weight: 600; cursor: default; }
+.where-node.none { color: var(--ink-3); cursor: default; }
+.where-flows { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.where-flows .link-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.where-all { margin-top: 6px; }
+.where-all > summary { list-style: none; font-size: 12px; cursor: pointer; }
+/* Sections that read as one line until opened: Look, Versions. */
+details.fold > summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; font-size: 12px; }
+details.fold > summary::-webkit-details-marker, .where-all > summary::-webkit-details-marker { display: none; }
+details.fold > summary .fold-value { flex: 1; text-align: right; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+details.fold > summary::after { content: "›"; color: var(--ink-3); }
+details.fold[open] > summary::after { transform: rotate(90deg); }
+details.fold[open] > summary { margin-bottom: 8px; }
+.state-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.state-chip { height: 26px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 13px; background: none; font-size: 12px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.state-chip.on { background: var(--ink); border-color: var(--ink); color: var(--content, #fff); font-weight: 600; }
