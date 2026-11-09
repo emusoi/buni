@@ -186,9 +186,14 @@ export function App({ snap }: { snap: Snapshot }) {
   /** Pages whose layer list is hidden even while open. */
   const [folded, setFolded] = useState<Set<Id>>(() => new Set());
   const [pageFilter, setPageFilter] = useState("");
-  const matchesPage = (p: { name: string; route?: string | undefined }) => {
+  /** Tags picked above the page list: a page shows when it has every one. */
+  const [tagFilter, setTagFilter] = useState<ReadonlySet<string>>(() => new Set());
+  const matchesPage = (p: { name: string; route?: string | undefined; tags?: string[] | undefined }) => {
     const q = pageFilter.trim().toLowerCase();
-    return !q || p.name.toLowerCase().includes(q) || (p.route ?? "").toLowerCase().includes(q);
+    if ([...tagFilter].some((t) => !p.tags?.includes(t))) return false;
+    // "#next" finds by tag; anything else by name or route.
+    if (q.startsWith("#")) return !!p.tags?.some((t) => t.startsWith(q.slice(1)));
+    return !q || p.name.toLowerCase().includes(q) || (p.route ?? "").toLowerCase().includes(q) || !!p.tags?.includes(q);
   };
   const toggle = useCallback((id: Id) => setExpanded((s) => {
     const next = new Set(s);
@@ -251,6 +256,8 @@ export function App({ snap }: { snap: Snapshot }) {
     return n;
   }, [doc.nodes]);
   const pages = pagesInOrder(doc);
+  /** Every tag on the design's pages, with how many pages have it, most used first. */
+  const allTags = [...pages.flatMap((p) => p.tags ?? []).reduce((m, t) => m.set(t, (m.get(t) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const activePage = page && doc.pages[page] ? page : pages[0]?.id;
   // The open page stopped being the live one (a pick undone, another take picked elsewhere): follow the live page,
   // so what the canvas shows in that spot is what ships.
@@ -967,8 +974,19 @@ export function App({ snap }: { snap: Snapshot }) {
               {pages.length > 12 && (
                 <input className="field rail-filter" type="search" placeholder={`Find among ${pages.length} pages`} value={pageFilter} onChange={(e) => setPageFilter(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") setPageFilter(""); }} aria-label="Find a page" />
               )}
-              {pageFilter.trim() && pages.filter(matchesPage).length === 0 && <p className="rail-empty">No page matches “{pageFilter.trim()}”.</p>}
-              <PageList pages={pageFilter.trim() ? pages.filter(matchesPage) : pages} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
+              {allTags.length > 0 && (
+                <div className="tag-filter" role="group" aria-label="Filter pages by tag">
+                  {allTags.map(([t, n]) => (
+                    <button type="button" key={t} className={`tag-chip${tagFilter.has(t) ? " on" : ""}`} aria-pressed={tagFilter.has(t)} onClick={() => setTagFilter((f) => {
+                      const next = new Set(f);
+                      if (!next.delete(t)) next.add(t);
+                      return next;
+                    })}>#{t} <span className="n">{n}</span></button>
+                  ))}
+                </div>
+              )}
+              {(pageFilter.trim() || tagFilter.size > 0) && pages.filter(matchesPage).length === 0 && <p className="rail-empty">No page matches{pageFilter.trim() ? ` “${pageFilter.trim()}”` : ""}{tagFilter.size ? ` with #${[...tagFilter].join(" #")}` : ""}.</p>}
+              <PageList pages={pageFilter.trim() || tagFilter.size > 0 ? pages.filter(matchesPage) : pages} folded={folded} renderPage={pageRow} onFold={(key) => setFolded((f) => {
                 const next = new Set(f);
                 if (!next.delete(key)) next.add(key);
                 return next;

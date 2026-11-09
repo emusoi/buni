@@ -87,6 +87,7 @@ import {
   type Picked,
   type Task,
   type PageVersion,
+  tagOf,
 } from "./doc.ts";
 
 export interface FormatError {
@@ -446,7 +447,7 @@ export class Reader {
 
   page(v: unknown, path: string): Page {
     // "client" is legacy (LEGACY_COLLECTIONS): allowed, never read.
-    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option", "live", "picked"]);
+    const o = this.obj(v, path, ["id", "name", "route", "state", "frame", "index", "x", "y", "client", "terminal", "widths", "option", "live", "picked", "tags"]);
     const x = this.optNum(o.x, join(path, "x"));
     const y = this.optNum(o.y, join(path, "y"));
     if ((x === undefined) !== (y === undefined)) this.fail(path, "a canvas position needs both x and y");
@@ -463,7 +464,16 @@ export class Reader {
       ...(o.option !== undefined ? { option: this.pageOption(o.option, join(path, "option")) } : {}),
       ...(o.live !== undefined ? { live: this.livePage(o.live, join(path, "live")) } : {}),
       ...(o.picked !== undefined ? { picked: this.picked(o.picked, join(path, "picked")) } : {}),
+      ...(o.tags !== undefined ? { tags: this.tags(o.tags, join(path, "tags")) } : {}),
     };
+  }
+
+  /** A page's tags: short words, each once. */
+  tags(v: unknown, path: string): string[] {
+    const tags = this.list(v, path, (x, p) => this.str(x, p));
+    if (tags.some((t) => !t || t !== tagOf(t) || t.length > 40)) this.fail(path, "tags are lowercase words, no spaces, 40 characters at most");
+    if (new Set(tags).size !== tags.length) this.fail(path, "each tag once");
+    return tags;
   }
 
   pageOption(v: unknown, path: string): PageOption {

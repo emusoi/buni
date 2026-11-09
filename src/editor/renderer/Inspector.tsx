@@ -14,6 +14,7 @@ import { ago } from "./Home.tsx";
 import { curvePoints, motionSentence } from "./moments.ts";
 import { EASE } from "buni/tools/html.ts";
 import { Widths } from "./Widths.tsx";
+import { Tags } from "./Tags.tsx";
 import { ComponentVariants, PageStates } from "./Variants.tsx";
 import { CodeView } from "./CodeView.tsx";
 import { useWho } from "./who.ts";
@@ -909,6 +910,7 @@ export function Inspector({ doc, ownTokens, node, also = [], root, preview, page
       <div className="inspector editing">
         {page && doc.pages[page] ? <PageSummary doc={doc} page={page} onJump={onJump} onOpenElsewhere={onOpenElsewhere} /> : <p className="hint">{Object.keys(doc.pages).length ? "Click a layer or anything on the canvas to edit it. Add things with the bar at the bottom of the canvas." : "Use + beside Pages or Import HTML to start."}</p>}
         {page && doc.pages[page] && onViewWidth && <Widths doc={doc} page={page} viewWidth={viewWidth} onView={(w) => onViewWidth(page, w)} onCompare={onCompare} onError={setNotice} />}
+        {page && doc.pages[page] && <Tags doc={doc} page={page} onError={setNotice} />}
         {page && doc.pages[page] && <PageStates doc={doc} page={page} onOpen={(id) => onJump({ kind: "page", id, title: doc.pages[id]?.name ?? id, detail: "" })} onError={setNotice} />}
         {page && doc.pages[page] && <VersionsSection doc={doc} page={page} onError={setNotice} />}
         {page && doc.pages[page] && onOpenTakes && <TakesSection doc={doc} page={page} onOpenTakes={onOpenTakes} onJump={onJump} onError={setNotice} />}

@@ -16,7 +16,7 @@ export const readTools = {
       if (a.root !== undefined) outline(doc, node(doc, a.root), 0, lines);
       else {
         for (const p of pagesInOrder(doc)) {
-          lines.push(`page ${p.id} "${p.name}" ${pageLabel(doc, p)}`);
+          lines.push(`page ${p.id} "${p.name}" ${pageLabel(doc, p)}${p.tags?.length ? ` ${p.tags.map((t) => `#${t}`).join(" ")}` : ""}`);
           for (const source of p.sources ?? []) lines.push(`  source: ${sourceLabel(source)}`);
           const frame = doc.nodes[p.frame];
           if (frame) outline(doc, frame, 1, lines);

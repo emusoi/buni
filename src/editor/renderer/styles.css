@@ -2439,3 +2439,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .app.editor .side-foot .export-menu { top: auto; bottom: calc(100% + 6px); left: 8px; right: 8px; width: auto; }
 /* The commit menu's two buttons fit side by side. */
 .app.editor .changes-form .btn, .app.editor .changes-form button { white-space: nowrap; padding: 0 10px; }
+
+/* Tags: chips above the page list filter it; the inspector adds and removes them. */
+.tag-filter { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 12px 8px; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 999px; background: none; font: 500 12px var(--font, inherit); color: var(--ink-2); cursor: pointer; }
+.tag-chip .n { color: var(--ink-3); font-size: 11px; }
+.tag-chip.on { background: var(--ink); border-color: var(--ink); color: var(--content, #fff); }
+.tag-chip.on .n { color: inherit; opacity: 0.7; }
+.tag-chip .tag-x { display: inline-flex; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+.page-tags { display: flex; flex-direction: column; gap: 8px; }
+.page-tags .tag-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.page-tags input { height: 22px; width: 90px; padding: 0 8px; border: 1px dashed var(--rule); border-radius: 999px; background: none; font: 12px inherit; color: var(--ink); }

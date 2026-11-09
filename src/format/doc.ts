@@ -191,7 +191,12 @@ export interface Page extends SourceOwner {
    * on its own; it has no route while it is an option, so Play and export show the page it is an option of.
    */
   option?: PageOption;
+  /** Words to find and filter pages by ("next", "checkout", "mobile"): lowercase, each once. */
+  tags?: string[];
 }
+
+/** A tag as pages keep it: trimmed, lowercase, spaces as dashes. */
+export const tagOf = (t: string): string => t.trim().toLowerCase().replace(/^#/, "").replace(/\s+/g, "-");
 
 /**
  * What makes a page live: libraries from a pinned CDN, and its own stylesheet and script (attachments under live/).

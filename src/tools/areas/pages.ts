@@ -11,7 +11,7 @@ import { sourceRefs } from "../../format/sources.ts";
 import { parseFragment, serialize, type DefaultTreeAdapterTypes as P } from "parse5";
 import { generateKeyBetween } from "fractional-indexing";
 import { z } from "zod";
-import { EASINGS, ENTRANCES, INPUT_TYPES, LIBRARY_HOSTS, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type LivePage, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style } from "../../format/doc.ts";
+import { EASINGS, ENTRANCES, INPUT_TYPES, LIBRARY_HOSTS, MOTION_TRIGGERS, RESPONSES, entersOn, isUseLink, optionsOf, type Doc, type LivePage, type Motion, INK_TOOLS, INK_VIEWS, type InkView, ARCHITECTURE_ANCHOR, SCREENS_ANCHOR, architectureOf, archCollectionOf, childrenOf, statesOf, type TerminalScreen, pagesInOrder, type Id, type Node, type Page, type PageOption, type Post, type Style, tagOf } from "../../format/doc.ts";
 import { applyOps as applied, type Op } from "../../oplog/oplog.ts";
 import { fontFaces, layerHtml, parseHtml, renderLayer, renderPage, snippet, type Draft } from "../html.ts";
 import { embeddedFont } from "../fontdata.ts";
@@ -614,6 +614,26 @@ export const pagesTools = {
       };
       for (const st of states) walk(node(doc, screen.frame), node(doc, st.frame));
       return { label: `Link the states of ${screen.name}`, ops, reply: `Linked ${ops.length} layers in ${states.length} state${states.length === 1 ? "" : "s"} of ${screen.name}.` };
+    },
+  }),
+
+  set_tags: tool({
+    description:
+      "Tag pages so people and agents can filter by them (\"next\", \"checkout\", \"mobile\"): add and remove on one or more pages at once. " +
+      "Tags are lowercase words; buni tree shows them as #tag.",
+    input: { pages: z.array(z.string()).min(1), add: z.array(z.string()).optional(), remove: z.array(z.string()).optional() },
+    run: async (doc, a) => {
+      const add = (a.add ?? []).map(tagOf).filter(Boolean);
+      const remove = new Set((a.remove ?? []).map(tagOf));
+      const bad = add.find((t) => t.length > 40);
+      if (bad) throw new ToolError(`"${bad}" is too long for a tag: 40 characters at most`);
+      const ops: Op[] = a.pages.map((id) => {
+        const { tags: old = [], ...bare } = page(doc, id);
+        const tags = [...new Set([...old, ...add])].filter((t) => !remove.has(t));
+        return { kind: "put", collection: "pages", value: tags.length ? { ...bare, tags } : bare };
+      });
+      const what = [add.length ? `+${add.join(" +")}` : "", remove.size ? `−${[...remove].join(" −")}` : ""].filter(Boolean).join(" ");
+      return { label: `Tags ${what}`, ops, reply: `Tagged ${a.pages.length} page${a.pages.length === 1 ? "" : "s"}: ${what || "nothing changed"}.` };
     },
   }),
 

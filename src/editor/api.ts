@@ -22,7 +22,7 @@ export interface SettleResult {
 
 /** Tools a person can run from the window; everything else stays with agents. */
 export const EDIT_TOOLS = [
-  "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
+  "import_html", "use_inspiration", "save_inspiration", "set_sources", "set_text", "tokens", "rename_layer", "set_svg", "update_styles", "delete_nodes", "duplicate_nodes", "wrap_nodes", "move_nodes", "replace_html", "set_layer", "set_widths", "set_tags", "swap_component", "detach_instance", "link_states", "add_variant", "duplicate_page", "rename_page", "import_file", "set_variant", "write_html", "create_page",
   "make_component", "create_component", "place_component", "override", "move_component",
   "write_section", "delete_section", "comment", "mark", "merge_components", "delete_component", "rename_component",
   "set_motion", "connect", "disconnect", "set_flow", "set_screen", "set_live", "write_file", "add_task", "take_task", "finish_task", "delete_task", "pick_option", "make_take", "save_version", "restore_version", "branch_version", "delete_version",
