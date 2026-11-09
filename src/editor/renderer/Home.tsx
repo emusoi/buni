@@ -248,19 +248,28 @@ export function Home({ notice }: { notice?: string | undefined } = {}) {
             </div>
           )}
           {onlyTasks && (
-            <section className="home-tasks" aria-label="Tasks">
-              {openTasks.length === 0 && <p className="home-empty">Nothing waiting. Ask for something in a design's Agents tab.</p>}
-              {[...openTasks, ...(showDone ? tasks.filter((x) => x.t.state === "done") : [])].map(({ f, t }) => (
-                <button type="button" key={t.id} className={`home-task ${t.state}`} onClick={() => openAt(f.path, t.page)} title={`Open ${f.name}`}>
-                  <span className="task-state">{t.state === "done" ? <Check size={13} /> : t.state === "working" ? <span className="task-working" /> : <Circle size={13} strokeWidth={1.5} />}</span>
-                  <span className="task-body">
-                    <span className="task-title">{t.title}</span>
-                    <span className="task-meta">{f.name}{t.page && f.doc.pages[t.page] ? ` · ${f.doc.pages[t.page]?.name.replace(/^\s*\d+\s*·\s*/, "")}` : ""} · {t.state === "queued" ? `waiting · ${ago(t.at, now)}` : t.state === "working" ? `${t.by} is on it · ${ago(t.taken ?? t.at, now)}` : `done · ${ago(t.done ?? t.at, now)}`}</span>
-                    {t.note && <span className="task-note">{t.note}</span>}
-                  </span>
-                </button>
-              ))}
-              {tasks.some((x) => x.t.state === "done") && <button type="button" className="link-btn" onClick={() => setShowDone((s) => !s)}>{showDone ? "Hide done" : `Show ${tasks.filter((x) => x.t.state === "done").length} done`}</button>}
+            <section className="home-tasks columns" aria-label="Tasks">
+              {tasks.length === 0 && <p className="home-empty">Nothing waiting. Ask for something in a design's Agents tab.</p>}
+              {/* To do, doing, done: who has each task at a glance. */}
+              {tasks.length > 0 && ([["queued", "To do"], ["working", "Doing"], ["done", "Done"]] as const).map(([state, title]) => {
+                const these = tasks.filter((x) => x.t.state === state);
+                return (
+                  <div key={state} className="task-column">
+                    <h3>{title} <span className="n">{these.length}</span></h3>
+                    {(state === "done" && !showDone ? these.slice(0, 5) : these).map(({ f, t }) => (
+                    <button type="button" key={t.id} className={`home-task ${t.state}`} onClick={() => openAt(f.path, t.page)} title={`Open ${f.name}`}>
+                      <span className="task-state">{t.state === "done" ? <Check size={13} /> : t.state === "working" ? <span className="task-working" /> : <Circle size={13} strokeWidth={1.5} />}</span>
+                      <span className="task-body">
+                        <span className="task-title">{t.title}</span>
+                        <span className="task-meta">{f.name}{t.page && f.doc.pages[t.page] ? ` · ${f.doc.pages[t.page]?.name.replace(/^\s*\d+\s*·\s*/, "")}` : ""} · {t.state === "queued" ? `waiting · ${ago(t.at, now)}` : t.state === "working" ? `${t.by} is on it · ${ago(t.taken ?? t.at, now)}` : `done · ${ago(t.done ?? t.at, now)}`}</span>
+                        {t.note && <span className="task-note">{t.note}</span>}
+                      </span>
+                    </button>
+                    ))}
+                    {state === "done" && these.length > 5 && <button type="button" className="link-btn" onClick={() => setShowDone((v) => !v)}>{showDone ? "Fewer" : `All ${these.length} done`}</button>}
+                  </div>
+                );
+              })}
             </section>
           )}
           {shown.length > 0 && !onlyTasks && (

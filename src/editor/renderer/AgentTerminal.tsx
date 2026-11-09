@@ -8,21 +8,22 @@ import { agentColor } from "./Connect.tsx";
 
 /** Home hands a new design its first request here; the design's Agents panel picks it up. */
 const ASK = "buni.ask";
-export function askFirst(prompt: string): void {
+export function askFirst(prompt: string, program: Program = "claude"): void {
   try {
-    sessionStorage.setItem(ASK, JSON.stringify({ prompt, at: Date.now() }));
+    sessionStorage.setItem(ASK, JSON.stringify({ prompt, program, at: Date.now() }));
   } catch {
     // no storage: the design opens without the request
   }
 }
-/** A request home left in the last minute, taken once. */
-export function pendingAsk(take = false): string | undefined {
+/** A request home left in the last minute, and the agent it's for, taken once. */
+export function pendingAsk(take = false): { prompt: string; program: Program } | undefined {
   try {
     const raw = sessionStorage.getItem(ASK);
     if (!raw) return undefined;
-    const { prompt, at } = JSON.parse(raw) as { prompt?: unknown; at?: unknown };
+    const { prompt, program, at } = JSON.parse(raw) as { prompt?: unknown; program?: unknown; at?: unknown };
     if (take) sessionStorage.removeItem(ASK);
-    return typeof prompt === "string" && typeof at === "number" && Date.now() - at < 60_000 ? prompt : undefined;
+    if (typeof prompt !== "string" || typeof at !== "number" || Date.now() - at >= 60_000) return undefined;
+    return { prompt, program: program === "codex" ? "codex" : "claude" };
   } catch {
     return undefined;
   }
@@ -160,7 +161,7 @@ export function AgentsPanel({ activity, onWiden, page, selection, askNonce }: { 
       const ask = pendingAsk(true);
       setSessions(list);
       setEnded(new Set(list.filter((s) => !s.alive && !s.saved).map((s) => s.id)));
-      if (ask && !list.some((s) => s.alive)) return start("claude", ask);
+      if (ask && !list.some((s) => s.alive)) return start(ask.program, ask.prompt);
       if (program && !list.some((s) => s.alive)) return start(program);
       // The latest agent, so a design opened again carries on with the one it was talking to.
       setShown((s) => s ?? list.at(-1)?.id);
@@ -323,12 +324,13 @@ export function designName(prompt: string): string {
 export function Describe({ onError }: { onError: (message: string) => void }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agent, setAgent] = useState<"claude" | "codex">("claude");
   const submit = () => {
     const prompt = text.trim();
     if (!prompt || busy) return;
     const name = designName(prompt);
     setBusy(true);
-    askFirst(prompt);
+    askFirst(prompt, agent);
     window.buni.create(name).catch((e: unknown) => {
       setBusy(false);
       onError(e instanceof Error ? e.message : String(e));
@@ -342,7 +344,12 @@ export function Describe({ onError }: { onError: (message: string) => void }) {
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} />
         <button type="submit" className="btn primary" disabled={!text.trim() || busy}>{busy ? "Starting…" : "Design it"}</button>
       </div>
-      <p className="hint">buni makes the design and Claude Code starts on it beside the canvas.</p>
+      <div className="describe-foot">
+        <div className="segmented small" role="radiogroup" aria-label="Agent">
+          {(["claude", "codex"] as const).map((p) => <button key={p} type="button" role="radio" aria-checked={agent === p} className={agent === p ? "on" : ""} onClick={() => setAgent(p)}>{NAMES[p]}</button>)}
+        </div>
+        <p className="hint">buni makes the design and {NAMES[agent]} starts on it beside the canvas.</p>
+      </div>
     </form>
   );
 }

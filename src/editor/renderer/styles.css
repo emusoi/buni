@@ -2492,3 +2492,15 @@ details.fold[open] > summary { margin-bottom: 8px; }
 .turn-row .turn-dot { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 4px; }
 .turn-row .turn-what { min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
 .turn-row .turn-what .hint { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.describe-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.describe-foot .hint { margin: 0; }
+/* Tasks as three columns: to do, doing, done. */
+.home-tasks.columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.home-tasks.columns .task-column { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.home-tasks.columns .task-column h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+.home-tasks.columns .task-column h3 .n { color: var(--ink-3); font-weight: 400; }
+.home-tasks.columns .home-task { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--content); }
+@media (max-width: 760px) { .home-tasks.columns { grid-template-columns: 1fr; } }
+.home-tasks.columns { max-width: none; width: 100%; padding: 0; background: none; box-shadow: none; }
+.describe-foot .segmented { flex: none; width: auto; display: inline-flex; }
+.describe-foot .segmented button { flex: none; padding: 0 12px; height: 26px; font-size: 12px; }
