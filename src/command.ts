@@ -103,6 +103,7 @@ Try options:        buni call FILE explore_page '{"page":"PAGE","options":[{"nam
                     then compare_options '{"page":"PAGE"}' and pick_option '{"option":"ID","why":"…"}'
 Inspiration:        buni call FILE find_inspiration '{"query":"settings page"}' finds finished UI patterns (buni's and the
                     person's own); use_inspiration '{"pattern":"Settings sections"}' brings one in as a reference page.
+Tag pages:          buni call FILE set_tags '{"pages":["ID","ID"],"add":["next"]}' (remove too); the person filters the page list by tag.
 Find and replace:   buni call FILE find_nodes '{"style":[{"value":"#999"}],"replace_with":"var(--muted)"}'   (also text, page, root)
 Review a page:      buni call FILE review_page '{"page":"PAGE"}'   (score and issues worst first, on their layers;
                     "pin":true leaves them as comments, "against":"NOW_PAGE" says what a Next page fixed)
