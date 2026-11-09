@@ -849,7 +849,11 @@ export function App({ snap }: { snap: Snapshot }) {
 
   const actions: Action[] = [
     { id: "page", title: "New page", icon: FilePlus, run: () => void addPage() },
-    { id: "ask", title: "Connect a coding agent…", detail: "Claude Code or Codex", icon: Sparkles, run: () => setPanel("agent") },
+    // Where agents run beside the design, ask one (naming the selection, as ⌘L); elsewhere, connect one.
+    window.buni.terminals
+      ? { id: "ask", title: selNode ? `Ask the agent about ${selNode.name}` : "Ask the agent", detail: "Claude Code or Codex", keys: selNode ? "⌘L" : undefined, icon: Sparkles, run: () => (selNode ? askSelection() : (setPanel("agent"), togglePanel(true))) }
+      : { id: "ask", title: "Connect a coding agent…", detail: "Claude Code or Codex", icon: Sparkles, run: () => setPanel("agent") },
+    ...flows.map((f) => ({ id: `play-${f.id}`, title: `Play ${f.name}`, detail: "flow", icon: PlayIcon, run: () => openSiteTab(fileOfPage.get(f.start) ?? snap.path, f.start, f.id) })),
     { id: "keys", title: "Keyboard shortcuts", icon: Keyboard, run: () => setKeysShown(true) },
     { id: "guides", title: "Design guides", icon: BookOpen, run: () => setGuides(true) },
     ...(activePage ? [{ id: "open-site", title: `Open ${doc.pages[activePage]?.name ?? "this page"} as a website`, icon: PlayIcon, run: () => openSite(activePage) }] : []),
