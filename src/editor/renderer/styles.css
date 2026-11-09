@@ -2504,3 +2504,9 @@ details.fold[open] > summary { margin-bottom: 8px; }
 .home-tasks.columns { max-width: none; width: 100%; padding: 0; background: none; box-shadow: none; }
 .describe-foot .segmented { flex: none; width: auto; display: inline-flex; }
 .describe-foot .segmented button { flex: none; padding: 0 12px; height: 26px; font-size: 12px; }
+.flow-summary .layer-head { display: flex; align-items: center; gap: 8px; grid-template-columns: none; }
+.flow-summary .layer-head .layer-who { flex: 1; min-width: 0; }
+.flow-summary .layer-head .btn.small { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; font-size: 12px; }
+.flow-steps { list-style: none; margin: 0; padding: 0; }
+.flow-steps .step-n { flex: none; width: 18px; height: 18px; border-radius: 9px; background: var(--chip); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-2); }
+.flow-summary .layer-head .btn.small { flex: none; width: auto; }

@@ -35,7 +35,7 @@ export function TurnCard({ doc, turn, color, onShow, onUndo, onKeep }: {
     <div className="turn-card" role="status" aria-label={`${turn.author}'s changes`}>
       <span className="turn-dot" style={{ background: color }} />
       <div className="turn-what">
-        <b>{turn.author} changed {nodes.length || turn.edits.length} {nodes.length === 1 ? "layer" : "layers"} on {where}</b>
+        <b>{nodes.length ? `${turn.author} changed ${nodes.length} layer${nodes.length === 1 ? "" : "s"} on ${where}` : `${turn.author} made ${turn.edits.length} edit${turn.edits.length === 1 ? "" : "s"}`}</b>
         <span className="hint">{labels.slice(-3).join(" · ")}{labels.length > 3 ? ` · ${labels.length - 3} more` : ""}</span>
       </div>
       {first && <button type="button" className="btn small ghost" onClick={() => onShow(first, nodes.find((n) => pageOfNode(doc, n) === first))}>Show</button>}
